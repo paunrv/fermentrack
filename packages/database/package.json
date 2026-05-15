@@ -1,0 +1,21 @@
+{
+  "name": "@fermentrack/database",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0"
+  },
+  "devDependencies": {
+    "prisma": "^5.14.0",
+    "@fermentrack/typescript-config": "*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
