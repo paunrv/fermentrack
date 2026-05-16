@@ -12,8 +12,8 @@
     "@prisma/client": "^5.14.0"
   },
   "devDependencies": {
-    "prisma": "^5.14.0",
-    "@fermentrack/typescript-config": "*"
+    "@fermentrack/typescript-config": "*",
+    "prisma": "^5.22.0"
   },
   "exports": {
     ".": "./src/index.ts"
