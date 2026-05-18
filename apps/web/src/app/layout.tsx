@@ -14,6 +14,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet" />
+      </head>
       <body>
         <ClerkProvider>{children}</ClerkProvider>
       </body>

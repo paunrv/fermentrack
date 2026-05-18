@@ -2,60 +2,165 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 
 const nav = [
-  { href: '/dashboard',          icon: '⬡', label: 'Dashboard'  },
-  { href: '/dashboard/lotes',    icon: '⚗', label: 'Lotes'      },
-  { href: '/dashboard/muestras', icon: '◎', label: 'Muestras'   },
-  { href: '/dashboard/agente',   icon: '✦', label: 'Agente IA'  },
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/dashboard/lotes', label: 'Lotes' },
+  { href: '/dashboard/muestras', label: 'Muestras' },
+  { href: '/dashboard/agente', label: 'Agente IA' },
 ]
+
+const font = "'Space Grotesk', sans-serif"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname()
+  const { user } = useUser()
+
+  const initials =
+    user?.firstName && user?.lastName
+      ? `${user.firstName[0]}${user.lastName[0]}`
+      : user?.firstName?.[0] || 'U'
+
+  const displayName =
+    user?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Productor'
 
   return (
-    <div className="flex min-h-screen bg-[#0a0f0d] text-[#e8f0eb] font-sans">
-      {/* Sidebar */}
-      <aside className="w-56 border-r border-[#1e3326] flex flex-col py-6 px-4 gap-1 shrink-0">
-        <div className="mb-8 px-2">
-          <span className="text-[#9FE1CB] font-medium text-lg tracking-tight">
-            Fermen<span className="text-[#6b8c78] font-light">Track</span>
+    <div
+      style={{
+        display: 'flex',
+        minHeight: '100vh',
+        background: '#fff',
+        fontFamily: font,
+      }}
+    >
+      <aside
+        style={{
+          width: 220,
+          flexShrink: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          background: '#111',
+          borderRight: '3px solid #111',
+          padding: '24px 16px',
+          color: '#fff',
+        }}
+      >
+        <Link href="/dashboard" style={{ textDecoration: 'none', marginBottom: 32, padding: '0 4px' }}>
+          <span
+            style={{
+              fontSize: 20,
+              fontWeight: 800,
+              letterSpacing: '-.03em',
+              color: '#fff',
+              textTransform: 'uppercase',
+            }}
+          >
+            Fermen<span style={{ color: '#E24B4A' }}>T</span>rack
           </span>
-        </div>
-        {nav.map(({ href, icon, label }) => {
-          const active = path === href || (href !== '/dashboard' && path.startsWith(href))
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                active
-                  ? 'bg-[#16221b] text-[#9FE1CB] border border-[#1e3326]'
-                  : 'text-[#6b8c78] hover:text-[#e8f0eb] hover:bg-[#111a15]'
-              }`}
+        </Link>
+
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
+          {nav.map(({ href, label }) => {
+            const active =
+              path === href || (href !== '/dashboard' && path.startsWith(href))
+
+            return (
+              <Link
+                key={href}
+                href={href}
+                style={{
+                  display: 'block',
+                  padding: '12px 14px',
+                  textDecoration: 'none',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: '.1em',
+                  textTransform: 'uppercase',
+                  border: '3px solid #fff',
+                  background: active ? '#fff' : 'transparent',
+                  color: active ? '#111' : '#fff',
+                }}
+              >
+                {label}
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div
+          style={{
+            marginTop: 'auto',
+            paddingTop: 16,
+            borderTop: '3px solid #fff',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
+          {user?.imageUrl ? (
+            <img
+              src={user.imageUrl}
+              alt=""
+              style={{
+                width: 40,
+                height: 40,
+                border: '3px solid #fff',
+                objectFit: 'cover',
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                border: '3px solid #111',
+                background: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+                color: '#111',
+                flexShrink: 0,
+              }}
             >
-              <span className="text-base">{icon}</span>
-              {label}
-            </Link>
-          )
-        })}
-        <div className="mt-auto px-2 pt-6 border-t border-[#1e3326]">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-[#1D9E7533] border border-[#0F6E56] flex items-center justify-center text-[10px] font-medium text-[#5DCAA5]">
-              JR
+              {initials}
             </div>
-            <div>
-              <div className="text-xs font-medium">Juan Ramos</div>
-              <div className="text-[10px] text-[#6b8c78]">Productor</div>
+          )}
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '.06em',
+                textTransform: 'uppercase',
+                color: '#fff',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {displayName}
+            </div>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '.08em',
+                textTransform: 'uppercase',
+                color: '#aaa',
+                marginTop: 2,
+              }}
+            >
+              Productor
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      <main style={{ flex: 1, overflow: 'auto', background: '#fff' }}>{children}</main>
     </div>
   )
 }

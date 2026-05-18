@@ -1,150 +1,158 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { fetchBatches, fetchActivity, type Batch, type Activity } from '@/lib/supabase'
+import { useUser } from '@clerk/nextjs'
+import Link from 'next/link'
+import { fetchBatches, type Batch } from '@/lib/supabase'
 
-const MONTHLY = [3200,3800,3500,4200,3900,5100,4700,5600,5200,4800,5900,6200]
-const MONTHS  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+const CARD_COLORS = ['#FAC775','#9FE1CB','#F5C4B3','#B5D4F4','#C0DD97','#F4C0D1','#AFA9EC','#F0997B']
+const BADGE_COLORS = ['#FAC775','#9FE1CB','#F5C4B3','#B5D4F4','#C0DD97','#F4C0D1']
+const CARD_SYMBOLS = ['⬡','◆','▲','●','■','◎','⬟','★']
 
-function StatusPill({ status, day }: { status: string; day: number }) {
-  if (status === 'active') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#0F6E5622] text-[#5DCAA5] border border-[#1D9E7540]">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />Día {day}
-    </span>
-  )
-  if (status === 'warn') return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#BA751722] text-[#EF9F27] border border-[#EF9F2740]">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#EF9F27]" />Alerta
-    </span>
-  )
+function StatusBadge({ status, day, index }: { status: string; day: number; index: number }) {
+  const bg = BADGE_COLORS[(index + 3) % BADGE_COLORS.length]
+  const dotColor =
+    status === 'active' ? '#1D9E75' : status === 'warn' ? '#E24B4A' : '#888'
+  const label =
+    status === 'active' ? `Día ${day}` : status === 'warn' ? 'pH alerta' : 'Listo'
+
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#1e3326] text-[#6b8c78] border border-[#1e3326]">
-      Listo
-    </span>
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '5px 10px',
+        border: '2px solid #111',
+        fontSize: 10,
+        fontWeight: 800,
+        letterSpacing: '.06em',
+        textTransform: 'uppercase',
+        background: bg,
+        color: '#111',
+      }}
+    >
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          display: 'inline-block',
+          flexShrink: 0,
+          background: dotColor,
+          border: '1px solid #111',
+        }}
+      />
+      {label}
+    </div>
   )
 }
 
 export default function DashboardPage() {
-  const [batches, setBatches]   = useState<Batch[]>([])
-  const [activity, setActivity] = useState<Activity[]>([])
-  const [loading, setLoading]   = useState(true)
+  const { user } = useUser()
+  const [batches, setBatches] = useState<Batch[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([fetchBatches(), fetchActivity()])
-      .then(([b, a]) => { setBatches(b); setActivity(a) })
-      .finally(() => setLoading(false))
+    fetchBatches().then(setBatches).finally(() => setLoading(false))
   }, [])
 
   const active  = batches.filter(b => b.status !== 'idle')
   const alerts  = batches.filter(b => b.status === 'warn')
-  const totalL  = active.reduce((s, b) => s + (b.volume || 0), 0)
-  const maxProd = Math.max(...MONTHLY)
+  const totalL  = active.reduce((s,b) => s + (b.volume||0), 0)
+  const firstName = user?.firstName || 'Productor'
+  const today = new Date().toLocaleDateString('es', { weekday:'long', day:'numeric', month:'long' })
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-xl font-medium text-[#e8f0eb]">Dashboard</h1>
-          <p className="text-sm text-[#6b8c78] mt-0.5">Vista general de producción</p>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1D9E7511] border border-[#1D9E7530] rounded-full text-xs text-[#5DCAA5]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#1D9E75]" />
-          Supabase conectado
-        </div>
+    <div style={{ fontFamily:"'Space Grotesk',sans-serif", background:'#fff', minHeight:'100vh', padding:'32px' }}>
+
+      {/* Stats */}
+      <div style={{ marginBottom:32 }}>
+        <h1 style={{ fontSize:36,fontWeight:800,letterSpacing:'-.04em',color:'#111',lineHeight:1.1,marginBottom:6 }}>
+          Hola, {firstName}. {active.some(b=>b.type.includes('Cerveza')) ? '🍺' : '🍷'}
+        </h1>
+        <p style={{ fontSize:13,color:'#888',fontWeight:500 }}>
+          {loading ? '...' : `${active.length} lotes activos · ${alerts.length} alerta${alerts.length!==1?'s':''} · ${today}`}
+        </p>
       </div>
 
-      {/* Metrics */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
+      {/* Metrics row */}
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:3,marginBottom:32 }}>
         {[
-          { label: 'Lotes activos',         value: loading ? '—' : active.length,                  sub: 'cerveza + vino' },
-          { label: 'Litros en fermentación',value: loading ? '—' : totalL.toLocaleString(),         sub: 'volumen total' },
-          { label: 'Alertas activas',       value: loading ? '—' : alerts.length,                  sub: alerts.length ? 'pH fuera rango' : 'todo normal', warn: alerts.length > 0 },
-          { label: 'Eficiencia promedio',   value: '87%',                                           sub: 'últimos 30 días' },
+          { val: loading ? '—' : active.length,             lbl:'Activos',    bg:'#111',  valColor:'#FAC775', lblColor:'#888' },
+          { val: loading ? '—' : totalL.toLocaleString(),   lbl:'Litros',     bg:'#fff',  valColor:'#111',    lblColor:'#888' },
+          { val: loading ? '—' : alerts.length,             lbl:'Alertas',    bg: alerts.length ? '#FAC775' : '#fff', valColor:'#111', lblColor:'#555' },
+          { val: '87%',                                      lbl:'Eficiencia', bg:'#fff',  valColor:'#111',    lblColor:'#888' },
         ].map(m => (
-          <div key={m.label} className="bg-[#16221b] border border-[#1e3326] rounded-xl p-4">
-            <div className="text-[11px] text-[#6b8c78] uppercase tracking-wider mb-2">{m.label}</div>
-            <div className={`text-3xl font-medium font-mono tracking-tight ${m.warn ? 'text-[#EF9F27]' : 'text-[#e8f0eb]'}`}>{m.value}</div>
-            <div className="text-[11px] text-[#5DCAA5] mt-1">{m.sub}</div>
+          <div key={m.lbl} style={{ border:'3px solid #111',padding:'14px 16px',background:m.bg }}>
+            <div style={{ fontSize:30,fontWeight:800,letterSpacing:'-.04em',color:m.valColor,lineHeight:1 }}>{m.val}</div>
+            <div style={{ fontSize:10,fontWeight:700,letterSpacing:'.08em',textTransform:'uppercase',color:m.lblColor,marginTop:4 }}>{m.lbl}</div>
           </div>
         ))}
       </div>
 
-      {/* Lotes + Activity */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        {/* Lotes */}
-        <div className="bg-[#16221b] border border-[#0F6E56] rounded-xl p-5">
-          <div className="text-sm font-medium text-[#e8f0eb] mb-4 flex items-center gap-2">
-            <span className="text-[#6b8c78]">⚗</span> Lotes activos
-          </div>
-          {loading
-            ? <p className="text-sm text-[#6b8c78]">Cargando...</p>
-            : batches.slice(0, 5).map(b => (
-              <div key={b.id} className="flex items-center gap-3 py-2.5 border-b border-[#1e3326] last:border-0">
-                <span className="font-mono text-xs text-[#9FE1CB] w-16 shrink-0">{b.id}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm truncate">{b.name}</div>
-                  <div className="h-1 bg-[#1e3326] rounded-full mt-1.5 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${b.progress}%`,
-                        background: b.status === 'warn' ? '#EF9F27' : b.status === 'idle' ? '#6b8c78' : '#1D9E75'
-                      }}
-                    />
+      {/* Section label */}
+      <div style={{ fontSize:10,fontWeight:800,letterSpacing:'.15em',textTransform:'uppercase',color:'#888',marginBottom:12,borderLeft:'3px solid #111',paddingLeft:8 }}>
+        Mis productos
+      </div>
+
+      {/* Product grid */}
+      <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3 }}>
+        {loading ? (
+          [0,1,2].map(i => (
+            <div key={i} style={{ border:'3px solid #eee',minHeight:160,background:'#fafafa' }} />
+          ))
+        ) : (
+          batches.map((b, i) => (
+            <Link key={b.id} href={`/dashboard/lotes`} style={{ textDecoration:'none' }}>
+              <div style={{
+                border:'3px solid #111',
+                padding:20,
+                background: CARD_COLORS[i % CARD_COLORS.length],
+                minHeight:160,
+                display:'flex',flexDirection:'column',justifyContent:'space-between',
+                cursor:'pointer',
+                transition:'transform .1s',
+                position:'relative',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.transform='translate(-2px,-2px)')}
+              onMouseLeave={e => (e.currentTarget.style.transform='translate(0,0)')}>
+                {/* Haring symbol */}
+                <div style={{ position:'absolute',right:14,top:12,fontSize:26,opacity:.12,lineHeight:1 }}>
+                  {CARD_SYMBOLS[i % CARD_SYMBOLS.length]}
+                </div>
+                <div>
+                  <div style={{ fontSize:10,fontWeight:800,letterSpacing:'.1em',textTransform:'uppercase',color:'#111',opacity:.5 }}>
+                    {b.id}
+                  </div>
+                  <div style={{ fontSize:22,fontWeight:800,letterSpacing:'-.03em',color:'#111',lineHeight:1.15,marginTop:4,marginBottom:6 }}>
+                    {b.name}
+                  </div>
+                  <div style={{ fontSize:11,fontWeight:700,letterSpacing:'.06em',textTransform:'uppercase',color:'#111',opacity:.6 }}>
+                    {b.type}
                   </div>
                 </div>
-                <StatusPill status={b.status} day={b.day} />
+                <StatusBadge status={b.status} day={b.day} index={i} />
               </div>
-            ))
-          }
-        </div>
+            </Link>
+          ))
+        )}
 
-        {/* Activity */}
-        <div className="bg-[#16221b] border border-[#1e3326] rounded-xl p-5">
-          <div className="text-sm font-medium text-[#e8f0eb] mb-4 flex items-center gap-2">
-            <span className="text-[#6b8c78]">◈</span> Actividad reciente
+        {/* Add new */}
+        <Link href="/dashboard/lotes" style={{ textDecoration:'none' }}>
+          <div style={{
+            border:'3px dashed #ccc',minHeight:160,background:'#fff',
+            display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:8,
+            cursor:'pointer',transition:'.15s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor='#111'; e.currentTarget.style.background='#f9f9f9' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor='#ccc'; e.currentTarget.style.background='#fff' }}>
+            <div style={{ fontSize:32,color:'#ccc',lineHeight:1 }}>+</div>
+            <div style={{ fontSize:10,fontWeight:800,letterSpacing:'.1em',textTransform:'uppercase',color:'#ccc' }}>Nuevo producto</div>
           </div>
-          {loading
-            ? <p className="text-sm text-[#6b8c78]">Cargando...</p>
-            : activity.map(a => (
-              <div key={a.id} className="flex gap-3 py-2 border-b border-[#1e3326] last:border-0">
-                <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: a.color?.includes('amber') ? '#EF9F27' : a.color?.includes('muted') ? '#6b8c78' : '#1D9E75' }} />
-                <div className="font-mono text-[11px] text-[#6b8c78] w-10 shrink-0 mt-0.5">{a.time_label}</div>
-                <div>
-                  <div className="text-xs text-[#e8f0eb]">{a.text}</div>
-                  <div className="text-[11px] text-[#6b8c78]">{a.sub}</div>
-                </div>
-              </div>
-            ))
-          }
-        </div>
+        </Link>
       </div>
 
-      {/* Bar chart */}
-      <div className="bg-[#16221b] border border-[#1e3326] rounded-xl p-5">
-        <div className="text-sm font-medium text-[#e8f0eb] mb-4 flex items-center gap-2">
-          <span className="text-[#6b8c78]">▦</span> Producción mensual (litros)
-        </div>
-        <div className="flex items-end gap-1.5 h-16">
-          {MONTHLY.map((v, i) => (
-            <div
-              key={i}
-              className="flex-1 rounded-t transition-opacity hover:opacity-100"
-              style={{
-                height: `${Math.round(v / maxProd * 100)}%`,
-                background: i === 11 ? '#5DCAA5' : '#0F6E56',
-                opacity: i === 11 ? 1 : 0.65,
-              }}
-            />
-          ))}
-        </div>
-        <div className="flex justify-between mt-2">
-          {MONTHS.map((m, i) => (
-            <span key={m} className={`text-[10px] flex-1 text-center uppercase tracking-wider ${i === 11 ? 'text-[#5DCAA5]' : 'text-[#6b8c78]'}`}>{m}</span>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }
