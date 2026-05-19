@@ -8,6 +8,10 @@ const nav = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/lotes', label: 'Lotes' },
   { href: '/dashboard/muestras', label: 'Muestras' },
+  { href: '/dashboard/embotellado', label: 'Embotellado' },
+  { href: '/dashboard/costos', label: 'Costos' },
+  { href: '/dashboard/bodega', label: 'Bodega' },
+  { href: '/dashboard/etiquetas', label: 'Etiquetas' },
   { href: '/dashboard/agente', label: 'Agente IA' },
 ]
 

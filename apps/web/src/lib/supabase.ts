@@ -108,3 +108,110 @@ export async function logActivity(
   const timeLabel = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
   await sb.from('activity').insert({ batch_id: batchId, time_label: timeLabel, text, sub, color })
 }
+
+export interface BottlingMaterial {
+  qty: number
+  unit_cost: number
+}
+
+export interface BottlingMaterials {
+  containers: BottlingMaterial
+  labels: BottlingMaterial
+  corks: BottlingMaterial
+  capsules: BottlingMaterial
+  boxes: BottlingMaterial
+}
+
+export interface Bottling {
+  id: string
+  batch_id: string
+  unit_type: 'botella' | 'lata'
+  materials: BottlingMaterials
+  total_units: number
+  notes: string | null
+  created_at: string
+}
+
+export type ProductionCostCategory =
+  | 'materia_prima'
+  | 'mano_obra'
+  | 'equipo'
+  | 'energia'
+  | 'limpieza'
+  | 'analisis'
+  | 'otro'
+
+export interface ProductionCost {
+  id: string
+  batch_id: string
+  category: ProductionCostCategory
+  description: string
+  amount: number
+  currency: string
+  cost_date: string
+  created_at: string
+}
+
+export interface WarehouseExit {
+  id: string
+  batch_id: string
+  units: number
+  price_per_unit: number
+  notes: string | null
+  created_at: string
+}
+
+export async function fetchBottling(): Promise<Bottling[]> {
+  const sb = getSupabase()
+  const { data, error } = await sb
+    .from('bottling')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []) as Bottling[]
+}
+
+export async function createBottling(
+  record: Omit<Bottling, 'id' | 'created_at'>
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb.from('bottling').insert(record)
+  if (error) throw error
+}
+
+export async function fetchProductionCosts(batchId: string): Promise<ProductionCost[]> {
+  const sb = getSupabase()
+  const { data, error } = await sb
+    .from('production_costs')
+    .select('*')
+    .eq('batch_id', batchId)
+    .order('cost_date', { ascending: false })
+  if (error) throw error
+  return (data || []) as ProductionCost[]
+}
+
+export async function createProductionCost(
+  record: Omit<ProductionCost, 'id' | 'created_at'>
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb.from('production_costs').insert(record)
+  if (error) throw error
+}
+
+export async function fetchWarehouseExits(): Promise<WarehouseExit[]> {
+  const sb = getSupabase()
+  const { data, error } = await sb
+    .from('warehouse_exits')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data || []) as WarehouseExit[]
+}
+
+export async function createWarehouseExit(
+  record: Omit<WarehouseExit, 'id' | 'created_at'>
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb.from('warehouse_exits').insert(record)
+  if (error) throw error
+}
