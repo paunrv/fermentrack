@@ -6,6 +6,7 @@
         "./src/*"
       ]
     },
+    "rootDir": "./src",
     "allowJs": true,
     "noEmit": true,
     "isolatedModules": true

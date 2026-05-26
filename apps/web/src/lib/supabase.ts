@@ -1,4 +1,28 @@
-import { createClient } from '@/utils/supabase/client'
+import { createClient as createSupabaseClient } from '@/utils/supabase/client'
+
+export const SUPER_USER_EMAIL = 'phsho007@gmail.com'
+
+export type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
+export type ExtraProfile = 'brewer' | 'winemaker' | 'distiller' | 'distributor' | 'bar'
+
+export interface Profile {
+  id?: string
+  clerk_id: string
+  username: string | null
+  profile_type: ProfileType | null
+  profile_type_v2: ExtraProfile
+  onboarding_complete: boolean
+  is_super_user: boolean
+  extra_profiles: ExtraProfile[]
+  email: string | null
+  created_at?: string
+  updated_at?: string
+}
+
+export interface ProfileScope {
+  clerk_id: string
+  profile_type_v2: ExtraProfile
+}
 
 export type BatchStatus = 'active' | 'warn' | 'idle'
 
@@ -42,37 +66,49 @@ export interface Activity {
 }
 
 export function getSupabase() {
-  return createClient()
+  return createSupabaseClient()
 }
 
-export async function fetchBatches(): Promise<Batch[]> {
+export async function fetchBatches(scope?: ProfileScope): Promise<Batch[]> {
   const sb = getSupabase()
-  const { data, error } = await sb
+  let query = sb
     .from('batches')
     .select('*')
     .order('created_at', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
   if (error) throw error
   return data || []
 }
 
-export async function fetchActivity(): Promise<Activity[]> {
+export async function fetchActivity(scope?: ProfileScope): Promise<Activity[]> {
   const sb = getSupabase()
-  const { data, error } = await sb
+  let query = sb
     .from('activity')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(10)
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
   if (error) throw error
   return data || []
 }
 
-export async function fetchSamples(): Promise<Sample[]> {
+export async function fetchSamples(scope?: ProfileScope): Promise<Sample[]> {
   const sb = getSupabase()
-  const { data, error } = await sb
+  let query = sb
     .from('samples')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(30)
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
   if (error) throw error
   return data || []
 }
@@ -161,12 +197,16 @@ export interface WarehouseExit {
   created_at: string
 }
 
-export async function fetchBottling(): Promise<Bottling[]> {
+export async function fetchBottling(scope?: ProfileScope): Promise<Bottling[]> {
   const sb = getSupabase()
-  const { data, error } = await sb
+  let query = sb
     .from('bottling')
     .select('*')
     .order('created_at', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
   if (error) throw error
   return (data || []) as Bottling[]
 }
@@ -179,13 +219,20 @@ export async function createBottling(
   if (error) throw error
 }
 
-export async function fetchProductionCosts(batchId: string): Promise<ProductionCost[]> {
+export async function fetchProductionCosts(
+  batchId: string,
+  scope?: ProfileScope
+): Promise<ProductionCost[]> {
   const sb = getSupabase()
-  const { data, error } = await sb
+  let query = sb
     .from('production_costs')
     .select('*')
     .eq('batch_id', batchId)
     .order('cost_date', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
   if (error) throw error
   return (data || []) as ProductionCost[]
 }
@@ -198,12 +245,16 @@ export async function createProductionCost(
   if (error) throw error
 }
 
-export async function fetchWarehouseExits(): Promise<WarehouseExit[]> {
+export async function fetchWarehouseExits(scope?: ProfileScope): Promise<WarehouseExit[]> {
   const sb = getSupabase()
-  const { data, error } = await sb
+  let query = sb
     .from('warehouse_exits')
     .select('*')
     .order('created_at', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
   if (error) throw error
   return (data || []) as WarehouseExit[]
 }
@@ -213,5 +264,310 @@ export async function createWarehouseExit(
 ): Promise<void> {
   const sb = getSupabase()
   const { error } = await sb.from('warehouse_exits').insert(record)
+  if (error) throw error
+}
+
+export type ClientType = 'restaurante' | 'bar' | 'tienda' | 'sub-distribuidor'
+export type PriceTier = 'regular' | 'mayoreo' | 'especial'
+
+export interface Client {
+  id: string
+  name: string
+  type: ClientType
+  contact_name: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  price_tier: PriceTier
+  notes: string | null
+  created_at: string
+}
+
+export async function fetchClients(scope?: ProfileScope): Promise<Client[]> {
+  const sb = getSupabase()
+  let query = sb
+    .from('clients')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as Client[]
+}
+
+export async function createClient(
+  record: Omit<Client, 'id' | 'created_at'>
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb.from('clients').insert(record)
+  if (error) throw error
+}
+
+export type ProductCategory = 'cerveza' | 'vino' | 'destilado'
+export type ProductOrigin = 'local' | 'importado'
+export type ProductUnitType = 'botella' | 'lata'
+
+export interface DistProduct {
+  id: string
+  name: string
+  category: ProductCategory
+  producer: string | null
+  origin: ProductOrigin
+  unit_type: ProductUnitType
+  bottles_per_case: number
+  cost_per_unit: number
+  price_regular: number
+  price_mayoreo: number
+  price_especial: number
+  currency: string
+  notes: string | null
+  created_at: string
+  image_url?: string | null
+  clerk_id?: string | null
+  profile_type_v2?: ExtraProfile | null
+}
+
+export async function fetchDistProducts(scope?: ProfileScope): Promise<DistProduct[]> {
+  const sb = getSupabase()
+  let query = sb
+    .from('dist_products')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as DistProduct[]
+}
+
+export async function fetchDistProductById(id: string): Promise<DistInventoryRow | null> {
+  const sb = getSupabase()
+  const { data, error } = await sb
+    .from('dist_products')
+    .select('*, dist_inventory(*)')
+    .eq('id', id)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const row = data as any
+  const inv = Array.isArray(row.dist_inventory) ? row.dist_inventory[0] : row.dist_inventory
+  const { dist_inventory, ...product } = row
+  return { ...(product as DistProduct), inventory: (inv as DistInventory) || null }
+}
+
+export async function createDistProduct(
+  record: Omit<DistProduct, 'id' | 'created_at'>
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb.from('dist_products').insert(record)
+  if (error) throw error
+}
+
+export interface DistInventory {
+  product_id: string
+  cases: number
+  loose_units: number
+  max_units: number
+  updated_at: string
+}
+
+export interface DistInventoryRow extends DistProduct {
+  inventory: DistInventory | null
+}
+
+export type MovementType = 'entrada' | 'venta' | 'donacion' | 'merma' | 'muestra'
+
+export interface DistMovement {
+  id: string
+  product_id: string
+  movement_type: MovementType
+  cases: number
+  loose_units: number
+  movement_date: string
+  notes: string | null
+  created_at: string
+  client_id?: string | null
+  recipient?: string | null
+  reason?: string | null
+  event?: string | null
+  unit_price?: number | null
+  total_amount?: number | null
+  currency?: string | null
+}
+
+export interface DistMovementWithRefs extends DistMovement {
+  dist_products: {
+    name: string
+    category: ProductCategory
+    bottles_per_case: number
+    currency: string
+  } | null
+  clients: { name: string } | null
+}
+
+export async function fetchDistInventory(scope?: ProfileScope): Promise<DistInventoryRow[]> {
+  const sb = getSupabase()
+  let query = sb
+    .from('dist_products')
+    .select('*, dist_inventory(*)')
+    .order('created_at', { ascending: false })
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []).map((row: any) => {
+    const inv = Array.isArray(row.dist_inventory) ? row.dist_inventory[0] : row.dist_inventory
+    const { dist_inventory, ...product } = row
+    return { ...(product as DistProduct), inventory: (inv as DistInventory) || null }
+  })
+}
+
+export async function createDistMovement(
+  record: Omit<DistMovement, 'id' | 'created_at'>
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb.from('dist_movements').insert(record)
+  if (error) throw error
+}
+
+export async function fetchDistMovements(options?: {
+  date?: string
+  limit?: number
+  productId?: string
+  scope?: ProfileScope
+}): Promise<DistMovementWithRefs[]> {
+  const sb = getSupabase()
+  let query = sb
+    .from('dist_movements')
+    .select(
+      '*, dist_products(name, category, bottles_per_case, currency), clients(name)'
+    )
+    .order('created_at', { ascending: false })
+
+  if (options?.date) {
+    query = query.eq('movement_date', options.date)
+  }
+  if (options?.productId) {
+    query = query.eq('product_id', options.productId)
+  }
+  if (options?.limit) {
+    query = query.limit(options.limit)
+  }
+  if (options?.scope) {
+    query = query
+      .eq('clerk_id', options.scope.clerk_id)
+      .eq('profile_type_v2', options.scope.profile_type_v2)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as DistMovementWithRefs[]
+}
+
+export async function updateDistInventory(
+  productId: string,
+  deltaCases: number,
+  deltaLooseUnits: number,
+  bottlesPerCase: number
+): Promise<void> {
+  const sb = getSupabase()
+  const { data: existing, error: fetchError } = await sb
+    .from('dist_inventory')
+    .select('*')
+    .eq('product_id', productId)
+    .maybeSingle()
+  if (fetchError) throw fetchError
+
+  const currentCases = existing?.cases ?? 0
+  const currentLoose = existing?.loose_units ?? 0
+  const currentMax = existing?.max_units ?? 0
+
+  const newCases = Math.max(0, currentCases + deltaCases)
+  const newLoose = Math.max(0, currentLoose + deltaLooseUnits)
+  const newTotal = newCases * bottlesPerCase + newLoose
+  const newMax = Math.max(currentMax, newTotal)
+
+  const { error } = await sb.from('dist_inventory').upsert({
+    product_id: productId,
+    cases: newCases,
+    loose_units: newLoose,
+    max_units: newMax,
+    updated_at: new Date().toISOString(),
+  })
+  if (error) throw error
+}
+
+function normalizeProfile(row: any): Profile {
+  return {
+    ...row,
+    extra_profiles: (row.extra_profiles || []) as ExtraProfile[],
+    is_super_user: Boolean(row.is_super_user),
+    onboarding_complete: Boolean(row.onboarding_complete),
+  } as Profile
+}
+
+export async function fetchProfiles(clerkId: string): Promise<Profile[]> {
+  const sb = getSupabase()
+  const { data, error } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('clerk_id', clerkId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map(normalizeProfile)
+}
+
+export async function fetchActiveProfile(
+  clerkId: string,
+  profileType: ExtraProfile
+): Promise<Profile | null> {
+  const sb = getSupabase()
+  const { data, error } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('clerk_id', clerkId)
+    .eq('profile_type_v2', profileType)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return normalizeProfile(data)
+}
+
+export async function upsertProfile(
+  data: Partial<Profile> & { clerk_id: string; profile_type_v2: ExtraProfile }
+): Promise<void> {
+  const sb = getSupabase()
+
+  const isSuper =
+    Boolean(data.is_super_user) ||
+    (data.email?.toLowerCase() === SUPER_USER_EMAIL.toLowerCase())
+
+  const record = {
+    ...data,
+    is_super_user: isSuper,
+    extra_profiles: data.extra_profiles || [],
+    updated_at: new Date().toISOString(),
+  }
+
+  const { error } = await sb
+    .from('profiles')
+    .upsert(record, { onConflict: 'clerk_id,profile_type_v2' })
+  if (error) throw error
+}
+
+export async function deleteProfile(
+  clerkId: string,
+  profileType: ExtraProfile
+): Promise<void> {
+  const sb = getSupabase()
+  const { error } = await sb
+    .from('profiles')
+    .delete()
+    .eq('clerk_id', clerkId)
+    .eq('profile_type_v2', profileType)
   if (error) throw error
 }

@@ -1,9 +1,10 @@
 'use client'
 
 import { useUser } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { getSupabase } from '@/lib/supabase'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { getSupabase, upsertProfile } from '@/lib/supabase'
+import { useProfile } from '@/context/ProfileContext'
 
 type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
 type ProducerType = 'brewer' | 'winemaker' | 'distiller'
@@ -50,9 +51,18 @@ function isProducer(type: ProfileType | null): type is ProducerType {
   return type === 'brewer' || type === 'winemaker' || type === 'distiller'
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const { user } = useUser()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isAddMode = searchParams.get('mode') === 'add'
+  const { allProfiles, reload: reloadProfiles, switchProfile } = useProfile()
+
+  const existingTypes = new Set(allProfiles.map(p => p.profile_type_v2))
+  const availableOptions = isAddMode
+    ? PROFILE_OPTIONS.filter(opt => !existingTypes.has(opt.type))
+    : PROFILE_OPTIONS
+
   const [step, setStep] = useState<Step>(1)
   const [profileType, setProfileType] = useState<ProfileType | null>(null)
   const [username, setUsername] = useState('')
@@ -105,17 +115,19 @@ export default function OnboardingPage() {
   async function finish() {
     if (!user || !profileType) return
     setSaving(true)
-    const sb = getSupabase()
-    await sb.from('profiles').upsert(
-      {
-        clerk_id: user.id,
-        username: username.trim() || user.firstName || 'Productor',
-        profile_type: profileType,
-        onboarding_complete: true,
-      },
-      { onConflict: 'clerk_id' }
-    )
+    const email = user.primaryEmailAddress?.emailAddress || null
+
+    await upsertProfile({
+      clerk_id: user.id,
+      profile_type_v2: profileType,
+      profile_type: profileType,
+      username: username.trim() || user.firstName || 'Productor',
+      onboarding_complete: true,
+      email,
+    })
+
     if (isProducer(profileType) && productName.trim() && productStyle) {
+      const sb = getSupabase()
       const id = 'FT-' + Date.now().toString().slice(-4)
       await sb.from('batches').insert({
         id,
@@ -130,8 +142,20 @@ export default function OnboardingPage() {
         progress: 0,
         status: 'active',
         alert: null,
+        clerk_id: user.id,
+        profile_type_v2: profileType,
       })
     }
+
+    await reloadProfiles()
+
+    if (isAddMode) {
+      setSaving(false)
+      router.push('/profile-select')
+      return
+    }
+
+    switchProfile(profileType)
     setSaving(false)
     router.push('/dashboard')
   }
@@ -167,27 +191,65 @@ export default function OnboardingPage() {
 
         {step === 1 && (
           <div>
-            <h1 className="text-2xl font-medium text-[#e8f0eb] text-center mb-2">I am a...</h1>
-            <p className="text-sm text-[#6b8c78] text-center mb-10">Elige tu tipo de perfil</p>
-            <div className="grid grid-cols-2 gap-4">
-              {PROFILE_OPTIONS.map(({ type, emoji, label, sub }) => (
+            <h1 className="text-2xl font-medium text-[#e8f0eb] text-center mb-2">
+              {isAddMode ? 'Nuevo perfil' : 'I am a...'}
+            </h1>
+            <p className="text-sm text-[#6b8c78] text-center mb-10">
+              {isAddMode
+                ? 'Elige el tipo de perfil que quieres agregar'
+                : 'Elige tu tipo de perfil'}
+            </p>
+
+            {isAddMode && availableOptions.length === 0 ? (
+              <div className="bg-[#16221b] border border-[#1e3326] rounded-2xl p-8 text-center">
+                <div className="text-3xl mb-4">✨</div>
+                <div className="text-sm text-[#e8f0eb] font-medium mb-2">
+                  Ya tienes todos los tipos de perfil
+                </div>
+                <div className="text-xs text-[#6b8c78] mb-6">
+                  No quedan tipos disponibles para agregar.
+                </div>
                 <button
-                  key={type}
                   type="button"
-                  onClick={() => {
-                    setProfileType(type)
-                    setStep(2)
-                  }}
-                  className="bg-[#16221b] border-2 border-[#1e3326] hover:border-[#1D9E75] rounded-2xl p-6 flex flex-col items-center gap-3 transition-all hover:bg-[#1a2b21]"
+                  onClick={() => router.push('/profile-select')}
+                  className="w-full py-3 bg-[#0F6E56] hover:bg-[#1D9E75] text-[#e1f5ee] text-sm font-medium rounded-xl transition-colors"
                 >
-                  <div className="text-4xl">{emoji}</div>
-                  <div>
-                    <div className="text-sm font-medium text-[#e8f0eb] text-center">{label}</div>
-                    <div className="text-[11px] text-[#6b8c78] text-center mt-1 leading-snug">{sub}</div>
-                  </div>
+                  Volver a mis perfiles
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {availableOptions.map(({ type, emoji, label, sub }) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      setProfileType(type)
+                      setStep(2)
+                    }}
+                    className="bg-[#16221b] border-2 border-[#1e3326] hover:border-[#1D9E75] rounded-2xl p-6 flex flex-col items-center gap-3 transition-all hover:bg-[#1a2b21]"
+                  >
+                    <div className="text-4xl">{emoji}</div>
+                    <div>
+                      <div className="text-sm font-medium text-[#e8f0eb] text-center">{label}</div>
+                      <div className="text-[11px] text-[#6b8c78] text-center mt-1 leading-snug">
+                        {sub}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {isAddMode && (
+              <button
+                type="button"
+                onClick={() => router.push('/profile-select')}
+                className="w-full mt-6 py-2 text-xs text-[#6b8c78] hover:text-[#e8f0eb] transition-colors"
+              >
+                ← Cancelar y volver a mis perfiles
+              </button>
+            )}
           </div>
         )}
 
@@ -363,7 +425,11 @@ export default function OnboardingPage() {
                 disabled={saving}
                 className="flex-1 py-3 bg-[#0F6E56] hover:bg-[#1D9E75] disabled:opacity-40 text-[#e1f5ee] text-sm font-medium rounded-xl transition-colors"
               >
-                {saving ? 'Guardando...' : 'Entrar a FermenTrack →'}
+                {saving
+                  ? 'Guardando...'
+                  : isAddMode
+                    ? 'Crear perfil →'
+                    : 'Entrar a FermenTrack →'}
               </button>
             </div>
             {cameraGranted === null && (
@@ -380,5 +446,13 @@ export default function OnboardingPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingContent />
+    </Suspense>
   )
 }
