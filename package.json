@@ -8,16 +8,15 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "lint": "turbo run lint",
-    "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate",
-    "db:studio": "cd packages/database && npx prisma studio"
+    "lint": "turbo run lint"
   },
   "packageManager": "npm@11.11.0",
   "devDependencies": {
-    "turbo": "latest",
-    "typescript": "^5.4.0",
     "@types/node": "^20.0.0",
-    "prettier": "^3.2.0"
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.35",
+    "prettier": "^3.2.0",
+    "turbo": "latest",
+    "typescript": "^5.4.0"
   }
 }
