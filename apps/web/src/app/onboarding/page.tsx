@@ -429,7 +429,7 @@ function OnboardingContent() {
                   ? 'Guardando...'
                   : isAddMode
                     ? 'Crear perfil →'
-                    : 'Entrar a FermenTrack →'}
+                    : 'Entrar a PROOF →'}
               </button>
             </div>
             {cameraGranted === null && (

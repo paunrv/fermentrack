@@ -317,7 +317,7 @@ export default function ClientesPage() {
           <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
         ) : clients.length === 0 ? (
           <p style={{ fontSize: 13, color: '#888' }}>
-            Aún no hay clientes. Agrega el primero con el botón "+ Nuevo cliente".
+            Aún no hay clientes. Agrega el primero con el botón &quot;+ Nuevo cliente&quot;.
           </p>
         ) : (
           <div

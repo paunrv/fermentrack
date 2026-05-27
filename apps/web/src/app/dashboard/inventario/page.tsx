@@ -1,504 +1,477 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import {
-  fetchDistInventory,
-  createDistMovement,
-  updateDistInventory,
-  type DistInventoryRow,
-  type ProductCategory,
-  type ProductOrigin,
-} from '@/lib/supabase'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
+import { fetchSkus, rpcSyncAllSkusForScope } from '@/lib/supabase'
+import { mapSkuRowToSKU } from '@/lib/proof/sku-state'
+import type { EstadoSKU } from '@/lib/proof/types'
+import { fmtBottles, fmtMoney } from '@/lib/proof/format'
+import { StatusBadge } from '@/components/proof/StatusBadge'
+import { StockBar } from '@/components/proof/StockBar'
+import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 
-const font = "'Space Grotesk', sans-serif"
+type Vista = 'sku' | 'bodega' | 'riesgo'
+type Filtro = 'todos' | 'quiebre' | 'sin_rotar' | 'con_deuda' | 'sobrevendido'
 
-const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  cerveza: '#FAC775',
-  vino: '#9FE1CB',
-  destilado: '#F5C4B3',
-}
-
-const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  cerveza: 'Cerveza',
+const CATEGORIA_LABEL: Record<string, string> = {
+  tequila: 'Tequila',
   vino: 'Vino',
+  mezcal: 'Mezcal',
+  cerveza: 'Cerveza',
   destilado: 'Destilado',
-}
-
-const ORIGIN_LABELS: Record<ProductOrigin, string> = {
-  local: 'Local',
-  importado: 'Importado',
-}
-
-const ORIGIN_BG: Record<ProductOrigin, string> = {
-  local: '#C0DD97',
-  importado: '#B5D4F4',
-}
-
-const ALERT_RED = '#E24B4A'
-
-const label: React.CSSProperties = {
-  display: 'block',
-  fontSize: 10,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: '#111',
-  marginBottom: 6,
-}
-
-const input: React.CSSProperties = {
-  width: '100%',
-  background: '#fff',
-  border: '3px solid #111',
-  padding: '10px 12px',
-  fontSize: 13,
-  fontWeight: 500,
-  color: '#111',
-  outline: 'none',
-  fontFamily: font,
-}
-
-function totalUnits(row: DistInventoryRow): number {
-  const inv = row.inventory
-  if (!inv) return 0
-  return inv.cases * row.bottles_per_case + inv.loose_units
+  gin: 'Gin',
+  otro: 'Otro',
 }
 
 export default function InventarioPage() {
-  const [rows, setRows] = useState<DistInventoryRow[]>([])
+  const { scope } = useProfile()
+  const supabase = useSupabase()
+  const [skuRows, setSkuRows] = useState<Awaited<ReturnType<typeof fetchSkus>>>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [vista, setVista] = useState<Vista>('sku')
+  const [filtro, setFiltro] = useState<Filtro>('todos')
 
-  const [productId, setProductId] = useState('')
-  const [cases, setCases] = useState('')
-  const [looseUnits, setLooseUnits] = useState('')
-  const [movementDate, setMovementDate] = useState(
-    () => new Date().toISOString().slice(0, 10)
-  )
-  const [notes, setNotes] = useState('')
-
-  async function load() {
-    const data = await fetchDistInventory()
-    setRows(data)
-    if (data.length && !productId) setProductId(data[0].id)
-  }
-
-  useEffect(() => {
-    load().finally(() => setLoading(false))
-  }, [])
-
-  async function handleEntry(e: React.FormEvent) {
-    e.preventDefault()
-    const c = parseInt(cases, 10) || 0
-    const u = parseInt(looseUnits, 10) || 0
-    if (!productId || (c <= 0 && u <= 0)) return
-
-    const product = rows.find(r => r.id === productId)
-    if (!product) return
-
-    setSaving(true)
+  async function loadSkus() {
+    if (!scope) return
+    setLoading(true)
     try {
-      await createDistMovement({
-        product_id: productId,
-        movement_type: 'entrada',
-        cases: c,
-        loose_units: u,
-        movement_date: movementDate,
-        notes: notes.trim() || null,
-      })
-      await updateDistInventory(productId, c, u, product.bottles_per_case)
-      setCases('')
-      setLooseUnits('')
-      setNotes('')
-      await load()
+      const data = await fetchSkus(supabase, scope)
+      setSkuRows(data)
     } finally {
-      setSaving(false)
+      setLoading(false)
     }
   }
 
+  useEffect(() => {
+    void loadSkus()
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+
+  const skus = useMemo(() => skuRows.map(mapSkuRowToSKU), [skuRows])
+  const needsSync = !loading && skus.length === 0
+
+  async function onSyncCatalog() {
+    if (!scope) return
+    setSyncing(true)
+    try {
+      await rpcSyncAllSkusForScope(supabase, scope.clerk_id, scope.profile_type_v2)
+      await loadSkus()
+    } catch (e) {
+      console.error(e)
+      alert(e instanceof Error ? e.message : 'Error al sincronizar')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const filtered = useMemo(() => {
+    return skus.filter(s => {
+      if (filtro === 'quiebre') return s.estado === 'quiebre' || s.estado === 'bajo'
+      if (filtro === 'sin_rotar') return s.diasSinMovimiento > 60
+      if (filtro === 'con_deuda') return s.deudaAsociada > 0
+      if (filtro === 'sobrevendido') return s.estado === 'sobrevendido'
+      return true
+    })
+  }, [skus, filtro])
+
+  const kpis = useMemo(() => {
+    const valor = skus.reduce((a, s) => a + s.stockTotal * s.costoUnitario, 0)
+    const quiebre = skus.filter(s => s.estado === 'quiebre').length
+    const sinRotar = skus.filter(s => s.diasSinMovimiento > 60).length
+    const deuda = skus.reduce((a, s) => a + s.deudaAsociada, 0)
+    const muertoCapital = skus
+      .filter(s => s.estado === 'muerto')
+      .reduce((a, s) => a + s.stockTotal * s.costoUnitario, 0)
+    return { valor, quiebre, sinRotar, deuda, muertoCapital }
+  }, [skus])
+
+  const proofMsg =
+    vista === 'riesgo'
+      ? `Capital inmovilizado ~${fmtMoney(kpis.muertoCapital)} en SKUs muertos. Prioriza salida antes de nuevo pedido.`
+      : `Inventario valorado en ${fmtMoney(kpis.valor)}. ${kpis.quiebre} SKU${kpis.quiebre === 1 ? '' : 's'} en quiebre.`
+
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1
-          style={{
-            fontSize: 28,
-            fontWeight: 800,
-            letterSpacing: '-.04em',
-            color: '#111',
-            lineHeight: 1.1,
-            marginBottom: 6,
-          }}
-        >
-          Inventario
-        </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-          Stock en cajas y unidades sueltas por producto
-        </p>
-      </div>
-
-      <form
-        onSubmit={handleEntry}
-        style={{
-          border: '3px solid #111',
-          padding: 24,
-          marginBottom: 32,
-          background: '#C0DD97',
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.1em',
-            textTransform: 'uppercase',
-            marginBottom: 16,
-          }}
-        >
-          Registrar entrada de mercancía
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={label}>Producto</label>
-            <select
-              value={productId}
-              onChange={e => setProductId(e.target.value)}
-              style={input}
-              required
-            >
-              <option value="">Seleccionar producto</option>
-              {rows.map(r => (
-                <option key={r.id} value={r.id}>
-                  {r.name} — {CATEGORY_LABELS[r.category]} · {r.bottles_per_case}/caja
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={label}>Cajas</label>
-            <input
-              type="number"
-              min={0}
-              value={cases}
-              onChange={e => setCases(e.target.value)}
-              style={input}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label style={label}>Unidades sueltas</label>
-            <input
-              type="number"
-              min={0}
-              value={looseUnits}
-              onChange={e => setLooseUnits(e.target.value)}
-              style={input}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label style={label}>Fecha</label>
-            <input
-              type="date"
-              value={movementDate}
-              onChange={e => setMovementDate(e.target.value)}
-              style={input}
-              required
-            />
-          </div>
-          <div>
-            <label style={label}>Notas</label>
-            <input
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              style={input}
-              placeholder="Proveedor, factura, etc."
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          disabled={saving || !productId}
-          style={{
-            marginTop: 16,
-            padding: '12px 20px',
-            background: '#111',
-            color: '#fff',
-            border: '3px solid #111',
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
-            textTransform: 'uppercase',
-            cursor: saving ? 'wait' : 'pointer',
-            opacity: saving ? 0.5 : 1,
-            fontFamily: font,
-          }}
-        >
-          {saving ? 'Guardando...' : 'Registrar entrada'}
-        </button>
-      </form>
-
-      <div>
-        <h2
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            letterSpacing: '.1em',
-            textTransform: 'uppercase',
-            marginBottom: 16,
-          }}
-        >
-          Stock actual
-        </h2>
-        {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
-        ) : rows.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>
-            No hay productos en el catálogo. Agrega productos primero en Productos.
-          </p>
-        ) : (
+    <div style={{ padding: '28px 28px 100px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        {needsSync && (
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 16,
+              marginBottom: 20,
+              padding: '16px 18px',
+              borderRadius: 'var(--radius-card)',
+              border: '1px solid var(--gold)',
+              background: 'var(--gold-soft)',
             }}
           >
-            {rows.map(row => {
-              const inv = row.inventory
-              const total = totalUnits(row)
-              const max = inv?.max_units || 0
-              const pct = max > 0 ? Math.min(100, Math.round((total / max) * 100)) : 0
-              const empty = total === 0
+            <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--fg-0)', lineHeight: 1.5 }}>
+              Sincroniza tu catálogo para activar el inventario PROOF
+            </p>
+            <button
+              type="button"
+              onClick={() => void onSyncCatalog()}
+              disabled={syncing}
+              style={{
+                padding: '10px 16px',
+                background: 'var(--gold)',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--ink)',
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: syncing ? 'wait' : 'pointer',
+              }}
+            >
+              {syncing ? 'Sincronizando…' : 'Sincronizar catálogo'}
+            </button>
+          </div>
+        )}
 
+        <header
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 16,
+            marginBottom: 24,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                margin: '0 0 6px',
+                fontSize: 28,
+                fontWeight: 800,
+                color: 'var(--fg-0)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Inventario
+            </h1>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
+              Stock vivo — disponible vs reservado (tabla skus)
+            </p>
+          </div>
+          <Link
+            href="/dashboard/recepcion"
+            style={{
+              padding: '10px 16px',
+              background: 'var(--gold)',
+              color: 'var(--ink)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              borderRadius: 'var(--radius-sm)',
+            }}
+          >
+            Entrada foto
+          </Link>
+        </header>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: 10,
+            marginBottom: 20,
+          }}
+        >
+          <Kpi label="Valor inventario" value={loading ? '…' : fmtMoney(kpis.valor)} />
+          <Kpi label="En quiebre" value={loading ? '…' : String(kpis.quiebre)} tone={kpis.quiebre ? 'var(--crit)' : undefined} />
+          <Kpi label="Sin rotar +60d" value={loading ? '…' : String(kpis.sinRotar)} />
+          <Kpi label="Deuda asociada" value={loading ? '…' : fmtMoney(kpis.deuda)} />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          {(
+            [
+              ['sku', 'Por SKU'],
+              ['bodega', 'Por bodega'],
+              ['riesgo', 'Por riesgo'],
+            ] as const
+          ).map(([id, label]) => (
+            <Tab key={id} active={vista === id} onClick={() => setVista(id)}>
+              {label}
+            </Tab>
+          ))}
+        </div>
+
+        {vista === 'sku' && (
+          <>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+              {(
+                [
+                  ['todos', 'Todos'],
+                  ['quiebre', 'Quiebre'],
+                  ['sin_rotar', 'Sin rotar'],
+                  ['con_deuda', 'Con deuda'],
+                  ['sobrevendido', 'Sobrevendido'],
+                ] as const
+              ).map(([id, label]) => (
+                <Tab key={id} small active={filtro === id} onClick={() => setFiltro(id)}>
+                  {label}
+                </Tab>
+              ))}
+            </div>
+
+            <div
+              style={{
+                border: '1px solid var(--hairline)',
+                borderRadius: 'var(--radius-card)',
+                overflow: 'hidden',
+                background: 'var(--panel)',
+              }}
+            >
+              <div
+                className="mono"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '100px 1fr 90px 80px 160px 70px 80px 90px 100px',
+                  gap: 8,
+                  padding: '10px 14px',
+                  fontSize: 9,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: 'var(--fg-3)',
+                  borderBottom: '1px solid var(--hairline)',
+                  overflowX: 'auto',
+                }}
+              >
+                <span>SKU</span>
+                <span>Producto</span>
+                <span>Categoría</span>
+                <span>Bodega</span>
+                <span>Stock</span>
+                <span>Rotación</span>
+                <span>Días</span>
+                <span>Margen</span>
+                <span>Estado</span>
+              </div>
+
+              {loading ? (
+                <div style={{ padding: 32, color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</div>
+              ) : filtered.length === 0 ? (
+                <div style={{ padding: 32, textAlign: 'center' }}>
+                  <p style={{ margin: '0 0 12px', color: 'var(--fg-2)' }}>
+                    {needsSync
+                      ? 'Sin SKUs PROOF. Sincroniza tu catálogo arriba.'
+                      : 'Sin resultados para este filtro.'}
+                  </p>
+                </div>
+              ) : (
+                filtered.map(s => {
+                  const href = s.distProductId
+                    ? `/dashboard/productos/${s.distProductId}`
+                    : '/dashboard/inventario'
+                  return (
+                    <Link
+                      key={s.id}
+                      href={href}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '100px 1fr 90px 80px 160px 70px 80px 90px 100px',
+                        gap: 8,
+                        padding: '12px 14px',
+                        alignItems: 'center',
+                        borderBottom: '1px solid var(--hairline)',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: 'background 150ms',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--panel-2)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <span className="mono" style={{ fontSize: 10, color: 'var(--fg-3)' }}>
+                        {s.id.slice(0, 8)}
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)' }}>{s.nombre}</div>
+                        <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.productor}</div>
+                      </div>
+                      <span style={{ fontSize: 11, color: 'var(--fg-2)' }}>
+                        {CATEGORIA_LABEL[s.categoria] || s.categoria}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.bodega}</span>
+                      <StockBar
+                        disponible={s.stockDisponible}
+                        total={s.stockTotal}
+                        reservado={s.stockReservado}
+                        pedidos={s.pedidosReservados}
+                      />
+                      <span className="mono" style={{ fontSize: 10, color: 'var(--fg-2)' }}>
+                        {s.rotacion30d}
+                      </span>
+                      <span className="mono" style={{ fontSize: 11, color: 'var(--fg-2)' }}>
+                        {s.diasSinMovimiento || '—'}
+                      </span>
+                      <span className="mono" style={{ fontSize: 11, color: 'var(--gold)' }}>
+                        {s.margenPorcentaje}%
+                      </span>
+                      <StatusBadge estado={s.estado as EstadoSKU} diasSinMovimiento={s.diasSinMovimiento} />
+                    </Link>
+                  )
+                })
+              )}
+            </div>
+          </>
+        )}
+
+        {vista === 'bodega' && (
+          <div style={{ display: 'grid', gap: 12 }}>
+            {['Principal', 'En tránsito'].map(bodega => {
+              const items = skus.filter(s =>
+                bodega === 'En tránsito' ? s.estado === 'en_transito' : s.bodega === bodega
+              )
               return (
                 <div
-                  key={row.id}
+                  key={bodega}
                   style={{
-                    border: '3px solid #111',
-                    padding: 20,
-                    background: CATEGORY_COLORS[row.category],
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 12,
-                    minHeight: 240,
+                    padding: 18,
+                    border: '1px solid var(--hairline)',
+                    borderRadius: 'var(--radius-card)',
+                    background: 'var(--panel)',
                   }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: 'var(--fg-0)', marginBottom: 12 }}>{bodega}</div>
+                  {items.length === 0 ? (
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>Sin SKUs</p>
+                  ) : (
+                    items.slice(0, 5).map(s => (
                       <div
+                        key={s.id}
                         style={{
-                          fontSize: 18,
-                          fontWeight: 800,
-                          lineHeight: 1.2,
-                          color: '#111',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '8px 0',
+                          borderTop: '1px solid var(--hairline)',
+                          fontSize: 13,
                         }}
                       >
-                        {row.name}
+                        <span>{s.nombre}</span>
+                        <span className="mono" style={{ color: 'var(--fg-2)' }}>
+                          {fmtBottles(s.stockDisponible)} bts
+                        </span>
                       </div>
-                      {row.producer && (
-                        <div
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            marginTop: 4,
-                            color: '#333',
-                          }}
-                        >
-                          {row.producer}
-                        </div>
-                      )}
-                    </div>
-                    {empty ? (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 800,
-                          letterSpacing: '.1em',
-                          textTransform: 'uppercase',
-                          padding: '5px 8px',
-                          border: '3px solid #111',
-                          background: ALERT_RED,
-                          color: '#fff',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                        }}
-                      >
-                        Sin stock
-                      </span>
-                    ) : (
-                      <span
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 800,
-                          letterSpacing: '.1em',
-                          textTransform: 'uppercase',
-                          padding: '5px 8px',
-                          border: '3px solid #111',
-                          background: '#fff',
-                          color: '#111',
-                          whiteSpace: 'nowrap',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {CATEGORY_LABELS[row.category]}
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 800,
-                        letterSpacing: '.1em',
-                        textTransform: 'uppercase',
-                        padding: '5px 8px',
-                        border: '3px solid #111',
-                        background: ORIGIN_BG[row.origin],
-                        color: '#111',
-                      }}
-                    >
-                      {ORIGIN_LABELS[row.origin]}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 800,
-                        letterSpacing: '.1em',
-                        textTransform: 'uppercase',
-                        padding: '5px 8px',
-                        border: '3px solid #111',
-                        background: '#fff',
-                        color: '#111',
-                      }}
-                    >
-                      {row.bottles_per_case}/caja
-                    </span>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 'auto',
-                      border: '3px solid #111',
-                      background: '#fff',
-                      padding: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 16,
-                        marginBottom: 6,
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 9,
-                            fontWeight: 800,
-                            letterSpacing: '.1em',
-                            textTransform: 'uppercase',
-                            color: '#888',
-                          }}
-                        >
-                          Cajas
-                        </div>
-                        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
-                          {inv?.cases ?? 0}
-                        </div>
-                      </div>
-                      <div>
-                        <div
-                          style={{
-                            fontSize: 9,
-                            fontWeight: 800,
-                            letterSpacing: '.1em',
-                            textTransform: 'uppercase',
-                            color: '#888',
-                          }}
-                        >
-                          Sueltas
-                        </div>
-                        <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
-                          {inv?.loose_units ?? 0}
-                        </div>
-                      </div>
-                      <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                        <div
-                          style={{
-                            fontSize: 9,
-                            fontWeight: 800,
-                            letterSpacing: '.1em',
-                            textTransform: 'uppercase',
-                            color: '#888',
-                          }}
-                        >
-                          Total uds
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 22,
-                            fontWeight: 800,
-                            lineHeight: 1,
-                            color: empty ? ALERT_RED : '#111',
-                          }}
-                        >
-                          {total}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        height: 14,
-                        border: '3px solid #111',
-                        background: '#fff',
-                        position: 'relative',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${pct}%`,
-                          height: '100%',
-                          background: empty ? ALERT_RED : '#111',
-                          transition: 'width .25s ease',
-                        }}
-                      />
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: '.05em',
-                        textTransform: 'uppercase',
-                        color: '#888',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <span>
-                        {max > 0 ? `${pct}% del máx.` : 'Sin histórico'}
-                      </span>
-                      <span>Máx. {max}</span>
-                    </div>
-                  </div>
+                    ))
+                  )}
                 </div>
               )
             })}
           </div>
         )}
+
+        {vista === 'riesgo' && (
+          <div style={{ display: 'grid', gap: 12 }}>
+            <RiesgoBlock
+              title="Capital inmovilizado (muertos)"
+              value={fmtMoney(kpis.muertoCapital)}
+              tone="var(--fg-2)"
+            />
+            <RiesgoBlock title="Quiebres" value={String(kpis.quiebre)} tone="var(--crit)" />
+            <RiesgoBlock
+              title="Sobrevendidos"
+              value={String(skus.filter(s => s.estado === 'sobrevendido').length)}
+              tone="var(--purple)"
+            />
+            <RiesgoBlock title="Deuda en inventario lento" value={fmtMoney(kpis.deuda)} tone="var(--warn)" />
+          </div>
+        )}
+      </div>
+
+      <ConnectedProofAIBar
+        pantalla="inventario"
+        vista={vista}
+        contexto={{ kpis, skuCount: skus.length, filtro, needsSync }}
+        fallback={{ mensaje: proofMsg, accionLabel: 'Analizar con PROOF' }}
+      />
+    </div>
+  )
+}
+
+function Kpi({
+  label,
+  value,
+  tone,
+}: {
+  label: string
+  value: string
+  tone?: string
+}) {
+  return (
+    <div
+      style={{
+        padding: '14px 16px',
+        background: 'var(--panel)',
+        border: '1px solid var(--hairline)',
+        borderRadius: 'var(--radius-md)',
+      }}
+    >
+      <div className="mono" style={{ fontSize: 9, color: 'var(--fg-3)', letterSpacing: '0.1em', marginBottom: 6 }}>
+        {label}
+      </div>
+      <div className="mono" style={{ fontSize: 18, fontWeight: 600, color: tone || 'var(--fg-0)' }}>
+        {value}
+      </div>
+    </div>
+  )
+}
+
+function Tab({
+  children,
+  active,
+  small,
+  onClick,
+}: {
+  children: React.ReactNode
+  active: boolean
+  small?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: small ? '6px 12px' : '8px 14px',
+        fontSize: small ? 11 : 12,
+        fontWeight: active ? 600 : 400,
+        color: active ? 'var(--gold)' : 'var(--fg-2)',
+        background: active ? 'var(--gold-soft)' : 'transparent',
+        border: `1px solid ${active ? 'var(--gold)' : 'var(--hairline)'}`,
+        borderRadius: 'var(--radius-sm)',
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function RiesgoBlock({
+  title,
+  value,
+  tone,
+}: {
+  title: string
+  value: string
+  tone: string
+}) {
+  return (
+    <div
+      style={{
+        padding: 18,
+        border: '1px solid var(--hairline)',
+        borderRadius: 'var(--radius-card)',
+        background: 'var(--panel)',
+      }}
+    >
+      <div style={{ fontSize: 12, color: 'var(--fg-3)', marginBottom: 8 }}>{title}</div>
+      <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: tone }}>
+        {value}
       </div>
     </div>
   )

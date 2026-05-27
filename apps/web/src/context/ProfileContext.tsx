@@ -10,13 +10,14 @@ import {
 } from 'react'
 import { useUser } from '@clerk/nextjs'
 import {
-  fetchProfiles,
   type ExtraProfile,
   type Profile,
   type ProfileScope,
 } from '@/lib/supabase'
+import { useSupabase } from '@/hooks/useSupabase'
 
-const STORAGE_KEY = 'fermentrack_active_profile'
+const STORAGE_KEY = 'proof_active_profile'
+const LEGACY_STORAGE_KEY = 'fermentrack_active_profile'
 
 interface ProfileContextValue {
   loading: boolean
@@ -31,7 +32,15 @@ const ProfileContext = createContext<ProfileContextValue | null>(null)
 
 function readStoredType(): ExtraProfile | null {
   if (typeof window === 'undefined') return null
-  const raw = localStorage.getItem(STORAGE_KEY)
+  let raw = localStorage.getItem(STORAGE_KEY)
+  if (!raw) {
+    const legacy = localStorage.getItem(LEGACY_STORAGE_KEY)
+    if (legacy) {
+      localStorage.setItem(STORAGE_KEY, legacy)
+      localStorage.removeItem(LEGACY_STORAGE_KEY)
+      raw = legacy
+    }
+  }
   if (
     raw === 'brewer' ||
     raw === 'winemaker' ||
@@ -49,8 +58,34 @@ function writeStoredType(type: ExtraProfile) {
   localStorage.setItem(STORAGE_KEY, type)
 }
 
+function normalizeProfile(row: Record<string, unknown>): Profile {
+  return {
+    ...(row as unknown as Profile),
+    extra_profiles: (row.extra_profiles || []) as ExtraProfile[],
+    is_super_user: Boolean(row.is_super_user),
+    onboarding_complete: Boolean(row.onboarding_complete),
+  }
+}
+
+async function syncClerkProfileClaim(
+  user: NonNullable<ReturnType<typeof useUser>['user']>,
+  type: ExtraProfile
+) {
+  try {
+    await user.update({
+      unsafeMetadata: {
+        ...(user.unsafeMetadata as Record<string, unknown>),
+        profile_type_v2: type,
+      },
+    })
+  } catch {
+    /* JWT claim se actualiza en el próximo refresh de sesión */
+  }
+}
+
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser()
+  const supabase = useSupabase()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -61,7 +96,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setActiveProfile(null)
       return
     }
-    const profiles = await fetchProfiles(user.id)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('clerk_id', user.id)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    const profiles = (data || []).map(row => normalizeProfile(row as Record<string, unknown>))
     setAllProfiles(profiles)
 
     if (profiles.length === 0) {
@@ -70,10 +111,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
 
     const stored = readStoredType()
-    const found = (stored && profiles.find(p => p.profile_type_v2 === stored)) || profiles[0]
+    const found =
+      (stored && profiles.find(p => p.profile_type_v2 === stored)) || profiles[0]
+    if (!found) {
+      setActiveProfile(null)
+      return
+    }
     setActiveProfile(found)
     writeStoredType(found.profile_type_v2)
-  }, [user])
+    void syncClerkProfileClaim(user, found.profile_type_v2)
+  }, [user, supabase])
 
   useEffect(() => {
     if (!isLoaded) return
@@ -87,8 +134,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (!next) return
       setActiveProfile(next)
       writeStoredType(type)
+      if (user) void syncClerkProfileClaim(user, type)
     },
-    [allProfiles]
+    [allProfiles, user]
   )
 
   const scope: ProfileScope | null =

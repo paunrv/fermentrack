@@ -65,8 +65,8 @@ export default function MuestrasPage() {
     const reader = new FileReader()
     reader.onload = ev => {
       const result = ev.target?.result as string
-      setImgB64(result.split(',')[1])
-      setImgType(result.split(';')[0].split(':')[1])
+      setImgB64(result.split(',')[1] ?? null)
+      setImgType(result.split(';')[0]?.split(':')[1] ?? 'image/jpeg')
     }
     reader.readAsDataURL(file)
   }

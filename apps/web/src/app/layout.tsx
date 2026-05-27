@@ -4,8 +4,9 @@ import { ProfileProvider } from '@/context/ProfileContext';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Fermentrack',
-  description: 'Production operating system for alcohol manufacturers',
+  title: 'PROOF · Operational Intelligence for Liquid Operations',
+  description:
+    'The operating system for wineries, breweries, distilleries, distributors and bars. Every bottle tells a story. We track the proof.',
 };
 
 export default function RootLayout({
@@ -14,9 +15,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body>
         <ClerkProvider>

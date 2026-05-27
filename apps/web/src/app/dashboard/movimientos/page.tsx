@@ -149,8 +149,8 @@ export default function MovimientosPage() {
     setInventory(inv)
     setClients(cls)
     setMovements(movs)
-    if (inv.length && !productId) setProductId(inv[0].id)
-    if (cls.length && !clientId) setClientId(cls[0].id)
+    if (inv.length && !productId && inv[0]) setProductId(inv[0].id)
+    if (cls.length && !clientId && cls[0]) setClientId(cls[0].id)
   }
 
   useEffect(() => {

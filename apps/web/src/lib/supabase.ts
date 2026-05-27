@@ -1,6 +1,81 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 
 export const SUPER_USER_EMAIL = 'phsho007@gmail.com'
+
+// — PROOF Distribuidor (skus, pedidos, recepciones, crédito) —
+export type {
+  CategoriaSku,
+  EstadoSku,
+  Rotacion30d,
+  EstadoPedido,
+  EstadoRecepcion,
+  CondicionItemRecepcion,
+  TipoDiscrepancia,
+  TipoDeudaProductor,
+  EstadoDeudaProductor,
+  EstadoCuentaCliente,
+  SkuRow,
+  PedidoRow,
+  ItemPedidoRow,
+  PedidoWithItems,
+  RecepcionRow,
+  OrdenCompraRow,
+  ItemOrdenCompraRow,
+  OrdenCompraWithItems,
+  EstadoOrdenCompra,
+  ItemRecepcionRow,
+  DiscrepanciaRow,
+  DeudaProductorRow,
+  CuentaClienteRow,
+  SkuStockPayload,
+  SKU,
+  Pedido,
+  ItemPedido,
+  Recepcion,
+  ItemRecepcion,
+  Discrepancia,
+  DeudaProductor,
+  CuentaCliente,
+} from './supabase/distribuidor'
+
+export {
+  rpcConfirmarPedido,
+  rpcCancelarPedido,
+  rpcEntregarPedido,
+  rpcConfirmarRecepcion,
+  rpcSyncAllSkusForScope,
+  rpcProofNextCodigo,
+  fetchSkus,
+  fetchPedidos,
+  fetchPedidoWithItems,
+  createPedidoBorrador,
+  replacePedidoItems,
+  subscribeSkuStock,
+  createRecepcionDraft,
+  updateRecepcionDraft,
+  clearRecepcionLineItems,
+  insertItemsRecepcion,
+  insertDiscrepancias,
+  fetchOrdenesCompraAbiertas,
+  fetchOrdenCompraWithItems,
+  itemsOrdenToExpected,
+  fetchDeudasProductores,
+  fetchCuentasClientes,
+  fetchCreditoResumen,
+  marcarDeudaPagada,
+  fetchAlertasCreditoCriticas,
+  fetchSkusByProductor,
+  fetchDeudasByProductor,
+  fetchOrdenesCompraByProductor,
+  fetchRecepcionesRemision,
+  fetchRecepcionRemisionDetalle,
+  type RecepcionRemisionListRow,
+  type RecepcionRemisionDetalle,
+  type CreditoResumen,
+  type CuentaClienteWithClient,
+  type AlertaCreditoCritica,
+} from './supabase/distribuidor'
 
 export type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
 export type ExtraProfile = 'brewer' | 'winemaker' | 'distiller' | 'distributor' | 'bar'
@@ -75,21 +150,6 @@ export async function fetchBatches(scope?: ProfileScope): Promise<Batch[]> {
     .from('batches')
     .select('*')
     .order('created_at', { ascending: false })
-  if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
-  }
-  const { data, error } = await query
-  if (error) throw error
-  return data || []
-}
-
-export async function fetchActivity(scope?: ProfileScope): Promise<Activity[]> {
-  const sb = getSupabase()
-  let query = sb
-    .from('activity')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(10)
   if (scope) {
     query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
   }
@@ -283,14 +343,23 @@ export interface Client {
   created_at: string
 }
 
-export async function fetchClients(scope?: ProfileScope): Promise<Client[]> {
-  const sb = getSupabase()
+export async function fetchClients(
+  scopeOrSb?: ProfileScope | ReturnType<typeof getSupabase>,
+  scope?: ProfileScope
+): Promise<Client[]> {
+  let sb = getSupabase()
+  let sc: ProfileScope | undefined = scope
+  if (scopeOrSb && typeof scopeOrSb === 'object' && 'from' in scopeOrSb) {
+    sb = scopeOrSb as ReturnType<typeof getSupabase>
+  } else if (scopeOrSb && 'clerk_id' in scopeOrSb) {
+    sc = scopeOrSb as ProfileScope
+  }
   let query = sb
     .from('clients')
     .select('*')
     .order('created_at', { ascending: false })
-  if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  if (sc) {
+    query = query.eq('clerk_id', sc.clerk_id).eq('profile_type_v2', sc.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error

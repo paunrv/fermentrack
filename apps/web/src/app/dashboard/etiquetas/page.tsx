@@ -162,7 +162,7 @@ export default function EtiquetasPage() {
     fetchBatches()
       .then(b => {
         setBatches(b)
-        if (b.length) setBatchId(b[0].id)
+        if (b.length && b[0]) setBatchId(b[0].id)
       })
       .finally(() => setLoading(false))
   }, [])

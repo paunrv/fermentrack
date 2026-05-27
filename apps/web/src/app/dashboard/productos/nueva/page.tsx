@@ -139,7 +139,10 @@ function tryParseDate(s: string): string | null {
   if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10)
   const m = s.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/)
   if (m) {
-    let [, day, month, year] = m
+    const day = m[1]
+    const month = m[2]
+    let year = m[3]
+    if (!day || !month || !year) return null
     if (year.length === 2) year = (parseInt(year, 10) > 50 ? '19' : '20') + year
     const iso = `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
     const d2 = new Date(iso)
@@ -268,7 +271,7 @@ export default function NuevaProductoPage() {
           model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1024,
           system:
-            'Eres un asistente de FermenTrack. Analiza esta nota o remisión y extrae en JSON: { name: string, category: cerveza|vino|destilado, quantity_bottles: number, price_per_bottle: number, total_price: number, date: string, producer: string }. Solo responde con el JSON, sin texto adicional.',
+            'Eres un asistente de PROOF. Analiza esta nota o remisión y extrae en JSON: { name: string, category: cerveza|vino|destilado, quantity_bottles: number, price_per_bottle: number, total_price: number, date: string, producer: string }. Solo responde con el JSON, sin texto adicional.',
           messages: [
             {
               role: 'user',

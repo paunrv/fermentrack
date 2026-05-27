@@ -395,7 +395,7 @@ export default function ProductosPage() {
           <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
         ) : products.length === 0 ? (
           <p style={{ fontSize: 13, color: '#888' }}>
-            Aún no hay productos. Agrega el primero con el botón "+ Nuevo producto".
+            Aún no hay productos. Agrega el primero con el botón &quot;+ Nuevo producto&quot;.
           </p>
         ) : (
           <div

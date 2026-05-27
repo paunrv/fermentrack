@@ -89,7 +89,7 @@ export default function EmbotelladoPage() {
     const [b, h] = await Promise.all([fetchBatches(), fetchBottling()])
     setBatches(b)
     setHistory(h)
-    if (b.length && !batchId) setBatchId(b[0].id)
+    if (b.length && !batchId && b[0]) setBatchId(b[0].id)
   }
 
   useEffect(() => {

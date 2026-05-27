@@ -107,7 +107,7 @@ export default function BodegaPage() {
     setBatches(b)
     setBottling(bt)
     setExits(ex)
-    if (b.length && !batchId) setBatchId(b[0].id)
+    if (b.length && !batchId && b[0]) setBatchId(b[0].id)
   }
 
   useEffect(() => {
