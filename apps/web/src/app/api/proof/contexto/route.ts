@@ -5,6 +5,7 @@ import { createSseStream } from '@/lib/proof/sse'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
+export const dynamic = 'force-dynamic'
 
 type Body = {
   pantalla: string
@@ -13,7 +14,10 @@ type Body = {
 }
 
 export async function POST(req: NextRequest) {
-  await requireClerkUserId()
+  const clerkId = await requireClerkUserId()
+  if (!clerkId) {
+    return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
+  }
   const body = (await req.json()) as Body
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {

@@ -3,6 +3,7 @@ import { requireClerkUserId } from '@/lib/proof/auth-api'
 import { COBRO_SYSTEM } from '@/lib/proof/prompts'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 type Body = {
   clienteNombre: string
@@ -13,7 +14,10 @@ type Body = {
 }
 
 export async function POST(req: NextRequest) {
-  await requireClerkUserId()
+  const clerkId = await requireClerkUserId()
+  if (!clerkId) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
   const body = (await req.json()) as Body
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {

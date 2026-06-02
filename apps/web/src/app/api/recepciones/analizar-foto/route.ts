@@ -20,6 +20,7 @@ import type { ExtraProfile } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
+export const dynamic = 'force-dynamic'
 
 type Body = {
   imagenBase64: string
@@ -32,6 +33,9 @@ type Body = {
 
 export async function POST(req: NextRequest) {
   const clerkId = await requireClerkUserId()
+  if (!clerkId) {
+    return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
+  }
   const body = (await req.json()) as Body
 
   if (!body.imagenBase64?.trim()) {
