@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchClients,
   fetchDistInventory,
@@ -88,6 +90,8 @@ function totalAvailable(row: DistInventoryRow): number {
 }
 
 export default function MovimientosPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [type, setType] = useState<SalidaType>('venta')
   const [inventory, setInventory] = useState<DistInventoryRow[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -142,9 +146,9 @@ export default function MovimientosPage() {
 
   async function load() {
     const [inv, cls, movs] = await Promise.all([
-      fetchDistInventory(),
-      fetchClients(),
-      fetchDistMovements({ date: today }),
+      fetchDistInventory(supabase, scope ?? undefined),
+      fetchClients(supabase, scope ?? undefined),
+      fetchDistMovements(supabase, { date: today, scope: scope ?? undefined }),
     ])
     setInventory(inv)
     setClients(cls)
@@ -154,8 +158,9 @@ export default function MovimientosPage() {
   }
 
   useEffect(() => {
+    if (!scope) return
     load().finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   function resetForm() {
     setCases('')
@@ -194,11 +199,14 @@ export default function MovimientosPage() {
         loose_units: u,
         movement_date: today,
         notes: notes.trim() || null,
+        ...(scope
+          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          : {}),
       }
 
       if (type === 'venta') {
         const price = parseFloat(unitPrice) || 0
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           client_id: clientId,
           unit_price: price,
@@ -206,17 +214,17 @@ export default function MovimientosPage() {
           currency: selectedProduct.currency || 'MXN',
         })
       } else if (type === 'donacion') {
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           recipient: recipient.trim() || null,
         })
       } else if (type === 'merma') {
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           reason,
         })
       } else if (type === 'muestra') {
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           recipient: recipient.trim() || null,
           event: event.trim() || null,
@@ -224,6 +232,7 @@ export default function MovimientosPage() {
       }
 
       await updateDistInventory(
+        supabase,
         selectedProduct.id,
         -c,
         -u,

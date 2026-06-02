@@ -87,7 +87,7 @@ export default function DashboardPage() {
     }
     Promise.all([
       fetchSkus(supabase, scope),
-      fetchDistMovements({ scope, limit: 30 }),
+      fetchDistMovements(supabase, { scope, limit: 30 }),
     ])
       .then(([skuRows, movs]) => {
         if (cancelled) return

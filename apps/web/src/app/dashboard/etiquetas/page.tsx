@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import JsBarcode from 'jsbarcode'
 import { jsPDF } from 'jspdf'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, type Batch } from '@/lib/supabase'
 
 const font = "'Space Grotesk', sans-serif"
@@ -124,6 +126,8 @@ function drawLabelOnPdf(pdf: jsPDF, data: LabelData, barcodeImg: string) {
 }
 
 export default function EtiquetasPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -159,13 +163,14 @@ export default function EtiquetasPage() {
     : null
 
   useEffect(() => {
-    fetchBatches()
+    if (!scope) return
+    fetchBatches(supabase, scope)
       .then(b => {
         setBatches(b)
         if (b.length && b[0]) setBatchId(b[0].id)
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   useEffect(() => {
     if (!previewBarcodeVal) {

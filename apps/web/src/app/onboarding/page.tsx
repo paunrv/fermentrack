@@ -3,8 +3,9 @@
 import { useUser } from '@clerk/nextjs'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
-import { getSupabase, upsertProfile } from '@/lib/supabase'
+import { upsertProfile } from '@/lib/supabase'
 import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 
 type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
 type ProducerType = 'brewer' | 'winemaker' | 'distiller'
@@ -57,6 +58,7 @@ function OnboardingContent() {
   const searchParams = useSearchParams()
   const isAddMode = searchParams.get('mode') === 'add'
   const { allProfiles, reload: reloadProfiles, switchProfile } = useProfile()
+  const supabase = useSupabase()
 
   const existingTypes = new Set(allProfiles.map(p => p.profile_type_v2))
   const availableOptions = isAddMode
@@ -117,7 +119,7 @@ function OnboardingContent() {
     setSaving(true)
     const email = user.primaryEmailAddress?.emailAddress || null
 
-    await upsertProfile({
+    await upsertProfile(supabase, {
       clerk_id: user.id,
       profile_type_v2: profileType,
       profile_type: profileType,
@@ -127,9 +129,8 @@ function OnboardingContent() {
     })
 
     if (isProducer(profileType) && productName.trim() && productStyle) {
-      const sb = getSupabase()
       const id = 'FT-' + Date.now().toString().slice(-4)
-      await sb.from('batches').insert({
+      await supabase.from('batches').insert({
         id,
         name: productName.trim(),
         type: BATCH_TYPE[profileType],
@@ -155,7 +156,7 @@ function OnboardingContent() {
       return
     }
 
-    switchProfile(profileType)
+    await switchProfile(profileType)
     setSaving(false)
     router.push('/dashboard')
   }

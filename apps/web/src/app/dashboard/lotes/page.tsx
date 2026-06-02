@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, createBatch, logActivity, type Batch } from '@/lib/supabase'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
@@ -51,6 +53,8 @@ function AlertBox({ text }: { text: string }) {
 }
 
 export default function LotesPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -64,16 +68,18 @@ export default function LotesPage() {
     temp: '',
   })
 
-  const load = () => fetchBatches().then(setBatches).finally(() => setLoading(false))
+  const load = () =>
+    fetchBatches(supabase, scope ?? undefined).then(setBatches).finally(() => setLoading(false))
   useEffect(() => {
+    if (!scope) return
     load()
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   async function handleCreate() {
     if (!form.nombre) return
     setSaving(true)
     const id = 'FT-' + Date.now().toString().slice(-4)
-    await createBatch({
+    await createBatch(supabase, {
       id,
       name: form.nombre,
       type: form.tipo,
@@ -86,8 +92,11 @@ export default function LotesPage() {
       progress: 2,
       status: 'active',
       alert: null,
-    })
-    await logActivity(id, `Nuevo lote ${id} creado`, form.nombre)
+      ...(scope
+        ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+        : {}),
+    } as Batch & { clerk_id?: string; profile_type_v2?: string })
+    await logActivity(supabase, id, `Nuevo lote ${id} creado`, form.nombre)
     setForm({
       nombre: '',
       tipo: 'Cerveza artesanal',

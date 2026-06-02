@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchDistProducts,
   createDistProduct,
@@ -71,6 +73,8 @@ function formatMoney(n: number, currency = 'MXN') {
 }
 
 export default function ProductosPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [products, setProducts] = useState<DistProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -90,13 +94,14 @@ export default function ProductosPage() {
   const [notes, setNotes] = useState('')
 
   async function load() {
-    const data = await fetchDistProducts()
+    const data = await fetchDistProducts(supabase, scope ?? undefined)
     setProducts(data)
   }
 
   useEffect(() => {
+    if (!scope) return
     load().finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   function resetForm() {
     setName('')
@@ -119,7 +124,7 @@ export default function ProductosPage() {
 
     setSaving(true)
     try {
-      await createDistProduct({
+      await createDistProduct(supabase, {
         name: name.trim(),
         category,
         producer: producer.trim() || null,

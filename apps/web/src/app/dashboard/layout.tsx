@@ -28,7 +28,6 @@ const PROFILE_META: Record<ExtraProfile, { label: string }> = {
   winemaker: { label: 'Bodega' },
   distiller: { label: 'Destilería' },
   distributor: { label: 'Distribuidor' },
-  bar: { label: 'Bar' },
 }
 
 /* ───── Icons (line, calm, no decoration) ────────────────────────── */
@@ -123,7 +122,7 @@ const NAV_RECEPCION: NavItem[] = [
 ]
 
 const NAV_LEGACY: NavItem[] = [
-  { href: '/dashboard/clientes', label: 'Clientes', roles: ['producer', 'bar'], icon: ICONS.clientes },
+  { href: '/dashboard/clientes', label: 'Clientes', roles: ['producer'], icon: ICONS.clientes },
 ]
 
 const NAV: NavItem[] = [
@@ -183,12 +182,19 @@ function navSections(active: Profile | null): { label: string; items: NavItem[] 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname()
   const router = useRouter()
-  const { user } = useUser()
+  const { user, isLoaded } = useUser()
   const { activeProfile, allProfiles, loading } = useProfile()
   const [ask, setAsk] = useState('')
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
+
+  useEffect(() => {
+    if (!isLoaded || loading) return
+    if (user && allProfiles.length === 0) {
+      router.replace('/onboarding')
+    }
+  }, [isLoaded, loading, user, allProfiles.length, router])
 
   useEffect(() => {
     if (loading) return

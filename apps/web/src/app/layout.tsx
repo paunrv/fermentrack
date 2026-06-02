@@ -6,7 +6,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'PROOF · Operational Intelligence for Liquid Operations',
   description:
-    'The operating system for wineries, breweries, distilleries, distributors and bars. Every bottle tells a story. We track the proof.',
+    'The operating system for wineries, breweries, distilleries and distributors. Every bottle tells a story. We track the proof.',
 };
 
 export default function RootLayout({

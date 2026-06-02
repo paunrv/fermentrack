@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchClients,
   fetchDistMovements,
   fetchDistProductById,
   createDistMovement,
   updateDistInventory,
-  getSupabase,
   type Client,
   type DistInventoryRow,
   type DistMovementWithRefs,
@@ -176,6 +177,8 @@ export default function ProductDetailPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id
   const router = useRouter()
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [product, setProduct] = useState<DistInventoryRow | null>(null)
@@ -191,9 +194,9 @@ export default function ProductDetailPage() {
   async function load() {
     if (!id) return
     const [p, m, cs] = await Promise.all([
-      fetchDistProductById(id),
-      fetchDistMovements({ productId: id }),
-      fetchClients(),
+      fetchDistProductById(supabase, id),
+      fetchDistMovements(supabase, { productId: id, scope: scope ?? undefined }),
+      fetchClients(supabase, scope ?? undefined),
     ])
     if (!p) {
       setNotFound(true)
@@ -267,11 +270,10 @@ export default function ProductDetailPage() {
 
     setUploading(true)
     try {
-      const sb = getSupabase()
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
       const path = `${product.id}/${Date.now()}.${ext}`
 
-      const { error: uploadError } = await sb.storage
+      const { error: uploadError } = await supabase.storage
         .from('product-images')
         .upload(path, file, {
           contentType: file.type || 'image/jpeg',
@@ -279,10 +281,10 @@ export default function ProductDetailPage() {
         })
       if (uploadError) throw uploadError
 
-      const { data: urlData } = sb.storage.from('product-images').getPublicUrl(path)
+      const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
       const publicUrl = urlData.publicUrl
 
-      const { error: updateError } = await sb
+      const { error: updateError } = await supabase
         .from('dist_products')
         .update({ image_url: publicUrl })
         .eq('id', product.id)
@@ -1142,6 +1144,7 @@ function MovementModal({
   onClose: () => void
   onSaved: () => void | Promise<void>
 }) {
+  const supabase = useSupabase()
   const [type, setType] = useState<SalidaType>('venta')
   const [cases, setCases] = useState('')
   const [looseUnits, setLooseUnits] = useState('')
@@ -1211,7 +1214,7 @@ function MovementModal({
 
       if (type === 'venta') {
         const price = parseFloat(unitPrice) || 0
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           client_id: clientId,
           unit_price: price,
@@ -1219,24 +1222,24 @@ function MovementModal({
           currency: product.currency || 'MXN',
         } as any)
       } else if (type === 'donacion') {
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           recipient: recipient.trim() || null,
         } as any)
       } else if (type === 'merma') {
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           reason,
         } as any)
       } else if (type === 'muestra') {
-        await createDistMovement({
+        await createDistMovement(supabase, {
           ...baseRecord,
           recipient: recipient.trim() || null,
           event: event.trim() || null,
         } as any)
       }
 
-      await updateDistInventory(product.id, -c, -u, bpc)
+      await updateDistInventory(supabase, product.id, -c, -u, bpc)
       resetForm()
       await onSaved()
     } finally {

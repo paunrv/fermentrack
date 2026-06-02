@@ -81,14 +81,14 @@ export default function HomePage() {
             maxWidth: 420,
           }}
         >
-          The operating system for wineries, breweries, distilleries,
-          distributors and bars. Every bottle tells a story.
+          The operating system for wineries, breweries, distilleries
+          and distributors. Every bottle tells a story.
           <br />
           <span style={{ color: 'var(--copper)' }}>We track the proof.</span>
         </p>
 
         <a
-          href="/dashboard"
+          href="/sign-in"
           style={{
             marginTop: 12,
             display: 'inline-flex',

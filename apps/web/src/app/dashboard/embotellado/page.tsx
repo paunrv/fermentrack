@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchBatches,
   fetchBottling,
@@ -62,6 +64,8 @@ function formatMoney(n: number) {
 }
 
 export default function EmbotelladoPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [history, setHistory] = useState<Bottling[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,15 +90,19 @@ export default function EmbotelladoPage() {
   }, [materials])
 
   async function load() {
-    const [b, h] = await Promise.all([fetchBatches(), fetchBottling()])
+    const [b, h] = await Promise.all([
+      fetchBatches(supabase, scope ?? undefined),
+      fetchBottling(supabase, scope ?? undefined),
+    ])
     setBatches(b)
     setHistory(h)
     if (b.length && !batchId && b[0]) setBatchId(b[0].id)
   }
 
   useEffect(() => {
+    if (!scope) return
     load().finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   function updateMaterial(key: keyof BottlingMaterials, field: 'qty' | 'unit_cost', value: number) {
     setMaterials(m => ({
@@ -108,13 +116,16 @@ export default function EmbotelladoPage() {
     if (!batchId || totalUnits <= 0) return
     setSaving(true)
     try {
-      await createBottling({
+      await createBottling(supabase, {
         batch_id: batchId,
         unit_type: unitType,
         materials,
         total_units: totalUnits,
         notes: notes.trim() || null,
-      })
+        ...(scope
+          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          : {}),
+      } as Bottling & { clerk_id?: string; profile_type_v2?: string })
       setMaterials(emptyMaterials())
       setNotes('')
       await load()

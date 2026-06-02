@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchClients,
   createClient,
@@ -63,6 +65,8 @@ const CLIENT_TYPES: ClientType[] = ['restaurante', 'bar', 'tienda', 'sub-distrib
 const PRICE_TIERS: PriceTier[] = ['regular', 'mayoreo', 'especial']
 
 export default function ClientesPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -78,13 +82,14 @@ export default function ClientesPage() {
   const [notes, setNotes] = useState('')
 
   async function load() {
-    const data = await fetchClients()
+    const data = await fetchClients(supabase, scope ?? undefined)
     setClients(data)
   }
 
   useEffect(() => {
+    if (!scope) return
     load().finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   function resetForm() {
     setName('')
@@ -103,7 +108,7 @@ export default function ClientesPage() {
 
     setSaving(true)
     try {
-      await createClient({
+      await createClient(supabase, {
         name: name.trim(),
         type,
         contact_name: contactName.trim() || null,
@@ -112,7 +117,10 @@ export default function ClientesPage() {
         address: address.trim() || null,
         price_tier: priceTier,
         notes: notes.trim() || null,
-      })
+        ...(scope
+          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          : {}),
+      } as Omit<Client, 'id' | 'created_at'> & { clerk_id?: string; profile_type_v2?: string })
       resetForm()
       setShowForm(false)
       await load()

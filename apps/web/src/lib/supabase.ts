@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createClient as createSupabaseClient } from '@/utils/supabase/client'
 
 export const SUPER_USER_EMAIL = 'phsho007@gmail.com'
 
@@ -78,7 +77,7 @@ export {
 } from './supabase/distribuidor'
 
 export type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
-export type ExtraProfile = 'brewer' | 'winemaker' | 'distiller' | 'distributor' | 'bar'
+export type ExtraProfile = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
 
 export interface Profile {
   id?: string
@@ -140,12 +139,10 @@ export interface Activity {
   created_at: string
 }
 
-export function getSupabase() {
-  return createSupabaseClient()
-}
-
-export async function fetchBatches(scope?: ProfileScope): Promise<Batch[]> {
-  const sb = getSupabase()
+export async function fetchBatches(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<Batch[]> {
   let query = sb
     .from('batches')
     .select('*')
@@ -158,8 +155,10 @@ export async function fetchBatches(scope?: ProfileScope): Promise<Batch[]> {
   return data || []
 }
 
-export async function fetchSamples(scope?: ProfileScope): Promise<Sample[]> {
-  const sb = getSupabase()
+export async function fetchSamples(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<Sample[]> {
   let query = sb
     .from('samples')
     .select('*')
@@ -173,14 +172,19 @@ export async function fetchSamples(scope?: ProfileScope): Promise<Sample[]> {
   return data || []
 }
 
-export async function createBatch(batch: Omit<Batch, 'created_at' | 'updated_at'>): Promise<void> {
-  const sb = getSupabase()
+export async function createBatch(
+  sb: SupabaseClient,
+  batch: Omit<Batch, 'created_at' | 'updated_at'>
+): Promise<void> {
   const { error } = await sb.from('batches').insert(batch)
   if (error) throw error
 }
 
-export async function updateBatch(id: string, updates: Partial<Batch>): Promise<void> {
-  const sb = getSupabase()
+export async function updateBatch(
+  sb: SupabaseClient,
+  id: string,
+  updates: Partial<Batch>
+): Promise<void> {
   const { error } = await sb
     .from('batches')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -188,19 +192,21 @@ export async function updateBatch(id: string, updates: Partial<Batch>): Promise<
   if (error) throw error
 }
 
-export async function createSample(sample: Omit<Sample, 'id' | 'created_at'>): Promise<void> {
-  const sb = getSupabase()
+export async function createSample(
+  sb: SupabaseClient,
+  sample: Omit<Sample, 'id' | 'created_at'>
+): Promise<void> {
   const { error } = await sb.from('samples').insert(sample)
   if (error) throw error
 }
 
 export async function logActivity(
+  sb: SupabaseClient,
   batchId: string | null,
   text: string,
   sub: string,
   color = 'var(--green)'
 ): Promise<void> {
-  const sb = getSupabase()
   const timeLabel = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
   await sb.from('activity').insert({ batch_id: batchId, time_label: timeLabel, text, sub, color })
 }
@@ -257,8 +263,10 @@ export interface WarehouseExit {
   created_at: string
 }
 
-export async function fetchBottling(scope?: ProfileScope): Promise<Bottling[]> {
-  const sb = getSupabase()
+export async function fetchBottling(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<Bottling[]> {
   let query = sb
     .from('bottling')
     .select('*')
@@ -272,18 +280,18 @@ export async function fetchBottling(scope?: ProfileScope): Promise<Bottling[]> {
 }
 
 export async function createBottling(
+  sb: SupabaseClient,
   record: Omit<Bottling, 'id' | 'created_at'>
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb.from('bottling').insert(record)
   if (error) throw error
 }
 
 export async function fetchProductionCosts(
+  sb: SupabaseClient,
   batchId: string,
   scope?: ProfileScope
 ): Promise<ProductionCost[]> {
-  const sb = getSupabase()
   let query = sb
     .from('production_costs')
     .select('*')
@@ -298,15 +306,17 @@ export async function fetchProductionCosts(
 }
 
 export async function createProductionCost(
+  sb: SupabaseClient,
   record: Omit<ProductionCost, 'id' | 'created_at'>
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb.from('production_costs').insert(record)
   if (error) throw error
 }
 
-export async function fetchWarehouseExits(scope?: ProfileScope): Promise<WarehouseExit[]> {
-  const sb = getSupabase()
+export async function fetchWarehouseExits(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<WarehouseExit[]> {
   let query = sb
     .from('warehouse_exits')
     .select('*')
@@ -320,9 +330,9 @@ export async function fetchWarehouseExits(scope?: ProfileScope): Promise<Warehou
 }
 
 export async function createWarehouseExit(
+  sb: SupabaseClient,
   record: Omit<WarehouseExit, 'id' | 'created_at'>
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb.from('warehouse_exits').insert(record)
   if (error) throw error
 }
@@ -344,22 +354,15 @@ export interface Client {
 }
 
 export async function fetchClients(
-  scopeOrSb?: ProfileScope | ReturnType<typeof getSupabase>,
+  sb: SupabaseClient,
   scope?: ProfileScope
 ): Promise<Client[]> {
-  let sb = getSupabase()
-  let sc: ProfileScope | undefined = scope
-  if (scopeOrSb && typeof scopeOrSb === 'object' && 'from' in scopeOrSb) {
-    sb = scopeOrSb as ReturnType<typeof getSupabase>
-  } else if (scopeOrSb && 'clerk_id' in scopeOrSb) {
-    sc = scopeOrSb as ProfileScope
-  }
   let query = sb
     .from('clients')
     .select('*')
     .order('created_at', { ascending: false })
-  if (sc) {
-    query = query.eq('clerk_id', sc.clerk_id).eq('profile_type_v2', sc.profile_type_v2)
+  if (scope) {
+    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -367,9 +370,9 @@ export async function fetchClients(
 }
 
 export async function createClient(
+  sb: SupabaseClient,
   record: Omit<Client, 'id' | 'created_at'>
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb.from('clients').insert(record)
   if (error) throw error
 }
@@ -398,8 +401,10 @@ export interface DistProduct {
   profile_type_v2?: ExtraProfile | null
 }
 
-export async function fetchDistProducts(scope?: ProfileScope): Promise<DistProduct[]> {
-  const sb = getSupabase()
+export async function fetchDistProducts(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<DistProduct[]> {
   let query = sb
     .from('dist_products')
     .select('*')
@@ -412,8 +417,10 @@ export async function fetchDistProducts(scope?: ProfileScope): Promise<DistProdu
   return (data || []) as DistProduct[]
 }
 
-export async function fetchDistProductById(id: string): Promise<DistInventoryRow | null> {
-  const sb = getSupabase()
+export async function fetchDistProductById(
+  sb: SupabaseClient,
+  id: string
+): Promise<DistInventoryRow | null> {
   const { data, error } = await sb
     .from('dist_products')
     .select('*, dist_inventory(*)')
@@ -428,9 +435,9 @@ export async function fetchDistProductById(id: string): Promise<DistInventoryRow
 }
 
 export async function createDistProduct(
+  sb: SupabaseClient,
   record: Omit<DistProduct, 'id' | 'created_at'>
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb.from('dist_products').insert(record)
   if (error) throw error
 }
@@ -477,8 +484,10 @@ export interface DistMovementWithRefs extends DistMovement {
   clients: { name: string } | null
 }
 
-export async function fetchDistInventory(scope?: ProfileScope): Promise<DistInventoryRow[]> {
-  const sb = getSupabase()
+export async function fetchDistInventory(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<DistInventoryRow[]> {
   let query = sb
     .from('dist_products')
     .select('*, dist_inventory(*)')
@@ -496,20 +505,22 @@ export async function fetchDistInventory(scope?: ProfileScope): Promise<DistInve
 }
 
 export async function createDistMovement(
+  sb: SupabaseClient,
   record: Omit<DistMovement, 'id' | 'created_at'>
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb.from('dist_movements').insert(record)
   if (error) throw error
 }
 
-export async function fetchDistMovements(options?: {
-  date?: string
-  limit?: number
-  productId?: string
-  scope?: ProfileScope
-}): Promise<DistMovementWithRefs[]> {
-  const sb = getSupabase()
+export async function fetchDistMovements(
+  sb: SupabaseClient,
+  options?: {
+    date?: string
+    limit?: number
+    productId?: string
+    scope?: ProfileScope
+  }
+): Promise<DistMovementWithRefs[]> {
   let query = sb
     .from('dist_movements')
     .select(
@@ -538,12 +549,12 @@ export async function fetchDistMovements(options?: {
 }
 
 export async function updateDistInventory(
+  sb: SupabaseClient,
   productId: string,
   deltaCases: number,
   deltaLooseUnits: number,
   bottlesPerCase: number
 ): Promise<void> {
-  const sb = getSupabase()
   const { data: existing, error: fetchError } = await sb
     .from('dist_inventory')
     .select('*')
@@ -579,8 +590,10 @@ function normalizeProfile(row: any): Profile {
   } as Profile
 }
 
-export async function fetchProfiles(clerkId: string): Promise<Profile[]> {
-  const sb = getSupabase()
+export async function fetchProfiles(
+  sb: SupabaseClient,
+  clerkId: string
+): Promise<Profile[]> {
   const { data, error } = await sb
     .from('profiles')
     .select('*')
@@ -591,10 +604,10 @@ export async function fetchProfiles(clerkId: string): Promise<Profile[]> {
 }
 
 export async function fetchActiveProfile(
+  sb: SupabaseClient,
   clerkId: string,
   profileType: ExtraProfile
 ): Promise<Profile | null> {
-  const sb = getSupabase()
   const { data, error } = await sb
     .from('profiles')
     .select('*')
@@ -607,10 +620,9 @@ export async function fetchActiveProfile(
 }
 
 export async function upsertProfile(
+  sb: SupabaseClient,
   data: Partial<Profile> & { clerk_id: string; profile_type_v2: ExtraProfile }
 ): Promise<void> {
-  const sb = getSupabase()
-
   const isSuper =
     Boolean(data.is_super_user) ||
     (data.email?.toLowerCase() === SUPER_USER_EMAIL.toLowerCase())
@@ -629,10 +641,10 @@ export async function upsertProfile(
 }
 
 export async function deleteProfile(
+  sb: SupabaseClient,
   clerkId: string,
   profileType: ExtraProfile
 ): Promise<void> {
-  const sb = getSupabase()
   const { error } = await sb
     .from('profiles')
     .delete()

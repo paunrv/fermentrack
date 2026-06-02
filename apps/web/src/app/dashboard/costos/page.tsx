@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchBatches,
   fetchBottling,
@@ -56,6 +58,8 @@ function categoryLabel(cat: ProductionCostCategory) {
 }
 
 export default function CostosPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [bottling, setBottling] = useState<Bottling[]>([])
   const [costs, setCosts] = useState<ProductionCost[]>([])
@@ -82,12 +86,15 @@ export default function CostosPage() {
       setCosts([])
       return
     }
-    const data = await fetchProductionCosts(id)
+    const data = await fetchProductionCosts(supabase, id, scope ?? undefined)
     setCosts(data)
   }
 
   async function load() {
-    const [b, bt] = await Promise.all([fetchBatches(), fetchBottling()])
+    const [b, bt] = await Promise.all([
+      fetchBatches(supabase, scope ?? undefined),
+      fetchBottling(supabase, scope ?? undefined),
+    ])
     setBatches(b)
     setBottling(bt)
     const id = batchId || b[0]?.id || ''
@@ -96,8 +103,9 @@ export default function CostosPage() {
   }
 
   useEffect(() => {
+    if (!scope) return
     load().finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   useEffect(() => {
     if (batchId) loadCosts(batchId)
@@ -109,14 +117,17 @@ export default function CostosPage() {
     if (!batchId || !description.trim() || !amt) return
     setSaving(true)
     try {
-      await createProductionCost({
+      await createProductionCost(supabase, {
         batch_id: batchId,
         category,
         description: description.trim(),
         amount: amt,
         currency,
         cost_date: costDate,
-      })
+        ...(scope
+          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          : {}),
+      } as ProductionCost & { clerk_id?: string; profile_type_v2?: string })
       setDescription('')
       setAmount('')
       await loadCosts(batchId)

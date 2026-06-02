@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchBatches,
   fetchSamples,
@@ -37,6 +39,8 @@ const input: React.CSSProperties = {
 }
 
 export default function MuestrasPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [samples, setSamples] = useState<Sample[]>([])
   const [imgB64, setImgB64] = useState<string | null>(null)
@@ -54,12 +58,13 @@ export default function MuestrasPage() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetchBatches().then(b => {
+    if (!scope) return
+    fetchBatches(supabase, scope).then(b => {
       setBatches(b)
       setForm(f => ({ ...f, batchId: b[0]?.id || '' }))
     })
-    fetchSamples().then(setSamples)
-  }, [])
+    fetchSamples(supabase, scope).then(setSamples)
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   function readFile(file: File) {
     const reader = new FileReader()
@@ -101,7 +106,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
       const data = await res.json()
       const text = data.content?.find((c: { type: string }) => c.type === 'text')?.text || 'Sin análisis.'
       setAnalysis(text)
-      await createSample({
+      await createSample(supabase, {
         batch_id: form.batchId,
         type: form.type,
         notes: form.notes,
@@ -109,7 +114,10 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
         density: form.density ? parseFloat(form.density) : null,
         img_url: imgB64 ? `data:${imgType};base64,${imgB64}` : null,
         analysis: text,
-      })
+        ...(scope
+          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          : {}),
+      } as Sample & { clerk_id?: string; profile_type_v2?: string })
       if (form.ph || form.density) {
         const updates: Record<string, unknown> = {}
         if (form.ph) updates.ph = parseFloat(form.ph)
@@ -118,10 +126,13 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
           updates.status = 'warn'
           updates.alert = `pH en ${form.ph}, debajo del rango óptimo`
         }
-        await updateBatch(form.batchId, updates)
+        await updateBatch(supabase, form.batchId, updates)
       }
-      await logActivity(form.batchId, `Muestra analizada — ${form.batchId}`, form.type)
-      const [newBatches, newSamples] = await Promise.all([fetchBatches(), fetchSamples()])
+      await logActivity(supabase, form.batchId, `Muestra analizada — ${form.batchId}`, form.type)
+      const [newBatches, newSamples] = await Promise.all([
+        fetchBatches(supabase, scope ?? undefined),
+        fetchSamples(supabase, scope ?? undefined),
+      ])
       setBatches(newBatches)
       setSamples(newSamples)
     } catch (e: unknown) {

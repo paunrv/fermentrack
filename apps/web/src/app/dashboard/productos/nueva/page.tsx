@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
-  getSupabase,
   updateDistInventory,
   type ProductCategory,
 } from '@/lib/supabase'
@@ -154,6 +154,7 @@ function tryParseDate(s: string): string | null {
 export default function NuevaProductoPage() {
   const router = useRouter()
   const { scope } = useProfile()
+  const supabase = useSupabase()
 
   const [step, setStep] = useState<1 | 2>(1)
   const [photo, setPhoto] = useState<File | null>(null)
@@ -330,12 +331,11 @@ export default function NuevaProductoPage() {
     }
     setSaving(true)
     try {
-      const sb = getSupabase()
       const bottlesPerCase = 12
       const cases_qty = Math.floor(qty / bottlesPerCase)
       const units_qty = qty % bottlesPerCase
 
-      const { data: inserted, error: insertError } = await sb
+      const { data: inserted, error: insertError } = await supabase
         .from('dist_products')
         .insert({
           name: name.trim(),
@@ -359,7 +359,7 @@ export default function NuevaProductoPage() {
       if (insertError) throw insertError
       const productId = inserted.id
 
-      await sb.from('dist_movements').insert({
+      await supabase.from('dist_movements').insert({
         product_id: productId,
         movement_type: 'entrada',
         cases: cases_qty,
@@ -370,7 +370,7 @@ export default function NuevaProductoPage() {
         profile_type_v2: scope?.profile_type_v2 ?? null,
       })
 
-      await updateDistInventory(productId, cases_qty, units_qty, bottlesPerCase)
+      await updateDistInventory(supabase, productId, cases_qty, units_qty, bottlesPerCase)
 
       router.push(`/dashboard/productos/${productId}`)
     } catch (err: any) {

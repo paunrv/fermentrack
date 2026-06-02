@@ -15,7 +15,6 @@ const PROFILE_META: Record<
   winemaker: { emoji: '🍷', label: 'Winemaker', color: '#9FE1CB' },
   distiller: { emoji: '🥃', label: 'Distiller', color: '#F5C4B3' },
   distributor: { emoji: '📦', label: 'Distribuidor', color: '#B5D4F4' },
-  bar: { emoji: '🍸', label: 'Bar', color: '#F4C0D1' },
 }
 
 export default function ProfileSelectPage() {
@@ -30,8 +29,8 @@ export default function ProfileSelectPage() {
     }
   }, [loading, allProfiles, router])
 
-  function handleSelect(type: ExtraProfile) {
-    switchProfile(type)
+  async function handleSelect(type: ExtraProfile) {
+    await switchProfile(type)
     router.push('/dashboard')
   }
 

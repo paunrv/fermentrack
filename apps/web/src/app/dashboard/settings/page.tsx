@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   upsertProfile,
   deleteProfile,
@@ -22,7 +23,6 @@ const PROFILE_META: Record<
   winemaker: { emoji: '🍷', label: 'Winemaker', color: '#9FE1CB' },
   distiller: { emoji: '🥃', label: 'Distiller', color: '#F5C4B3' },
   distributor: { emoji: '📦', label: 'Distribuidor', color: '#B5D4F4' },
-  bar: { emoji: '🍸', label: 'Bar', color: '#F4C0D1' },
 }
 
 const label: React.CSSProperties = {
@@ -51,6 +51,7 @@ export default function SettingsPage() {
   const { user, isLoaded } = useUser()
   const router = useRouter()
   const { allProfiles, activeProfile, reload, loading } = useProfile()
+  const supabase = useSupabase()
 
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<Date | null>(null)
@@ -78,7 +79,7 @@ export default function SettingsPage() {
 
     setSaving(true)
     try {
-      await upsertProfile({
+      await upsertProfile(supabase, {
         clerk_id: user.id,
         profile_type_v2: activeProfile.profile_type_v2,
         profile_type: activeProfile.profile_type,
@@ -107,7 +108,7 @@ export default function SettingsPage() {
     }
     setDeletingType(profile.profile_type_v2)
     try {
-      await deleteProfile(user.id, profile.profile_type_v2)
+      await deleteProfile(supabase, user.id, profile.profile_type_v2)
       await reload()
     } finally {
       setDeletingType(null)

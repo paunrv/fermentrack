@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, type Batch } from '@/lib/supabase'
 
 /* =========================================================================
@@ -45,6 +47,8 @@ function renderContent(text: string) {
 export default function AgentePage() {
   const router = useRouter()
   const search = useSearchParams()
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -59,7 +63,8 @@ export default function AgentePage() {
 
   /* ── greeting ─────────────────────────────────────────────────── */
   useEffect(() => {
-    fetchBatches().then(b => {
+    if (!scope) return
+    fetchBatches(supabase, scope).then(b => {
       setBatches(b)
       const alerts = b.filter(x => x.status === 'warn')
       const active = b.filter(x => x.status !== 'idle')
@@ -73,7 +78,7 @@ export default function AgentePage() {
             }. ¿En qué te ayudo?`
       setMessages([{ role: 'assistant', ts: Date.now(), content: intro }])
     })
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   /* ── pick up ?q= from top bar ─────────────────────────────────── */
   useEffect(() => {

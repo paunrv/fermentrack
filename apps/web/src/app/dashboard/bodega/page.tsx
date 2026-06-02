@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchBatches,
   fetchBottling,
@@ -50,6 +52,8 @@ interface StockRow {
 }
 
 export default function BodegaPage() {
+  const { scope } = useProfile()
+  const supabase = useSupabase()
   const [batches, setBatches] = useState<Batch[]>([])
   const [bottling, setBottling] = useState<Bottling[]>([])
   const [exits, setExits] = useState<WarehouseExit[]>([])
@@ -100,9 +104,9 @@ export default function BodegaPage() {
 
   async function load() {
     const [b, bt, ex] = await Promise.all([
-      fetchBatches(),
-      fetchBottling(),
-      fetchWarehouseExits(),
+      fetchBatches(supabase, scope ?? undefined),
+      fetchBottling(supabase, scope ?? undefined),
+      fetchWarehouseExits(supabase, scope ?? undefined),
     ])
     setBatches(b)
     setBottling(bt)
@@ -111,8 +115,9 @@ export default function BodegaPage() {
   }
 
   useEffect(() => {
+    if (!scope) return
     load().finally(() => setLoading(false))
-  }, [])
+  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   async function handleExit(e: React.FormEvent) {
     e.preventDefault()
@@ -128,12 +133,15 @@ export default function BodegaPage() {
 
     setSaving(true)
     try {
-      await createWarehouseExit({
+      await createWarehouseExit(supabase, {
         batch_id: batchId,
         units: u,
         price_per_unit: price,
         notes: notes.trim() || null,
-      })
+        ...(scope
+          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          : {}),
+      } as WarehouseExit & { clerk_id?: string; profile_type_v2?: string })
       setUnits('')
       setPricePerUnit('')
       setNotes('')

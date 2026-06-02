@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useAuth, useUser } from '@clerk/nextjs'
 import {
   type ExtraProfile,
   type Profile,
@@ -24,7 +24,7 @@ interface ProfileContextValue {
   allProfiles: Profile[]
   activeProfile: Profile | null
   scope: ProfileScope | null
-  switchProfile: (type: ExtraProfile) => void
+  switchProfile: (type: ExtraProfile) => Promise<void>
   reload: () => Promise<void>
 }
 
@@ -45,10 +45,12 @@ function readStoredType(): ExtraProfile | null {
     raw === 'brewer' ||
     raw === 'winemaker' ||
     raw === 'distiller' ||
-    raw === 'distributor' ||
-    raw === 'bar'
+    raw === 'distributor'
   ) {
     return raw
+  }
+  if (raw === 'bar') {
+    localStorage.removeItem(STORAGE_KEY)
   }
   return null
 }
@@ -69,22 +71,21 @@ function normalizeProfile(row: Record<string, unknown>): Profile {
 
 async function syncClerkProfileClaim(
   user: NonNullable<ReturnType<typeof useUser>['user']>,
-  type: ExtraProfile
+  type: ExtraProfile,
+  getToken: ReturnType<typeof useAuth>['getToken']
 ) {
-  try {
-    await user.update({
-      unsafeMetadata: {
-        ...(user.unsafeMetadata as Record<string, unknown>),
-        profile_type_v2: type,
-      },
-    })
-  } catch {
-    /* JWT claim se actualiza en el próximo refresh de sesión */
-  }
+  await user.update({
+    unsafeMetadata: {
+      ...(user.unsafeMetadata as Record<string, unknown>),
+      profile_type_v2: type,
+    },
+  })
+  await getToken({ template: 'supabase', skipCache: true })
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser()
+  const { getToken } = useAuth()
   const supabase = useSupabase()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
@@ -119,8 +120,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
     setActiveProfile(found)
     writeStoredType(found.profile_type_v2)
-    void syncClerkProfileClaim(user, found.profile_type_v2)
-  }, [user, supabase])
+    try {
+      await syncClerkProfileClaim(user, found.profile_type_v2, getToken)
+    } catch {
+      /* JWT se refrescará en la próxima interacción */
+    }
+  }, [user, supabase, getToken])
 
   useEffect(() => {
     if (!isLoaded) return
@@ -129,14 +134,20 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [isLoaded, load])
 
   const switchProfile = useCallback(
-    (type: ExtraProfile) => {
+    async (type: ExtraProfile) => {
       const next = allProfiles.find(p => p.profile_type_v2 === type)
       if (!next) return
       setActiveProfile(next)
       writeStoredType(type)
-      if (user) void syncClerkProfileClaim(user, type)
+      if (user) {
+        try {
+          await syncClerkProfileClaim(user, type, getToken)
+        } catch {
+          /* JWT se refrescará en la próxima interacción */
+        }
+      }
     },
-    [allProfiles, user]
+    [allProfiles, user, getToken]
   )
 
   const scope: ProfileScope | null =
