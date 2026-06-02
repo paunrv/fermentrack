@@ -32,7 +32,7 @@ export default function RootLayout({
             <ProfileProvider>{children}</ProfileProvider>
           </ClerkProvider>
         ) : (
-          <ProfileProvider>{children}</ProfileProvider>
+          children
         )}
       </body>
     </html>
