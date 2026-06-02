@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import './globals.css';
 
-const Providers = dynamic(() => import('./providers').then(m => m.Providers), {
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+const Providers = nextDynamic(() => import('./providers').then(m => m.Providers), {
   ssr: false,
 });
 
