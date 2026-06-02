@@ -1,10 +1,5 @@
-import { auth } from '@clerk/nextjs/server'
-import { redirect } from 'next/navigation'
-
 export default function ProfileSelectLayout({ children }: { children: React.ReactNode }) {
-  if (!process.env.CLERK_SECRET_KEY) return children
-
-  const { userId } = auth()
-  if (!userId) redirect('/sign-in')
+  // Auth se aplica vía `apps/web/src/middleware.ts` (Clerk authMiddleware).
+  // Evitamos `auth()` aquí para no romper `next build` al colectar page data.
   return children
 }
