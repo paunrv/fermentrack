@@ -14,6 +14,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
   return (
     <html lang="es">
       <head>
@@ -25,9 +27,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ClerkProvider>
+        {clerkPublishableKey ? (
+          <ClerkProvider>
+            <ProfileProvider>{children}</ProfileProvider>
+          </ClerkProvider>
+        ) : (
           <ProfileProvider>{children}</ProfileProvider>
-        </ClerkProvider>
+        )}
       </body>
     </html>
   );
