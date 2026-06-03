@@ -12,12 +12,12 @@ let warnedNoTemplate = false
  * @see docs/clerk-supabase-jwt.md
  */
 export function useSupabase(): SupabaseClient {
-  const { getToken, isSignedIn } = useAuth()
+  const { getToken, isSignedIn, isLoaded } = useAuth()
 
   return useMemo(
     () =>
       createSupabaseBrowserClient(async () => {
-        if (!isSignedIn) return null
+        if (!isLoaded || !isSignedIn) return null
         try {
           const token = await getToken({ template: 'supabase' })
           if (!token && !warnedNoTemplate && process.env.NODE_ENV === 'development') {
@@ -31,6 +31,19 @@ export function useSupabase(): SupabaseClient {
           return null
         }
       }),
-    [getToken, isSignedIn]
+    [getToken, isSignedIn, isLoaded]
   )
+}
+
+/** JWT template `supabase` para inserts críticos (falla con mensaje claro si falta). */
+export async function requireClerkSupabaseToken(
+  getToken: (opts?: { template?: string }) => Promise<string | null>
+): Promise<string> {
+  const token = await getToken({ template: 'supabase' })
+  if (!token) {
+    throw new Error(
+      'No hay JWT de Clerk (template "supabase"). Revisa Clerk → JWT Templates y que el signing key sea el JWT Secret de Supabase.'
+    )
+  }
+  return token
 }

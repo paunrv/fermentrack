@@ -21,15 +21,15 @@ const PROFILE_META: Record<
 
 export default function ProfileSelectPage() {
   const router = useRouter()
-  const { loading, allProfiles, switchProfile } = useProfile()
+  const { loading, allProfiles, profilesResolved, switchProfile } = useProfile()
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
 
   useEffect(() => {
-    if (loading) return
+    if (loading || !profilesResolved) return
     if (allProfiles.length === 0) {
       router.replace('/onboarding')
     }
-  }, [loading, allProfiles, router])
+  }, [loading, profilesResolved, allProfiles.length, router])
 
   async function handleSelect(type: ExtraProfile) {
     await switchProfile(type)

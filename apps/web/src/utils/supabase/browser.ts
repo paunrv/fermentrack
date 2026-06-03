@@ -29,7 +29,15 @@ export function createSupabaseBrowserClient(
     return createBrowserClient(supabaseUrl, supabaseKey)
   }
 
+  // No singleton: @supabase/ssr reutiliza el primer cliente del tab; si se creó sin
+  // accessToken, las peticiones quedan como anon aunque el hook pase JWT después.
   return createBrowserClient(supabaseUrl, supabaseKey, {
+    isSingleton: false,
     accessToken: async () => (await accessToken()) ?? null,
   })
+}
+
+/** Cliente de un solo request con JWT Clerk ya resuelto (evita race en submit). */
+export function createSupabaseBrowserClientWithToken(token: string): SupabaseClient {
+  return createSupabaseBrowserClient(async () => token)
 }

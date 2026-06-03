@@ -5,7 +5,9 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { useSupabase } from '@/hooks/useSupabase'
+import { requireClerkSupabaseToken } from '@/hooks/useSupabase'
+import { createSupabaseBrowserClientWithToken } from '@/utils/supabase/browser'
+import { useAuth } from '@clerk/nextjs'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
 import { fmtMoney } from '@/lib/proof/format'
@@ -43,9 +45,92 @@ function emptyProducto(): NuevoProductoViajeInput {
   }
 }
 
+type ViajeSubmitPayload = {
+  fecha: string
+  region: string
+  comunidad: string
+  palenquero_nombre: string
+  palenquero_contacto: string
+  costo_flete: number
+  estado: DestViajeEstado
+  productos: {
+    tipo_agave: string
+    litros_acordados: number
+    precio_por_litro: number
+    anticipo_pagado: number
+  }[]
+}
+
+function isPostgrestError(err: unknown): err is {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+  status?: number
+} {
+  return typeof err === 'object' && err !== null && 'message' in err && 'code' in err
+}
+
+/** Diagnóstico en consola del navegador (F12 → Console). */
+function logViajeSaveError(err: unknown, context: { clerkId: string; payload: ViajeSubmitPayload }) {
+  if (err instanceof Error && err.message.includes('Revisa litros')) {
+    console.error('[viaje/nuevo] validación del formulario (antes de Supabase)', {
+      message: err.message,
+      payload: context.payload,
+    })
+    return
+  }
+
+  if (isPostgrestError(err)) {
+    const step =
+      err.code === 'PGRST205' || err.message?.includes('does not exist')
+        ? 'tabla inexistente o schema no aplicado'
+        : err.code?.startsWith('23')
+          ? 'constraint / NOT NULL / FK en Postgres'
+          : err.code === '42501' || err.message?.includes('policy')
+            ? 'RLS — política rechazó el insert'
+            : 'insert directo en viajes o productos_viaje (no es RPC)'
+
+    console.error('[viaje/nuevo] error Supabase', {
+      step,
+      code: err.code,
+      message: err.message,
+      details: err.details,
+      hint: err.hint,
+      status: err.status,
+      clerkId: context.clerkId,
+      payload: context.payload,
+      raw: err,
+    })
+    return
+  }
+
+  console.error('[viaje/nuevo] error desconocido al guardar viaje', {
+    err,
+    clerkId: context.clerkId,
+    payload: context.payload,
+    type: typeof err,
+    stack: err instanceof Error ? err.stack : undefined,
+  })
+}
+
+function messageFromSaveError(err: unknown): string {
+  if (err instanceof Error && err.message.includes('Revisa litros')) {
+    return err.message
+  }
+  if (isPostgrestError(err)) {
+    const parts = [err.message, err.code && `[${err.code}]`, err.details, err.hint].filter(
+      Boolean
+    )
+    return parts.join(' — ') || 'No se pudo guardar el viaje'
+  }
+  if (err instanceof Error && err.message) return err.message
+  return 'No se pudo guardar el viaje'
+}
+
 export default function NuevoViajePage() {
   const router = useRouter()
-  const supabase = useSupabase()
+  const { getToken } = useAuth()
   const { loading, ok, clerkId } = useDestiladorScope()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,34 +173,55 @@ export default function NuevoViajePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!clerkId) return
+    if (!clerkId) {
+      console.error('[viaje/nuevo] submit sin clerkId — perfil destilador no listo')
+      setError('Sesión destilador no disponible. Recarga la página.')
+      return
+    }
     setError(null)
     setSaving(true)
+
+    const parsed = productos.map(p => ({
+      tipo_agave: p.tipo_agave === 'Otro' ? p.tipo_agave : p.tipo_agave,
+      litros_acordados: Number(p.litros_acordados),
+      precio_por_litro: Number(p.precio_por_litro),
+      anticipo_pagado: Number(p.anticipo_pagado) || 0,
+    }))
+
+    const payload: ViajeSubmitPayload = {
+      fecha,
+      region: region.trim(),
+      comunidad: comunidad.trim(),
+      palenquero_nombre: palenqueroNombre.trim(),
+      palenquero_contacto: palenqueroContacto.trim(),
+      costo_flete: Number(costoFlete) || 0,
+      estado,
+      productos: parsed,
+    }
+
     try {
-      const parsed = productos.map(p => ({
-        tipo_agave: p.tipo_agave === 'Otro' ? p.tipo_agave : p.tipo_agave,
-        litros_acordados: Number(p.litros_acordados),
-        precio_por_litro: Number(p.precio_por_litro),
-        anticipo_pagado: Number(p.anticipo_pagado) || 0,
-      }))
       for (const p of parsed) {
         if (!p.tipo_agave.trim() || p.litros_acordados <= 0 || p.precio_por_litro < 0) {
           throw new Error('Revisa litros y precio de cada agave')
         }
       }
-      const { viajeId } = await createViajeDestilador(supabase, clerkId, {
-        fecha,
-        region: region.trim(),
-        comunidad: comunidad.trim(),
-        palenquero_nombre: palenqueroNombre.trim(),
-        palenquero_contacto: palenqueroContacto.trim(),
-        costo_flete: Number(costoFlete) || 0,
-        estado,
-        productos: parsed,
+
+      const jwt = await requireClerkSupabaseToken(getToken)
+      const supabaseAuthed = createSupabaseBrowserClientWithToken(jwt)
+
+      console.info('[viaje/nuevo] guardando viaje (insert viajes + productos_viaje)', {
+        clerkId,
+        jwtPresent: true,
+        payload,
       })
+
+      const { viajeId } = await createViajeDestilador(supabaseAuthed, clerkId, payload)
+
+      console.info('[viaje/nuevo] viaje creado', { viajeId })
       router.push(`/dashboard/destilador/compras/${viajeId}`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el viaje')
+      logViajeSaveError(err, { clerkId, payload })
+      setError(messageFromSaveError(err))
     } finally {
       setSaving(false)
     }

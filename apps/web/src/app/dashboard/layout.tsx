@@ -209,7 +209,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const path = usePathname()
   const router = useRouter()
   const { user, isLoaded } = useUser()
-  const { activeProfile, allProfiles, loading } = useProfile()
+  const { activeProfile, allProfiles, loading, profilesResolved } = useProfile()
   const [ask, setAsk] = useState('')
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
@@ -218,11 +218,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
 
   useEffect(() => {
-    if (!isLoaded || loading) return
-    if (user && allProfiles.length === 0) {
-      router.replace('/onboarding')
-    }
-  }, [isLoaded, loading, user, allProfiles.length, router])
+    console.log('[ProfileContext] guard eval:', {
+      isLoaded,
+      loading,
+      profilesResolved,
+      allProfiles: allProfiles.length,
+      path,
+    })
+    if (!isLoaded || loading || !profilesResolved) return
+    if (!user) return
+    if (allProfiles.length > 0) return
+    console.log('[ProfileContext] guard → redirect /onboarding')
+    router.replace('/onboarding')
+  }, [isLoaded, loading, profilesResolved, user, allProfiles.length, router, path])
 
   useEffect(() => {
     if (loading) return

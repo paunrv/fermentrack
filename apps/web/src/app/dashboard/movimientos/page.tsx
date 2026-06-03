@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -16,8 +17,8 @@ import {
   type DistMovementWithRefs,
   type ProductCategory,
 } from '@/lib/supabase'
-
-const font = "'Space Grotesk', sans-serif"
+import { fmtMoney } from '@/lib/proof/format'
+import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 
 type SalidaType = 'venta' | 'donacion' | 'merma' | 'muestra'
 
@@ -28,17 +29,24 @@ const TYPE_LABELS: Record<SalidaType, string> = {
   muestra: 'Muestra',
 }
 
-const TYPE_BG: Record<SalidaType, string> = {
-  venta: '#C0DD97',
-  donacion: '#B5D4F4',
-  merma: '#F4C0D1',
-  muestra: '#FAC775',
+const TYPE_TONE: Record<SalidaType, string> = {
+  venta: 'var(--ok)',
+  donacion: 'var(--info)',
+  merma: 'var(--crit)',
+  muestra: 'var(--warn)',
 }
 
-const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  cerveza: '#FAC775',
-  vino: '#9FE1CB',
-  destilado: '#F5C4B3',
+const TYPE_SOFT: Record<SalidaType, string> = {
+  venta: 'var(--ok-soft)',
+  donacion: 'var(--info-soft)',
+  merma: 'var(--crit-soft)',
+  muestra: 'var(--warn-soft)',
+}
+
+const CATEGORY_LABELS: Record<ProductCategory, string> = {
+  cerveza: 'Cerveza',
+  vino: 'Vino',
+  destilado: 'Destilado',
 }
 
 const MERMA_REASONS = ['rota', 'vencida', 'dañada', 'otro'] as const
@@ -46,40 +54,28 @@ type MermaReason = (typeof MERMA_REASONS)[number]
 
 const SALIDA_TYPES: SalidaType[] = ['venta', 'donacion', 'merma', 'muestra']
 
-const label: React.CSSProperties = {
+const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 10,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: '#111',
   marginBottom: 6,
 }
 
-const input: React.CSSProperties = {
+const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
-  border: '3px solid #111',
+  background: 'var(--canvas)',
+  border: '1px solid var(--line)',
+  borderRadius: 'var(--radius-sm)',
   padding: '10px 12px',
   fontSize: 13,
-  fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
-}
-
-function formatMoney(n: number, currency = 'MXN') {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(n)
+  fontFamily: 'inherit',
 }
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function priceForTier(
-  product: DistInventoryRow,
-  tier: Client['price_tier']
-): number {
+function priceForTier(product: DistInventoryRow, tier: Client['price_tier']): number {
   if (tier === 'mayoreo') return Number(product.price_mayoreo)
   if (tier === 'especial') return Number(product.price_especial)
   return Number(product.price_regular)
@@ -186,9 +182,7 @@ export default function MovimientosPage() {
     const requested = totalUnits
     const available = totalAvailable(selectedProduct)
     if (requested > available) {
-      alert(
-        `Solo hay ${available} unidades disponibles de ${selectedProduct.name}`
-      )
+      alert(`Solo hay ${available} unidades disponibles de ${selectedProduct.name}`)
       return
     }
 
@@ -273,414 +267,401 @@ export default function MovimientosPage() {
     return { totalSold, totalUnitsMoved, byType }
   }, [movements])
 
+  const salidasHoy = useMemo(
+    () => movements.filter(m => m.movement_type !== 'entrada'),
+    [movements]
+  )
+
   const ventaProducts = inventory.filter(p => totalAvailable(p) > 0)
 
+  const proofMsg = loading
+    ? 'Cargando movimientos del día…'
+    : `Hoy: ${fmtMoney(summary.totalSold)} vendido · ${summary.totalUnitsMoved} uds en salidas · ${salidasHoy.length} registro${salidasHoy.length === 1 ? '' : 's'}.`
+
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1
+    <div style={{ padding: '28px 28px 100px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <header
           style={{
-            fontSize: 28,
-            fontWeight: 800,
-            letterSpacing: '-.04em',
-            color: '#111',
-            lineHeight: 1.1,
-            marginBottom: 6,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 16,
+            marginBottom: 24,
+            flexWrap: 'wrap',
           }}
         >
-          Movimientos
-        </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-          Salidas de bodega: ventas, donaciones, mermas y muestras
-        </p>
-      </div>
+          <div>
+            <div className="eyebrow" style={{ color: 'var(--gold)', marginBottom: 8 }}>
+              PROOF · Operación
+            </div>
+            <h1
+              style={{
+                margin: '0 0 6px',
+                fontSize: 28,
+                fontWeight: 800,
+                color: 'var(--fg-0)',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Movimientos
+            </h1>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
+              Salidas de bodega — ventas, donaciones, mermas y muestras · {today}
+            </p>
+          </div>
+          <Link
+            href="/dashboard/recepcion"
+            style={{
+              padding: '10px 16px',
+              background: 'transparent',
+              color: 'var(--fg-1)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--hairline)',
+            }}
+          >
+            Entrada foto →
+          </Link>
+        </header>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: 0,
-          marginBottom: 24,
-        }}
-      >
-        {SALIDA_TYPES.map(t => {
-          const active = t === type
-          return (
-            <button
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+            gap: 10,
+            marginBottom: 20,
+          }}
+        >
+          <Kpi label="Vendido hoy" value={loading ? '…' : fmtMoney(summary.totalSold)} tone="var(--gold)" />
+          <Kpi label="Unidades salidas" value={loading ? '…' : String(summary.totalUnitsMoved)} />
+          {SALIDA_TYPES.map(t => (
+            <Kpi
               key={t}
-              type="button"
+              label={TYPE_LABELS[t]}
+              value={loading ? '…' : `${summary.byType[t].units} uds`}
+              tone={TYPE_TONE[t]}
+              hint={
+                loading
+                  ? undefined
+                  : `${summary.byType[t].count} mov.${t === 'venta' && summary.byType[t].amount > 0 ? ` · ${fmtMoney(summary.byType[t].amount)}` : ''}`
+              }
+            />
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+          {SALIDA_TYPES.map(t => (
+            <Tab
+              key={t}
+              active={type === t}
+              tone={TYPE_TONE[t]}
+              soft={TYPE_SOFT[t]}
               onClick={() => {
                 setType(t)
                 resetForm()
               }}
-              style={{
-                padding: '16px 12px',
-                border: '3px solid #111',
-                marginLeft: -3,
-                background: active ? '#111' : TYPE_BG[t],
-                color: active ? '#fff' : '#111',
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: '.1em',
-                textTransform: 'uppercase',
-                cursor: 'pointer',
-                fontFamily: font,
-              }}
             >
               {TYPE_LABELS[t]}
-            </button>
-          )
-        })}
-      </div>
-
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          border: '3px solid #111',
-          padding: 24,
-          marginBottom: 32,
-          background: TYPE_BG[type],
-        }}
-      >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.1em',
-            textTransform: 'uppercase',
-            marginBottom: 16,
-          }}
-        >
-          Registrar {TYPE_LABELS[type].toLowerCase()}
+            </Tab>
+          ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-          {type === 'venta' && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Cliente</label>
-              <select
-                value={clientId}
-                onChange={e => setClientId(e.target.value)}
-                style={input}
-                required
-              >
-                <option value="">Seleccionar cliente</option>
-                {clients.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} — tier {c.price_tier}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={label}>Producto</label>
-            <select
-              value={productId}
-              onChange={e => setProductId(e.target.value)}
-              style={input}
-              required
-            >
-              <option value="">Seleccionar producto</option>
-              {(type === 'venta' ? ventaProducts : inventory).map(p => {
-                const avail = totalAvailable(p)
-                return (
-                  <option key={p.id} value={p.id} disabled={avail <= 0}>
-                    {p.name} — {avail} uds disponibles
-                  </option>
-                )
-              })}
-            </select>
+        <section
+          style={{
+            marginBottom: 28,
+            padding: 20,
+            border: '1px solid var(--hairline)',
+            borderRadius: 'var(--radius-card)',
+            background: 'var(--panel)',
+            borderLeft: `3px solid ${TYPE_TONE[type]}`,
+          }}
+        >
+          <div className="eyebrow" style={{ marginBottom: 16, color: 'var(--fg-2)' }}>
+            Registrar {TYPE_LABELS[type].toLowerCase()}
           </div>
 
-          <div>
-            <label style={label}>Cajas</label>
-            <input
-              type="number"
-              min={0}
-              value={cases}
-              onChange={e => setCases(e.target.value)}
-              style={input}
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label style={label}>Unidades sueltas</label>
-            <input
-              type="number"
-              min={0}
-              value={looseUnits}
-              onChange={e => setLooseUnits(e.target.value)}
-              style={input}
-              placeholder="0"
-            />
-          </div>
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14 }}>
+              {type === 'venta' && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="eyebrow" style={labelStyle}>
+                    Cliente
+                  </label>
+                  <select
+                    value={clientId}
+                    onChange={e => setClientId(e.target.value)}
+                    style={inputStyle}
+                    required
+                  >
+                    <option value="">Seleccionar cliente</option>
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} — {c.price_tier}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          {type === 'venta' && (
-            <>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="eyebrow" style={labelStyle}>
+                  Producto
+                </label>
+                <select
+                  value={productId}
+                  onChange={e => setProductId(e.target.value)}
+                  style={inputStyle}
+                  required
+                >
+                  <option value="">Seleccionar producto</option>
+                  {(type === 'venta' ? ventaProducts : inventory).map(p => {
+                    const avail = totalAvailable(p)
+                    return (
+                      <option key={p.id} value={p.id} disabled={avail <= 0}>
+                        {p.name} — {avail} uds disponibles
+                      </option>
+                    )
+                  })}
+                </select>
+              </div>
+
               <div>
-                <label style={label}>Precio unitario</label>
+                <label className="eyebrow" style={labelStyle}>
+                  Cajas
+                </label>
                 <input
                   type="number"
                   min={0}
-                  step="0.01"
-                  value={unitPrice}
-                  onChange={e => setUnitPrice(e.target.value)}
-                  style={input}
-                  placeholder="0.00"
-                  required
+                  value={cases}
+                  onChange={e => setCases(e.target.value)}
+                  style={inputStyle}
+                  placeholder="0"
                 />
               </div>
               <div>
-                <label style={label}>Total</label>
-                <div
-                  style={{
-                    ...input,
-                    background: '#111',
-                    color: '#fff',
-                    fontWeight: 800,
-                    fontSize: 15,
-                    display: 'flex',
-                    alignItems: 'center',
-                  }}
-                >
-                  {formatMoney(computedTotal, selectedProduct?.currency || 'MXN')}
+                <label className="eyebrow" style={labelStyle}>
+                  Unidades sueltas
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={looseUnits}
+                  onChange={e => setLooseUnits(e.target.value)}
+                  style={inputStyle}
+                  placeholder="0"
+                />
+              </div>
+
+              {type === 'venta' && (
+                <>
+                  <div>
+                    <label className="eyebrow" style={labelStyle}>
+                      Precio unitario
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={unitPrice}
+                      onChange={e => setUnitPrice(e.target.value)}
+                      style={inputStyle}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="eyebrow" style={labelStyle}>
+                      Total
+                    </label>
+                    <div
+                      className="mono"
+                      style={{
+                        ...inputStyle,
+                        background: 'var(--panel-2)',
+                        borderColor: 'var(--gold-soft)',
+                        color: 'var(--gold)',
+                        fontWeight: 600,
+                        fontSize: 15,
+                        display: 'flex',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {fmtMoney(computedTotal, selectedProduct?.currency || 'MXN')}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {type === 'donacion' && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="eyebrow" style={labelStyle}>
+                    Destinatario
+                  </label>
+                  <input
+                    type="text"
+                    value={recipient}
+                    onChange={e => setRecipient(e.target.value)}
+                    style={inputStyle}
+                    placeholder="Persona, organización o evento"
+                  />
                 </div>
-              </div>
-            </>
-          )}
+              )}
 
-          {type === 'donacion' && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Destinatario</label>
-              <input
-                type="text"
-                value={recipient}
-                onChange={e => setRecipient(e.target.value)}
-                style={input}
-                placeholder="Persona, organización o evento"
-              />
-            </div>
-          )}
+              {type === 'merma' && (
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label className="eyebrow" style={labelStyle}>
+                    Motivo
+                  </label>
+                  <select
+                    value={reason}
+                    onChange={e => setReason(e.target.value as MermaReason)}
+                    style={inputStyle}
+                    required
+                  >
+                    {MERMA_REASONS.map(r => (
+                      <option key={r} value={r}>
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-          {type === 'merma' && (
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Motivo</label>
-              <select
-                value={reason}
-                onChange={e => setReason(e.target.value as MermaReason)}
-                style={input}
-                required
-              >
-                {MERMA_REASONS.map(r => (
-                  <option key={r} value={r}>
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+              {type === 'muestra' && (
+                <>
+                  <div>
+                    <label className="eyebrow" style={labelStyle}>
+                      A quién
+                    </label>
+                    <input
+                      type="text"
+                      value={recipient}
+                      onChange={e => setRecipient(e.target.value)}
+                      style={inputStyle}
+                      placeholder="Cliente potencial, periodista…"
+                    />
+                  </div>
+                  <div>
+                    <label className="eyebrow" style={labelStyle}>
+                      Evento / ocasión
+                    </label>
+                    <input
+                      type="text"
+                      value={event}
+                      onChange={e => setEvent(e.target.value)}
+                      style={inputStyle}
+                      placeholder="Cata, feria, lanzamiento…"
+                    />
+                  </div>
+                </>
+              )}
 
-          {type === 'muestra' && (
-            <>
-              <div>
-                <label style={label}>A quién</label>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="eyebrow" style={labelStyle}>
+                  Notas
+                </label>
                 <input
                   type="text"
-                  value={recipient}
-                  onChange={e => setRecipient(e.target.value)}
-                  style={input}
-                  placeholder="Cliente potencial, periodista..."
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  style={inputStyle}
+                  placeholder="Observaciones opcionales"
                 />
               </div>
-              <div>
-                <label style={label}>Evento / ocasión</label>
-                <input
-                  type="text"
-                  value={event}
-                  onChange={e => setEvent(e.target.value)}
-                  style={input}
-                  placeholder="Cata, feria, lanzamiento..."
-                />
-              </div>
-            </>
-          )}
+            </div>
 
-          <div style={{ gridColumn: '1 / -1' }}>
-            <label style={label}>Notas</label>
-            <input
-              type="text"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              style={input}
-              placeholder="Observaciones"
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: 'flex',
-            gap: 12,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            type="submit"
-            disabled={saving || !selectedProduct || totalUnits <= 0}
-            style={{
-              padding: '12px 20px',
-              background: '#111',
-              color: '#fff',
-              border: '3px solid #111',
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '.08em',
-              textTransform: 'uppercase',
-              cursor: saving ? 'wait' : 'pointer',
-              opacity: saving ? 0.5 : 1,
-              fontFamily: font,
-            }}
-          >
-            {saving ? 'Guardando...' : `Registrar ${TYPE_LABELS[type].toLowerCase()}`}
-          </button>
-          {selectedProduct && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: '#111' }}>
-              {totalUnits} uds · {totalAvailable(selectedProduct)} disponibles
-            </span>
-          )}
-        </div>
-      </form>
-
-      <div style={{ marginBottom: 32 }}>
-        <h2
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            letterSpacing: '.1em',
-            textTransform: 'uppercase',
-            marginBottom: 16,
-          }}
-        >
-          Resumen de hoy
-        </h2>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              border: '3px solid #111',
-              background: '#111',
-              color: '#fff',
-              padding: 16,
-            }}
-          >
             <div
               style={{
-                fontSize: 10,
-                fontWeight: 800,
-                letterSpacing: '.1em',
-                textTransform: 'uppercase',
-                opacity: 0.7,
+                marginTop: 18,
+                display: 'flex',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
               }}
             >
-              Total vendido
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
-              {formatMoney(summary.totalSold)}
-            </div>
-          </div>
-          <div
-            style={{
-              border: '3px solid #111',
-              background: '#fff',
-              padding: 16,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 800,
-                letterSpacing: '.1em',
-                textTransform: 'uppercase',
-                color: '#888',
-              }}
-            >
-              Unidades movidas
-            </div>
-            <div style={{ fontSize: 26, fontWeight: 800, marginTop: 6 }}>
-              {summary.totalUnitsMoved}
-            </div>
-          </div>
-          {SALIDA_TYPES.map(t => (
-            <div
-              key={t}
-              style={{
-                border: '3px solid #111',
-                background: TYPE_BG[t],
-                padding: 16,
-              }}
-            >
-              <div
+              <button
+                type="submit"
+                disabled={saving || !selectedProduct || totalUnits <= 0}
                 style={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  letterSpacing: '.1em',
-                  textTransform: 'uppercase',
-                  color: '#111',
-                }}
-              >
-                {TYPE_LABELS[t]}
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 800, marginTop: 6, color: '#111' }}>
-                {summary.byType[t].units} uds
-              </div>
-              <div
-                style={{
+                  padding: '10px 18px',
+                  background: 'var(--gold)',
+                  color: 'var(--ink)',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
                   fontSize: 11,
-                  fontWeight: 700,
-                  marginTop: 4,
-                  color: '#333',
+                  fontWeight: 600,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  cursor: saving ? 'wait' : 'pointer',
+                  opacity: saving || !selectedProduct || totalUnits <= 0 ? 0.5 : 1,
                 }}
               >
-                {summary.byType[t].count} mov.
-                {t === 'venta' && summary.byType[t].amount > 0
-                  ? ` · ${formatMoney(summary.byType[t].amount)}`
-                  : ''}
-              </div>
+                {saving ? 'Guardando…' : `Registrar ${TYPE_LABELS[type].toLowerCase()}`}
+              </button>
+              {selectedProduct && (
+                <span className="mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>
+                  {totalUnits} uds · {totalAvailable(selectedProduct)} disponibles
+                </span>
+              )}
             </div>
-          ))}
-        </div>
-      </div>
+          </form>
+        </section>
 
-      <div>
-        <h2
-          style={{
-            fontSize: 14,
-            fontWeight: 800,
-            letterSpacing: '.1em',
-            textTransform: 'uppercase',
-            marginBottom: 16,
-          }}
-        >
-          Historial de hoy
-        </h2>
-        {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
-        ) : movements.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Sin movimientos hoy.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {movements
-              .filter(m => m.movement_type !== 'entrada')
-              .map(m => {
+        <section>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              marginBottom: 12,
+              gap: 12,
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--fg-0)',
+              }}
+            >
+              Historial de hoy
+            </h2>
+            <span className="mono" style={{ fontSize: 10, color: 'var(--fg-4)' }}>
+              {salidasHoy.length} salida{salidasHoy.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          <div
+            style={{
+              border: '1px solid var(--hairline)',
+              borderRadius: 'var(--radius-card)',
+              overflow: 'hidden',
+              background: 'var(--panel)',
+            }}
+          >
+            {loading ? (
+              <div style={{ padding: 32, color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</div>
+            ) : salidasHoy.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
+                  Sin salidas registradas hoy.
+                </p>
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>
+                  Las entradas se registran en{' '}
+                  <Link href="/dashboard/recepcion" style={{ color: 'var(--gold)' }}>
+                    Entrada foto
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : (
+              salidasHoy.map((m, i) => {
                 const t = m.movement_type as SalidaType
                 const product = m.dist_products
                 const bpc = product?.bottles_per_case || 0
@@ -701,39 +682,36 @@ export default function MovimientosPage() {
                   <div
                     key={m.id}
                     style={{
-                      border: '3px solid #111',
-                      background: product
-                        ? CATEGORY_COLORS[product.category]
-                        : '#fff',
-                      padding: 14,
-                      display: 'flex',
-                      alignItems: 'center',
+                      display: 'grid',
+                      gridTemplateColumns: '100px 1fr auto',
                       gap: 12,
+                      padding: '14px 16px',
+                      alignItems: 'center',
+                      borderBottom:
+                        i === salidasHoy.length - 1 ? 'none' : '1px solid var(--hairline)',
                     }}
                   >
-                    <div
+                    <span
+                      className="mono"
                       style={{
-                        fontSize: 11,
-                        fontWeight: 800,
-                        letterSpacing: '.08em',
+                        fontSize: 9,
+                        letterSpacing: '0.1em',
                         textTransform: 'uppercase',
-                        padding: '6px 10px',
-                        border: '3px solid #111',
-                        background: TYPE_BG[t],
-                        color: '#111',
-                        flexShrink: 0,
-                        minWidth: 100,
+                        padding: '6px 8px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: TYPE_SOFT[t],
+                        color: TYPE_TONE[t],
                         textAlign: 'center',
                       }}
                     >
                       {TYPE_LABELS[t]}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    </span>
+                    <div style={{ minWidth: 0 }}>
                       <div
                         style={{
-                          fontSize: 15,
-                          fontWeight: 800,
-                          color: '#111',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: 'var(--fg-0)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -741,60 +719,110 @@ export default function MovimientosPage() {
                       >
                         {product?.name || m.product_id}
                       </div>
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginTop: 2,
-                          color: '#333',
-                        }}
-                      >
+                      <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 2 }}>
                         {who}
                         {eventInfo}
+                        {product?.category
+                          ? ` · ${CATEGORY_LABELS[product.category]}`
+                          : ''}
                         {m.notes ? ` · ${m.notes}` : ''}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 800, color: '#111' }}>
+                      <div className="mono" style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)' }}>
                         {units} uds
                       </div>
                       {t === 'venta' && m.total_amount != null && (
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 700,
-                            color: '#111',
-                            marginTop: 2,
-                          }}
-                        >
-                          {formatMoney(
-                            Number(m.total_amount),
-                            m.currency || product?.currency || 'MXN'
-                          )}
+                        <div className="mono" style={{ fontSize: 12, color: 'var(--gold)', marginTop: 2 }}>
+                          {fmtMoney(Number(m.total_amount), m.currency || product?.currency || 'MXN')}
                         </div>
                       )}
-                      <div
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: '#666',
-                          marginTop: 2,
-                        }}
-                      >
+                      <div className="mono" style={{ fontSize: 10, color: 'var(--fg-4)', marginTop: 4 }}>
                         {time}
                       </div>
                     </div>
                   </div>
                 )
-              })}
-            {movements.filter(m => m.movement_type !== 'entrada').length === 0 && (
-              <p style={{ fontSize: 13, color: '#888' }}>
-                Solo hay entradas hoy. Aún no se han registrado salidas.
-              </p>
+              })
             )}
           </div>
-        )}
+        </section>
       </div>
+
+      <ConnectedProofAIBar
+        pantalla="movimientos"
+        vista={type}
+        contexto={{ summary, salidasCount: salidasHoy.length, today }}
+        fallback={{ mensaje: proofMsg, accionLabel: 'Preguntar a PROOF' }}
+      />
     </div>
+  )
+}
+
+function Kpi({
+  label,
+  value,
+  tone,
+  hint,
+}: {
+  label: string
+  value: string
+  tone?: string
+  hint?: string
+}) {
+  return (
+    <div
+      style={{
+        padding: '14px 16px',
+        background: 'var(--panel)',
+        border: '1px solid var(--hairline)',
+        borderRadius: 'var(--radius-md)',
+      }}
+    >
+      <div className="mono" style={{ fontSize: 9, color: 'var(--fg-3)', letterSpacing: '0.1em', marginBottom: 6 }}>
+        {label}
+      </div>
+      <div className="mono" style={{ fontSize: 18, fontWeight: 600, color: tone || 'var(--fg-0)' }}>
+        {value}
+      </div>
+      {hint && (
+        <div style={{ fontSize: 10, color: 'var(--fg-4)', marginTop: 4 }}>
+          {hint}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Tab({
+  children,
+  active,
+  tone,
+  soft,
+  onClick,
+}: {
+  children: React.ReactNode
+  active: boolean
+  tone: string
+  soft: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: '8px 14px',
+        fontSize: 12,
+        fontWeight: active ? 600 : 400,
+        color: active ? tone : 'var(--fg-2)',
+        background: active ? soft : 'transparent',
+        border: `1px solid ${active ? tone : 'var(--hairline)'}`,
+        borderRadius: 'var(--radius-sm)',
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
   )
 }

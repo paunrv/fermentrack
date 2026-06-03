@@ -4,20 +4,38 @@ PROOF usa **Clerk** para login y **Supabase RLS** con `auth.jwt() ->> 'sub'` = `
 
 ## 1. Plantilla JWT en Clerk
 
-Dashboard Clerk → **JWT Templates** → **New template** → nombre: `supabase`
+Dashboard Clerk → **JWT Templates** → **New template** → nombre exacto: `supabase`
 
-Cuerpo (claims):
+Si `getToken({ template: 'supabase' })` devuelve `null`, la plantilla no existe o el nombre no coincide.
+
+### Claims (payload)
 
 ```json
 {
-  "aud": "authenticated",
   "role": "authenticated",
+  "aud": "authenticated",
   "sub": "{{user.id}}",
+  "email": "{{user.primary_email_address}}",
+  "clerk_id": "{{user.id}}",
   "profile_type_v2": "{{user.unsafe_metadata.profile_type_v2}}"
 }
 ```
 
-En Supabase Dashboard → **Authentication** → **JWT Settings**, si usas JWT de terceros, configura el **JWT Secret** de Clerk (o el flujo [Third-Party Auth con Clerk](https://supabase.com/docs/guides/auth/third-party/clerk)).
+`profile_type_v2` es opcional pero recomendado para RLS de distribuidor.
+
+### Signing key (obligatorio)
+
+En la plantilla, activa **custom signing key** y pega el **JWT Secret** de Supabase:
+
+**Supabase** → Project Settings → **API** → **JWT Secret** (no la anon key).
+
+No uses el signing key por defecto de Clerk: Supabase debe validar el mismo secret.
+
+Si el insert devuelve **401** en Network pero el JWT existe, el secret no coincide con el que valida Supabase (o el proyecto ya usa JWT asímetricos y hay que activar Clerk en Third-Party Auth).
+
+Si devuelve **42501** con hint `GRANT ... TO anon`, la petición va sin Bearer válido (template ausente o `getToken` null) — el cliente usa la anon key.
+
+Alternativa: [Third-Party Auth con Clerk](https://supabase.com/docs/guides/auth/third-party/clerk) en Supabase Dashboard → Authentication (sin custom signing key en la plantilla).
 
 ## 2. Metadata de perfil activo
 

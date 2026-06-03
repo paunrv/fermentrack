@@ -14,13 +14,15 @@ import {
   type Profile,
   type ProfileScope,
 } from '@/lib/supabase'
-import { useSupabase } from '@/hooks/useSupabase'
+import { createSupabaseBrowserClientWithToken } from '@/utils/supabase/browser'
 
 const STORAGE_KEY = 'proof_active_profile'
 const LEGACY_STORAGE_KEY = 'fermentrack_active_profile'
 
 interface ProfileContextValue {
   loading: boolean
+  /** true tras consultar `profiles` en Supabase (éxito); evita mandar a onboarding por race/JWT. */
+  profilesResolved: boolean
   allProfiles: Profile[]
   activeProfile: Profile | null
   scope: ProfileScope | null
@@ -60,15 +62,6 @@ function writeStoredType(type: ExtraProfile) {
   localStorage.setItem(STORAGE_KEY, type)
 }
 
-function normalizeProfile(row: Record<string, unknown>): Profile {
-  return {
-    ...(row as unknown as Profile),
-    extra_profiles: (row.extra_profiles || []) as ExtraProfile[],
-    is_super_user: Boolean(row.is_super_user),
-    onboarding_complete: Boolean(row.onboarding_complete),
-  }
-}
-
 async function syncClerkProfileClaim(
   user: NonNullable<ReturnType<typeof useUser>['user']>,
   type: ExtraProfile,
@@ -85,30 +78,48 @@ async function syncClerkProfileClaim(
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded } = useUser()
-  const { getToken } = useAuth()
-  const supabase = useSupabase()
+  const { getToken, isSignedIn } = useAuth()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profilesResolved, setProfilesResolved] = useState(false)
 
-  const load = useCallback(async () => {
+  /** @returns true si la consulta a `profiles` terminó; false si falta JWT (reintentar). */
+  const load = useCallback(async (): Promise<boolean> => {
     if (!user) {
       setAllProfiles([])
       setActiveProfile(null)
-      return
+      return true
     }
-    const { data, error } = await supabase
+
+    const token = await getToken({ template: 'supabase' })
+    console.log('[ProfileContext] token:', token ? 'OK' : 'NULL')
+    console.log('[ProfileContext] isLoaded:', isLoaded, 'isSignedIn:', isSignedIn)
+    if (!token) return false
+
+    const sb = createSupabaseBrowserClientWithToken(token)
+    const { data, error } = await sb
       .from('profiles')
       .select('*')
       .eq('clerk_id', user.id)
       .order('created_at', { ascending: true })
+    console.log('[ProfileContext] profiles result:', data, error)
     if (error) throw error
-    const profiles = (data || []).map(row => normalizeProfile(row as Record<string, unknown>))
+
+    const profiles = (data || []).map(
+      row =>
+        ({
+          ...row,
+          extra_profiles: (row.extra_profiles || []) as ExtraProfile[],
+          is_super_user: Boolean(row.is_super_user),
+          onboarding_complete: Boolean(row.onboarding_complete),
+        }) as Profile
+    )
     setAllProfiles(profiles)
 
     if (profiles.length === 0) {
       setActiveProfile(null)
-      return
+      return true
     }
 
     const stored = readStoredType()
@@ -116,7 +127,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       (stored && profiles.find(p => p.profile_type_v2 === stored)) || profiles[0]
     if (!found) {
       setActiveProfile(null)
-      return
+      return true
     }
     setActiveProfile(found)
     writeStoredType(found.profile_type_v2)
@@ -125,13 +136,63 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     } catch {
       /* JWT se refrescará en la próxima interacción */
     }
-  }, [user, supabase, getToken])
+    return true
+  }, [user, getToken, isLoaded, isSignedIn])
+
+  useEffect(() => {
+    console.log(
+      '[ProfileContext] profilesResolved:',
+      profilesResolved,
+      'allProfiles:',
+      allProfiles.length,
+      'loading:',
+      loading
+    )
+  }, [profilesResolved, allProfiles.length, loading])
 
   useEffect(() => {
     if (!isLoaded) return
-    setLoading(true)
-    load().finally(() => setLoading(false))
-  }, [isLoaded, load])
+
+    let cancelled = false
+
+    async function run() {
+      setLoading(true)
+      setProfilesResolved(false)
+
+      if (!user) {
+        setAllProfiles([])
+        setActiveProfile(null)
+        setProfilesResolved(true)
+        setLoading(false)
+        return
+      }
+
+      const maxAttempts = 12
+      for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
+        try {
+          const done = await load()
+          if (done) {
+            setProfilesResolved(true)
+            break
+          }
+        } catch (err) {
+          console.error('[ProfileContext] error cargando profiles', err)
+          if (attempt === maxAttempts - 1) {
+            setProfilesResolved(false)
+            break
+          }
+        }
+        await new Promise(r => setTimeout(r, 250))
+      }
+
+      if (!cancelled) setLoading(false)
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [isLoaded, user?.id, load])
 
   const switchProfile = useCallback(
     async (type: ExtraProfile) => {
@@ -159,11 +220,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     <ProfileContext.Provider
       value={{
         loading,
+        profilesResolved,
         allProfiles,
         activeProfile,
         scope,
         switchProfile,
-        reload: load,
+        reload: async () => {
+          setLoading(true)
+          setProfilesResolved(false)
+          try {
+            const done = await load()
+            if (done) setProfilesResolved(true)
+          } finally {
+            setLoading(false)
+          }
+        },
       }}
     >
       {children}

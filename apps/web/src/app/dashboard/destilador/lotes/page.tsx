@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
@@ -95,10 +96,14 @@ export default function DestiladorLotesPage() {
                   )
                 )
                 return (
-                  <div
+                  <Link
                     key={l.id}
+                    href={`/dashboard/destilador/lotes/${l.id}`}
                     style={{
+                      display: 'block',
                       padding: '14px 16px',
+                      textDecoration: 'none',
+                      color: 'inherit',
                       borderTop: i ? '0.5px solid var(--hairline)' : undefined,
                     }}
                   >
@@ -120,7 +125,7 @@ export default function DestiladorLotesPage() {
                         )}
                       </div>
                     )}
-                  </div>
+                  </Link>
                 )
               })
             )}

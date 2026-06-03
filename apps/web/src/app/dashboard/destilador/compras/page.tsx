@@ -11,8 +11,10 @@ import { fmtMoney } from '@/lib/proof/format'
 import type { DestViajeEstado, ViajeRow } from '@/lib/proof/destilador-types'
 import {
   fetchComprasPipelineCounts,
+  fetchCostoPromedioLitroUltimasCompras,
   fetchProductosViaje,
   fetchViajes,
+  isDestSchemaMissingError,
   sumSaldosPalenqueros,
 } from '@/lib/supabase/destilador'
 
@@ -34,6 +36,7 @@ export default function DestiladorComprasPage() {
     terminado: 0,
   })
   const [deboPalenqueros, setDeboPalenqueros] = useState(0)
+  const [costoPromLitro, setCostoPromLitro] = useState<number | null>(null)
   const [dataLoading, setDataLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,17 +49,18 @@ export default function DestiladorComprasPage() {
       fetchViajes(supabase, clerkId, { limit: 80 }),
       fetchComprasPipelineCounts(supabase, clerkId),
       sumSaldosPalenqueros(supabase, clerkId),
+      fetchCostoPromedioLitroUltimasCompras(supabase, clerkId),
     ])
-      .then(([v, pipe, debo]) => {
+      .then(([v, pipe, debo, prom]) => {
         if (cancelled) return
         setViajes(v)
         setPipeline(pipe)
         setDeboPalenqueros(debo)
+        setCostoPromLitro(prom)
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        const msg = e instanceof Error ? e.message : 'Error al cargar compras'
-        setError(msg)
+        setError(e instanceof Error ? e.message : 'Error al cargar compras')
       })
       .finally(() => {
         if (!cancelled) setDataLoading(false)
@@ -99,11 +103,6 @@ export default function DestiladorComprasPage() {
     () => viajes.filter(v => v.estado !== 'recibido').length,
     [viajes]
   )
-
-  const ultimasCompras = useMemo(() => {
-    const recibidos = viajes.filter(v => v.estado === 'recibido').slice(0, 3)
-    return recibidos
-  }, [viajes])
 
   if (scopeLoading || !ok) {
     return (
@@ -148,15 +147,16 @@ export default function DestiladorComprasPage() {
             <KpiCard label="Debo a palenqueros" value={fmtMoney(deboPalenqueros)} tone="var(--crit)" />
             <KpiCard label="Viajes activos" value={String(viajesActivos)} mono />
             <KpiCard
-              label="Últimas compras"
-              value={ultimasCompras.length ? `${ultimasCompras.length} recibidos` : '—'}
+              label="Costo prom. / L"
+              value={costoPromLitro != null ? fmtMoney(costoPromLitro) : '—'}
+              mono
             />
           </div>
 
           {error && (
             <p style={{ color: 'var(--crit)', fontSize: 13, marginBottom: 16 }}>
-              {error.includes('does not exist') || error.includes('relation')
-                ? 'Esquema Destilador pendiente: aplica la migración 20250602000000 en Supabase.'
+              {isDestSchemaMissingError(error)
+                ? 'Esquema Destilador pendiente: aplica scripts/destilador-apply-all.sql en Supabase.'
                 : error}
             </p>
           )}
