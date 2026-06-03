@@ -85,7 +85,7 @@ export default function ProfileSelectPage() {
           marginBottom: 12,
         }}
       >
-        Fermen<span style={{ color: '#E24B4A' }}>T</span>rack
+        PR<span style={{ color: '#E24B4A' }}>O</span>OF
       </div>
       <div
         style={{

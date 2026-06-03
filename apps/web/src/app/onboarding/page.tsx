@@ -174,7 +174,7 @@ function OnboardingContent() {
       <div className="w-full max-w-lg">
         <div className="text-center mb-10">
           <div className="text-2xl font-medium tracking-tight text-[#9FE1CB] mb-1">
-            Fermen<span className="text-[#6b8c78] font-light">Track</span>
+            PRO<span className="text-[#6b8c78] font-light">OF</span>
           </div>
           <div className="flex items-center justify-center gap-2 mt-6">
             {([1, 2, 3] as const).map(s => (
