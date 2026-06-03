@@ -352,6 +352,18 @@ export async function fetchSkus(
   return (data || []) as SkuRow[]
 }
 
+export async function fetchSkuById(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  skuId: string
+): Promise<SkuRow | null> {
+  let q = sb.from('skus').select('*').eq('id', skuId)
+  q = scopeFilter(q, scope)
+  const { data, error } = await q.maybeSingle()
+  throwIfError(error)
+  return (data as SkuRow | null) ?? null
+}
+
 export async function fetchPedidos(
   sb: SupabaseClient,
   scope?: ProfileScope,

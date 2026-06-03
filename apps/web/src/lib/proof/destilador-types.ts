@@ -58,6 +58,9 @@ export interface LoteRow {
   viaje_id: string
   producto_viaje_id?: string
   tipo_agave: string
+  maestro?: string
+  comunidad?: string
+  abv?: number | null
   litros_disponibles_granel: number
   litros_recibidos: number
   estado: DestLoteEstado
@@ -68,7 +71,59 @@ export interface LoteRow {
     precio_por_litro: number
     flete_proporcional: number | null
     litros_acordados: number
+    saldo_pendiente?: number
+    merma_litros?: number | null
   } | null
+}
+
+export type DestCorridaModo = 'equipo' | 'manual'
+export type DestCorridaEstado = 'activa' | 'completada'
+
+export interface CorridaRow {
+  id: string
+  lote_id: string
+  bodega_id: string
+  formato_botella: DestFormatoBotella
+  litros_asignados: number
+  modo: DestCorridaModo
+  botellas_producidas: number
+  botellas_defectuosas: number
+  merma_litros?: number
+  merma_porcentaje: number
+  costo_corrida?: number | null
+  costo_real_por_botella: number | null
+  estado: DestCorridaEstado
+  created_at: string
+  lotes?: { numero_lote: string; tipo_agave: string } | null
+}
+
+export interface StockBotellaRow {
+  formato: DestFormatoBotella
+  cantidad_disponible: number
+}
+
+export interface StockEtiquetaRow {
+  nombre: string
+  tipo: string
+  cantidad_disponible: number
+}
+
+export interface BodegaRow {
+  id: string
+  nombre: string
+  es_embotellado: boolean
+}
+
+export interface CreateCorridaInput {
+  lote_id: string
+  bodega_id: string
+  formato_botella: DestFormatoBotella
+  litros_asignados: number
+  modo: DestCorridaModo
+  costo_corrida?: number
+  personas?: number
+  horas_estimadas?: number
+  tarifa_hora?: number
 }
 
 export interface NuevoProductoViajeInput {

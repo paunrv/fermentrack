@@ -167,6 +167,8 @@ function pageTitleFor(path: string): string {
   if (path.startsWith('/dashboard/destilador/produccion')) return 'Producción'
   if (path.startsWith('/dashboard/destilador/bodega')) return 'Bodega'
   if (path.startsWith('/dashboard/destilador/ventas')) return 'Ventas'
+  if (path.startsWith('/dashboard/destilador/produccion')) return 'Producción'
+  if (path.startsWith('/dashboard/destilador/lotes/')) return 'Detalle lote'
   return 'PROOF'
 }
 
@@ -211,6 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [ask, setAsk] = useState('')
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
+  const isCanvas = path === '/dashboard'
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
 
@@ -228,14 +231,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return
     }
     if (distillerBlockedFromPath(activeProfile?.profile_type_v2, path)) {
-      router.replace('/dashboard/destilador/compras')
+      router.replace('/dashboard')
       return
-    }
-    if (
-      activeProfile?.profile_type_v2 === 'distiller' &&
-      path === '/dashboard'
-    ) {
-      router.replace('/dashboard/destilador/compras')
     }
   }, [loading, activeProfile?.profile_type_v2, path, router])
 
@@ -278,11 +275,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: 'var(--ink)',
+        background: isCanvas ? '#F8F7F4' : 'var(--ink)',
         color: 'var(--fg-1)',
       }}
     >
-      {/* ═════════ SIDEBAR · ICON RAIL ═════════ */}
+      {!isCanvas && (
       <aside
         style={{
           width: 84,
@@ -438,21 +435,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
         </div>
       </aside>
+      )}
 
-      {/* ═════════ MAIN STAGE ═════════ */}
       <main
         style={{
           flex: 1,
           minWidth: 0,
-          background: 'var(--ink)',
+          background: isCanvas ? '#F8F7F4' : 'var(--ink)',
           position: 'relative',
           zIndex: 2,
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {/* ─── TOP BAR · ASK PROOF ALWAYS VISIBLE ─── */}
-        {!isOnAssistant &&
+        {!isCanvas &&
+        !isOnAssistant &&
           !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path))) &&
           !(isDistiller && isProducerOnlyPath(path)) && (
           <header
