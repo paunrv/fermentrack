@@ -7,7 +7,9 @@ import { useUser } from '@clerk/nextjs'
 import { useProfile } from '@/context/ProfileContext'
 import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
+  distillerBlockedFromPath,
   distributorBlockedFromPath,
+  isDestiladorPath,
   isProducerOnlyPath,
   isProducerProfile,
 } from '@/lib/proof/dashboard-routes'
@@ -121,6 +123,14 @@ const NAV_RECEPCION: NavItem[] = [
   { href: '/dashboard/remisiones', label: 'Remisiones', roles: ['distributor'], icon: ICONS.movimientos },
 ]
 
+const NAV_DESTILADOR: NavItem[] = [
+  { href: '/dashboard/destilador/compras', label: 'Compras', roles: ['distiller'], icon: ICONS.movimientos },
+  { href: '/dashboard/destilador/lotes', label: 'Lotes', roles: ['distiller'], icon: ICONS.inventario },
+  { href: '/dashboard/destilador/produccion', label: 'Producción', roles: ['distiller'], icon: ICONS.catalogo },
+  { href: '/dashboard/destilador/bodega', label: 'Bodega', roles: ['distiller'], icon: ICONS.inventario },
+  { href: '/dashboard/destilador/ventas', label: 'Ventas', roles: ['distiller'], icon: ICONS.clientes },
+]
+
 const NAV_LEGACY: NavItem[] = [
   { href: '/dashboard/clientes', label: 'Clientes', roles: ['producer'], icon: ICONS.clientes },
 ]
@@ -129,6 +139,7 @@ const NAV: NavItem[] = [
   ...NAV_OPERACION,
   ...NAV_FINANZAS,
   ...NAV_RECEPCION,
+  ...NAV_DESTILADOR,
   ...NAV_LEGACY,
 ]
 
@@ -151,6 +162,11 @@ function pageTitleFor(path: string): string {
   if (path.startsWith('/dashboard/muestras')) return 'Muestras'
   if (path.startsWith('/dashboard/costos')) return 'Costos'
   if (path.startsWith('/dashboard/settings')) return 'Ajustes'
+  if (path.startsWith('/dashboard/destilador/compras')) return 'Compras'
+  if (path.startsWith('/dashboard/destilador/lotes')) return 'Lotes'
+  if (path.startsWith('/dashboard/destilador/produccion')) return 'Producción'
+  if (path.startsWith('/dashboard/destilador/bodega')) return 'Bodega'
+  if (path.startsWith('/dashboard/destilador/ventas')) return 'Ventas'
   return 'PROOF'
 }
 
@@ -158,9 +174,15 @@ function visibleNav(active: Profile | null): NavItem[] {
   if (!active) return NAV_OPERACION
   if (active.is_super_user) return NAV
   const isProducer = PRODUCERS.includes(active.profile_type_v2)
+  const isDistiller = active.profile_type_v2 === 'distiller'
   return NAV.filter(n => {
-    if (n.roles === 'all') return true
-    return n.roles.some(r => (r === 'producer' ? isProducer : r === active.profile_type_v2))
+    if (n.roles === 'all') {
+      if (isDistiller && (n.href === '/dashboard/inventario' || n.href === '/dashboard/movimientos' || n.href === '/dashboard/productos')) {
+        return false
+      }
+      return true
+    }
+    return n.roles.some(r => (r === 'producer' ? isProducer && !isDistiller : r === active.profile_type_v2))
   })
 }
 
@@ -174,6 +196,8 @@ function navSections(active: Profile | null): { label: string; items: NavItem[] 
   if (fin.length) sections.push({ label: 'Finanzas', items: fin })
   const rec = pick(NAV_RECEPCION)
   if (rec.length) sections.push({ label: 'Recepción', items: rec })
+  const dest = pick(NAV_DESTILADOR)
+  if (dest.length) sections.push({ label: 'Destilador', items: dest })
   const leg = pick(NAV_LEGACY)
   if (leg.length) sections.push({ label: 'Red', items: leg })
   return sections.filter(s => s.items.length > 0)
@@ -188,6 +212,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
+  const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
 
   useEffect(() => {
     if (!isLoaded || loading) return
@@ -200,6 +225,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (loading) return
     if (distributorBlockedFromPath(activeProfile?.profile_type_v2, path)) {
       router.replace('/dashboard')
+      return
+    }
+    if (distillerBlockedFromPath(activeProfile?.profile_type_v2, path)) {
+      router.replace('/dashboard/destilador/compras')
+      return
+    }
+    if (
+      activeProfile?.profile_type_v2 === 'distiller' &&
+      path === '/dashboard'
+    ) {
+      router.replace('/dashboard/destilador/compras')
     }
   }, [loading, activeProfile?.profile_type_v2, path, router])
 
@@ -416,7 +452,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }}
       >
         {/* ─── TOP BAR · ASK PROOF ALWAYS VISIBLE ─── */}
-        {!isOnAssistant && !(isDistributor && isProducerOnlyPath(path)) && (
+        {!isOnAssistant &&
+          !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path))) &&
+          !(isDistiller && isProducerOnlyPath(path)) && (
           <header
             style={{
               position: 'sticky',

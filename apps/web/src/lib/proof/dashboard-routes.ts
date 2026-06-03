@@ -1,6 +1,11 @@
 import type { ExtraProfile } from '@/lib/supabase'
 
-/** Rutas exclusivas de perfiles productor (brewer / winemaker / distiller). */
+/** Rutas PROOF Destilador (mezcal / Patrón). */
+export const DESTILADOR_PREFIXES = [
+  '/dashboard/destilador',
+] as const
+
+/** Rutas legacy productor (brewer / winemaker; distiller usa destilador). */
 export const PRODUCER_ONLY_PREFIXES = [
   '/dashboard/lotes',
   '/dashboard/bodega',
@@ -10,6 +15,12 @@ export const PRODUCER_ONLY_PREFIXES = [
   '/dashboard/etiquetas',
   '/dashboard/agente',
 ] as const
+
+export function isDestiladorPath(pathname: string): boolean {
+  return DESTILADOR_PREFIXES.some(
+    prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )
+}
 
 export function isProducerOnlyPath(pathname: string): boolean {
   return PRODUCER_ONLY_PREFIXES.some(
@@ -26,5 +37,16 @@ export function distributorBlockedFromPath(
   profileType: ExtraProfile | null | undefined,
   pathname: string
 ): boolean {
-  return profileType === 'distributor' && isProducerOnlyPath(pathname)
+  return (
+    profileType === 'distributor' &&
+    (isProducerOnlyPath(pathname) || isDestiladorPath(pathname))
+  )
+}
+
+/** Destilador (mezcal) usa /dashboard/destilador, no fermentación legacy. */
+export function distillerBlockedFromPath(
+  profileType: ExtraProfile | null | undefined,
+  pathname: string
+): boolean {
+  return profileType === 'distiller' && isProducerOnlyPath(pathname)
 }
