@@ -27,11 +27,12 @@
   --fg-4: #444444;
   --fg-5: #333333;
 
-  --gold: #C8A96E;
-  --gold-soft: rgba(200, 169, 110, 0.35);
-  --copper: var(--gold);
-  --copper-soft: #9A8458;
-  --copper-glow: rgba(200, 169, 110, 0.12);
+  --proof-accent: #C2410C;
+  --gold: var(--proof-accent);
+  --gold-soft: color-mix(in srgb, var(--proof-accent) 35%, transparent);
+  --copper: var(--proof-accent);
+  --copper-soft: var(--proof-accent);
+  --copper-glow: color-mix(in srgb, var(--proof-accent) 12%, transparent);
   --wine: #8B2F38;
   --wine-soft: #5F2026;
 

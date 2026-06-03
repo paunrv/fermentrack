@@ -117,7 +117,7 @@ export function loteEstadoLabel(estado: LoteRow['estado']): string {
 
 export function loteEstadoColor(estado: LoteRow['estado']): string {
   const map: Record<LoteRow['estado'], string> = {
-    en_bodega_crudo: '#C8A96E',
+    en_bodega_crudo: 'var(--proof-accent)',
     en_produccion: '#378ADD',
     terminado: '#4CAF7D',
     vendido_parcial: '#9B8FE0',

@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useClerk, useUser } from '@clerk/nextjs'
 import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
 import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
   distillerBlockedFromPath,
@@ -13,6 +14,13 @@ import {
   isProducerOnlyPath,
   isProducerProfile,
 } from '@/lib/proof/dashboard-routes'
+import type { DestMembresia } from '@/lib/proof/destilador-types'
+import {
+  CANVAS_BG,
+  getProfileTheme,
+  proofAccentCssVars,
+} from '@/lib/proof/profile-theme'
+import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
 
 type Role = ExtraProfile | 'producer'
 
@@ -25,18 +33,16 @@ interface NavItem {
 
 const PRODUCERS: ExtraProfile[] = ['brewer', 'winemaker', 'distiller']
 
-const PROFILE_META: Record<ExtraProfile, { label: string }> = {
-  brewer: { label: 'Cervecería' },
-  winemaker: { label: 'Bodega' },
-  distiller: { label: 'Destilería' },
-  distributor: { label: 'Distribuidor' },
+const MEMBRESIA_LABEL: Record<DestMembresia, string> = {
+  basico: 'Básico',
+  profesional: 'Profesional',
+  premium: 'Premium',
 }
 
-/* ───── Icons (line, calm, no decoration) ────────────────────────── */
 const ic = (path: React.ReactNode) => (
   <svg
-    width="18"
-    height="18"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -88,21 +94,12 @@ const ICONS = {
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </>
   ),
-  switch: ic(
-    <>
-      <polyline points="17 1 21 5 17 9" />
-      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
-      <polyline points="7 23 3 19 7 15" />
-      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
-    </>
-  ),
   camera: ic(
     <>
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
       <circle cx="12" cy="13" r="4" />
     </>
   ),
-  arrow: ic(<polyline points="9 18 15 12 9 6" />),
 }
 
 const NAV_OPERACION: NavItem[] = [
@@ -167,7 +164,6 @@ function pageTitleFor(path: string): string {
   if (path.startsWith('/dashboard/destilador/produccion')) return 'Producción'
   if (path.startsWith('/dashboard/destilador/bodega')) return 'Bodega'
   if (path.startsWith('/dashboard/destilador/ventas')) return 'Ventas'
-  if (path.startsWith('/dashboard/destilador/produccion')) return 'Producción'
   if (path.startsWith('/dashboard/destilador/lotes/')) return 'Detalle lote'
   return 'PROOF'
 }
@@ -179,58 +175,52 @@ function visibleNav(active: Profile | null): NavItem[] {
   const isDistiller = active.profile_type_v2 === 'distiller'
   return NAV.filter(n => {
     if (n.roles === 'all') {
-      if (isDistiller && (n.href === '/dashboard/inventario' || n.href === '/dashboard/movimientos' || n.href === '/dashboard/productos')) {
+      if (
+        isDistiller &&
+        (n.href === '/dashboard/inventario' ||
+          n.href === '/dashboard/movimientos' ||
+          n.href === '/dashboard/productos')
+      ) {
         return false
       }
       return true
     }
-    return n.roles.some(r => (r === 'producer' ? isProducer && !isDistiller : r === active.profile_type_v2))
+    return n.roles.some(r =>
+      r === 'producer' ? isProducer && !isDistiller : r === active.profile_type_v2
+    )
   })
-}
-
-function navSections(active: Profile | null): { label: string; items: NavItem[] }[] {
-  const items = visibleNav(active)
-  const pick = (list: NavItem[]) => list.filter(i => items.some(v => v.href === i.href))
-  const sections: { label: string; items: NavItem[] }[] = [
-    { label: 'Operación', items: pick(NAV_OPERACION) },
-  ]
-  const fin = pick(NAV_FINANZAS)
-  if (fin.length) sections.push({ label: 'Finanzas', items: fin })
-  const rec = pick(NAV_RECEPCION)
-  if (rec.length) sections.push({ label: 'Recepción', items: rec })
-  const dest = pick(NAV_DESTILADOR)
-  if (dest.length) sections.push({ label: 'Destilador', items: dest })
-  const leg = pick(NAV_LEGACY)
-  if (leg.length) sections.push({ label: 'Red', items: leg })
-  return sections.filter(s => s.items.length > 0)
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname()
   const router = useRouter()
   const { user, isLoaded } = useUser()
+  const { signOut } = useClerk()
+  const supabase = useSupabase()
   const { activeProfile, allProfiles, loading, profilesResolved } = useProfile()
   const [ask, setAsk] = useState('')
+  const [membresia, setMembresia] = useState<DestMembresia>('basico')
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isCanvas = path === '/dashboard'
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
+  const theme = getProfileTheme(activeProfile?.profile_type_v2)
+  const pageTitle = pageTitleFor(path)
+
+  const initials =
+    user?.firstName && user?.lastName
+      ? `${user.firstName[0]}${user.lastName[0]}`
+      : user?.firstName?.[0] || 'U'
+
+  const navItems = loading ? NAV_OPERACION : visibleNav(activeProfile)
 
   useEffect(() => {
-    console.log('[ProfileContext] guard eval:', {
-      isLoaded,
-      loading,
-      profilesResolved,
-      allProfiles: allProfiles.length,
-      path,
-    })
     if (!isLoaded || loading || !profilesResolved) return
     if (!user) return
     if (allProfiles.length > 0) return
-    console.log('[ProfileContext] guard → redirect /onboarding')
     router.replace('/onboarding')
-  }, [isLoaded, loading, profilesResolved, user, allProfiles.length, router, path])
+  }, [isLoaded, loading, profilesResolved, user, allProfiles.length, router])
 
   useEffect(() => {
     if (loading) return
@@ -240,20 +230,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     if (distillerBlockedFromPath(activeProfile?.profile_type_v2, path)) {
       router.replace('/dashboard')
-      return
     }
   }, [loading, activeProfile?.profile_type_v2, path, router])
 
-  const initials =
-    user?.firstName && user?.lastName
-      ? `${user.firstName[0]}${user.lastName[0]}`
-      : user?.firstName?.[0] || 'U'
-
-  const sections = loading
-    ? [{ label: 'Operación', items: NAV_OPERACION }]
-    : navSections(activeProfile)
-  const activeMeta = activeProfile ? PROFILE_META[activeProfile.profile_type_v2] : null
-  const pageTitle = pageTitleFor(path)
+  useEffect(() => {
+    if (!isCanvas || !isDistiller || !activeProfile?.clerk_id) return
+    let cancelled = false
+    void fetchDestiladorMembresia(supabase, activeProfile.clerk_id).then(m => {
+      if (!cancelled) setMembresia(m)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isCanvas, isDistiller, activeProfile?.clerk_id, supabase])
 
   function submitAsk(e: React.FormEvent) {
     e.preventDefault()
@@ -278,188 +267,193 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/dashboard/agente')
   }
 
+  const showInnerHeader =
+    !isCanvas &&
+    !isOnAssistant &&
+    !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path))) &&
+    !(isDistiller && isProducerOnlyPath(path))
+
   return (
     <div
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: isCanvas ? '#F8F7F4' : 'var(--ink)',
+        background: isCanvas ? CANVAS_BG : 'var(--ink)',
         color: 'var(--fg-1)',
+        ...proofAccentCssVars(theme),
       }}
     >
       {!isCanvas && (
-      <aside
-        style={{
-          width: 84,
-          flexShrink: 0,
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          background: 'var(--canvas)',
-          borderRight: '1px solid var(--hairline)',
-          padding: '18px 0 14px',
-          zIndex: 20,
-        }}
-      >
-        {/* Brand mark */}
-        <Link
-          href="/dashboard"
-          aria-label="PROOF · Inicio"
-          style={{ textDecoration: 'none', display: 'block', marginBottom: 18 }}
+        <aside
+          style={{
+            width: 52,
+            flexShrink: 0,
+            position: 'sticky',
+            top: 0,
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            background: theme.navGradient,
+            padding: '14px 0 12px',
+            zIndex: 20,
+          }}
         >
-          <div
-            aria-hidden
-            className="mono"
+          <Link
+            href="/dashboard"
+            aria-label="PROOF · Inicio"
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              lineHeight: 1.1,
-              textAlign: 'center',
+              textDecoration: 'none',
+              display: 'grid',
+              placeItems: 'center',
+              marginBottom: 14,
+              width: 36,
+              height: 36,
             }}
           >
-            <span style={{ color: 'var(--fg-0)' }}>PRO</span>
-            <span style={{ color: 'var(--gold)' }}>OF</span>
-          </div>
-        </Link>
+            <span
+              aria-hidden
+              className="mono"
+              style={{
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                lineHeight: 1.15,
+                textAlign: 'center',
+                color: '#fff',
+              }}
+            >
+              PR
+              <br />
+              OF
+            </span>
+          </Link>
 
-        {/* Nav */}
-        <nav
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-            width: '100%',
-            padding: '0 8px',
-            overflowY: 'auto',
-            flex: 1,
-          }}
-        >
-          {sections.map(section => (
-            <div key={section.label}>
-              <div
-                className="eyebrow"
-                style={{
-                  fontSize: 8,
-                  marginBottom: 4,
-                  paddingLeft: 4,
-                  opacity: 0.7,
-                }}
-              >
-                {section.label}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {section.items.map(item => {
-                  const active =
-                    path === item.href ||
-                    (item.href !== '/dashboard' && path.startsWith(item.href))
-                  return (
-                    <SideRailLink
-                      key={item.href}
-                      href={item.href}
-                      label={item.label}
-                      icon={item.icon}
-                      active={active}
-                    />
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        <div
-          style={{
-            marginTop: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 8,
-            width: '100%',
-            padding: '0 10px',
-          }}
-        >
-          <SideRailLink
-            href="/dashboard/settings"
-            label="Ajustes"
-            icon={ICONS.ajustes}
-            active={path.startsWith('/dashboard/settings')}
-          />
-          <button
-            type="button"
-            onClick={() => allProfiles.length > 1 && router.push('/profile-select')}
-            disabled={allProfiles.length <= 1}
-            aria-label="Cambiar perfil"
+          <nav
             style={{
-              position: 'relative',
-              width: '100%',
-              padding: 6,
-              background: 'transparent',
-              border: '1px solid transparent',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'border-color 180ms var(--ease-out)',
-            }}
-            onMouseEnter={e => {
-              if (allProfiles.length > 1) e.currentTarget.style.borderColor = 'var(--hairline)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.borderColor = 'transparent'
+              flexDirection: 'column',
+              gap: 6,
+              width: '100%',
+              padding: '0 8px',
+              overflowY: 'auto',
+              flex: 1,
             }}
           >
-            {user?.imageUrl ? (
-              <img
-                src={user.imageUrl}
-                alt=""
-                style={{
-                  width: 32,
-                  height: 32,
-                  objectFit: 'cover',
-                  border: '1px solid var(--line)',
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  display: 'grid',
-                  placeItems: 'center',
-                  background: 'var(--panel)',
-                  border: '1px solid var(--line)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: 'var(--fg-1)',
-                }}
-              >
-                {initials}
-              </div>
-            )}
-          </button>
-        </div>
-      </aside>
+            {navItems.map((item, index) => {
+              const active =
+                path === item.href ||
+                (item.href !== '/dashboard' && path.startsWith(item.href))
+              const iconColor = theme.navText[index % theme.navText.length]!
+              return (
+                <SideRailLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  active={active}
+                  iconColor={iconColor}
+                  accent={theme.accent}
+                />
+              )
+            })}
+          </nav>
+
+          <div style={{ marginTop: 'auto', width: '100%', padding: '0 8px' }}>
+            <SideRailLink
+              href="/dashboard/settings"
+              label="Configuración"
+              icon={ICONS.ajustes}
+              active={path.startsWith('/dashboard/settings')}
+              iconColor={theme.navText[0]}
+              accent={theme.accent}
+            />
+          </div>
+        </aside>
       )}
 
       <main
         style={{
           flex: 1,
           minWidth: 0,
-          background: isCanvas ? '#F8F7F4' : 'var(--ink)',
+          background: isCanvas ? CANVAS_BG : 'var(--ink)',
           position: 'relative',
           zIndex: 2,
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {!isCanvas &&
-        !isOnAssistant &&
-          !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path))) &&
-          !(isDistiller && isProducerOnlyPath(path)) && (
+        {isCanvas && (
+          <header
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 30,
+              height: 56,
+              boxSizing: 'border-box',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '14px 24px',
+              background: CANVAS_BG,
+              borderBottom: `2px solid ${theme.accent}`,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  letterSpacing: '0.15em',
+                  color: '#1A1A1A',
+                }}
+              >
+                PR<span style={{ color: theme.accent }}>O</span>OF
+              </span>
+              <span
+                style={{
+                  fontSize: 9,
+                  fontFamily:
+                    'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                  borderRadius: 4,
+                  padding: '3px 8px',
+                  background: theme.badge.bg,
+                  color: theme.badge.color,
+                  border: `0.5px solid ${theme.badge.border}`,
+                  letterSpacing: '0.06em',
+                }}
+              >
+                {theme.label.toUpperCase()}
+              </span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {isDistiller && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: '#BBB',
+                    fontFamily:
+                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                  }}
+                >
+                  {MEMBRESIA_LABEL[membresia]}
+                </span>
+              )}
+              <AvatarMenu
+                initials={initials}
+                imageUrl={user?.imageUrl}
+                accent={theme.accent}
+                canSwitchProfile={allProfiles.length > 1}
+                onSwitchProfile={() => router.push('/profile-select')}
+                onSignOut={() => signOut({ redirectUrl: '/' })}
+              />
+            </div>
+          </header>
+        )}
+
+        {showInnerHeader && (
           <header
             style={{
               position: 'sticky',
@@ -475,7 +469,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               gap: 16,
             }}
           >
-            {/* Page name */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
               <span
                 style={{
@@ -490,11 +483,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span
                 aria-hidden
                 className="status-dot ok live"
-                style={{ width: 5, height: 5 }}
+                style={{ width: 5, height: 5, background: 'var(--proof-accent)' }}
               />
             </div>
 
-            {/* PROOF command bar — primary */}
             <form
               onSubmit={submitAsk}
               style={{
@@ -507,7 +499,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 transition: 'border-color 200ms var(--ease-out), background 200ms var(--ease-out)',
               }}
               onFocus={e => {
-                e.currentTarget.style.borderColor = 'var(--copper-soft)'
+                e.currentTarget.style.borderColor = 'var(--proof-accent)'
                 e.currentTarget.style.background = 'var(--panel-2)'
               }}
               onBlur={e => {
@@ -522,7 +514,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   height: 22,
                   display: 'grid',
                   placeItems: 'center',
-                  color: 'var(--copper)',
+                  color: 'var(--proof-accent)',
                   fontFamily: 'var(--font-mono)',
                   fontSize: 13,
                   fontWeight: 600,
@@ -564,8 +556,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   transition: 'color 180ms var(--ease-out), border-color 180ms var(--ease-out)',
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'var(--copper-soft)'
-                  e.currentTarget.style.color = 'var(--copper)'
+                  e.currentTarget.style.borderColor = 'var(--proof-accent)'
+                  e.currentTarget.style.color = 'var(--proof-accent)'
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.borderColor = 'var(--hairline)'
@@ -579,10 +571,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 disabled={!ask.trim()}
                 style={{
                   padding: '7px 12px',
-                  background: ask.trim() ? 'var(--copper)' : 'var(--canvas)',
+                  background: ask.trim() ? 'var(--proof-accent)' : 'var(--canvas)',
                   border: '1px solid',
-                  borderColor: ask.trim() ? 'var(--copper)' : 'var(--hairline)',
-                  color: ask.trim() ? 'var(--ink)' : 'var(--fg-4)',
+                  borderColor: ask.trim() ? 'var(--proof-accent)' : 'var(--hairline)',
+                  color: ask.trim() ? '#fff' : 'var(--fg-4)',
                   fontSize: 11,
                   fontWeight: 600,
                   letterSpacing: '0.08em',
@@ -595,51 +587,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
             </form>
 
-            {/* Right: profile chip */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => allProfiles.length > 1 && router.push('/profile-select')}
-                disabled={allProfiles.length <= 1}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 10px',
-                  border: '1px solid var(--hairline)',
-                  background: 'var(--panel)',
-                  color: 'var(--fg-1)',
-                  fontSize: 12,
-                  fontWeight: 500,
-                  letterSpacing: '-0.005em',
-                  cursor: allProfiles.length > 1 ? 'pointer' : 'default',
-                  transition: 'border-color 180ms var(--ease-out)',
-                }}
-                onMouseEnter={e => {
-                  if (allProfiles.length > 1) e.currentTarget.style.borderColor = 'var(--line)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--hairline)'
-                }}
-              >
-                <span
-                  aria-hidden
-                  style={{ color: 'var(--copper)' }}
-                >
-                  ●
-                </span>
-                <span>{activeMeta?.label || 'Perfil'}</span>
-                {allProfiles.length > 1 && (
-                  <span style={{ color: 'var(--fg-4)', display: 'inline-flex' }}>
-                    {ICONS.switch}
-                  </span>
-                )}
-              </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+              <AvatarMenu
+                initials={initials}
+                imageUrl={user?.imageUrl}
+                accent={theme.accent}
+                canSwitchProfile={allProfiles.length > 1}
+                onSwitchProfile={() => router.push('/profile-select')}
+                onSignOut={() => signOut({ redirectUrl: '/' })}
+              />
             </div>
           </header>
         )}
 
-        {/* Hidden camera input — top bar shortcut */}
         <input
           ref={askCameraRef}
           type="file"
@@ -649,53 +609,203 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{ display: 'none' }}
         />
 
-        {children}
+        <div style={{ flex: 1, minHeight: 0, paddingTop: isCanvas ? 56 : 0 }}>{children}</div>
       </main>
     </div>
   )
 }
 
-/* =========================================================================
-   SIDE RAIL LINK · icon + label
-   ========================================================================= */
+function AvatarMenu({
+  initials,
+  imageUrl,
+  accent,
+  canSwitchProfile,
+  onSwitchProfile,
+  onSignOut,
+}: {
+  initials: string
+  imageUrl?: string | null
+  accent: string
+  canSwitchProfile: boolean
+  onSwitchProfile: () => void
+  onSignOut: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [open])
+
+  return (
+    <div ref={rootRef} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        aria-label="Menú de cuenta"
+        aria-expanded={open}
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: '50%',
+          padding: 0,
+          border: 'none',
+          background: `${accent}18`,
+          cursor: 'pointer',
+          overflow: 'hidden',
+          display: 'grid',
+          placeItems: 'center',
+        }}
+      >
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt=""
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          />
+        ) : (
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: accent,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            }}
+          >
+            {initials}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            minWidth: 168,
+            background: '#fff',
+            border: '0.5px solid #E8E8E4',
+            borderRadius: 10,
+            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+            padding: '6px 0',
+            zIndex: 50,
+          }}
+        >
+          {canSwitchProfile && (
+            <DropdownItem
+              label="Cambiar perfil"
+              onClick={() => {
+                setOpen(false)
+                onSwitchProfile()
+              }}
+            />
+          )}
+          <DropdownItem
+            label="Configuración"
+            href="/dashboard/settings"
+            onNavigate={() => setOpen(false)}
+          />
+          <DropdownItem
+            label="Cerrar sesión"
+            onClick={() => {
+              setOpen(false)
+              onSignOut()
+            }}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DropdownItem({
+  label,
+  href,
+  onClick,
+  onNavigate,
+}: {
+  label: string
+  href?: string
+  onClick?: () => void
+  onNavigate?: () => void
+}) {
+  const style: React.CSSProperties = {
+    display: 'block',
+    width: '100%',
+    textAlign: 'left',
+    padding: '10px 14px',
+    fontSize: 13,
+    color: '#1A1A1A',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    fontFamily: 'inherit',
+  }
+
+  if (href) {
+    return (
+      <Link href={href} role="menuitem" style={style} onClick={onNavigate}>
+        {label}
+      </Link>
+    )
+  }
+
+  return (
+    <button type="button" role="menuitem" style={style} onClick={onClick}>
+      {label}
+    </button>
+  )
+}
 
 function SideRailLink({
   href,
   label,
   icon,
   active,
+  iconColor,
+  accent,
 }: {
   href: string
   label: string
   icon: React.ReactNode
   active: boolean
+  iconColor: string
+  accent: string
 }) {
   return (
     <Link
       href={href}
+      aria-label={label}
+      title={label}
       style={{
         position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 4,
-        padding: '10px 4px 8px',
+        display: 'grid',
+        placeItems: 'center',
+        width: '100%',
+        height: 36,
         textDecoration: 'none',
-        color: active ? 'var(--fg-0)' : 'var(--fg-2)',
-        background: active ? 'var(--panel)' : 'transparent',
-        border: '1px solid',
-        borderColor: active ? 'var(--line)' : 'transparent',
-        transition: 'background 180ms var(--ease-out), color 180ms var(--ease-out), border-color 180ms var(--ease-out)',
+        color: active ? '#fff' : iconColor,
+        background: active ? 'rgba(255,255,255,0.14)' : 'transparent',
+        borderRadius: 8,
+        transition: 'background 180ms var(--ease-out), color 180ms var(--ease-out)',
       }}
       onMouseEnter={e => {
         if (active) return
-        e.currentTarget.style.background = 'var(--panel)'
-        e.currentTarget.style.color = 'var(--fg-0)'
+        e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+        e.currentTarget.style.color = '#fff'
       }}
       onMouseLeave={e => {
         if (active) return
         e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.color = 'var(--fg-2)'
+        e.currentTarget.style.color = iconColor
       }}
     >
       {active && (
@@ -703,25 +813,16 @@ function SideRailLink({
           aria-hidden
           style={{
             position: 'absolute',
-            left: -10,
-            top: '50%',
-            transform: 'translateY(-50%)',
+            left: 0,
             width: 2,
-            height: 16,
-            background: 'var(--copper)',
+            height: 20,
+            background: accent,
+            borderRadius: '0 2px 2px 0',
           }}
         />
       )}
-      <span style={{ color: active ? 'var(--copper)' : 'inherit' }}>{icon}</span>
-      <span
-        style={{
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: '0.01em',
-          color: 'inherit',
-        }}
-      >
-        {label}
+      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {icon}
       </span>
     </Link>
   )

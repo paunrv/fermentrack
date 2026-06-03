@@ -517,7 +517,7 @@ function buildDistillerSections(
       ],
       progress: {
         pct: stats.mermaPct,
-        color: stats.mermaPct > 15 ? '#E24B4A' : '#C8A96E',
+        color: stats.mermaPct > 15 ? '#E24B4A' : 'var(--proof-accent)',
       },
     },
     {

@@ -5,7 +5,7 @@ import type { DestLoteEstado } from '@/lib/proof/destilador-types'
 export type BotellaCardEstado = 'crudo' | 'produccion' | 'terminado' | 'vendido_parcial'
 
 const ESTADO_DOT: Record<BotellaCardEstado, string> = {
-  crudo: '#C8A96E',
+  crudo: 'var(--proof-accent)',
   produccion: '#378ADD',
   terminado: '#4CAF7D',
   vendido_parcial: '#9B8FE0',

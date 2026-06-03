@@ -35,7 +35,7 @@ export function AgentBar({
         maxWidth: 560,
         margin: '0 auto',
         padding: '32px 24px 24px',
-        background: '#F8F7F4',
+        background: '#F8F8F6',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -74,7 +74,7 @@ export function AgentBar({
             width: 8,
             height: 8,
             borderRadius: '50%',
-            background: accent,
+            background: 'var(--proof-accent)',
             flexShrink: 0,
             animation: 'proof-agent-pulse 2s ease-in-out infinite',
           }}
@@ -168,7 +168,7 @@ export function AgentBar({
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.color = '#1A1A1A'
-                e.currentTarget.style.borderColor = accent
+                e.currentTarget.style.borderColor = 'var(--proof-accent)'
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.color = '#999'
