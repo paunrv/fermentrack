@@ -1,4 +1,10 @@
-import type { PedidoRow, SkuRow } from '@/lib/supabase/distribuidor'
+import type {
+  CuentaClienteWithClient,
+  PedidoRow,
+  SkuRow,
+} from '@/lib/supabase/distribuidor'
+
+const CRITICO_ESTADOS = new Set(['bajo', 'quiebre', 'sobrevendido'])
 
 export type DistributorAgentContext = {
   perfil: 'distribuidor'
@@ -10,7 +16,37 @@ export type DistributorAgentContext = {
     bajoStock: number
     quiebre: number
     pedidosActivos: number
+    total_por_cobrar: number
+    clientes_con_saldo: number
+    clientes_vencidos: number
+    pedidos_confirmados_pendientes: number
   }
+  credito: {
+    total_por_cobrar: number
+    clientes_vencidos: number
+    cuentas: {
+      id: string
+      cliente_id: string
+      cliente_nombre: string
+      saldo_pendiente: number
+      dias_vencido: number
+      estado: string
+    }[]
+  }
+  pedidos_pendientes_entrega: {
+    id: string
+    numero: string
+    estado: string
+    total: number
+    fecha_entrega: string | null
+  }[]
+  skus_stock_critico: {
+    id: string
+    codigo: string
+    nombre: string
+    stock_disponible: number
+    estado: string
+  }[]
   skus: {
     id: string
     codigo: string
@@ -19,6 +55,8 @@ export type DistributorAgentContext = {
     stock_disponible: number
     stock_total: number
     estado: string
+    precio_venta: number
+    notas: string | null
   }[]
   pedidos: {
     id: string
@@ -26,17 +64,33 @@ export type DistributorAgentContext = {
     estado: string
     total: number
     fecha_entrega: string | null
+    cliente_id: string
   }[]
+}
+
+export function isSkuStockCritico(estado: string): boolean {
+  return CRITICO_ESTADOS.has(estado)
 }
 
 export function buildDistributorAgentContext(
   skus: SkuRow[],
   pedidos: PedidoRow[],
+  cuentas: CuentaClienteWithClient[],
   opts?: { selectedId?: string | null; query?: string | null }
 ): DistributorAgentContext {
   const activos = pedidos.filter(p =>
     ['confirmado', 'preparando', 'en_ruta', 'borrador'].includes(p.estado)
   )
+  const pendientesEntrega = pedidos.filter(p => p.estado === 'confirmado')
+  const cuentasConSaldo = cuentas.filter(c => Number(c.saldo_pendiente) > 0)
+  const totalPorCobrar = cuentasConSaldo.reduce(
+    (s, c) => s + Number(c.saldo_pendiente),
+    0
+  )
+  const clientesVencidos = cuentasConSaldo.filter(
+    c => c.dias_vencido > 0 || c.estado === 'vencido'
+  ).length
+  const criticos = skus.filter(s => isSkuStockCritico(s.estado))
 
   return {
     perfil: 'distribuidor',
@@ -48,7 +102,37 @@ export function buildDistributorAgentContext(
       bajoStock: skus.filter(s => s.estado === 'bajo').length,
       quiebre: skus.filter(s => s.estado === 'quiebre').length,
       pedidosActivos: activos.length,
+      total_por_cobrar: totalPorCobrar,
+      clientes_con_saldo: cuentasConSaldo.length,
+      clientes_vencidos: clientesVencidos,
+      pedidos_confirmados_pendientes: pendientesEntrega.length,
     },
+    credito: {
+      total_por_cobrar: totalPorCobrar,
+      clientes_vencidos: clientesVencidos,
+      cuentas: cuentasConSaldo.slice(0, 40).map(c => ({
+        id: c.id,
+        cliente_id: c.cliente_id,
+        cliente_nombre: c.clients?.name ?? 'Cliente',
+        saldo_pendiente: Number(c.saldo_pendiente),
+        dias_vencido: c.dias_vencido,
+        estado: c.estado,
+      })),
+    },
+    pedidos_pendientes_entrega: pendientesEntrega.slice(0, 20).map(p => ({
+      id: p.id,
+      numero: p.numero,
+      estado: p.estado,
+      total: Number(p.total),
+      fecha_entrega: p.fecha_entrega,
+    })),
+    skus_stock_critico: criticos.slice(0, 25).map(s => ({
+      id: s.id,
+      codigo: s.codigo,
+      nombre: s.nombre,
+      stock_disponible: s.stock_disponible,
+      estado: s.estado,
+    })),
     skus: skus.map(s => ({
       id: s.id,
       codigo: s.codigo,
@@ -57,6 +141,8 @@ export function buildDistributorAgentContext(
       stock_disponible: s.stock_disponible,
       stock_total: s.stock_total,
       estado: s.estado,
+      precio_venta: Number(s.precio_venta),
+      notas: s.notas ?? null,
     })),
     pedidos: pedidos.slice(0, 30).map(p => ({
       id: p.id,
@@ -64,6 +150,7 @@ export function buildDistributorAgentContext(
       estado: p.estado,
       total: Number(p.total),
       fecha_entrega: p.fecha_entrega,
+      cliente_id: p.cliente_id,
     })),
   }
 }

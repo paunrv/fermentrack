@@ -1,13 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
 import { throwIfSupabaseError } from '@/lib/proof/proof-error'
-import { buildDistributorAgentContext } from '@/lib/proof/distributor-agent-context'
+import {
+  buildDistributorAgentContext,
+  type DistributorAgentContext,
+} from '@/lib/proof/distributor-agent-context'
 import {
   fetchCorridas,
   fetchProductosViaje,
   fetchViajes,
 } from '@/lib/supabase/destilador'
-import { fetchPedidos, fetchSkus } from '@/lib/supabase/distribuidor'
+import {
+  fetchCuentasClientes,
+  fetchPedidos,
+  fetchSkus,
+} from '@/lib/supabase/distribuidor'
 import type { ProfileScope } from '@/lib/supabase'
 import type { CorridaRow, LoteRow, ViajeRow } from '@/lib/proof/destilador-types'
 import type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-context-types'
@@ -85,6 +92,33 @@ export async function fetchLotesForAgent(
   return (data ?? []) as LoteRow[]
 }
 
+/** Contexto completo distribuidor (SKUs, pedidos, crédito) para agente. */
+export async function loadDistributorAgentContext(
+  sb: SupabaseClient,
+  clerkId: string,
+  hints?: AgentContextHints
+): Promise<DistributorAgentContext & Record<string, unknown>> {
+  const scope: ProfileScope = {
+    clerk_id: clerkId,
+    profile_type_v2: 'distributor',
+  }
+  const [skus, pedidos, cuentas] = await Promise.all([
+    fetchSkus(sb, scope),
+    fetchPedidos(sb, scope, { limit: 50 }),
+    fetchCuentasClientes(sb, scope),
+  ])
+  const datos = buildDistributorAgentContext(skus, pedidos, cuentas, {
+    selectedId: hints?.selectedId ?? null,
+    query: hints?.query ?? null,
+  })
+  return {
+    ...datos,
+    clerk_id: clerkId,
+    profile_type: 'distributor',
+    ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
+  }
+}
+
 export async function loadIsolatedAgentContext(
   sb: SupabaseClient,
   clerkId: string,
@@ -120,19 +154,5 @@ export async function loadIsolatedAgentContext(
     }
   }
 
-  const scope: ProfileScope = {
-    clerk_id: clerkId,
-    profile_type_v2: 'distributor',
-  }
-  const [skus, pedidos] = await Promise.all([
-    fetchSkus(sb, scope),
-    fetchPedidos(sb, scope, { limit: 50 }),
-  ])
-  const datos = buildDistributorAgentContext(skus, pedidos, { selectedId, query })
-  return {
-    ...datos,
-    clerk_id: clerkId,
-    profile_type: 'distributor',
-    ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
-  }
+  return loadDistributorAgentContext(sb, clerkId, hints)
 }

@@ -89,6 +89,7 @@ export interface SkuRow {
   en_consignacion: boolean
   ultimo_movimiento: string | null
   dist_product_id: string | null
+  notas: string | null
   clerk_id: string
   profile_type_v2: string
   created_at: string
