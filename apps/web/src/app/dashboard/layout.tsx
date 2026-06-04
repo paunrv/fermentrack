@@ -447,7 +447,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 accent={theme.accent}
                 canSwitchProfile={allProfiles.length > 1}
                 onSwitchProfile={() => router.push('/profile-select')}
-                onSignOut={() => signOut({ redirectUrl: '/' })}
+                onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
               />
             </div>
           </header>
@@ -594,7 +594,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 accent={theme.accent}
                 canSwitchProfile={allProfiles.length > 1}
                 onSwitchProfile={() => router.push('/profile-select')}
-                onSignOut={() => signOut({ redirectUrl: '/' })}
+                onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
               />
             </div>
           </header>
