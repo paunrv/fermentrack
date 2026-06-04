@@ -366,9 +366,24 @@ export default function DashboardPage() {
             lineHeight: 1.5,
           }}
         >
-          No pude cargar la bodega: {loadError}. Si acabas de aplicar SQL en Supabase, ejecuta{' '}
-          <code style={{ fontSize: 11 }}>NOTIFY pgrst, &apos;reload schema&apos;;</code> en el SQL
-          Editor y recarga esta página.
+          No pude cargar la bodega: {loadError}.
+          {loadError.includes('clerk_id') && (
+            <>
+              {' '}
+              La tabla <code style={{ fontSize: 11 }}>skus</code> en Supabase debe ser la PROOF
+              (con <code style={{ fontSize: 11 }}>clerk_id</code>). Aplica la migración{' '}
+              <code style={{ fontSize: 11 }}>20250604100000_skus_proof_replace_legacy.sql</code>{' '}
+              y recarga.
+            </>
+          )}
+          {!loadError.includes('clerk_id') && (
+            <>
+              {' '}
+              Si acabas de aplicar SQL, ejecuta{' '}
+              <code style={{ fontSize: 11 }}>NOTIFY pgrst, &apos;reload schema&apos;;</code> y
+              recarga.
+            </>
+          )}
         </div>
       )}
 
