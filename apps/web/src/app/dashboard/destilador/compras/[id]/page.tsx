@@ -113,7 +113,7 @@ export default function DetalleViajePage() {
       setResultado(
         `Recibido: ${rows.map(r => `${r.numero_lote} (${r.tipo_agave})`).join(', ')}`
       )
-      router.push('/dashboard/destilador/lotes')
+      router.push('/dashboard')
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'No se pudo confirmar la llegada')
     } finally {

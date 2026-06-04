@@ -120,7 +120,8 @@ export default function RemisionesPage() {
 
       <ConnectedProofAIBar
         pantalla="remisiones"
-        contexto={{ count: rows.length }}
+        profileType="distributor"
+        hints={{ pantalla: { count: rows.length } }}
         fallback={{
           mensaje: 'Las remisiones reflejan recepciones confirmadas con evidencia en Storage.',
         }}

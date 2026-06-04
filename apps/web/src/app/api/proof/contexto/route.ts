@@ -1,7 +1,26 @@
 import { NextRequest } from 'next/server'
 import { requireClerkUserId } from '@/lib/proof/auth-api'
-import { PROOF_AI_SYSTEM } from '@/lib/proof/prompts'
+import {
+  type AgentContextHints,
+  type AgentProfileType,
+  fetchLotesForAgent,
+  loadIsolatedAgentContext,
+} from '@/lib/proof/agent-context-server'
+import {
+  executeDistillerAgentAction,
+  parseDistillerActionIntent,
+} from '@/lib/proof/distiller-agent-actions'
+import { tryDistillerQuickAnswer } from '@/lib/proof/distiller-agent-answers'
+import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
+import { proofErrorMessage } from '@/lib/proof/proof-error'
+import {
+  PROOF_AI_DESTILADOR,
+  PROOF_AI_SYSTEM,
+  proofAgentIsolationClause,
+} from '@/lib/proof/prompts'
 import { createSseStream } from '@/lib/proof/sse'
+import { fetchProductosViaje, fetchViajes } from '@/lib/supabase/destilador'
+import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -10,7 +29,14 @@ export const dynamic = 'force-dynamic'
 type Body = {
   pantalla: string
   vista?: string
+  profileType: AgentProfileType
+  hints?: AgentContextHints
   contexto?: Record<string, unknown>
+}
+
+function parseProfileType(raw: unknown): AgentProfileType | null {
+  if (raw === 'distiller' || raw === 'distributor') return raw
+  return null
 }
 
 export async function POST(req: NextRequest) {
@@ -18,7 +44,20 @@ export async function POST(req: NextRequest) {
   if (!clerkId) {
     return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
   }
+
   const body = (await req.json()) as Body
+  console.log('[proof/contexto] request', {
+    profileType: body.profileType,
+    clerkId,
+  })
+  const profileType = parseProfileType(body.profileType)
+  if (!profileType) {
+    return new Response(
+      JSON.stringify({ error: 'profileType requerido: distiller | distributor' }),
+      { status: 400 }
+    )
+  }
+
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY no configurada' }), {
@@ -30,11 +69,113 @@ export async function POST(req: NextRequest) {
 
   void (async () => {
     try {
+      const { sb, mode } = await createSupabaseForProofApi()
+      const queryText = body.hints?.query?.trim() ?? ''
+      console.log('[proof/contexto] branch', {
+        profileType,
+        pantalla: body.pantalla,
+        query: queryText || null,
+        supabase: mode,
+      })
+
+      let datos: Record<string, unknown>
+      let refreshLoteId: string | null = null
+      let actionMessage: string | null = null
+
+      if (profileType === 'distiller' && queryText) {
+        const lotes = await fetchLotesForAgent(sb, clerkId, { limit: 500 })
+        const viajes = await fetchViajes(sb, clerkId, { limit: 100 })
+        const viajesPendientes = viajes.filter(
+          v => v.estado === 'confirmado' || v.estado === 'en_transito'
+        )
+        const productosViaje =
+          viajesPendientes.length > 0
+            ? await fetchProductosViaje(
+                sb,
+                viajesPendientes.map(v => v.id)
+              )
+            : []
+        const action = parseDistillerActionIntent(
+          queryText,
+          lotes,
+          viajes,
+          productosViaje.map(p => ({
+            id: p.id,
+            viaje_id: p.viaje_id,
+            tipo_agave: p.tipo_agave,
+            litros_acordados: Number(p.litros_acordados),
+          })),
+          { selectedLoteId: body.hints?.selectedId }
+        )
+        if (action) {
+          console.log('[proof/contexto] ejecutando acción', action)
+          const result = await executeDistillerAgentAction(sb, clerkId, action)
+          actionMessage = result.message
+          refreshLoteId = result.loteId
+        }
+        if (!actionMessage) {
+          const quickCtx = buildDistillerAgentContext(
+            lotes,
+            viajesPendientes,
+            productosViaje,
+            [],
+            { query: queryText }
+          )
+          const quick = tryDistillerQuickAnswer(queryText, quickCtx)
+          if (quick) {
+            console.log('[proof/contexto] quick answer', { query: queryText })
+            send('done', {
+              mensaje: quick.mensaje.replace(/\*\*/g, ''),
+              accionLabel: quick.accionLabel,
+              accionHref: quick.accionHref,
+              refreshLoteId,
+            })
+            return
+          }
+        }
+        datos = await loadIsolatedAgentContext(sb, clerkId, profileType, {
+          ...body.hints,
+          selectedId: refreshLoteId ?? body.hints?.selectedId,
+        })
+      } else {
+        datos = await loadIsolatedAgentContext(sb, clerkId, profileType, body.hints)
+      }
+
+      if (actionMessage) {
+        send('done', {
+          mensaje: actionMessage,
+          accionLabel: 'Ver bodega',
+          accionHref: '/dashboard',
+          refreshLoteId,
+        })
+        return
+      }
+
+      const isolation = proofAgentIsolationClause(clerkId, profileType)
+      const isDestilador = profileType === 'distiller'
+      const systemBase = isDestilador ? PROOF_AI_DESTILADOR : PROOF_AI_SYSTEM
+
+      if (isDestilador && queryText) {
+        const quick = tryDistillerQuickAnswer(queryText, datos)
+        if (quick) {
+          console.log('[proof/contexto] quick answer (full ctx)', { query: queryText })
+          send('done', {
+            mensaje: quick.mensaje.replace(/\*\*/g, ''),
+            accionLabel: quick.accionLabel,
+            accionHref: quick.accionHref,
+            refreshLoteId,
+          })
+          return
+        }
+      }
+
       const userPayload = JSON.stringify(
         {
           pantalla: body.pantalla,
-          vista: body.vista,
-          datos: body.contexto ?? {},
+          vista: body.vista ?? (isDestilador ? 'destilador' : 'distribuidor'),
+          profileType,
+          clerk_id: clerkId,
+          datos,
         },
         null,
         2
@@ -48,10 +189,12 @@ export async function POST(req: NextRequest) {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5',
           max_tokens: 256,
           stream: true,
-          system: `${PROOF_AI_SYSTEM}
+          system: `${systemBase}
+
+${isolation}
 
 Responde SOLO JSON válido:
 {"mensaje":"max 2 líneas","accionLabel":"texto botón corto","accionHref":"ruta opcional /dashboard/..."}`,
@@ -66,7 +209,6 @@ Responde SOLO JSON válido:
 
       if (!res.ok || !res.body) {
         send('error', { message: await res.text() })
-        close()
         return
       }
 
@@ -100,7 +242,7 @@ Responde SOLO JSON válido:
 
       let mensaje = full.trim()
       let accionLabel = 'Ver más'
-      let accionHref = '/dashboard/agente'
+      let accionHref = isDestilador ? '/dashboard' : '/dashboard/inventario'
       try {
         const m = full.match(/\{[\s\S]*\}/)
         if (m) {
@@ -117,10 +259,11 @@ Responde SOLO JSON válido:
         /* usar texto crudo */
       }
 
-      send('done', { mensaje, accionLabel, accionHref })
+      send('done', { mensaje, accionLabel, accionHref, refreshLoteId })
     } catch (e) {
+      console.error('[proof/contexto] error', e)
       send('error', {
-        message: e instanceof Error ? e.message : 'Error de contexto',
+        message: proofErrorMessage(e),
       })
     } finally {
       close()

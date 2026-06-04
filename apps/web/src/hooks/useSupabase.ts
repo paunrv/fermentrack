@@ -14,9 +14,9 @@ let warnedNoTemplate = false
 export function useSupabase(): SupabaseClient {
   const { getToken, isSignedIn, isLoaded } = useAuth()
 
-  return useMemo(
-    () =>
-      createSupabaseBrowserClient(async () => {
+  return useMemo(() => {
+    try {
+      return createSupabaseBrowserClient(async () => {
         if (!isLoaded || !isSignedIn) return null
         try {
           const token = await getToken({ template: 'supabase' })
@@ -30,9 +30,12 @@ export function useSupabase(): SupabaseClient {
         } catch {
           return null
         }
-      }),
-    [getToken, isSignedIn, isLoaded]
-  )
+      })
+    } catch (err) {
+      console.error('[useSupabase] init failed', err)
+      return createSupabaseBrowserClient()
+    }
+  }, [getToken, isSignedIn, isLoaded])
 }
 
 /** JWT template `supabase` para inserts críticos (falla con mensaje claro si falta). */

@@ -66,6 +66,7 @@ export interface LoteRow {
   estado: DestLoteEstado
   bodega_id: string
   fecha_recepcion: string
+  fecha_embotellado_programada?: string | null
   costo_real_por_botella?: number | null
   productos_viaje?: {
     precio_por_litro: number

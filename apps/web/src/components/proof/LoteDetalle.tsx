@@ -15,7 +15,7 @@ import {
   skuEstadoColor,
   skuEstadoLabel,
 } from '@/lib/proof/canvas-kpi'
-import { fmtLitros, fmtMoney } from '@/lib/proof/format'
+import { fmtDateOnly, fmtLitros, fmtMoney } from '@/lib/proof/format'
 import type { CorridaRow, LoteRow } from '@/lib/proof/destilador-types'
 import {
   metricLabel,
@@ -61,6 +61,7 @@ interface CollapsibleSectionData {
 }
 
 function fmtDate(d: string): string {
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) return fmtDateOnly(d)
   return new Date(d).toLocaleDateString('es-MX')
 }
 
@@ -498,7 +499,11 @@ function buildDistillerSections(
       pairs: [
         {
           label: 'Fecha embotellado',
-          value: ultima ? fmtDate(ultima.created_at) : '—',
+          value: lote.fecha_embotellado_programada
+            ? fmtDate(lote.fecha_embotellado_programada)
+            : ultima
+              ? fmtDate(ultima.created_at)
+              : '—',
         },
         { label: 'Formato', value: ultima?.formato_botella ?? '—' },
         { label: 'ABV', value: lote.abv != null ? `${lote.abv}%` : '—' },

@@ -389,7 +389,8 @@ export default function CreditoPage() {
       <ConnectedProofAIBar
         pantalla="credito"
         vista={vista}
-        contexto={proofContext}
+        profileType="distributor"
+        hints={{ pantalla: proofContext }}
         fallback={{
           mensaje:
             vista === 'resumen'

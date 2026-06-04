@@ -381,12 +381,15 @@ export default function PedidoComposerPage() {
       <ConnectedProofAIBar
         pantalla="pedidos"
         vista="compositor"
-        contexto={{
-          pedidoId,
-          estado: pedido?.estado,
-          hasOverstock,
-          lineCount: lines.length,
-          total,
+        profileType="distributor"
+        hints={{
+          pantalla: {
+            pedidoId,
+            estado: pedido?.estado,
+            hasOverstock,
+            lineCount: lines.length,
+            total,
+          },
         }}
         fallback={{
           mensaje: proofMessage,

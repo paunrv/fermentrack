@@ -1,14 +1,22 @@
 'use client'
 
+import { AgaveCardIcon } from '@/components/proof/AgaveCardIcon'
+import { parseDateOnlyLocal } from '@/lib/proof/format'
 import type { DestLoteEstado } from '@/lib/proof/destilador-types'
 
-export type BotellaCardEstado = 'crudo' | 'produccion' | 'terminado' | 'vendido_parcial'
+export type BotellaCardEstado =
+  | 'crudo'
+  | 'produccion'
+  | 'terminado'
+  | 'vendido_parcial'
+  | 'pendiente'
 
 const ESTADO_DOT: Record<BotellaCardEstado, string> = {
   crudo: 'var(--proof-accent)',
   produccion: '#378ADD',
   terminado: '#4CAF7D',
   vendido_parcial: '#9B8FE0',
+  pendiente: '#D4A017',
 }
 
 export function mapLoteEstadoToBotella(estado: DestLoteEstado): BotellaCardEstado {
@@ -21,6 +29,8 @@ export function mapLoteEstadoToBotella(estado: DestLoteEstado): BotellaCardEstad
       return 'terminado'
     case 'vendido_parcial':
       return 'vendido_parcial'
+    default:
+      return 'crudo'
   }
 }
 
@@ -31,16 +41,21 @@ export function BotellaCard({
   estado,
   litrosDisponibles,
   botellasDisponibles,
+  fechaEmbotelladoProgramada,
   selected = false,
   accent,
   onClick,
+  dashed = false,
 }: {
   id: string
   nombre: string
   maestro: string
   estado: BotellaCardEstado
+  /** Viaje en tránsito (aún no es lote en bodega) */
+  dashed?: boolean
   litrosDisponibles?: number
   botellasDisponibles?: number
+  fechaEmbotelladoProgramada?: string | null
   selected?: boolean
   accent: string
   onClick: () => void
@@ -48,7 +63,17 @@ export function BotellaCard({
   const stockParts: string[] = []
   if (litrosDisponibles != null) stockParts.push(`${litrosDisponibles} L`)
   if (botellasDisponibles != null) stockParts.push(`${botellasDisponibles} bts`)
-  const title = [maestro, stockParts.length > 0 ? stockParts.join(' · ') : null]
+  const fechaLabel = (() => {
+    if (!fechaEmbotelladoProgramada) return null
+    const d = parseDateOnlyLocal(fechaEmbotelladoProgramada)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+  })()
+  const title = [
+    maestro,
+    fechaLabel ? `Embotella ${fechaLabel}` : null,
+    stockParts.length > 0 ? stockParts.join(' · ') : null,
+  ]
     .filter(Boolean)
     .join(' · ')
 
@@ -61,7 +86,11 @@ export function BotellaCard({
       style={{
         width: '100%',
         background: selected ? '#FAFAF8' : '#fff',
-        border: selected ? '0.5px solid #1A1A1A' : '0.5px solid #E8E6E0',
+        border: selected
+          ? '0.5px solid #1A1A1A'
+          : dashed
+            ? '0.5px dashed #D4A017'
+            : '0.5px solid #E8E6E0',
         borderRadius: 12,
         padding: '16px 12px 12px',
         cursor: 'pointer',
@@ -77,7 +106,7 @@ export function BotellaCard({
       }}
       onMouseLeave={e => {
         if (selected) return
-        e.currentTarget.style.borderColor = '#E8E6E0'
+        e.currentTarget.style.borderColor = dashed ? '#D4A017' : '#E8E6E0'
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
@@ -93,20 +122,7 @@ export function BotellaCard({
           background: ESTADO_DOT[estado],
         }}
       />
-      <svg
-        width="40"
-        height="72"
-        viewBox="0 0 40 72"
-        aria-hidden
-        style={{ display: 'block', margin: '0 auto 8px' }}
-      >
-        <path
-          d="M15 2h10v8c0 3 3 5 3 8v4c0 8-3 12-3 16v24c0 4-3 8-8 8h-2c-5 0-8-4-8-8V38c0-4-3-8-3-16v-4c0-3 3-5 3-8V2z"
-          fill={`${accent}33`}
-          stroke="#E0DDD6"
-          strokeWidth="0.5"
-        />
-      </svg>
+      <AgaveCardIcon accent={accent} />
       <div
         style={{
           background: '#F4F2EE',
@@ -139,6 +155,20 @@ export function BotellaCard({
         >
           {id}
         </div>
+        {(fechaLabel || estado === 'pendiente') && (
+          <div
+            style={{
+              fontSize: 8,
+              color: estado === 'pendiente' ? '#B8860B' : accent,
+              marginTop: 4,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {estado === 'pendiente' ? 'Confirmar llegada' : fechaLabel}
+          </div>
+        )}
       </div>
     </button>
   )

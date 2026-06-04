@@ -462,13 +462,16 @@ export default function RecepcionPage() {
       <ConnectedProofAIBar
         pantalla="recepcion"
         vista={STEPS[step]}
-        contexto={{
-          step,
-          productor,
-          ordenCompraId: ordenCompraId || null,
-          itemsCount: items.length,
-          totalBotellas,
-          discrepancias: discrepancias.length,
+        profileType="distributor"
+        hints={{
+          pantalla: {
+            step,
+            productor,
+            ordenCompraId: ordenCompraId || null,
+            itemsCount: items.length,
+            totalBotellas,
+            discrepancias: discrepancias.length,
+          },
         }}
         fallback={{
           mensaje: 'Al confirmar, incremento stock_total y registro deuda si aplica.',

@@ -1,3 +1,16 @@
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Fechas `YYYY-MM-DD` de Postgres — mediodía local para evitar −1 día en MX. */
+export function parseDateOnlyLocal(isoDate: string): Date {
+  const day = isoDate.slice(0, 10)
+  if (DATE_ONLY_RE.test(day)) return new Date(`${day}T12:00:00`)
+  return new Date(isoDate)
+}
+
+export function fmtDateOnly(isoDate: string): string {
+  return parseDateOnlyLocal(isoDate).toLocaleDateString('es-MX')
+}
+
 export function fmtBottles(n: number): string {
   return n.toLocaleString('es-MX')
 }

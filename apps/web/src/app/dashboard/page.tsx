@@ -11,25 +11,45 @@ import { AgentBar } from '@/components/proof/AgentBar'
 import { BotellaCard, mapLoteEstadoToBotella } from '@/components/proof/BotellaCard'
 import { SkuCard, mapSkuEstadoToCard } from '@/components/proof/SkuCard'
 import { LoteDetalle } from '@/components/proof/LoteDetalle'
+import { ViajePendienteDetalle } from '@/components/proof/ViajePendienteDetalle'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { CANVAS_BG, getProfileTheme } from '@/lib/proof/profile-theme'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import type { LoteRow } from '@/lib/proof/destilador-types'
+import type {
+  CorridaRow,
+  LoteRow,
+  ProductoViajeRow,
+  ViajeRow,
+} from '@/lib/proof/destilador-types'
+import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { fetchSkus, type SkuRow } from '@/lib/supabase'
-import { fetchLotes } from '@/lib/supabase/destilador'
+import {
+  fetchCorridas,
+  fetchLotes,
+  fetchProductosViaje,
+  fetchViajes,
+} from '@/lib/supabase/destilador'
 
 const DISTILLER_QUICK_ACTIONS = [
   { label: '¿Cuánto stock terminado?', message: '¿Cuánto stock terminado tengo?' },
   { label: 'Lotes listos para embotellar', message: '¿Qué lotes están listos para embotellar?' },
   { label: 'Deuda palenqueros', message: '¿Cuánto debo a palenqueros?' },
-  { label: '+ Nuevo viaje', message: 'Quiero registrar un nuevo viaje a Oaxaca' },
+  {
+    label: '+ Nuevo viaje',
+    message: 'Quiero registrar un nuevo viaje a Oaxaca',
+    href: '/dashboard/destilador/compras/nuevo',
+  },
 ] as const
 
 const DISTRIBUTOR_QUICK_ACTIONS = [
   { label: 'Stock bajo', message: '¿Qué SKUs tienen stock bajo?' },
   { label: 'Pedidos pendientes', message: '¿Qué pedidos están pendientes de entrega?' },
   { label: 'Por cobrar', message: '¿Cuánto tengo por cobrar?' },
-  { label: '+ Nuevo pedido', message: 'Quiero registrar un nuevo pedido' },
+  {
+    label: '+ Nuevo pedido',
+    message: 'Quiero registrar un nuevo pedido',
+    href: '/dashboard/pedidos/nuevo',
+  },
 ] as const
 
 function CanvasDivider({ label }: { label: string }) {
@@ -62,22 +82,64 @@ function CanvasDivider({ label }: { label: string }) {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { scope } = useProfile()
+  const { scope, activeProfile, loading: profileLoading } = useProfile()
   const supabase = useSupabase()
 
-  const profileType = profileTypeFromV2(scope?.profile_type_v2)
-  const theme = getProfileTheme(scope?.profile_type_v2)
+  const agentProfileType = toAgentProfileType(activeProfile?.profile_type_v2)
+  const profileType = profileTypeFromV2(activeProfile?.profile_type_v2)
+  const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const accent = theme.accent
   const clerkId = scope?.clerk_id
   const isDistiller = profileType === 'distiller'
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedViajeId, setSelectedViajeId] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [lotes, setLotes] = useState<LoteRow[]>([])
+  const [viajes, setViajes] = useState<ViajeRow[]>([])
+  const [productosViaje, setProductosViaje] = useState<ProductoViajeRow[]>([])
+  const [corridasActivas, setCorridasActivas] = useState<CorridaRow[]>([])
   const [skus, setSkus] = useState<SkuRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [dataVersion, setDataVersion] = useState(0)
+  const [agentRequestId, setAgentRequestId] = useState(0)
 
-  const itemCount = isDistiller ? lotes.length : skus.length
+  const pendingViajeCards = useMemo(() => {
+    if (!isDistiller) return []
+    const pendientes = viajes.filter(
+      v => v.estado === 'confirmado' || v.estado === 'en_transito'
+    )
+    return pendientes.map(v => {
+      const prods = productosViaje.filter(p => p.viaje_id === v.id)
+      const litros = prods.reduce((s, p) => s + Number(p.litros_acordados), 0)
+      const nombre =
+        prods.length === 0
+          ? 'Viaje'
+          : prods.length === 1
+            ? prods[0]!.tipo_agave
+            : prods.map(p => p.tipo_agave).join(' · ')
+      return {
+        viajeId: v.id,
+        nombre,
+        region: v.region || v.comunidad || '—',
+        litros,
+        estado: v.estado,
+      }
+    })
+  }, [isDistiller, viajes, productosViaje])
+
+  const bodegaCount = isDistiller
+    ? lotes.length + pendingViajeCards.length
+    : skus.length
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setDataVersion(v => v + 1)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   useEffect(() => {
     if (!scope || !profileType) {
@@ -89,13 +151,64 @@ export default function DashboardPage() {
     setLoading(true)
 
     const load = async () => {
+      setLoadError(null)
       try {
         if (profileType === 'distiller' && clerkId) {
-          const rows = await fetchLotes(supabase, clerkId, { limit: 500 })
-          if (!cancelled) setLotes(rows)
+          const errors: string[] = []
+          let loteRows: LoteRow[] = []
+          let viajeRows: ViajeRow[] = []
+          let corridaRows: CorridaRow[] = []
+
+          try {
+            loteRows = await fetchLotes(supabase, clerkId, { limit: 500 })
+          } catch (e) {
+            console.error('[dashboard] fetchLotes', e)
+            errors.push(e instanceof Error ? e.message : 'Error cargando lotes')
+          }
+
+          try {
+            viajeRows = await fetchViajes(supabase, clerkId, { limit: 200 })
+          } catch (e) {
+            console.error('[dashboard] fetchViajes', e)
+            errors.push(e instanceof Error ? e.message : 'Error cargando viajes')
+          }
+
+          try {
+            corridaRows = await fetchCorridas(supabase, clerkId, {
+              estado: 'activa',
+              limit: 50,
+            })
+          } catch (e) {
+            console.error('[dashboard] fetchCorridas', e)
+            errors.push(e instanceof Error ? e.message : 'Error cargando corridas')
+          }
+
+          let productos: ProductoViajeRow[] = []
+          try {
+            const activos = viajeRows.filter(v => v.estado !== 'recibido')
+            productos = await fetchProductosViaje(supabase, activos.map(v => v.id))
+          } catch (e) {
+            console.error('[dashboard] fetchProductosViaje', e)
+            errors.push(e instanceof Error ? e.message : 'Error cargando productos')
+          }
+
+          if (!cancelled) {
+            setLotes(loteRows)
+            setViajes(viajeRows)
+            setProductosViaje(productos)
+            setCorridasActivas(corridaRows)
+            if (errors.length > 0) {
+              setLoadError(errors[0] ?? 'Error cargando bodega')
+            }
+          }
         } else if (profileType === 'distributor') {
           const rows = await fetchSkus(supabase, scope)
           if (!cancelled) setSkus(rows)
+        }
+      } catch (e) {
+        console.error('[dashboard] load', e)
+        if (!cancelled) {
+          setLoadError(e instanceof Error ? e.message : 'Error cargando dashboard')
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -106,40 +219,93 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [scope, profileType, clerkId, supabase])
+  }, [scope, profileType, clerkId, supabase, dataVersion])
 
-  const agentContext = useMemo(() => {
-    const base = isDistiller
-      ? { lotesCount: lotes.length, selectedId }
-      : { skusCount: skus.length, selectedId }
-    return userQuery ? { ...base, query: userQuery } : base
-  }, [isDistiller, lotes.length, skus.length, selectedId, userQuery])
+  const agentHints = useMemo(
+    () => ({
+      query: userQuery,
+      selectedId,
+    }),
+    [userQuery, selectedId]
+  )
 
-  const { mensaje, loading: agentLoading } = useProofContextBar({
+  const agentFallback = useMemo(
+    () => ({
+      mensaje:
+        agentProfileType === 'distiller'
+          ? `${lotes.length} lote${lotes.length === 1 ? '' : 's'} en bodega. Pregúntame por costos, merma o producción.`
+          : `${skus.length} SKU${skus.length === 1 ? '' : 's'} en inventario. Pregúntame por stock, pedidos o cobros.`,
+    }),
+    [agentProfileType, lotes.length, skus.length]
+  )
+
+  const { mensaje, loading: agentLoading, refreshLoteId } = useProofContextBar({
     pantalla: 'inicio',
-    vista: isDistiller ? 'destilador' : 'distribuidor',
-    contexto: agentContext,
-    enabled: !loading && profileType != null,
-    fallback: {
-      mensaje: isDistiller
-        ? `${lotes.length} lote${lotes.length === 1 ? '' : 's'} en bodega. Pregúntame por costos, merma o producción.`
-        : `${skus.length} SKU${skus.length === 1 ? '' : 's'} en inventario. Pregúntame por stock, pedidos o cobros.`,
-    },
+    vista: agentProfileType === 'distiller' ? 'destilador' : 'distribuidor',
+    profileType: agentProfileType,
+    hints: agentHints,
+    requestId: agentRequestId,
+    enabled: Boolean(clerkId) && agentProfileType != null,
+    fallback: agentFallback,
   })
-
-  const agentResponse = agentLoading ? 'PROOF analizando…' : mensaje
 
   const quickActionsForProfile = isDistiller
     ? [...DISTILLER_QUICK_ACTIONS]
     : [...DISTRIBUTOR_QUICK_ACTIONS]
 
-  const handleAgentSend = useCallback((message: string) => {
-    setUserQuery(message)
-  }, [])
+  useEffect(() => {
+    if (!refreshLoteId) return
+    setSelectedId(refreshLoteId)
+    setDataVersion(v => v + 1)
+  }, [refreshLoteId])
+
+  const handleAgentSend = useCallback(
+    (message: string) => {
+      const q = message.toLowerCase()
+      if (
+        q.includes('nuevo viaje') ||
+        q.includes('nuevo pedido') ||
+        (q.includes('registrar') && q.includes('viaje'))
+      ) {
+        router.push(
+          isDistiller
+            ? '/dashboard/destilador/compras/nuevo'
+            : '/dashboard/pedidos/nuevo'
+        )
+        return
+      }
+      setUserQuery(message)
+      setAgentRequestId(n => n + 1)
+    },
+    [router, isDistiller]
+  )
 
   const dividerLabel = isDistiller
-    ? `Bodega — ${loading ? '…' : itemCount} lotes`
-    : `Inventario — ${loading ? '…' : itemCount} SKUs`
+    ? loading
+      ? 'Bodega — …'
+      : pendingViajeCards.length > 0
+        ? `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'} · ${pendingViajeCards.length} por recibir`
+        : `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'}`
+    : `Inventario — ${loading ? '…' : skus.length} SKUs`
+
+  const showProfileGate = profileLoading && !activeProfile
+
+  if (showProfileGate) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: CANVAS_BG,
+          display: 'grid',
+          placeItems: 'center',
+          color: '#999',
+          fontSize: 13,
+        }}
+      >
+        Cargando PROOF…
+      </div>
+    )
+  }
 
   if (!profileType) {
     return (
@@ -180,20 +346,55 @@ export default function DashboardPage() {
       <AgentBar
         accent={accent}
         onSend={handleAgentSend}
-        response={agentResponse}
+        response={mensaje}
+        isLoading={agentLoading}
         quickActions={quickActionsForProfile}
       />
 
       <CanvasDivider label={dividerLabel} />
 
-      {selectedId != null && (
-        <LoteDetalle
-          loteId={selectedId}
-          profileType={profileType}
-          accent={accent}
-          onClose={() => setSelectedId(null)}
-        />
+      {!loading && loadError && (
+        <div
+          style={{
+            margin: '0 24px 16px',
+            padding: '12px 16px',
+            borderRadius: 10,
+            border: '0.5px solid #E8B4B4',
+            background: '#FFF5F5',
+            fontSize: 12,
+            color: '#8B2E2E',
+            lineHeight: 1.5,
+          }}
+        >
+          No pude cargar la bodega: {loadError}. Si acabas de aplicar SQL en Supabase, ejecuta{' '}
+          <code style={{ fontSize: 11 }}>NOTIFY pgrst, &apos;reload schema&apos;;</code> en el SQL
+          Editor y recarga esta página.
+        </div>
       )}
+
+        {selectedViajeId != null && clerkId && (
+          <ViajePendienteDetalle
+            key={`viaje-${selectedViajeId}-${dataVersion}`}
+            viajeId={selectedViajeId}
+            accent={accent}
+            onClose={() => setSelectedViajeId(null)}
+            onRecibido={loteId => {
+              setSelectedViajeId(null)
+              setSelectedId(loteId)
+              setDataVersion(v => v + 1)
+            }}
+          />
+        )}
+
+        {selectedId != null && selectedViajeId == null && profileType && (
+          <LoteDetalle
+            key={`${selectedId}-${dataVersion}`}
+            loteId={selectedId}
+            profileType={profileType}
+            accent={accent}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
 
       <div
         style={{
@@ -227,9 +428,33 @@ export default function DashboardPage() {
               maestro={l.maestro ?? '—'}
               estado={mapLoteEstadoToBotella(l.estado)}
               litrosDisponibles={l.litros_disponibles_granel}
-              selected={selectedId === l.id}
+              fechaEmbotelladoProgramada={l.fecha_embotellado_programada}
+              selected={selectedId === l.id && selectedViajeId == null}
               accent={accent}
-              onClick={() => setSelectedId(l.id)}
+              onClick={() => {
+                setSelectedViajeId(null)
+                setSelectedId(l.id)
+              }}
+            />
+          ))}
+
+        {!loading &&
+          isDistiller &&
+          pendingViajeCards.map(v => (
+            <BotellaCard
+              key={`viaje-${v.viajeId}`}
+              id={v.estado === 'en_transito' ? 'En tránsito' : 'Por recibir'}
+              nombre={v.nombre}
+              maestro={v.region}
+              estado="pendiente"
+              litrosDisponibles={v.litros > 0 ? v.litros : undefined}
+              selected={selectedViajeId === v.viajeId}
+              dashed
+              accent={accent}
+              onClick={() => {
+                setSelectedId(null)
+                setSelectedViajeId(v.viajeId)
+              }}
             />
           ))}
 
@@ -249,7 +474,7 @@ export default function DashboardPage() {
             />
           ))}
 
-        {!loading && itemCount === 0 && (
+        {!loading && bodegaCount === 0 && (
           <div
             style={{
               gridColumn: '1 / -1',

@@ -123,12 +123,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
 
     const stored = readStoredType()
-    const found =
+    let found =
       (stored && profiles.find(p => p.profile_type_v2 === stored)) || profiles[0]
     if (!found) {
       setActiveProfile(null)
       return true
     }
+    if (stored && found.profile_type_v2 !== stored) {
+      console.warn(
+        '[ProfileContext] stored profile not found, using',
+        found.profile_type_v2,
+        'stored was',
+        stored
+      )
+    }
+    console.log('[ProfileContext] active profile', found.profile_type_v2)
     setActiveProfile(found)
     writeStoredType(found.profile_type_v2)
     try {

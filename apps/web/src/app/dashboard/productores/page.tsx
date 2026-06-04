@@ -132,7 +132,8 @@ export default function ProductoresPage() {
 
       <ConnectedProofAIBar
         pantalla="productores"
-        contexto={{ total: rows.length, conDeuda }}
+        profileType="distributor"
+        hints={{ pantalla: { total: rows.length, conDeuda } }}
         fallback={{
           mensaje:
             conDeuda > 0

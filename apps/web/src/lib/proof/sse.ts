@@ -6,6 +6,8 @@ export function createSseStream() {
   const encoder = new TextEncoder()
   let controller: ReadableStreamDefaultController<Uint8Array> | null = null
 
+  let closed = false
+
   const stream = new ReadableStream<Uint8Array>({
     start(c) {
       controller = c
@@ -13,11 +15,22 @@ export function createSseStream() {
   })
 
   const send = (event: string, data: unknown) => {
-    controller?.enqueue(encoder.encode(sseEncode(event, data)))
+    if (closed || !controller) return
+    try {
+      controller.enqueue(encoder.encode(sseEncode(event, data)))
+    } catch {
+      closed = true
+    }
   }
 
   const close = () => {
-    controller?.close()
+    if (closed || !controller) return
+    closed = true
+    try {
+      controller.close()
+    } catch {
+      /* ya cerrado */
+    }
   }
 
   return { stream, send, close }

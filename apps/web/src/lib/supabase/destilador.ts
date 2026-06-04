@@ -25,7 +25,13 @@ export const FORMATO_LITROS: Record<DestFormatoBotella, number> = {
 
 export function isDestSchemaMissingError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err)
-  return msg.includes('does not exist') || msg.includes('PGRST205') || msg.includes('relation')
+  return (
+    msg.includes('does not exist') ||
+    msg.includes('PGRST204') ||
+    msg.includes('PGRST205') ||
+    msg.includes('schema cache') ||
+    msg.includes('relation')
+  )
 }
 
 type ProductoViajeEmbed = {
@@ -162,25 +168,48 @@ export async function sumSaldosPalenqueros(
   return productos.reduce((s, p) => s + Number(p.saldo_pendiente ?? 0), 0)
 }
 
+const LOTES_SELECT_BASE = `id, numero_lote, viaje_id, producto_viaje_id, tipo_agave, maestro, comunidad,
+       litros_disponibles_granel, litros_recibidos, estado, bodega_id, fecha_recepcion,
+       productos_viaje ( precio_por_litro, flete_proporcional, litros_acordados )`
+
+const LOTES_SELECT_WITH_FECHA = `id, numero_lote, viaje_id, producto_viaje_id, tipo_agave, maestro, comunidad,
+       litros_disponibles_granel, litros_recibidos, estado, bodega_id, fecha_recepcion,
+       fecha_embotellado_programada,
+       productos_viaje ( precio_por_litro, flete_proporcional, litros_acordados )`
+
+function isSchemaCacheColumnError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err)
+  return (
+    msg.includes('fecha_embotellado_programada') &&
+    (msg.includes('schema cache') || msg.includes('PGRST204'))
+  )
+}
+
 export async function fetchLotes(
   supabase: SupabaseClient,
   clerkId: string,
   opts?: { estado?: DestLoteEstado; limit?: number }
 ): Promise<LoteRow[]> {
-  let q = supabase
-    .from('lotes')
-    .select(
-      `id, numero_lote, viaje_id, producto_viaje_id, tipo_agave,
-       litros_disponibles_granel, litros_recibidos, estado, bodega_id, fecha_recepcion,
-       productos_viaje ( precio_por_litro, flete_proporcional, litros_acordados )`
-    )
-    .eq('clerk_id', clerkId)
-    .order('fecha_recepcion', { ascending: false })
-  if (opts?.estado) q = q.eq('estado', opts.estado)
-  if (opts?.limit) q = q.limit(opts.limit)
-  const { data, error } = await q
-  if (error) throw error
-  return (data ?? []).map(row => normalizeLoteRow(row as Record<string, unknown>))
+  for (const select of [LOTES_SELECT_WITH_FECHA, LOTES_SELECT_BASE]) {
+    let q = supabase
+      .from('lotes')
+      .select(select)
+      .eq('clerk_id', clerkId)
+      .order('fecha_recepcion', { ascending: false })
+    if (opts?.estado) q = q.eq('estado', opts.estado)
+    if (opts?.limit) q = q.limit(opts.limit)
+    const { data, error } = await q
+    if (!error) {
+      return (data ?? []).map(row =>
+        normalizeLoteRow(row as unknown as Record<string, unknown>)
+      )
+    }
+    if (select === LOTES_SELECT_WITH_FECHA && isSchemaCacheColumnError(error)) {
+      continue
+    }
+    throw error
+  }
+  return []
 }
 
 export async function countLotesByEstado(
@@ -347,18 +376,27 @@ export async function fetchLoteById(
   clerkId: string,
   loteId: string
 ): Promise<LoteRow | null> {
-  const { data, error } = await supabase
-    .from('lotes')
-    .select(
-      `id, numero_lote, viaje_id, producto_viaje_id, tipo_agave, maestro, comunidad, abv,
+  const selects = [
+    `id, numero_lote, viaje_id, producto_viaje_id, tipo_agave, maestro, comunidad, abv,
        litros_disponibles_granel, litros_recibidos, estado, bodega_id, fecha_recepcion,
-       productos_viaje ( precio_por_litro, flete_proporcional, litros_acordados, saldo_pendiente, merma_litros )`
-    )
-    .eq('clerk_id', clerkId)
-    .eq('id', loteId)
-    .maybeSingle()
-  if (error) throw error
-  return data ? normalizeLoteRow(data as Record<string, unknown>) : null
+       fecha_embotellado_programada,
+       productos_viaje ( precio_por_litro, flete_proporcional, litros_acordados, saldo_pendiente, merma_litros )`,
+    `id, numero_lote, viaje_id, producto_viaje_id, tipo_agave, maestro, comunidad, abv,
+       litros_disponibles_granel, litros_recibidos, estado, bodega_id, fecha_recepcion,
+       productos_viaje ( precio_por_litro, flete_proporcional, litros_acordados, saldo_pendiente, merma_litros )`,
+  ]
+  for (const select of selects) {
+    const { data, error } = await supabase
+      .from('lotes')
+      .select(select)
+      .eq('clerk_id', clerkId)
+      .eq('id', loteId)
+      .maybeSingle()
+    if (!error) return data ? normalizeLoteRow(data as unknown as Record<string, unknown>) : null
+    if (select === selects[0] && isSchemaCacheColumnError(error)) continue
+    throw error
+  }
+  return null
 }
 
 export interface MovimientoInventarioRow {

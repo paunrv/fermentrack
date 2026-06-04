@@ -1,13 +1,9 @@
 import type { Metadata } from 'next';
-import nextDynamic from 'next/dynamic';
 import './globals.css';
+import { Providers } from './providers';
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-const Providers = nextDynamic(() => import('./providers').then(m => m.Providers), {
-  ssr: false,
-});
 
 export const metadata: Metadata = {
   title: 'PROOF · Operational Intelligence for Liquid Operations',

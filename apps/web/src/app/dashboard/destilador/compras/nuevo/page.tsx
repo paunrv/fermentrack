@@ -12,7 +12,11 @@ import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
 import { fmtMoney } from '@/lib/proof/format'
 import type { DestViajeEstado, NuevoProductoViajeInput } from '@/lib/proof/destilador-types'
-import { createViajeDestilador } from '@/lib/supabase/destilador'
+import {
+  confirmarLlegadaDestilador,
+  createViajeDestilador,
+  fetchProductosForViaje,
+} from '@/lib/supabase/destilador'
 
 const AGAVES = ['Espadín', 'Tobalá', 'Mexicano', 'Tepeztate', 'Madrecuixe', 'Arroqueño', 'Otro']
 
@@ -141,7 +145,8 @@ export default function NuevoViajePage() {
   const [palenqueroNombre, setPalenqueroNombre] = useState('')
   const [palenqueroContacto, setPalenqueroContacto] = useState('')
   const [costoFlete, setCostoFlete] = useState('')
-  const [estado, setEstado] = useState<DestViajeEstado>('en_transito')
+  const [estado, setEstado] = useState<DestViajeEstado>('confirmado')
+  const [recibirEnBodega, setRecibirEnBodega] = useState(true)
   const [productos, setProductos] = useState<NuevoProductoViajeInput[]>([emptyProducto()])
 
   const totales = useMemo(() => {
@@ -218,6 +223,27 @@ export default function NuevoViajePage() {
       const { viajeId } = await createViajeDestilador(supabaseAuthed, clerkId, payload)
 
       console.info('[viaje/nuevo] viaje creado', { viajeId })
+
+      if (
+        recibirEnBodega &&
+        (payload.estado === 'confirmado' || payload.estado === 'en_transito')
+      ) {
+        const prods = await fetchProductosForViaje(supabaseAuthed, clerkId, viajeId)
+        await confirmarLlegadaDestilador(
+          supabaseAuthed,
+          viajeId,
+          prods.map(p => ({
+            producto_viaje_id: p.id,
+            litros_salida: Number(p.litros_acordados),
+            litros_recibidos: Number(p.litros_acordados),
+            abv: null,
+          }))
+        )
+        console.info('[viaje/nuevo] lote(s) en bodega', { viajeId })
+        router.push('/dashboard')
+        return
+      }
+
       router.push(`/dashboard/destilador/compras/${viajeId}`)
     } catch (err: unknown) {
       logViajeSaveError(err, { clerkId, payload })
@@ -423,6 +449,29 @@ export default function NuevoViajePage() {
           <div style={{ color: 'var(--warn)' }}>Saldo palenquero: {fmtMoney(totales.saldo)}</div>
         </div>
 
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            fontSize: 12,
+            color: 'var(--fg-1)',
+            lineHeight: 1.5,
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={recibirEnBodega}
+            onChange={e => setRecibirEnBodega(e.target.checked)}
+            style={{ marginTop: 3 }}
+          />
+          <span>
+            Recibir en bodega ahora (crea el lote en el canvas). Si lo desmarcas, después debes
+            confirmar la llegada en Compras.
+          </span>
+        </label>
+
         {error && <p style={{ color: 'var(--crit)', fontSize: 13 }}>{error}</p>}
 
         <button
@@ -440,7 +489,11 @@ export default function NuevoViajePage() {
             cursor: saving ? 'wait' : 'pointer',
           }}
         >
-          {saving ? 'Guardando…' : 'Crear viaje'}
+          {saving
+            ? 'Guardando…'
+            : recibirEnBodega
+              ? 'Crear y recibir en bodega'
+              : 'Crear viaje'}
         </button>
       </form>
     </div>

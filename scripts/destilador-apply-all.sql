@@ -1117,3 +1117,24 @@ select * from proof.confirmar_llegada_destilador(
 
 select numero_lote, tipo_agave, litros_recibidos, estado from lotes where viaje_id = '<viaje_id>';
 */
+
+-- -----------------------------------------------------------------------------
+-- Agente destilador: campos aditivos (20250603000000)
+-- -----------------------------------------------------------------------------
+alter table public.corridas_embotellado
+  add column if not exists fecha_embotellado date;
+
+alter table public.lotes
+  add column if not exists precio_venta numeric(14, 2)
+    check (precio_venta is null or precio_venta >= 0);
+
+alter table public.lotes
+  add column if not exists nota text;
+
+alter table public.lotes
+  add column if not exists fecha_embotellado_programada date;
+
+comment on column public.corridas_embotellado.fecha_embotellado is 'Fecha programada/real de embotellado (agente PROOF)';
+comment on column public.lotes.precio_venta is 'Precio de venta referencia del lote';
+comment on column public.lotes.nota is 'Nota libre del lote';
+comment on column public.lotes.fecha_embotellado_programada is 'Fecha programada de embotellado (agente PROOF)';

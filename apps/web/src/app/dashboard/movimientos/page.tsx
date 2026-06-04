@@ -752,7 +752,8 @@ export default function MovimientosPage() {
       <ConnectedProofAIBar
         pantalla="movimientos"
         vista={type}
-        contexto={{ summary, salidasCount: salidasHoy.length, today }}
+        profileType="distributor"
+        hints={{ pantalla: { summary, salidasCount: salidasHoy.length, today } }}
         fallback={{ mensaje: proofMsg, accionLabel: 'Preguntar a PROOF' }}
       />
     </div>

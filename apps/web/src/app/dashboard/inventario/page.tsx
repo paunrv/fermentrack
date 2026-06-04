@@ -387,7 +387,8 @@ export default function InventarioPage() {
       <ConnectedProofAIBar
         pantalla="inventario"
         vista={vista}
-        contexto={{ kpis, skuCount: skus.length, filtro, needsSync }}
+        profileType="distributor"
+        hints={{ pantalla: { kpis, skuCount: skus.length, filtro, needsSync } }}
         fallback={{ mensaje: proofMsg, accionLabel: 'Analizar con PROOF' }}
       />
     </div>
