@@ -374,4 +374,14 @@ exception
     raise notice 'realtime skus: %', sqlerrm;
 end $$;
 
+-- Data API: RLS exige además GRANT explícito al rol authenticated
+grant select, insert, update, delete on public.skus to authenticated, service_role;
+grant select, insert, update, delete on public.proof_sequences to authenticated, service_role;
+
+grant usage on type public.categoria_sku to authenticated, service_role;
+grant usage on type public.estado_sku to authenticated, service_role;
+grant usage on type public.rotacion_30d to authenticated, service_role;
+
+grant usage on schema proof to authenticated, service_role;
+
 notify pgrst, 'reload schema';
