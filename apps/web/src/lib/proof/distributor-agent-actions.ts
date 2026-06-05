@@ -1,13 +1,20 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
 import type { ProfileScope } from '@/lib/supabase'
-import { rpcEntregarPedido } from '@/lib/supabase/distribuidor'
+import {
+  confirmarLlegadaOrdenCompraDistribuidor,
+  createOrdenCompraDistribuidor,
+  rpcEntregarPedido,
+  type ConfirmarLlegadaOcLinea,
+} from '@/lib/supabase/distribuidor'
 
 export type DistributorAgentActionType =
   | 'confirmar_entrega'
   | 'registrar_pago'
   | 'actualizar_precio'
   | 'agregar_nota'
+  | 'crear_orden_compra'
+  | 'confirmar_llegada_distribuidor'
 
 export type DistributorAgentAction =
   | { type: 'confirmar_entrega'; pedido_id: string }
@@ -19,6 +26,21 @@ export type DistributorAgentAction =
     }
   | { type: 'actualizar_precio'; sku_id: string; precio: number; nombre: string }
   | { type: 'agregar_nota'; sku_id: string; nota: string; nombre: string }
+  | {
+      type: 'crear_orden_compra'
+      proveedor: string
+      producto: string
+      cantidad: number
+      costo?: number
+    }
+  | {
+      type: 'confirmar_llegada_distribuidor'
+      orden_id: string
+      lineas: ConfirmarLlegadaOcLinea[]
+      proveedor: string
+      producto_resumen: string
+      total_recibido: number
+    }
 
 function normQ(s: string): string {
   return s
@@ -44,6 +66,18 @@ export function looksLikeDistributorMutation(q: string): boolean {
     return true
   }
   if (n.includes('nota') || n.includes('anotar') || n.includes('comentario')) return true
+  if (
+    n.includes('orden') &&
+    (n.includes('compr') || n.includes('pedido') || n.includes('ordenar'))
+  ) {
+    return true
+  }
+  if (
+    (n.includes('llego') || n.includes('llegó') || n.includes('recib') || n.includes('llegada')) &&
+    (n.includes('pedido') || n.includes('orden') || n.includes('oc-') || n.includes('mercanc'))
+  ) {
+    return true
+  }
   return false
 }
 
@@ -123,6 +157,169 @@ function resolvePedido(
   return null
 }
 
+function parseCantidadFromQuery(q: string): number | null {
+  const cajas = q.match(/(\d[\d,]*)\s*cajas?/)
+  if (cajas?.[1]) {
+    const n = Number(cajas[1].replace(/,/g, ''))
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  const uds = q.match(/(\d[\d,]*)\s*(?:unidades?|uds?|botellas?|bts?)\b/)
+  if (uds?.[1]) {
+    const n = Number(uds[1].replace(/,/g, ''))
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  const deMatch = q.match(/\b(?:ordenar|comprar|pedir|hacer pedido de)\s+(\d[\d,]*)/)
+  if (deMatch?.[1]) {
+    const n = Number(deMatch[1].replace(/,/g, ''))
+    if (Number.isFinite(n) && n > 0) return n
+  }
+  return null
+}
+
+function parseProductoFromQuery(q: string): string | null {
+  const de = q.match(/\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-]{2,40}?)(?:\s+a\s+\$|\s+por\s+\$|\s+cajas?|\s+unidades?|$)/)
+  if (de?.[1]) return de[1].trim()
+  const orden = q.match(/(?:ordenar|comprar|pedir)\s+\d+\s+(?:cajas?\s+)?de\s+([a-záéíóúñ0-9][^,$]+)/)
+  if (orden?.[1]) return orden[1].trim()
+  return null
+}
+
+function parseProveedorFromQuery(q: string): string | null {
+  const pedidoDe = q.match(/pedido\s+de\s+([a-záéíóúñ][a-záéíóúñ\s]{2,40}?)(?:\s|$|\.|,)/)
+  if (pedidoDe?.[1]) return pedidoDe[1].trim()
+  const llego = q.match(/lleg[oó]\s+(?:el\s+)?pedido\s+de\s+([a-záéíóúñ][a-záéíóúñ\s]{2,40}?)(?:\s|$|\.|,)/)
+  if (llego?.[1]) return llego[1].trim()
+  return null
+}
+
+function resolveOrdenCompra(
+  q: string,
+  ctx: DistributorAgentContext
+): DistributorAgentContext['ordenes_compra_pendientes'][number] | null {
+  const ocMatch = q.match(/\boc[-\s]?(\d+)\b/i)
+  if (ocMatch?.[1]) {
+    const frag = `OC-${ocMatch[1].padStart(3, '0')}`
+    const hit = ctx.ordenes_compra_pendientes.find(
+      o => o.numero_orden.toUpperCase() === frag || o.numero_orden.includes(ocMatch[1]!)
+    )
+    if (hit) return hit
+  }
+
+  const proveedor = parseProveedorFromQuery(q)
+  if (proveedor) {
+    const provNorm = normQ(proveedor)
+    const byProv = ctx.ordenes_compra_pendientes.filter(o =>
+      normQ(o.proveedor_nombre).includes(provNorm)
+    )
+    if (byProv.length === 1) return byProv[0]!
+  }
+
+  for (const o of ctx.ordenes_compra_pendientes) {
+    for (const it of o.items) {
+      const nombre = normQ(it.producto_nombre)
+      if (nombre.length >= 3 && q.includes(nombre)) return o
+    }
+  }
+
+  if (ctx.ordenes_compra_pendientes.length === 1) {
+    return ctx.ordenes_compra_pendientes[0]!
+  }
+  return null
+}
+
+function parseCrearOrdenCompraIntent(
+  q: string
+): Extract<DistributorAgentAction, { type: 'crear_orden_compra' }> | null {
+  const wantsOrder =
+    q.includes('ordenar') ||
+    q.includes('hacer pedido') ||
+    q.includes('hacer un pedido') ||
+    q.includes('comprar') ||
+    (q.includes('pedido') && q.includes('de') && !q.includes('llego') && !q.includes('llegó'))
+
+  if (!wantsOrder) return null
+
+  const cantidad = parseCantidadFromQuery(q)
+  const producto = parseProductoFromQuery(q)
+  const proveedor = parseProveedorFromQuery(q) ?? producto
+  const costo = parsePrecioFromQuery(q) ?? undefined
+
+  if (!cantidad || !producto) return null
+
+  return {
+    type: 'crear_orden_compra',
+    proveedor: proveedor || 'Por registrar',
+    producto,
+    cantidad,
+    costo,
+  }
+}
+
+function parseConfirmarLlegadaOcIntent(
+  q: string,
+  ctx: DistributorAgentContext
+): Extract<DistributorAgentAction, { type: 'confirmar_llegada_distribuidor' }> | null {
+  const wantsConfirm =
+    (q.includes('llego') ||
+      q.includes('llegó') ||
+      q.includes('recib') ||
+      q.includes('llegada') ||
+      q.includes('confirmar')) &&
+    (q.includes('pedido') ||
+      q.includes('orden') ||
+      q.includes('oc-') ||
+      q.includes('mercanc') ||
+      q.includes('caja'))
+
+  if (!wantsConfirm) return null
+
+  const orden = resolveOrdenCompra(q, ctx)
+  if (!orden) return null
+
+  const esParcial =
+    q.includes('parcial') ||
+    (q.includes('solo') && q.includes('lleg')) ||
+    (q.includes('falt') && q.includes('lleg'))
+
+  const cantidadExplicita = parseCantidadFromQuery(q)
+  const esCompleto =
+    !esParcial &&
+    (q.includes('completo') ||
+      q.includes('todo') ||
+      q.includes('toda') ||
+      cantidadExplicita == null)
+
+  const lineas: ConfirmarLlegadaOcLinea[] = orden.items.map(it => {
+    let recibida = it.cantidad_ordenada
+    if (!esCompleto && cantidadExplicita != null && orden.items.length === 1) {
+      recibida = cantidadExplicita
+    } else if (esParcial && cantidadExplicita != null && orden.items.length === 1) {
+      recibida = cantidadExplicita
+    } else if (it.cantidad_recibida != null) {
+      recibida = Math.max(it.cantidad_ordenada - it.cantidad_recibida, 0)
+      if (esCompleto) recibida = it.cantidad_ordenada - (it.cantidad_recibida ?? 0)
+    }
+    return { item_id: it.id, cantidad_recibida: recibida }
+  })
+
+  const totalRecibido = lineas.reduce((s, l) => s + l.cantidad_recibida, 0)
+  if (totalRecibido <= 0) return null
+
+  const productoResumen =
+    orden.items.length === 1
+      ? orden.items[0]!.producto_nombre
+      : `${orden.items.length} productos`
+
+  return {
+    type: 'confirmar_llegada_distribuidor',
+    orden_id: orden.id,
+    lineas,
+    proveedor: orden.proveedor_nombre,
+    producto_resumen: productoResumen,
+    total_recibido: totalRecibido,
+  }
+}
+
 function resolveCuentaPorCliente(
   q: string,
   ctx: DistributorAgentContext
@@ -145,6 +342,12 @@ export function parseDistributorActionIntent(
   ctx: DistributorAgentContext
 ): DistributorAgentAction | null {
   const q = normQ(query)
+
+  const llegada = parseConfirmarLlegadaOcIntent(q, ctx)
+  if (llegada) return llegada
+
+  const crearOc = parseCrearOrdenCompraIntent(q)
+  if (crearOc) return crearOc
 
   if (
     (q.includes('entregar') || q.includes('entregado') || q.includes('marcar')) &&
@@ -304,6 +507,31 @@ export async function executeDistributorAgentAction(
         ok: true,
         entityId: action.sku_id,
         message: `Nota guardada en ${action.nombre} ✓`,
+      }
+    }
+    case 'crear_orden_compra': {
+      const orden = await createOrdenCompraDistribuidor(sb, scope, {
+        proveedor_nombre: action.proveedor,
+        items: [
+          {
+            producto_nombre: action.producto,
+            cantidad_ordenada: action.cantidad,
+            costo_unitario: action.costo ?? 0,
+          },
+        ],
+      })
+      return {
+        ok: true,
+        entityId: orden.id,
+        message: `Orden ${orden.numero_orden} creada ✓ ${action.cantidad} unidades de ${action.producto} pendientes de llegada`,
+      }
+    }
+    case 'confirmar_llegada_distribuidor': {
+      await confirmarLlegadaOrdenCompraDistribuidor(sb, action.orden_id, action.lineas)
+      return {
+        ok: true,
+        entityId: action.orden_id,
+        message: `Recibidas ${action.total_recibido} unidades de ${action.proveedor} ✓ Stock actualizado: ${action.total_recibido} unidades en bodega`,
       }
     }
   }

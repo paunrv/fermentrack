@@ -18,6 +18,8 @@ import {
   type EstadoPedido,
 } from '@/lib/supabase'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
+import { PedidoTomaDetalle } from '@/components/proof/PedidoTomaDetalle'
+import { parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 
 type CartLine = {
@@ -72,11 +74,12 @@ export default function PedidoComposerPage() {
         }))
       )
     }
-  }, [supabase, pedidoId, scope])
+  }, [supabase, pedidoId, scope?.clerk_id, scope?.profile_type_v2])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    setError(null)
     load()
       .catch(e => setError(e instanceof Error ? e.message : 'Error al cargar'))
       .finally(() => {
@@ -85,7 +88,7 @@ export default function PedidoComposerPage() {
     return () => {
       cancelled = true
     }
-  }, [load])
+  }, [pedidoId, scope?.clerk_id, scope?.profile_type_v2, load])
 
   useEffect(() => {
     if (!scope) return
@@ -211,6 +214,11 @@ export default function PedidoComposerPage() {
     )
   }
 
+  const tomaNotas = parseTomaPedidoNotas(pedido.notas)
+  if (tomaNotas) {
+    return <PedidoTomaDetalle pedido={pedido} toma={tomaNotas} />
+  }
+
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 720, margin: '0 auto' }}>
       <Link href="/dashboard/pedidos" style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}>
@@ -225,7 +233,9 @@ export default function PedidoComposerPage() {
           Compositor
         </h1>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)' }}>
-          {pedido.clients?.name || 'Cliente'} · Entrega {pedido.fecha_entrega} ·{' '}
+          {pedido.clients?.name || 'Cliente'}
+          {pedido.etiqueta_nombre ? ` · ${pedido.etiqueta_nombre}` : ''} · Entrega{' '}
+          {pedido.fecha_entrega} ·{' '}
           <span style={{ color: pedido.estado === 'borrador' ? 'var(--warn)' : 'var(--ok)' }}>
             {pedido.estado}
           </span>

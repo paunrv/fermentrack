@@ -1,6 +1,7 @@
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
 import { isSkuStockCritico } from '@/lib/proof/distributor-agent-context'
 import { looksLikeDistributorMutation } from '@/lib/proof/distributor-agent-actions'
+import { formatLineaToma, parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 
 export type DistributorQuickAnswer = {
   mensaje: string
@@ -69,7 +70,25 @@ export function tryDistributorQuickAnswer(
     q.includes('tengo') ||
     q.includes('disponible') ||
     q.includes('unidades') ||
-    q.includes('botellas')
+    q.includes('botellas') ||
+    q.includes('bodega') ||
+    (q.includes('inventario') && (q.includes('tenemos') || q.includes('que hay')))
+
+  if (wantsStock && ctx.skus.length === 0 && ctx.pedidos.length > 0) {
+    const ultimo = ctx.pedidos[0]
+    const notas = (ultimo as { notas?: string | null }).notas
+    const toma = parseTomaPedidoNotas(notas ?? null)
+    const detalle =
+      toma?.lineas
+        .slice(0, 3)
+        .map(l => `${l.etiqueta} (${formatLineaToma(l)})`)
+        .join('; ') ?? ultimo?.numero ?? 'pedidos recientes'
+    return {
+      mensaje: `No hay SKUs en catálogo todavía (inventario físico vacío). Tienes ${ctx.pedidos.length} pedido(s) registrado(s) — p. ej. ${detalle}. Los pedidos son ventas comprometidas, no stock en bodega.`,
+      accionLabel: 'Ver pedidos',
+      accionHref: '/dashboard/pedidos',
+    }
+  }
 
   if (wantsStock) {
     const sku = resolveSkuFromQuery(query, ctx)

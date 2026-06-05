@@ -1,0 +1,297 @@
+'use client'
+
+export const dynamic = 'force-dynamic'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { useProfile } from '@/context/ProfileContext'
+import { useSupabase } from '@/hooks/useSupabase'
+import { fmtMoney } from '@/lib/proof/format'
+import { createOrdenCompraDistribuidor } from '@/lib/supabase/distribuidor'
+
+const field: React.CSSProperties = {
+  width: '100%',
+  background: '#fff',
+  border: '0.5px solid #E8E6E0',
+  padding: '10px 12px',
+  fontSize: 13,
+  color: '#1A1A1A',
+  outline: 'none',
+  borderRadius: 8,
+}
+
+const label: React.CSSProperties = {
+  display: 'block',
+  fontSize: 10,
+  fontWeight: 600,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: '#999',
+  marginBottom: 6,
+}
+
+type ItemDraft = {
+  key: string
+  producto: string
+  cantidad: string
+  costo: string
+}
+
+function emptyItem(): ItemDraft {
+  return { key: crypto.randomUUID(), producto: '', cantidad: '12', costo: '0' }
+}
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+export default function NuevaOrdenCompraPage() {
+  const router = useRouter()
+  const { scope } = useProfile()
+  const supabase = useSupabase()
+
+  const [proveedor, setProveedor] = useState('')
+  const [fechaEstimada, setFechaEstimada] = useState(todayISO)
+  const [items, setItems] = useState<ItemDraft[]>(() => [emptyItem()])
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const total = useMemo(() => {
+    return items.reduce((s, it) => {
+      const qty = parseInt(it.cantidad, 10) || 0
+      const cost = parseFloat(it.costo) || 0
+      return s + qty * cost
+    }, 0)
+  }, [items])
+
+  const addItem = () => setItems(prev => [...prev, emptyItem()])
+
+  const removeItem = (key: string) => {
+    setItems(prev => (prev.length <= 1 ? prev : prev.filter(i => i.key !== key)))
+  }
+
+  const updateItem = (key: string, patch: Partial<ItemDraft>) => {
+    setItems(prev => prev.map(i => (i.key === key ? { ...i, ...patch } : i)))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!scope) return
+
+    const prov = proveedor.trim()
+    if (!prov) {
+      setError('Indica el proveedor o productor')
+      return
+    }
+
+    const parsed = items
+      .map(it => ({
+        producto_nombre: it.producto.trim(),
+        cantidad_ordenada: parseInt(it.cantidad, 10) || 0,
+        costo_unitario: parseFloat(it.costo) || 0,
+      }))
+      .filter(it => it.producto_nombre && it.cantidad_ordenada > 0)
+
+    if (parsed.length === 0) {
+      setError('Agrega al menos un producto con cantidad válida')
+      return
+    }
+
+    setSubmitting(true)
+    setError(null)
+    try {
+      const orden = await createOrdenCompraDistribuidor(supabase, scope, {
+        proveedor_nombre: prov,
+        fecha_estimada: fechaEstimada || null,
+        items: parsed,
+      })
+      router.push(`/dashboard?oc=${orden.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear la orden')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 64px' }}>
+      <Link
+        href="/dashboard"
+        style={{ fontSize: 12, color: '#999', textDecoration: 'none', marginBottom: 24, display: 'inline-block' }}
+      >
+        ← Inicio
+      </Link>
+
+      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 500, color: '#1A1A1A' }}>
+        Nueva orden de compra
+      </h1>
+      <p style={{ margin: '0 0 28px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
+        Registra lo que pediste al productor. Al llegar la mercancía confirmas la recepción y el
+        stock se actualiza.
+      </p>
+
+      <form onSubmit={e => void handleSubmit(e)}>
+        <div style={{ marginBottom: 20 }}>
+          <label style={label}>Proveedor / Productor</label>
+          <input
+            type="text"
+            value={proveedor}
+            onChange={e => setProveedor(e.target.value)}
+            placeholder="Ej. Silvana, Mezcal Artesanal Oaxaca"
+            style={field}
+            required
+          />
+        </div>
+
+        <div style={{ marginBottom: 28 }}>
+          <label style={label}>Fecha estimada de llegada</label>
+          <input
+            type="date"
+            value={fechaEstimada}
+            onChange={e => setFechaEstimada(e.target.value)}
+            style={field}
+          />
+        </div>
+
+        <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ ...label, marginBottom: 0 }}>Productos</span>
+          <button
+            type="button"
+            onClick={addItem}
+            style={{
+              fontSize: 11,
+              padding: '6px 10px',
+              borderRadius: 6,
+              border: '0.5px solid #E8E6E0',
+              background: '#fff',
+              cursor: 'pointer',
+              color: '#666',
+            }}
+          >
+            + Agregar
+          </button>
+        </div>
+
+        {items.map((it, idx) => {
+          const qty = parseInt(it.cantidad, 10) || 0
+          const cost = parseFloat(it.costo) || 0
+          const subtotal = qty * cost
+          return (
+            <div
+              key={it.key}
+              style={{
+                padding: 16,
+                marginBottom: 12,
+                border: '0.5px solid #E8E6E0',
+                borderRadius: 10,
+                background: '#FAFAF8',
+              }}
+            >
+              <div style={{ marginBottom: 10 }}>
+                <label style={label}>Producto / Etiqueta</label>
+                <input
+                  type="text"
+                  value={it.producto}
+                  onChange={e => updateItem(it.key, { producto: e.target.value })}
+                  placeholder="Nombre del producto"
+                  style={field}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={label}>Cantidad</label>
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={it.cantidad}
+                    onChange={e => updateItem(it.key, { cantidad: e.target.value })}
+                    style={field}
+                  />
+                </div>
+                <div>
+                  <label style={label}>Costo / ud</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={it.costo}
+                    onChange={e => updateItem(it.key, { costo: e.target.value })}
+                    style={field}
+                  />
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: 11,
+                  color: '#888',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>Subtotal: {fmtMoney(subtotal)}</span>
+                {items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(it.key)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      color: '#C44',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        <div
+          style={{
+            marginTop: 20,
+            padding: '14px 16px',
+            borderRadius: 10,
+            background: '#F4F2EE',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span style={{ fontSize: 12, color: '#666' }}>Total de la orden</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: '#1A1A1A' }}>{fmtMoney(total)}</span>
+        </div>
+
+        {error && (
+          <p style={{ color: '#8B2E2E', fontSize: 12, marginTop: 16 }}>{error}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting || !scope}
+          style={{
+            width: '100%',
+            marginTop: 24,
+            padding: '14px 16px',
+            borderRadius: 10,
+            border: 'none',
+            background: '#1A1A1A',
+            color: '#fff',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: submitting ? 'wait' : 'pointer',
+            opacity: submitting ? 0.7 : 1,
+          }}
+        >
+          {submitting ? 'Creando orden…' : 'Crear orden'}
+        </button>
+      </form>
+    </div>
+  )
+}

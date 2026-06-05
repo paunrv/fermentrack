@@ -72,6 +72,7 @@ export default function ClientesPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
 
   const [name, setName] = useState('')
@@ -109,6 +110,7 @@ export default function ClientesPage() {
     if (!name.trim()) return
 
     setSaving(true)
+    setSaveError(null)
     try {
       await createClient(supabase, {
         name: name.trim(),
@@ -126,6 +128,8 @@ export default function ClientesPage() {
       resetForm()
       setShowForm(false)
       await load()
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'No se pudo guardar el cliente')
     } finally {
       setSaving(false)
     }
@@ -201,6 +205,11 @@ export default function ClientesPage() {
           >
             Nuevo cliente
           </div>
+          {saveError && (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#b00020', fontWeight: 600 }}>
+              {saveError}
+            </p>
+          )}
           <div
             style={{
               display: 'grid',

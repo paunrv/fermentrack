@@ -22,13 +22,19 @@ import type {
   ViajeRow,
 } from '@/lib/proof/destilador-types'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
-import { fetchSkus, type SkuRow } from '@/lib/supabase'
+import { fetchSkus, fetchPedidos, type PedidoRow, type SkuRow } from '@/lib/supabase'
+import { OrdenCompraCanvasCard } from '@/components/proof/OrdenCompraCanvasCard'
+import { OrdenCompraPendienteDetalle } from '@/components/proof/OrdenCompraPendienteDetalle'
 import {
   fetchCorridas,
   fetchLotes,
   fetchProductosViaje,
   fetchViajes,
 } from '@/lib/supabase/destilador'
+import {
+  fetchOrdenesCompraDistribuidorPendientes,
+  type OrdenCompraDistribuidorWithItems,
+} from '@/lib/supabase/distribuidor'
 
 const DISTILLER_QUICK_ACTIONS = [
   { label: '¿Cuánto stock terminado?', message: '¿Cuánto stock terminado tengo?' },
@@ -45,6 +51,11 @@ const DISTRIBUTOR_QUICK_ACTIONS = [
   { label: 'Stock bajo', message: '¿Qué SKUs tienen stock bajo?' },
   { label: 'Pedidos pendientes', message: '¿Qué pedidos están pendientes de entrega?' },
   { label: 'Por cobrar', message: '¿Cuánto tengo por cobrar?' },
+  {
+    label: '+ Orden de compra',
+    message: 'Quiero registrar una orden de compra',
+    href: '/dashboard/distribuidor/compras/nuevo',
+  },
   {
     label: '+ Nuevo pedido',
     message: 'Quiero registrar un nuevo pedido',
@@ -94,12 +105,17 @@ export default function DashboardPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedViajeId, setSelectedViajeId] = useState<string | null>(null)
+  const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [lotes, setLotes] = useState<LoteRow[]>([])
   const [viajes, setViajes] = useState<ViajeRow[]>([])
   const [productosViaje, setProductosViaje] = useState<ProductoViajeRow[]>([])
   const [corridasActivas, setCorridasActivas] = useState<CorridaRow[]>([])
   const [skus, setSkus] = useState<SkuRow[]>([])
+  const [ordenesCompra, setOrdenesCompra] = useState<OrdenCompraDistribuidorWithItems[]>([])
+  const [pedidos, setPedidos] = useState<(PedidoRow & { clients?: { name: string } | null })[]>(
+    []
+  )
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dataVersion, setDataVersion] = useState(0)
@@ -129,9 +145,14 @@ export default function DashboardPage() {
     })
   }, [isDistiller, viajes, productosViaje])
 
+  const pendingOrdenCards = useMemo(() => {
+    if (isDistiller) return []
+    return ordenesCompra.filter(o => o.estado === 'pendiente' || o.estado === 'parcial')
+  }, [isDistiller, ordenesCompra])
+
   const bodegaCount = isDistiller
     ? lotes.length + pendingViajeCards.length
-    : skus.length
+    : skus.length + pendingOrdenCards.length
 
   useEffect(() => {
     const onVisible = () => {
@@ -202,8 +223,16 @@ export default function DashboardPage() {
             }
           }
         } else if (profileType === 'distributor') {
-          const rows = await fetchSkus(supabase, scope)
-          if (!cancelled) setSkus(rows)
+          const [rows, pedidoRows, ocRows] = await Promise.all([
+            fetchSkus(supabase, scope).catch(() => [] as SkuRow[]),
+            fetchPedidos(supabase, scope, { limit: 12 }).catch(() => []),
+            fetchOrdenesCompraDistribuidorPendientes(supabase, scope).catch(() => []),
+          ])
+          if (!cancelled) {
+            setSkus(rows)
+            setPedidos(pedidoRows as (PedidoRow & { clients?: { name: string } | null })[])
+            setOrdenesCompra(ocRows)
+          }
         }
       } catch (e) {
         console.error('[dashboard] load', e)
@@ -229,15 +258,26 @@ export default function DashboardPage() {
     [userQuery, selectedId]
   )
 
-  const agentFallback = useMemo(
-    () => ({
-      mensaje:
-        agentProfileType === 'distiller'
-          ? `${lotes.length} lote${lotes.length === 1 ? '' : 's'} en bodega. Pregúntame por costos, merma o producción.`
-          : `${skus.length} SKU${skus.length === 1 ? '' : 's'} en inventario. Pregúntame por stock, pedidos o cobros.`,
-    }),
-    [agentProfileType, lotes.length, skus.length]
-  )
+  const agentFallback = useMemo(() => {
+    if (agentProfileType === 'distiller') {
+      return {
+        mensaje: `${lotes.length} lote${lotes.length === 1 ? '' : 's'} en bodega. Pregúntame por costos, merma o producción.`,
+      }
+    }
+    if (skus.length === 0 && pedidos.length > 0 && pendingOrdenCards.length === 0) {
+      return {
+        mensaje: `${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'} registrado${pedidos.length === 1 ? '' : 's'} (sin catálogo SKU aún). Pregúntame por pedidos o entregas.`,
+      }
+    }
+    if (pendingOrdenCards.length > 0) {
+      return {
+        mensaje: `${skus.length} SKU${skus.length === 1 ? '' : 's'} en bodega · ${pendingOrdenCards.length} orden${pendingOrdenCards.length === 1 ? '' : 'es'} por recibir. Pregúntame por stock o confirmar llegadas.`,
+      }
+    }
+    return {
+      mensaje: `${skus.length} SKU${skus.length === 1 ? '' : 's'} en inventario. Pregúntame por stock, pedidos o cobros.`,
+    }
+  }, [agentProfileType, lotes.length, skus.length, pedidos.length, pendingOrdenCards.length])
 
   const { mensaje, loading: agentLoading, refreshLoteId } = useProofContextBar({
     pantalla: 'inicio',
@@ -265,12 +305,15 @@ export default function DashboardPage() {
       if (
         q.includes('nuevo viaje') ||
         q.includes('nuevo pedido') ||
-        (q.includes('registrar') && q.includes('viaje'))
+        q.includes('orden de compra') ||
+        (q.includes('registrar') && (q.includes('viaje') || q.includes('compra')))
       ) {
         router.push(
           isDistiller
             ? '/dashboard/destilador/compras/nuevo'
-            : '/dashboard/pedidos/nuevo'
+            : q.includes('compra') || q.includes('orden')
+              ? '/dashboard/distribuidor/compras/nuevo'
+              : '/dashboard/pedidos/nuevo'
         )
         return
       }
@@ -286,7 +329,15 @@ export default function DashboardPage() {
       : pendingViajeCards.length > 0
         ? `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'} · ${pendingViajeCards.length} por recibir`
         : `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'}`
-    : `Inventario — ${loading ? '…' : skus.length} SKUs`
+    : loading
+      ? 'Inventario — …'
+      : pendingOrdenCards.length > 0
+        ? `Inventario — ${skus.length} SKU${skus.length === 1 ? '' : 's'} · ${pendingOrdenCards.length} por recibir`
+        : skus.length > 0
+          ? `Inventario — ${skus.length} SKUs`
+          : pedidos.length > 0
+            ? `Pedidos — ${pedidos.length} registrados`
+            : 'Inventario — 0 SKUs'
 
   const showProfileGate = profileLoading && !activeProfile
 
@@ -401,7 +452,20 @@ export default function DashboardPage() {
           />
         )}
 
-        {selectedId != null && selectedViajeId == null && profileType && (
+        {selectedOrdenId != null && !isDistiller && (
+          <OrdenCompraPendienteDetalle
+            key={`oc-${selectedOrdenId}-${dataVersion}`}
+            ordenId={selectedOrdenId}
+            accent={accent}
+            onClose={() => setSelectedOrdenId(null)}
+            onRecibido={() => {
+              setSelectedOrdenId(null)
+              setDataVersion(v => v + 1)
+            }}
+          />
+        )}
+
+        {selectedId != null && selectedViajeId == null && selectedOrdenId == null && profileType && (
           <LoteDetalle
             key={`${selectedId}-${dataVersion}`}
             loteId={selectedId}
@@ -475,6 +539,21 @@ export default function DashboardPage() {
 
         {!loading &&
           !isDistiller &&
+          pendingOrdenCards.map(o => (
+            <OrdenCompraCanvasCard
+              key={o.id}
+              orden={o}
+              accent={accent}
+              selected={selectedOrdenId === o.id}
+              onClick={() => {
+                setSelectedId(null)
+                setSelectedOrdenId(o.id)
+              }}
+            />
+          ))}
+
+        {!loading &&
+          !isDistiller &&
           skus.map(s => (
             <SkuCard
               key={s.id}
@@ -500,7 +579,7 @@ export default function DashboardPage() {
             <p style={{ margin: '0 0 16px', fontSize: 13, color: '#BBB' }}>
               {isDistiller
                 ? 'Registra tu primer viaje a Oaxaca'
-                : 'Agrega tu primer SKU al inventario'}
+                : 'Registra tu primera orden de compra o entrada de inventario'}
             </p>
             <button
               type="button"
@@ -508,7 +587,7 @@ export default function DashboardPage() {
                 router.push(
                   isDistiller
                     ? '/dashboard/destilador/compras/nuevo'
-                    : '/dashboard/recepcion'
+                    : '/dashboard/distribuidor/compras/nuevo'
                 )
               }
               className="proof-quick-action"
@@ -523,7 +602,7 @@ export default function DashboardPage() {
                 transition: 'border-color 0.15s ease, color 0.15s ease',
               }}
             >
-              {isDistiller ? 'Nuevo viaje' : 'Registrar entrada'}
+              {isDistiller ? 'Nuevo viaje' : 'Nueva orden de compra'}
             </button>
           </div>
         )}

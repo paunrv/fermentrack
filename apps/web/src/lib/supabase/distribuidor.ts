@@ -89,6 +89,8 @@ export interface SkuRow {
   en_consignacion: boolean
   ultimo_movimiento: string | null
   dist_product_id: string | null
+  cliente_id: string | null
+  etiqueta_id: string | null
   notas: string | null
   clerk_id: string
   profile_type_v2: string
@@ -96,10 +98,21 @@ export interface SkuRow {
   updated_at: string
 }
 
+export interface ClientEtiquetaRow {
+  id: string
+  client_id: string
+  nombre: string
+  clerk_id: string
+  profile_type_v2: string
+  created_at: string
+}
+
 export interface PedidoRow {
   id: string
   numero: string
   cliente_id: string
+  etiqueta_id: string | null
+  etiqueta_nombre: string | null
   fecha_creacion: string
   fecha_entrega: string
   condicion_pago: string
@@ -107,6 +120,7 @@ export interface PedidoRow {
   total: number
   ticket_exportado: boolean
   notas: string | null
+  anticipo: boolean
   clerk_id: string
   profile_type_v2: string
   created_at: string
@@ -319,7 +333,7 @@ export async function rpcProofNextCodigo(
   sb: SupabaseClient,
   clerkId: string,
   profileTypeV2: string,
-  kind: 'sku' | 'pedido' | 'recepcion'
+  kind: 'sku' | 'pedido' | 'recepcion' | 'oc'
 ): Promise<string> {
   const { data, error } = await sb.rpc('proof_next_codigo', {
     p_clerk_id: clerkId,
@@ -340,6 +354,22 @@ function scopeFilter<T extends { eq: (c: string, v: string) => T }>(
 ): T {
   if (!scope) return q
   return q.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+}
+
+export async function fetchClientEtiquetas(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  clientId: string
+): Promise<ClientEtiquetaRow[]> {
+  let q = sb
+    .from('client_etiquetas')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('nombre', { ascending: true })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  return (data || []) as ClientEtiquetaRow[]
 }
 
 export async function fetchSkus(
@@ -370,13 +400,16 @@ export async function fetchPedidos(
   scope?: ProfileScope,
   options?: { estado?: EstadoPedido; limit?: number }
 ): Promise<PedidoRow[]> {
-  let q = sb.from('pedidos').select('*').order('fecha_creacion', { ascending: false })
+  let q = sb
+    .from('pedidos')
+    .select('*, clients(name)')
+    .order('fecha_creacion', { ascending: false })
   q = scopeFilter(q, scope)
   if (options?.estado) q = q.eq('estado', options.estado)
   if (options?.limit) q = q.limit(options.limit)
   const { data, error } = await q
   throwIfError(error)
-  return (data || []) as PedidoRow[]
+  return (data || []) as (PedidoRow & { clients?: { name: string } | null })[]
 }
 
 export async function fetchPedidoWithItems(
@@ -400,8 +433,11 @@ export async function createPedidoBorrador(
   input: {
     numero: string
     cliente_id: string
+    etiqueta_id: string
+    etiqueta_nombre: string
     fecha_entrega: string
     condicion_pago: string
+    anticipo?: boolean
     notas?: string | null
     clerk_id: string
     profile_type_v2: string
@@ -411,6 +447,7 @@ export async function createPedidoBorrador(
     .from('pedidos')
     .insert({
       ...input,
+      anticipo: input.anticipo ?? false,
       estado: 'borrador',
       total: 0,
       ticket_exportado: false,
@@ -430,6 +467,7 @@ export async function replacePedidoItems(
     cantidad: number
     precio_unitario: number
     disponible_al_crear: number
+    unidad?: string
   }>
 ): Promise<ItemPedidoRow[]> {
   const { error: delErr } = await sb.from('items_pedido').delete().eq('pedido_id', pedidoId)
@@ -448,6 +486,7 @@ export async function replacePedidoItems(
     precio_unitario: it.precio_unitario,
     subtotal: it.cantidad * it.precio_unitario,
     disponible_al_crear: it.disponible_al_crear,
+    ...(it.unidad ? { unidad: it.unidad } : {}),
   }))
 
   const { data, error } = await sb.from('items_pedido').insert(rows).select()
@@ -637,6 +676,145 @@ export function itemsOrdenToExpected(
 }
 
 // =============================================================================
+// Órdenes de compra distribuidor (entrada de producto)
+// =============================================================================
+
+export type EstadoOrdenCompraDistribuidor = 'pendiente' | 'parcial' | 'recibida' | 'cancelada'
+
+export interface OrdenCompraDistribuidorRow {
+  id: string
+  clerk_id: string
+  profile_type_v2: string
+  numero_orden: string
+  proveedor_nombre: string
+  estado: EstadoOrdenCompraDistribuidor
+  fecha_estimada: string | null
+  fecha_recepcion: string | null
+  total_acordado: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ItemOrdenCompraDistribuidorRow {
+  id: string
+  orden_id: string
+  producto_nombre: string
+  sku_id: string | null
+  cantidad_ordenada: number
+  cantidad_recibida: number | null
+  costo_unitario: number
+  subtotal: number
+  created_at: string
+}
+
+export interface OrdenCompraDistribuidorWithItems extends OrdenCompraDistribuidorRow {
+  items_orden_compra_distribuidor: ItemOrdenCompraDistribuidorRow[]
+}
+
+export type NuevoItemOrdenCompraInput = {
+  producto_nombre: string
+  cantidad_ordenada: number
+  costo_unitario: number
+  sku_id?: string | null
+}
+
+export type ConfirmarLlegadaOcLinea = {
+  item_id: string
+  cantidad_recibida: number
+}
+
+export async function fetchOrdenesCompraDistribuidorPendientes(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<OrdenCompraDistribuidorWithItems[]> {
+  let q = sb
+    .from('ordenes_compra_distribuidor')
+    .select('*, items_orden_compra_distribuidor(*)')
+    .in('estado', ['pendiente', 'parcial'])
+    .order('fecha_estimada', { ascending: true, nullsFirst: false })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  return (data || []) as OrdenCompraDistribuidorWithItems[]
+}
+
+export async function fetchOrdenCompraDistribuidorWithItems(
+  sb: SupabaseClient,
+  ordenId: string
+): Promise<OrdenCompraDistribuidorWithItems | null> {
+  const { data, error } = await sb
+    .from('ordenes_compra_distribuidor')
+    .select('*, items_orden_compra_distribuidor(*)')
+    .eq('id', ordenId)
+    .maybeSingle()
+  throwIfError(error)
+  return data as OrdenCompraDistribuidorWithItems | null
+}
+
+export async function createOrdenCompraDistribuidor(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  input: {
+    proveedor_nombre: string
+    fecha_estimada?: string | null
+    items: NuevoItemOrdenCompraInput[]
+  }
+): Promise<OrdenCompraDistribuidorWithItems> {
+  if (input.items.length === 0) {
+    throw new Error('Agrega al menos un producto a la orden')
+  }
+
+  const numeroOrden = await rpcProofNextCodigo(
+    sb,
+    scope.clerk_id,
+    scope.profile_type_v2,
+    'oc'
+  )
+
+  const { data: orden, error: ordenErr } = await sb
+    .from('ordenes_compra_distribuidor')
+    .insert({
+      clerk_id: scope.clerk_id,
+      profile_type_v2: scope.profile_type_v2,
+      numero_orden: numeroOrden,
+      proveedor_nombre: input.proveedor_nombre.trim(),
+      fecha_estimada: input.fecha_estimada || null,
+      estado: 'pendiente',
+    })
+    .select()
+    .single()
+  throwIfError(ordenErr)
+
+  const itemRows = input.items.map(it => ({
+    orden_id: orden.id,
+    producto_nombre: it.producto_nombre.trim(),
+    sku_id: it.sku_id ?? null,
+    cantidad_ordenada: it.cantidad_ordenada,
+    costo_unitario: it.costo_unitario,
+  }))
+
+  const { error: itemsErr } = await sb.from('items_orden_compra_distribuidor').insert(itemRows)
+  throwIfError(itemsErr)
+
+  const full = await fetchOrdenCompraDistribuidorWithItems(sb, orden.id)
+  if (!full) throw new Error('No se pudo cargar la orden creada')
+  return full
+}
+
+export async function confirmarLlegadaOrdenCompraDistribuidor(
+  sb: SupabaseClient,
+  ordenId: string,
+  lineas: ConfirmarLlegadaOcLinea[]
+): Promise<OrdenCompraDistribuidorRow> {
+  const { data, error } = await sb.rpc('confirmar_llegada_orden_compra_distribuidor', {
+    p_orden_id: ordenId,
+    p_lineas: lineas,
+  })
+  throwIfError(error)
+  return data as OrdenCompraDistribuidorRow
+}
+
+// =============================================================================
 // Crédito
 // =============================================================================
 
@@ -687,6 +865,14 @@ export async function fetchCuentasClientes(
     .order('dias_vencido', { ascending: false })
   q = scopeFilter(q, scope)
   const { data, error } = await q
+  if (
+    error &&
+    (error.code === 'PGRST205' ||
+      error.message.includes('cuentas_clientes') ||
+      error.message.includes('schema cache'))
+  ) {
+    return []
+  }
   throwIfError(error)
   return (data || []) as CuentaClienteWithClient[]
 }

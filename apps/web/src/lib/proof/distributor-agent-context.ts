@@ -1,5 +1,6 @@
 import type {
   CuentaClienteWithClient,
+  OrdenCompraDistribuidorWithItems,
   PedidoRow,
   SkuRow,
 } from '@/lib/supabase/distribuidor'
@@ -65,6 +66,22 @@ export type DistributorAgentContext = {
     total: number
     fecha_entrega: string | null
     cliente_id: string
+    etiqueta_nombre: string | null
+    notas: string | null
+  }[]
+  ordenes_compra_pendientes: {
+    id: string
+    numero_orden: string
+    proveedor_nombre: string
+    estado: string
+    fecha_estimada: string | null
+    items: {
+      id: string
+      producto_nombre: string
+      cantidad_ordenada: number
+      cantidad_recibida: number | null
+      costo_unitario: number
+    }[]
   }[]
 }
 
@@ -76,6 +93,7 @@ export function buildDistributorAgentContext(
   skus: SkuRow[],
   pedidos: PedidoRow[],
   cuentas: CuentaClienteWithClient[],
+  ordenesCompra: OrdenCompraDistribuidorWithItems[] = [],
   opts?: { selectedId?: string | null; query?: string | null }
 ): DistributorAgentContext {
   const activos = pedidos.filter(p =>
@@ -151,6 +169,25 @@ export function buildDistributorAgentContext(
       total: Number(p.total),
       fecha_entrega: p.fecha_entrega,
       cliente_id: p.cliente_id,
+      etiqueta_nombre: p.etiqueta_nombre,
+      notas: p.notas ?? null,
     })),
+    ordenes_compra_pendientes: ordenesCompra
+      .filter(o => o.estado === 'pendiente' || o.estado === 'parcial')
+      .slice(0, 20)
+      .map(o => ({
+        id: o.id,
+        numero_orden: o.numero_orden,
+        proveedor_nombre: o.proveedor_nombre,
+        estado: o.estado,
+        fecha_estimada: o.fecha_estimada,
+        items: (o.items_orden_compra_distribuidor ?? []).map(it => ({
+          id: it.id,
+          producto_nombre: it.producto_nombre,
+          cantidad_ordenada: it.cantidad_ordenada,
+          cantidad_recibida: it.cantidad_recibida,
+          costo_unitario: Number(it.costo_unitario),
+        })),
+      })),
   }
 }

@@ -39,7 +39,7 @@ export default function PedidosPage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.clerk_id, scope?.profile_type_v2])
 
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 900, margin: '0 auto' }}>
@@ -58,7 +58,7 @@ export default function PedidosPage() {
             Pedidos
           </h1>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-            Composición en botellas · reserva stock al confirmar
+            Toma de pedidos en campo · entrega y anticipo
           </p>
         </div>
         <Link
@@ -75,7 +75,7 @@ export default function PedidosPage() {
             textTransform: 'uppercase',
           }}
         >
-          Nuevo pedido
+          Toma de pedidos
         </Link>
       </header>
 
@@ -109,6 +109,9 @@ export default function PedidosPage() {
                   {p.numero}
                 </span>
                 <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
+                  {(p as PedidoRow & { clients?: { name: string } }).clients?.name ?? 'Cliente'}
+                  {p.etiqueta_nombre ? ` · ${p.etiqueta_nombre}` : ''}
+                  {' · '}
                   Entrega {p.fecha_entrega} · {ESTADO_LABEL[p.estado]}
                 </div>
               </div>

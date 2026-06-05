@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@clerk/nextjs'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { createSupabaseBrowserClient } from '@/utils/supabase/browser'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -13,13 +13,15 @@ let warnedNoTemplate = false
  */
 export function useSupabase(): SupabaseClient {
   const { getToken, isSignedIn, isLoaded } = useAuth()
+  const getTokenRef = useRef(getToken)
+  getTokenRef.current = getToken
 
   return useMemo(() => {
     try {
       return createSupabaseBrowserClient(async () => {
         if (!isLoaded || !isSignedIn) return null
         try {
-          const token = await getToken({ template: 'supabase' })
+          const token = await getTokenRef.current({ template: 'supabase' })
           if (!token && !warnedNoTemplate && process.env.NODE_ENV === 'development') {
             warnedNoTemplate = true
             console.warn(
@@ -35,7 +37,7 @@ export function useSupabase(): SupabaseClient {
       console.error('[useSupabase] init failed', err)
       return createSupabaseBrowserClient()
     }
-  }, [getToken, isSignedIn, isLoaded])
+  }, [isSignedIn, isLoaded])
 }
 
 /** JWT template `supabase` para inserts críticos (falla con mensaje claro si falta). */
