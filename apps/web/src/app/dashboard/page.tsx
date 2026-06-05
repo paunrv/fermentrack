@@ -71,6 +71,26 @@ const DISTRIBUTOR_QUICK_ACTIONS = [
   },
 ] as const
 
+const LOAD_TIMEOUT_MS = 15_000
+
+async function loadWithTimeout<T>(
+  promise: Promise<T>,
+  fallback: T,
+  label: string
+): Promise<T> {
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        setTimeout(() => reject(new Error(`${label} timeout`)), LOAD_TIMEOUT_MS)
+      }),
+    ])
+  } catch (e) {
+    console.error(`[dashboard] ${label}`, e)
+    return fallback
+  }
+}
+
 function CanvasDivider({ label }: { label: string }) {
   return (
     <div
@@ -109,6 +129,7 @@ export default function DashboardPage() {
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const accent = theme.accent
   const clerkId = scope?.clerk_id
+  const scopeProfileType = scope?.profile_type_v2
   const isDistiller = profileType === 'distiller'
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -292,10 +313,18 @@ export default function DashboardPage() {
           }
         } else if (profileType === 'distributor') {
           const [rows, pedidoRows, ocRows, ocCxPRows] = await Promise.all([
-            fetchSkus(supabase, scope).catch(() => [] as SkuRow[]),
-            fetchPedidos(supabase, scope, { limit: 12 }).catch(() => []),
-            fetchOrdenesCompraDistribuidorPendientes(supabase, scope).catch(() => []),
-            fetchOrdenesCompraConCxPendiente(supabase, scope).catch(() => []),
+            loadWithTimeout(fetchSkus(supabase, scope), [] as SkuRow[], 'fetchSkus'),
+            loadWithTimeout(fetchPedidos(supabase, scope, { limit: 12 }), [], 'fetchPedidos'),
+            loadWithTimeout(
+              fetchOrdenesCompraDistribuidorPendientes(supabase, scope),
+              [],
+              'fetchOrdenesCompraPendientes'
+            ),
+            loadWithTimeout(
+              fetchOrdenesCompraConCxPendiente(supabase, scope),
+              [],
+              'fetchOrdenesCompraConCxPendiente'
+            ),
           ])
           if (!cancelled) {
             setSkus(rows)
@@ -318,7 +347,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [scope, profileType, clerkId, supabase, dataVersion])
+  }, [scopeProfileType, scope?.clerk_id, profileType, clerkId, supabase, dataVersion])
 
   const agentHints = useMemo(
     () => ({

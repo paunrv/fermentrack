@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react'
@@ -220,34 +221,35 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     [allProfiles, user, getToken]
   )
 
-  const scope: ProfileScope | null =
-    user && activeProfile
-      ? { clerk_id: user.id, profile_type_v2: activeProfile.profile_type_v2 }
-      : null
+  const scope = useMemo((): ProfileScope | null => {
+    if (!user || !activeProfile) return null
+    return { clerk_id: user.id, profile_type_v2: activeProfile.profile_type_v2 }
+  }, [user?.id, activeProfile?.profile_type_v2])
+
+  const contextValue = useMemo(
+    () => ({
+      loading,
+      profilesResolved,
+      allProfiles,
+      activeProfile,
+      scope,
+      switchProfile,
+      reload: async () => {
+        setLoading(true)
+        setProfilesResolved(false)
+        try {
+          const done = await load()
+          if (done) setProfilesResolved(true)
+        } finally {
+          setLoading(false)
+        }
+      },
+    }),
+    [loading, profilesResolved, allProfiles, activeProfile, scope, switchProfile, load]
+  )
 
   return (
-    <ProfileContext.Provider
-      value={{
-        loading,
-        profilesResolved,
-        allProfiles,
-        activeProfile,
-        scope,
-        switchProfile,
-        reload: async () => {
-          setLoading(true)
-          setProfilesResolved(false)
-          try {
-            const done = await load()
-            if (done) setProfilesResolved(true)
-          } finally {
-            setLoading(false)
-          }
-        },
-      }}
-    >
-      {children}
-    </ProfileContext.Provider>
+    <ProfileContext.Provider value={contextValue}>{children}</ProfileContext.Provider>
   )
 }
 
