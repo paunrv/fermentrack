@@ -5,6 +5,7 @@ import {
   confirmarLlegadaOrdenCompraDistribuidor,
   createOrdenCompraDistribuidor,
   rpcEntregarPedido,
+  rpcRegistrarPagoProveedor,
   type ConfirmarLlegadaOcLinea,
 } from '@/lib/supabase/distribuidor'
 
@@ -15,6 +16,7 @@ export type DistributorAgentActionType =
   | 'agregar_nota'
   | 'crear_orden_compra'
   | 'confirmar_llegada_distribuidor'
+  | 'registrar_pago_proveedor'
 
 export type DistributorAgentAction =
   | { type: 'confirmar_entrega'; pedido_id: string }
@@ -40,6 +42,12 @@ export type DistributorAgentAction =
       proveedor: string
       producto_resumen: string
       total_recibido: number
+    }
+  | {
+      type: 'registrar_pago_proveedor'
+      cuenta_id: string
+      monto: number
+      proveedor_nombre: string
     }
 
 function normQ(s: string): string {
@@ -320,6 +328,50 @@ function parseConfirmarLlegadaOcIntent(
   }
 }
 
+function resolveCuentaPorProveedor(
+  q: string,
+  ctx: DistributorAgentContext
+): DistributorAgentContext['cxp']['cuentas'][number] | null {
+  let best: DistributorAgentContext['cxp']['cuentas'][number] | null = null
+  let bestLen = 0
+  for (const c of ctx.cxp.cuentas) {
+    const nombre = normQ(c.proveedor_nombre)
+    if (nombre.length < 2) continue
+    if (q.includes(nombre) && nombre.length > bestLen) {
+      best = c
+      bestLen = nombre.length
+    }
+  }
+  if (best) return best
+  if (ctx.cxp.cuentas.length === 1) return ctx.cxp.cuentas[0]!
+  return null
+}
+
+function parsePagoProveedorIntent(
+  q: string,
+  ctx: DistributorAgentContext
+): Extract<DistributorAgentAction, { type: 'registrar_pago_proveedor' }> | null {
+  const wantsPay =
+    /\bpag[oó]\b/.test(q) ||
+    q.includes('registrar pago') ||
+    (q.includes('registrar') && q.includes('pago'))
+
+  if (!wantsPay || ctx.cxp.cuentas.length === 0) return null
+
+  const cuenta = resolveCuentaPorProveedor(q, ctx)
+  if (!cuenta) return null
+
+  const monto = parseMontoFromQuery(q) ?? cuenta.saldo_pendiente
+  if (monto <= 0) return null
+
+  return {
+    type: 'registrar_pago_proveedor',
+    cuenta_id: cuenta.id,
+    monto: Math.min(monto, cuenta.saldo_pendiente),
+    proveedor_nombre: cuenta.proveedor_nombre,
+  }
+}
+
 function resolveCuentaPorCliente(
   q: string,
   ctx: DistributorAgentContext
@@ -366,6 +418,9 @@ export function parseDistributorActionIntent(
     q.includes('registrar pago') ||
     (q.includes('registrar') && q.includes('pago'))
   ) {
+    const pagoProveedor = parsePagoProveedorIntent(q, ctx)
+    if (pagoProveedor) return pagoProveedor
+
     const cuenta = resolveCuentaPorCliente(q, ctx)
     if (!cuenta) return null
     const monto =
@@ -532,6 +587,15 @@ export async function executeDistributorAgentAction(
         ok: true,
         entityId: action.orden_id,
         message: `Recibidas ${action.total_recibido} unidades de ${action.proveedor} ✓ Stock actualizado: ${action.total_recibido} unidades en bodega`,
+      }
+    }
+    case 'registrar_pago_proveedor': {
+      const updated = await rpcRegistrarPagoProveedor(sb, action.cuenta_id, action.monto)
+      const saldo = Number(updated.saldo_pendiente)
+      return {
+        ok: true,
+        entityId: action.cuenta_id,
+        message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado ✓ Saldo pendiente con ${action.proveedor_nombre}: $${saldo.toLocaleString('es-MX')}`,
       }
     }
   }

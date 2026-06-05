@@ -1,5 +1,6 @@
 import type {
   CuentaClienteWithClient,
+  CuentaPorPagarRow,
   OrdenCompraDistribuidorWithItems,
   PedidoRow,
   SkuRow,
@@ -83,6 +84,18 @@ export type DistributorAgentContext = {
       costo_unitario: number
     }[]
   }[]
+  cxp: {
+    total_por_pagar: number
+    proveedores_con_saldo: number
+    cuentas: {
+      id: string
+      proveedor_nombre: string
+      saldo_pendiente: number
+      monto_total: number
+      orden_compra_id: string
+      estado: string
+    }[]
+  }
 }
 
 export function isSkuStockCritico(estado: string): boolean {
@@ -94,6 +107,7 @@ export function buildDistributorAgentContext(
   pedidos: PedidoRow[],
   cuentas: CuentaClienteWithClient[],
   ordenesCompra: OrdenCompraDistribuidorWithItems[] = [],
+  cuentasPorPagar: CuentaPorPagarRow[] = [],
   opts?: { selectedId?: string | null; query?: string | null }
 ): DistributorAgentContext {
   const activos = pedidos.filter(p =>
@@ -109,6 +123,8 @@ export function buildDistributorAgentContext(
     c => c.dias_vencido > 0 || c.estado === 'vencido'
   ).length
   const criticos = skus.filter(s => isSkuStockCritico(s.estado))
+  const cxpActivas = cuentasPorPagar.filter(c => Number(c.saldo_pendiente) > 0)
+  const totalPorPagar = cxpActivas.reduce((s, c) => s + Number(c.saldo_pendiente), 0)
 
   return {
     perfil: 'distribuidor',
@@ -189,5 +205,17 @@ export function buildDistributorAgentContext(
           costo_unitario: Number(it.costo_unitario),
         })),
       })),
+    cxp: {
+      total_por_pagar: totalPorPagar,
+      proveedores_con_saldo: cxpActivas.length,
+      cuentas: cxpActivas.slice(0, 40).map(c => ({
+        id: c.id,
+        proveedor_nombre: c.proveedor_nombre,
+        saldo_pendiente: Number(c.saldo_pendiente),
+        monto_total: Number(c.monto_total),
+        orden_compra_id: c.orden_compra_id,
+        estado: c.estado,
+      })),
+    },
   }
 }

@@ -1,6 +1,13 @@
 'use client'
 
-import type { OrdenCompraDistribuidorWithItems } from '@/lib/supabase/distribuidor'
+import { fmtMoney } from '@/lib/proof/format'
+import type { OrdenCompraConCxP, OrdenCompraDistribuidorWithItems } from '@/lib/supabase/distribuidor'
+
+type OrdenInput = OrdenCompraDistribuidorWithItems | OrdenCompraConCxP
+
+function isRecibidaConCxP(orden: OrdenInput): orden is OrdenCompraConCxP {
+  return 'cxp' in orden && orden.cxp != null
+}
 
 export function OrdenCompraCanvasCard({
   orden,
@@ -8,11 +15,12 @@ export function OrdenCompraCanvasCard({
   selected = false,
   onClick,
 }: {
-  orden: OrdenCompraDistribuidorWithItems
+  orden: OrdenInput
   accent: string
   selected?: boolean
   onClick: () => void
 }) {
+  const recibida = isRecibidaConCxP(orden)
   const items = orden.items_orden_compra_distribuidor ?? []
   const cantidadEsperada = items.reduce((s, i) => s + i.cantidad_ordenada, 0)
   const nombre =
@@ -22,16 +30,32 @@ export function OrdenCompraCanvasCard({
         ? items[0]!.producto_nombre
         : items.map(i => i.producto_nombre).join(' · ')
 
+  const borderStyle = recibida
+    ? selected
+      ? `0.5px solid ${accent}`
+      : '0.5px solid #E8E6E0'
+    : selected
+      ? `0.5px solid ${accent}`
+      : `0.5px dashed ${accent}`
+
   return (
     <button
       type="button"
       onClick={onClick}
-      title={`${cantidadEsperada} unidades esperadas · ${orden.proveedor_nombre}`}
-      aria-label={`Orden ${orden.numero_orden}, ${nombre}, por recibir${selected ? ', seleccionado' : ''}`}
+      title={
+        recibida
+          ? `CxP pendiente ${fmtMoney(orden.cxp.saldo_pendiente)} · ${orden.proveedor_nombre}`
+          : `${cantidadEsperada} unidades esperadas · ${orden.proveedor_nombre}`
+      }
+      aria-label={
+        recibida
+          ? `Orden ${orden.numero_orden} recibida, CxP pendiente${selected ? ', seleccionado' : ''}`
+          : `Orden ${orden.numero_orden}, ${nombre}, por recibir${selected ? ', seleccionado' : ''}`
+      }
       style={{
         width: '100%',
         background: selected ? '#FAFAF8' : '#fff',
-        border: selected ? `0.5px solid ${accent}` : `0.5px dashed ${accent}`,
+        border: borderStyle,
         borderRadius: 12,
         padding: '16px 12px 12px',
         cursor: 'pointer',
@@ -60,7 +84,7 @@ export function OrdenCompraCanvasCard({
           opacity: 0.7,
         }}
       >
-        🚚
+        {recibida ? '💳' : '🚚'}
       </span>
       <div
         aria-hidden
@@ -69,14 +93,14 @@ export function OrdenCompraCanvasCard({
           height: 56,
           margin: '0 auto 8px',
           borderRadius: 6,
-          background: `${accent}12`,
-          border: `0.5px dashed ${accent}55`,
+          background: recibida ? '#FFF8E8' : `${accent}12`,
+          border: recibida ? '0.5px solid #E8D4A0' : `0.5px dashed ${accent}55`,
           display: 'grid',
           placeItems: 'center',
           fontSize: 18,
         }}
       >
-        ⏱
+        {recibida ? '✓' : '⏱'}
       </div>
       <div
         style={{
@@ -105,20 +129,36 @@ export function OrdenCompraCanvasCard({
             marginTop: 2,
           }}
         >
-          {orden.numero_orden} · {cantidadEsperada} uds
+          {orden.numero_orden}
+          {recibida ? ' · Recibida' : ` · ${cantidadEsperada} uds`}
         </div>
       </div>
-      <div
-        style={{
-          marginTop: 8,
-          fontSize: 9,
-          color: accent,
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase',
-        }}
-      >
-        Confirmar llegada
-      </div>
+      {recibida ? (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 9,
+            color: '#B8860B',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}
+        >
+          CxP pendiente {fmtMoney(orden.cxp.saldo_pendiente)}
+        </div>
+      ) : (
+        <div
+          style={{
+            marginTop: 8,
+            fontSize: 9,
+            color: accent,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Confirmar llegada
+        </div>
+      )}
     </button>
   )
 }

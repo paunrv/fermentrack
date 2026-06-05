@@ -815,6 +815,123 @@ export async function confirmarLlegadaOrdenCompraDistribuidor(
 }
 
 // =============================================================================
+// Cuentas por pagar (CxP)
+// =============================================================================
+
+export type EstadoCuentaPorPagar = 'pendiente' | 'parcial' | 'pagada'
+export type MetodoPagoProveedor = 'efectivo' | 'transferencia' | 'cheque'
+
+export interface CuentaPorPagarRow {
+  id: string
+  clerk_id: string
+  profile_type_v2: string
+  orden_compra_id: string
+  proveedor_nombre: string
+  monto_total: number
+  monto_pagado: number
+  saldo_pendiente: number
+  estado: EstadoCuentaPorPagar
+  fecha_vencimiento: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PagoProveedorRow {
+  id: string
+  clerk_id: string
+  profile_type_v2: string
+  cuenta_por_pagar_id: string
+  monto: number
+  metodo: MetodoPagoProveedor
+  referencia: string | null
+  fecha_pago: string
+  nota: string | null
+  created_at: string
+}
+
+export type OrdenCompraConCxP = OrdenCompraDistribuidorWithItems & {
+  cxp: {
+    id: string
+    saldo_pendiente: number
+    monto_total: number
+    proveedor_nombre: string
+  }
+}
+
+export async function fetchCuentasPorPagarActivas(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<CuentaPorPagarRow[]> {
+  let q = sb
+    .from('cuentas_por_pagar')
+    .select('*')
+    .in('estado', ['pendiente', 'parcial'])
+    .order('created_at', { ascending: false })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  return (data || []) as CuentaPorPagarRow[]
+}
+
+export async function fetchOrdenesCompraConCxPendiente(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<OrdenCompraConCxP[]> {
+  let q = sb
+    .from('cuentas_por_pagar')
+    .select(
+      'id, saldo_pendiente, monto_total, proveedor_nombre, ordenes_compra_distribuidor(*, items_orden_compra_distribuidor(*))'
+    )
+    .in('estado', ['pendiente', 'parcial'])
+    .order('created_at', { ascending: false })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  type CxpJoinRow = {
+    id: string
+    saldo_pendiente: number
+    monto_total: number
+    proveedor_nombre: string
+    ordenes_compra_distribuidor: OrdenCompraDistribuidorWithItems | OrdenCompraDistribuidorWithItems[] | null
+  }
+  const rows = (data || []) as unknown as CxpJoinRow[]
+  return rows
+    .map(r => {
+      const orden = Array.isArray(r.ordenes_compra_distribuidor)
+        ? r.ordenes_compra_distribuidor[0]
+        : r.ordenes_compra_distribuidor
+      if (!orden) return null
+      return {
+        ...orden,
+        cxp: {
+          id: r.id,
+          saldo_pendiente: Number(r.saldo_pendiente),
+          monto_total: Number(r.monto_total),
+          proveedor_nombre: r.proveedor_nombre,
+        },
+      }
+    })
+    .filter((r): r is OrdenCompraConCxP => r != null)
+}
+
+export async function rpcRegistrarPagoProveedor(
+  sb: SupabaseClient,
+  cuentaId: string,
+  monto: number,
+  metodo: MetodoPagoProveedor = 'transferencia'
+): Promise<CuentaPorPagarRow> {
+  const { data, error } = await sb.rpc('registrar_pago_proveedor', {
+    p_cuenta_id: cuentaId,
+    p_monto: monto,
+    p_metodo: metodo,
+    p_referencia: null,
+    p_nota: null,
+  })
+  throwIfError(error)
+  return data as CuentaPorPagarRow
+}
+
+// =============================================================================
 // Crédito
 // =============================================================================
 

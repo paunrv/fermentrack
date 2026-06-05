@@ -102,12 +102,57 @@ export function tryDistributorQuickAnswer(
   }
 
   if (
+    (q.includes('debo') || q.includes('debe')) &&
+    (q.includes('proveedor') || q.includes('productor') || q.includes('pagar'))
+  ) {
+    const total = ctx.cxp?.total_por_pagar ?? 0
+    const n = ctx.cxp?.proveedores_con_saldo ?? 0
+    if (total <= 0) {
+      return {
+        mensaje: 'No tienes cuentas por pagar pendientes con proveedores.',
+        accionLabel: 'Ver inicio',
+        accionHref: '/dashboard',
+      }
+    }
+    const lista = (ctx.cxp?.cuentas ?? [])
+      .slice(0, 3)
+      .map(c => `${c.proveedor_nombre} ($${c.saldo_pendiente.toLocaleString('es-MX')})`)
+      .join('; ')
+    return {
+      mensaje: `Debes $${total.toLocaleString('es-MX')} a ${n} proveedor${n === 1 ? '' : 'es'}${lista ? `: ${lista}` : ''}.`,
+      accionLabel: 'Ver inicio',
+      accionHref: '/dashboard',
+    }
+  }
+
+  if (
     q.includes('deben') ||
     q.includes('por cobrar') ||
     q.includes('cobros pendientes') ||
     q.includes('me deben') ||
     (q.includes('cobrar') && (q.includes('cuanto') || q.includes('cuanta')))
   ) {
+    if (
+      q.includes('proveedor') ||
+      q.includes('productor') ||
+      (q.includes('debo') && !q.includes('cliente'))
+    ) {
+      const total = ctx.cxp?.total_por_pagar ?? 0
+      const n = ctx.cxp?.proveedores_con_saldo ?? 0
+      if (total <= 0) {
+        return {
+          mensaje: 'No tienes cuentas por pagar pendientes con proveedores.',
+          accionLabel: 'Ver inicio',
+          accionHref: '/dashboard',
+        }
+      }
+      return {
+        mensaje: `Debes $${total.toLocaleString('es-MX')} a ${n} proveedor${n === 1 ? '' : 'es'}.`,
+        accionLabel: 'Ver inicio',
+        accionHref: '/dashboard',
+      }
+    }
+
     const total = ctx.resumen.total_por_cobrar
     const n = ctx.resumen.clientes_con_saldo
     if (total <= 0) {

@@ -33,6 +33,8 @@ import {
 } from '@/lib/supabase/destilador'
 import {
   fetchOrdenesCompraDistribuidorPendientes,
+  fetchOrdenesCompraConCxPendiente,
+  type OrdenCompraConCxP,
   type OrdenCompraDistribuidorWithItems,
 } from '@/lib/supabase/distribuidor'
 
@@ -113,6 +115,7 @@ export default function DashboardPage() {
   const [corridasActivas, setCorridasActivas] = useState<CorridaRow[]>([])
   const [skus, setSkus] = useState<SkuRow[]>([])
   const [ordenesCompra, setOrdenesCompra] = useState<OrdenCompraDistribuidorWithItems[]>([])
+  const [ordenesConCxP, setOrdenesConCxP] = useState<OrdenCompraConCxP[]>([])
   const [pedidos, setPedidos] = useState<(PedidoRow & { clients?: { name: string } | null })[]>(
     []
   )
@@ -152,7 +155,7 @@ export default function DashboardPage() {
 
   const bodegaCount = isDistiller
     ? lotes.length + pendingViajeCards.length
-    : skus.length + pendingOrdenCards.length
+    : skus.length + pendingOrdenCards.length + ordenesConCxP.length
 
   useEffect(() => {
     const onVisible = () => {
@@ -223,15 +226,17 @@ export default function DashboardPage() {
             }
           }
         } else if (profileType === 'distributor') {
-          const [rows, pedidoRows, ocRows] = await Promise.all([
+          const [rows, pedidoRows, ocRows, ocCxPRows] = await Promise.all([
             fetchSkus(supabase, scope).catch(() => [] as SkuRow[]),
             fetchPedidos(supabase, scope, { limit: 12 }).catch(() => []),
             fetchOrdenesCompraDistribuidorPendientes(supabase, scope).catch(() => []),
+            fetchOrdenesCompraConCxPendiente(supabase, scope).catch(() => []),
           ])
           if (!cancelled) {
             setSkus(rows)
             setPedidos(pedidoRows as (PedidoRow & { clients?: { name: string } | null })[])
             setOrdenesCompra(ocRows)
+            setOrdenesConCxP(ocCxPRows)
           }
         }
       } catch (e) {
@@ -331,8 +336,8 @@ export default function DashboardPage() {
         : `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'}`
     : loading
       ? 'Inventario — …'
-      : pendingOrdenCards.length > 0
-        ? `Inventario — ${skus.length} SKU${skus.length === 1 ? '' : 's'} · ${pendingOrdenCards.length} por recibir`
+      : pendingOrdenCards.length > 0 || ordenesConCxP.length > 0
+        ? `Inventario — ${skus.length} SKU${skus.length === 1 ? '' : 's'} · ${pendingOrdenCards.length} por recibir${ordenesConCxP.length > 0 ? ` · ${ordenesConCxP.length} CxP` : ''}`
         : skus.length > 0
           ? `Inventario — ${skus.length} SKUs`
           : pedidos.length > 0
@@ -533,6 +538,21 @@ export default function DashboardPage() {
               onClick={() => {
                 setSelectedId(null)
                 setSelectedViajeId(v.viajeId)
+              }}
+            />
+          ))}
+
+        {!loading &&
+          !isDistiller &&
+          ordenesConCxP.map(o => (
+            <OrdenCompraCanvasCard
+              key={`cxp-${o.id}`}
+              orden={o}
+              accent={accent}
+              selected={selectedOrdenId === o.id}
+              onClick={() => {
+                setSelectedId(null)
+                setSelectedOrdenId(o.id)
               }}
             />
           ))}

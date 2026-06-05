@@ -12,6 +12,7 @@ import {
 } from '@/lib/supabase/destilador'
 import {
   fetchCuentasClientes,
+  fetchCuentasPorPagarActivas,
   fetchOrdenesCompraDistribuidorPendientes,
   fetchPedidos,
   fetchSkus,
@@ -103,13 +104,20 @@ export async function loadDistributorAgentContext(
     clerk_id: clerkId,
     profile_type_v2: 'distributor',
   }
-  const [skus, pedidos, cuentas, ordenesCompra] = await Promise.all([
+  const [skus, pedidos, cuentas, ordenesCompra, cuentasPorPagar] = await Promise.all([
     fetchSkus(sb, scope),
     fetchPedidos(sb, scope, { limit: 50 }),
     fetchCuentasClientes(sb, scope).catch(() => []),
     fetchOrdenesCompraDistribuidorPendientes(sb, scope).catch(() => []),
+    fetchCuentasPorPagarActivas(sb, scope).catch(() => []),
   ])
-  const datos = buildDistributorAgentContext(skus, pedidos, cuentas, ordenesCompra, {
+  const datos = buildDistributorAgentContext(
+    skus,
+    pedidos,
+    cuentas,
+    ordenesCompra,
+    cuentasPorPagar,
+    {
     selectedId: hints?.selectedId ?? null,
     query: hints?.query ?? null,
   })
