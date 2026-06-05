@@ -10,11 +10,17 @@ import { useProofContextBar } from '@/hooks/useProofContextBar'
 import { AgentBar } from '@/components/proof/AgentBar'
 import { BotellaCard, mapLoteEstadoToBotella } from '@/components/proof/BotellaCard'
 import { SkuCard, mapSkuEstadoToCard } from '@/components/proof/SkuCard'
+import { KpiConfigDrawer } from '@/components/proof/KpiConfigDrawer'
 import { LoteDetalle } from '@/components/proof/LoteDetalle'
 import { ViajePendienteDetalle } from '@/components/proof/ViajePendienteDetalle'
-import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
+import {
+  distributorMetricTone,
+  profileTypeFromV2,
+  resolveDistributorKpi,
+} from '@/lib/proof/canvas-kpi'
 import { CANVAS_BG, getProfileTheme } from '@/lib/proof/profile-theme'
-import type { ProfileType } from '@/lib/proof/kpi-metrics'
+import { metricCardLabel, type KpiMetric, type ProfileType } from '@/lib/proof/kpi-metrics'
+import { useKpiConfig } from '@/hooks/useKpiConfig'
 import type {
   CorridaRow,
   LoteRow,
@@ -123,6 +129,10 @@ export default function DashboardPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dataVersion, setDataVersion] = useState(0)
   const [agentRequestId, setAgentRequestId] = useState(0)
+  const [uploadingSkuId, setUploadingSkuId] = useState<string | null>(null)
+  const [kpiEditor, setKpiEditor] = useState<{ skuId: string; slot: 0 | 1 | 2 } | null>(null)
+
+  const { config: skuKpiConfig, updateKpi } = useKpiConfig(profileType ?? 'distributor')
 
   const pendingViajeCards = useMemo(() => {
     if (!isDistiller) return []
@@ -153,9 +163,64 @@ export default function DashboardPage() {
     return ordenesCompra.filter(o => o.estado === 'pendiente' || o.estado === 'parcial')
   }, [isDistiller, ordenesCompra])
 
+  const proveedorPorSkuId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const oc of [...ordenesCompra, ...ordenesConCxP]) {
+      const prov = oc.proveedor_nombre?.trim()
+      if (!prov) continue
+      for (const it of oc.items_orden_compra_distribuidor ?? []) {
+        if (it.sku_id) map.set(it.sku_id, prov)
+      }
+    }
+    return map
+  }, [ordenesCompra, ordenesConCxP])
+
+  const resolveProveedorSku = useCallback(
+    (s: SkuRow) => {
+      const direct = s.productor?.trim()
+      if (direct) return direct
+      return proveedorPorSkuId.get(s.id) ?? '—'
+    },
+    [proveedorPorSkuId]
+  )
+
   const bodegaCount = isDistiller
     ? lotes.length + pendingViajeCards.length
     : skus.length + pendingOrdenCards.length + ordenesConCxP.length
+
+  const handleSkuImageUpload = useCallback(
+    async (skuId: string, file: File) => {
+      setUploadingSkuId(skuId)
+      try {
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+        const path = `skus/${skuId}/${Date.now()}.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(path, file, {
+            contentType: file.type || 'image/jpeg',
+            upsert: true,
+          })
+        if (uploadError) throw uploadError
+
+        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
+        const { error: updateError } = await supabase
+          .from('skus')
+          .update({ imagen_url: urlData.publicUrl })
+          .eq('id', skuId)
+        if (updateError) throw updateError
+
+        setSkus(prev =>
+          prev.map(s => (s.id === skuId ? { ...s, imagen_url: urlData.publicUrl } : s))
+        )
+      } catch (e) {
+        console.error('[dashboard] sku image upload', e)
+        alert(`No se pudo subir la imagen: ${e instanceof Error ? e.message : 'error'}`)
+      } finally {
+        setUploadingSkuId(null)
+      }
+    },
+    [supabase]
+  )
 
   useEffect(() => {
     const onVisible = () => {
@@ -483,7 +548,7 @@ export default function DashboardPage() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))',
           gap: 12,
           padding: '0 24px 32px',
         }}
@@ -494,7 +559,7 @@ export default function DashboardPage() {
               key={i}
               aria-hidden
               style={{
-                height: 160,
+                height: 200,
                 borderRadius: 12,
                 background: '#F4F2EE',
                 animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
@@ -574,19 +639,89 @@ export default function DashboardPage() {
 
         {!loading &&
           !isDistiller &&
-          skus.map(s => (
-            <SkuCard
-              key={s.id}
-              id={s.codigo}
-              nombre={s.nombre}
-              stockDisponible={s.stock_disponible}
-              stockTotal={s.stock_total}
-              estado={mapSkuEstadoToCard(s.estado)}
-              selected={selectedId === s.id}
-              accent={accent}
-              onClick={() => setSelectedId(s.id)}
-            />
-          ))}
+          skus.map(s => {
+            const dataItems = skuKpiConfig.map(k => {
+              const metric = k.metric as KpiMetric
+              return {
+                label: metricCardLabel('distributor', metric),
+                value: resolveDistributorKpi(metric, s, [s]),
+                tone: distributorMetricTone(metric, s),
+              }
+            })
+            const editorOpen = kpiEditor?.skuId === s.id
+            const editorSlot = kpiEditor?.slot ?? 0
+            return (
+              <SkuCard
+                key={s.id}
+                nombre={s.nombre}
+                proveedorNombre={resolveProveedorSku(s)}
+                imagenUrl={s.imagen_url}
+                estado={mapSkuEstadoToCard(s.estado)}
+                dataItems={dataItems}
+                selected={selectedId === s.id}
+                accent={accent}
+                uploading={uploadingSkuId === s.id}
+                configOpen={editorOpen}
+                onClick={() => setSelectedId(s.id)}
+                onConfigClick={() =>
+                  setKpiEditor(prev =>
+                    prev?.skuId === s.id ? null : { skuId: s.id, slot: 0 }
+                  )
+                }
+                configPanel={
+                  editorOpen ? (
+                    <>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 4,
+                          marginTop: 8,
+                          marginBottom: 4,
+                        }}
+                      >
+                        {([0, 1, 2] as const).map(slot => (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => setKpiEditor({ skuId: s.id, slot })}
+                            style={{
+                              flex: 1,
+                              fontSize: 9,
+                              fontFamily:
+                                'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                              padding: '4px 0',
+                              borderRadius: 4,
+                              border:
+                                editorSlot === slot
+                                  ? `0.5px solid ${accent}`
+                                  : '0.5px solid #E8E6E0',
+                              background: editorSlot === slot ? `${accent}12` : '#fff',
+                              color: editorSlot === slot ? accent : '#AAA',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {slot + 1}
+                          </button>
+                        ))}
+                      </div>
+                      <KpiConfigDrawer
+                        slot={editorSlot}
+                        profileType="distributor"
+                        currentMetric={skuKpiConfig[editorSlot]?.metric ?? 'stock_disponible'}
+                        currentScope={skuKpiConfig[editorSlot]?.scope ?? 'all'}
+                        accent={accent}
+                        onSelect={(metric, scope) => {
+                          void updateKpi(editorSlot, metric, scope)
+                        }}
+                        onClose={() => setKpiEditor(null)}
+                      />
+                    </>
+                  ) : undefined
+                }
+                onImageSelect={file => void handleSkuImageUpload(s.id, file)}
+              />
+            )
+          })}
 
         {!loading && bodegaCount === 0 && (
           <div

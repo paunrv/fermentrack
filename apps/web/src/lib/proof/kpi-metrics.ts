@@ -74,6 +74,28 @@ export function metricLabel(profileType: ProfileType, metric: KpiMetric): string
   return list.find(m => m.key === metric)?.label ?? metric
 }
 
+const DISTRIBUTOR_SHORT: Partial<Record<DistributorMetric, string>> = {
+  stock_disponible: 'stock',
+  stock_reservado: 'reservado',
+  stock_total: 'total',
+  pedidos_activos: 'pedidos',
+  costo_unidad: 'costo',
+  precio_venta: 'precio',
+  margen: 'margen',
+  ultima_venta: 'última venta',
+  por_cobrar: 'por cobrar',
+  dias_sin_movimiento: 'sin mov.',
+  unidades_vendidas_mes: 'vendidas',
+}
+
+export function metricCardLabel(profileType: ProfileType, metric: KpiMetric): string {
+  if (profileType === 'distributor') {
+    const short = DISTRIBUTOR_SHORT[metric as DistributorMetric]
+    if (short) return short
+  }
+  return metricLabel(profileType, metric)
+}
+
 export function metricsForProfile(profileType: ProfileType) {
   return profileType === 'distiller' ? DISTILLER_METRICS : DISTRIBUTOR_METRICS
 }

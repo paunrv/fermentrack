@@ -91,6 +91,7 @@ export interface SkuRow {
   dist_product_id: string | null
   cliente_id: string | null
   etiqueta_id: string | null
+  imagen_url: string | null
   notas: string | null
   clerk_id: string
   profile_type_v2: string

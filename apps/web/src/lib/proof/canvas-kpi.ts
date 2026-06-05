@@ -155,6 +155,38 @@ export function skuEstadoLabel(estado: SkuRow['estado']): string {
   return map[estado] ?? estado
 }
 
+export function distributorMetricTone(metric: KpiMetric, sku: SkuRow): string {
+  switch (metric) {
+    case 'stock_disponible':
+    case 'stock_total':
+      if (sku.estado === 'sobrevendido' || sku.estado === 'quiebre') return '#E24B4A'
+      if (sku.estado === 'bajo' || sku.estado === 'muerto') return '#EF9F27'
+      return '#1A1A1A'
+    case 'stock_reservado':
+      return sku.stock_reservado > 0 ? '#378ADD' : '#1A1A1A'
+    case 'margen': {
+      const n = Number(sku.margen_porcentaje)
+      if (n < 15) return '#E24B4A'
+      if (n < 30) return '#EF9F27'
+      return '#4CAF7D'
+    }
+    case 'dias_sin_movimiento': {
+      const d = sku.dias_sin_movimiento
+      if (d >= 60) return '#E24B4A'
+      if (d >= 30) return '#EF9F27'
+      return '#1A1A1A'
+    }
+    case 'costo_unidad':
+    case 'precio_venta':
+    case 'ultima_venta':
+    case 'pedidos_activos':
+    case 'por_cobrar':
+    case 'unidades_vendidas_mes':
+    default:
+      return '#1A1A1A'
+  }
+}
+
 export function skuEstadoColor(estado: SkuRow['estado'], accent: string): string {
   switch (estado) {
     case 'sano':
