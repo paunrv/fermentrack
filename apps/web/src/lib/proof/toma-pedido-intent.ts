@@ -47,6 +47,11 @@ function parseUnidadEntrega(q: string): UnidadPedido {
 }
 
 function parseProductoEntrega(q: string): string | null {
+  const cajasDe = q.match(
+    /\bde\s+\d[\d,]*\s+(?:cajas?|latas?|botellas?|unidades?)\s+de\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,50})/i
+  )
+  if (cajasDe?.[1]) return cajasDe[1].trim()
+
   const deA = q.match(
     /\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,50}?)\s+a\s+/i
   )
@@ -64,6 +69,11 @@ function parseProductoEntrega(q: string): string | null {
 }
 
 function parseClienteEntrega(q: string): string | null {
+  const paraDe = q.match(
+    /\bpara\s+([a-záéíóúñ][a-záéíóúñ0-9\s\-'&.]{2,60}?)\s+de\s+\d/i
+  )
+  if (paraDe?.[1]) return paraDe[1].trim()
+
   const aEnd = q.match(/\ba\s+([a-záéíóúñ][a-záéíóúñ0-9\s\-'&.]{2,60})$/i)
   if (aEnd?.[1]) return aEnd[1].trim()
 
@@ -102,7 +112,8 @@ export function looksLikeTomaPedidoQuery(q: string): boolean {
     n.includes('vender') ||
     n.includes('ticket') ||
     n.includes('pedido') ||
-    n.includes('toma')
+    n.includes('toma') ||
+    n.includes('prepara')
   const hasProduct = parseProductoEntrega(n) != null
   const hasClient = parseClienteEntrega(n) != null
   return hasQty && hasDest && (hasProduct || hasClient)
@@ -115,9 +126,12 @@ export function isConfirmationReply(q: string): boolean {
     n.includes('preparame') ||
     n.includes('prepara el ticket') ||
     n.includes('preparame un ticket') ||
-    n.includes('haz el ticket') ||
+    n.includes('prepara un pedido') ||
+    n.includes('preparame un pedido') ||
     n.includes('genera el ticket') ||
-    n.includes('generame el ticket')
+    n.includes('generame el ticket') ||
+    n.includes('generar el ticket') ||
+    n.includes('generar ticket')
   ) {
     return true
   }

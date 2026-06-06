@@ -1,5 +1,5 @@
 import type {
-  CuentaClienteWithClient,
+  CuentaPorCobrarRow,
   CuentaPorPagarRow,
   OrdenCompraDistribuidorWithItems,
   PedidoRow,
@@ -28,11 +28,12 @@ export type DistributorAgentContext = {
     clientes_vencidos: number
     cuentas: {
       id: string
-      cliente_id: string
+      pedido_id: string
       cliente_nombre: string
       saldo_pendiente: number
-      dias_vencido: number
+      monto_total: number
       estado: string
+      fecha_vencimiento: string | null
     }[]
   }
   pedidos_pendientes_entrega: {
@@ -105,7 +106,7 @@ export function isSkuStockCritico(estado: string): boolean {
 export function buildDistributorAgentContext(
   skus: SkuRow[],
   pedidos: PedidoRow[],
-  cuentas: CuentaClienteWithClient[],
+  cuentasPorCobrar: CuentaPorCobrarRow[],
   ordenesCompra: OrdenCompraDistribuidorWithItems[] = [],
   cuentasPorPagar: CuentaPorPagarRow[] = [],
   opts?: { selectedId?: string | null; query?: string | null }
@@ -114,13 +115,16 @@ export function buildDistributorAgentContext(
     ['confirmado', 'preparando', 'en_ruta', 'borrador'].includes(p.estado)
   )
   const pendientesEntrega = pedidos.filter(p => p.estado === 'confirmado')
-  const cuentasConSaldo = cuentas.filter(c => Number(c.saldo_pendiente) > 0)
+  const cuentasConSaldo = cuentasPorCobrar.filter(c => Number(c.saldo_pendiente) > 0)
   const totalPorCobrar = cuentasConSaldo.reduce(
     (s, c) => s + Number(c.saldo_pendiente),
     0
   )
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
   const clientesVencidos = cuentasConSaldo.filter(
-    c => c.dias_vencido > 0 || c.estado === 'vencido'
+    c =>
+      c.estado === 'vencida' ||
+      (c.fecha_vencimiento != null && c.fecha_vencimiento < today)
   ).length
   const criticos = skus.filter(s => isSkuStockCritico(s.estado))
   const cxpActivas = cuentasPorPagar.filter(c => Number(c.saldo_pendiente) > 0)
@@ -146,11 +150,12 @@ export function buildDistributorAgentContext(
       clientes_vencidos: clientesVencidos,
       cuentas: cuentasConSaldo.slice(0, 40).map(c => ({
         id: c.id,
-        cliente_id: c.cliente_id,
-        cliente_nombre: c.clients?.name ?? 'Cliente',
+        pedido_id: c.pedido_id,
+        cliente_nombre: c.cliente_nombre,
         saldo_pendiente: Number(c.saldo_pendiente),
-        dias_vencido: c.dias_vencido,
+        monto_total: Number(c.monto_total),
         estado: c.estado,
+        fecha_vencimiento: c.fecha_vencimiento,
       })),
     },
     pedidos_pendientes_entrega: pendientesEntrega.slice(0, 20).map(p => ({

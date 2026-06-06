@@ -1,19 +1,28 @@
 'use client'
 
 import type { PedidoRow } from '@/lib/supabase'
+import { fmtMoney } from '@/lib/proof/format'
+import type { EstadoCuentaPorCobrar } from '@/lib/supabase/distribuidor'
 import {
   formatLineaToma,
   parseTomaPedidoNotas,
 } from '@/lib/proof/toma-pedido-client'
 
+type CxcBadge = {
+  id: string
+  saldo_pendiente: number
+  estado: EstadoCuentaPorCobrar
+}
+
 type Props = {
   pedido: PedidoRow & { clients?: { name: string } | null }
   accent: string
+  cxc?: CxcBadge
   selected?: boolean
   onClick: () => void
 }
 
-export function PedidoCanvasCard({ pedido, accent, selected, onClick }: Props) {
+export function PedidoCanvasCard({ pedido, accent, cxc, selected, onClick }: Props) {
   const toma = parseTomaPedidoNotas(pedido.notas)
   const cliente = pedido.clients?.name ?? 'Cliente'
   const lineas = toma?.lineas ?? []
@@ -21,6 +30,7 @@ export function PedidoCanvasCard({ pedido, accent, selected, onClick }: Props) {
     lineas.length > 0
       ? lineas.map(l => `${l.etiqueta} · ${formatLineaToma(l)}`).join('\n')
       : pedido.etiqueta_nombre ?? 'Sin productos'
+  const entregado = pedido.estado === 'entregado' || pedido.estado === 'parcial'
 
   return (
     <button
@@ -70,8 +80,20 @@ export function PedidoCanvasCard({ pedido, accent, selected, onClick }: Props) {
       >
         {resumen}
       </span>
+      {cxc && cxc.saldo_pendiente > 0 && entregado && (
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: cxc.estado === 'vencida' ? '#E24B4A' : '#C2410C',
+            fontFamily: 'ui-monospace, monospace',
+          }}
+        >
+          CxC pendiente {fmtMoney(cxc.saldo_pendiente)}
+        </span>
+      )}
       <span style={{ fontSize: 10, color: '#AAA' }}>
-        Entrega {pedido.fecha_entrega}
+        {entregado ? 'Entregado' : `Entrega ${pedido.fecha_entrega}`}
         {pedido.anticipo ? ' · Anticipo' : ''}
       </span>
     </button>

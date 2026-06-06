@@ -16,8 +16,11 @@ import {
   parseTomaPedidoNotas,
 } from '@/lib/proof/toma-pedido-client'
 import {
+  fetchCuentaPorCobrarByPedidoId,
   fetchPedidoWithItems,
   fetchRemisionByPedidoId,
+  rpcRegistrarPagoCliente,
+  type CuentaPorCobrarRow,
   type EstadoPedido,
   type PedidoWithItems,
 } from '@/lib/supabase/distribuidor'
@@ -111,8 +114,13 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [pedido, setPedido] = useState<PedidoWithItems | null>(null)
+  const [cuenta, setCuenta] = useState<CuentaPorCobrarRow | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfError, setPdfError] = useState<string | null>(null)
+  const [pagoOpen, setPagoOpen] = useState(false)
+  const [pagoMonto, setPagoMonto] = useState('')
+  const [pagoLoading, setPagoLoading] = useState(false)
+  const [pagoError, setPagoError] = useState<string | null>(null)
   const pedidoRef = useRef<PedidoWithItems | null>(null)
   pedidoRef.current = pedido
 
@@ -125,15 +133,24 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     }
     setLoadError(null)
 
-    void fetchWithTimeout(fetchPedidoWithItems(supabase, pedidoId))
-      .then(row => {
+    void fetchWithTimeout(
+      Promise.all([
+        fetchPedidoWithItems(supabase, pedidoId),
+        scope
+          ? fetchCuentaPorCobrarByPedidoId(supabase, pedidoId, scope).catch(() => null)
+          : Promise.resolve(null),
+      ])
+    )
+      .then(([row, cxcRow]) => {
         if (cancelled) return
         if (row && scope && row.clerk_id !== scope.clerk_id) {
           setPedido(null)
+          setCuenta(null)
           setLoadError('No se encontró el pedido.')
           return
         }
         setPedido(row)
+        setCuenta(cxcRow)
       })
       .catch(e => {
         if (cancelled) return
@@ -258,6 +275,34 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       setPdfLoading(false)
     }
   }
+
+  async function handleRegistrarPago() {
+    if (!cuenta) return
+    const monto = Number(pagoMonto.replace(/,/g, ''))
+    if (!Number.isFinite(monto) || monto <= 0) {
+      setPagoError('Ingresa un monto válido')
+      return
+    }
+    setPagoLoading(true)
+    setPagoError(null)
+    try {
+      const updated = await rpcRegistrarPagoCliente(supabase, cuenta.id, monto)
+      setCuenta(updated)
+      setPagoOpen(false)
+      setPagoMonto('')
+    } catch (e) {
+      setPagoError(e instanceof Error ? e.message : 'No se pudo registrar el pago')
+    } finally {
+      setPagoLoading(false)
+    }
+  }
+
+  const cuentaVencida =
+    cuenta != null &&
+    cuenta.estado !== 'pagada' &&
+    cuenta.fecha_vencimiento != null &&
+    cuenta.fecha_vencimiento <
+      new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
 
   if (loading && !pedido) return <PedidoDetalleSkeleton />
 
@@ -490,6 +535,123 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           </span>
         </div>
       </div>
+
+      {cuenta && (
+        <div style={{ padding: '16px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+          <p
+            style={{
+              margin: '0 0 8px',
+              fontSize: 9,
+              color: '#CCC',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              fontFamily: MONO,
+            }}
+          >
+            Cobro
+          </p>
+          <DataPair label="Monto total" value={fmtMoney(Number(cuenta.monto_total))} />
+          <DataPair label="Pagado" value={fmtMoney(Number(cuenta.monto_pagado))} />
+          <DataPair
+            label="Saldo pendiente"
+            value={fmtMoney(Number(cuenta.saldo_pendiente))}
+            valueColor={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : '#C2410C'}
+          />
+          {cuenta.fecha_vencimiento && (
+            <DataPair
+              label="Fecha vencimiento"
+              value={fmtDateOnly(cuenta.fecha_vencimiento)}
+              valueColor={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : undefined}
+            />
+          )}
+          {cuenta.estado !== 'pagada' && Number(cuenta.saldo_pendiente) > 0 && (
+            <div style={{ marginTop: 12 }}>
+              {!pagoOpen ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPagoOpen(true)
+                    setPagoMonto(String(Number(cuenta.saldo_pendiente)))
+                    setPagoError(null)
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    border: '0.5px solid #E0DDD6',
+                    background: '#FAFAF8',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#1A1A1A',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Registrar pago
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={pagoMonto}
+                    onChange={e => setPagoMonto(e.target.value)}
+                    placeholder="Monto"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '0.5px solid #E0DDD6',
+                      fontSize: 13,
+                      fontFamily: MONO,
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      disabled={pagoLoading}
+                      onClick={() => void handleRegistrarPago()}
+                      style={{
+                        flex: 1,
+                        padding: '10px 16px',
+                        borderRadius: 8,
+                        border: 'none',
+                        background: '#C2410C',
+                        color: '#fff',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: pagoLoading ? 'wait' : 'pointer',
+                      }}
+                    >
+                      {pagoLoading ? 'Guardando…' : 'Confirmar pago'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPagoOpen(false)
+                        setPagoError(null)
+                      }}
+                      style={{
+                        padding: '10px 16px',
+                        borderRadius: 8,
+                        border: '0.5px solid #E0DDD6',
+                        background: '#fff',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+              {pagoError && (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#E24B4A' }}>{pagoError}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Acciones compartir */}
       <div

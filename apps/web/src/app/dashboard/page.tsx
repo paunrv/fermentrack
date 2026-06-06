@@ -42,8 +42,10 @@ import {
 import {
   fetchOrdenesCompraDistribuidorPendientes,
   fetchOrdenesCompraConCxPendiente,
+  fetchPedidosConCxCPendiente,
   type OrdenCompraConCxP,
   type OrdenCompraDistribuidorWithItems,
+  type PedidoConCxC,
 } from '@/lib/supabase/distribuidor'
 
 const DISTILLER_QUICK_ACTIONS = [
@@ -61,6 +63,7 @@ const DISTRIBUTOR_QUICK_ACTIONS = [
   { label: 'Stock bajo', message: '¿Qué SKUs tienen stock bajo?' },
   { label: 'Pedidos pendientes', message: '¿Qué pedidos están pendientes de entrega?' },
   { label: 'Por cobrar', message: '¿Cuánto tengo por cobrar?' },
+  { label: 'Deuda vencida', message: '¿Quién tiene deuda vencida?' },
   {
     label: '+ Orden de compra',
     message: 'Quiero registrar una orden de compra',
@@ -150,6 +153,7 @@ export default function DashboardPage() {
   const [pedidos, setPedidos] = useState<(PedidoRow & { clients?: { name: string } | null })[]>(
     []
   )
+  const [pedidosConCxC, setPedidosConCxC] = useState<PedidoConCxC[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dataVersion, setDataVersion] = useState(0)
@@ -220,7 +224,7 @@ export default function DashboardPage() {
 
   const bodegaCount = isDistiller
     ? lotes.length + pendingViajeCards.length
-    : skus.length + pendingOrdenCards.length + ordenesConCxP.length + activePedidoCards.length
+    : skus.length + pendingOrdenCards.length + ordenesConCxP.length + activePedidoCards.length + pedidosConCxC.length
 
   const handleSkuImageUpload = useCallback(
     async (skuId: string, file: File) => {
@@ -327,7 +331,7 @@ export default function DashboardPage() {
             }
           }
         } else if (profileType === 'distributor') {
-          const [rows, pedidoRows, ocRows, ocCxPRows] = await Promise.all([
+          const [rows, pedidoRows, ocRows, ocCxPRows, pedCxCRows] = await Promise.all([
             loadWithTimeout(fetchSkus(supabase, scope), [] as SkuRow[], 'fetchSkus'),
             loadWithTimeout(fetchPedidos(supabase, scope, { limit: 12 }), [], 'fetchPedidos'),
             loadWithTimeout(
@@ -340,12 +344,18 @@ export default function DashboardPage() {
               [],
               'fetchOrdenesCompraConCxPendiente'
             ),
+            loadWithTimeout(
+              fetchPedidosConCxCPendiente(supabase, scope),
+              [],
+              'fetchPedidosConCxCPendiente'
+            ),
           ])
           if (!cancelled) {
             setSkus(rows)
             setPedidos(pedidoRows as (PedidoRow & { clients?: { name: string } | null })[])
             setOrdenesCompra(ocRows)
             setOrdenesConCxP(ocCxPRows)
+            setPedidosConCxC(pedCxCRows)
           }
         }
       } catch (e) {
@@ -682,6 +692,23 @@ export default function DashboardPage() {
               onClick={() => {
                 setSelectedId(null)
                 setSelectedViajeId(v.viajeId)
+              }}
+            />
+          ))}
+
+        {!loading &&
+          !isDistiller &&
+          pedidosConCxC.map(p => (
+            <PedidoCanvasCard
+              key={`cxc-${p.id}`}
+              pedido={p}
+              accent={accent}
+              cxc={p.cxc}
+              selected={selectedPedidoId === p.id}
+              onClick={() => {
+                setSelectedPedidoId(p.id)
+                setSelectedId(null)
+                setSelectedOrdenId(null)
               }}
             />
           ))}

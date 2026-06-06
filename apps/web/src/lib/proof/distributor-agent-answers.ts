@@ -24,6 +24,47 @@ function norm(s: string): string {
     .trim()
 }
 
+function resolveClienteDeudaEnQuery(
+  q: string,
+  ctx: DistributorAgentContext
+): DistributorAgentContext['credito']['cuentas'][number] | null {
+  const qNorm = norm(q)
+  const qCompact = qNorm.replace(/\s+/g, '')
+  let best: DistributorAgentContext['credito']['cuentas'][number] | null = null
+  let bestLen = 0
+
+  for (const c of ctx.credito.cuentas) {
+    const nombre = norm(c.cliente_nombre)
+    const nombreCompact = nombre.replace(/\s+/g, '')
+    if (
+      (qNorm.includes(nombre) || qCompact.includes(nombreCompact)) &&
+      nombre.length > bestLen
+    ) {
+      best = c
+      bestLen = nombre.length
+      continue
+    }
+    const tokens = nombre.split(/\s+/).filter(t => t.length >= 3)
+    if (tokens.length > 0 && tokens.every(t => qNorm.includes(t)) && nombre.length > bestLen) {
+      best = c
+      bestLen = nombre.length
+    }
+  }
+
+  const debeMatch = qNorm.match(/\bdebe[n]?\s+(?:a\s+)?([a-z0-9\s\-'&.]{2,60})$/i)
+  if (debeMatch?.[1]) {
+    const frag = norm(debeMatch[1]).replace(/\s+/g, '')
+    for (const c of ctx.credito.cuentas) {
+      const nombreCompact = norm(c.cliente_nombre).replace(/\s+/g, '')
+      if (frag.length >= 3 && (nombreCompact.includes(frag) || frag.includes(nombreCompact))) {
+        return c
+      }
+    }
+  }
+
+  return best
+}
+
 /** Respuesta determinística (sin LLM). */
 export function tryDistributorQuickAnswer(
   query: string,
@@ -82,6 +123,35 @@ export function tryDistributorQuickAnswer(
   }
 
   if (looksLikeDistributorMutation(q) && !tomaDraft) return null
+
+  if (
+    (q.includes('debe') || q.includes('deben') || q.includes('debo')) &&
+    !q.includes('proveedor') &&
+    !q.includes('productor') &&
+    (q.includes('cuanto') || q.includes('cuanta') || q.includes('cuánto') || q.includes('cuánta'))
+  ) {
+    const cuenta = resolveClienteDeudaEnQuery(q, ctx)
+    if (cuenta) {
+      const saldo = cuenta.saldo_pendiente
+      if (saldo <= 0) {
+        return {
+          mensaje: `${cuenta.cliente_nombre} no tiene saldo pendiente.`,
+          accionLabel: 'Ver crédito',
+          accionHref: '/dashboard/credito',
+        }
+      }
+      const vencida =
+        cuenta.estado === 'vencida' ||
+        (cuenta.fecha_vencimiento != null &&
+          cuenta.fecha_vencimiento <
+            new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' }))
+      return {
+        mensaje: `${cuenta.cliente_nombre} te debe $${saldo.toLocaleString('es-MX')}${vencida ? ' (vencido)' : ''}.`,
+        accionLabel: 'Ver crédito',
+        accionHref: '/dashboard/credito',
+      }
+    }
+  }
 
   const wantsStock =
     q.includes('stock') ||
@@ -183,7 +253,38 @@ export function tryDistributorQuickAnswer(
       }
     }
     return {
-      mensaje: `Tienes $${total.toLocaleString('es-MX')} por cobrar de ${n} cliente${n === 1 ? '' : 's'}.`,
+      mensaje: `Tienes $${total.toLocaleString('es-MX')} por cobrar de ${n} cuenta${n === 1 ? '' : 's'}.`,
+      accionLabel: 'Ver crédito',
+      accionHref: '/dashboard/credito',
+    }
+  }
+
+  if (
+    q.includes('deuda vencida') ||
+    q.includes('vencida') ||
+    q.includes('vencidos') ||
+    (q.includes('deben') && q.includes('venc'))
+  ) {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+    const vencidas = (ctx.credito.cuentas ?? []).filter(
+      c =>
+        c.estado === 'vencida' ||
+        (c.fecha_vencimiento != null && c.fecha_vencimiento < today && c.saldo_pendiente > 0)
+    )
+    if (vencidas.length === 0) {
+      return {
+        mensaje: 'Ningún cliente con deuda vencida.',
+        accionLabel: 'Ver crédito',
+        accionHref: '/dashboard/credito',
+      }
+    }
+    const lista = vencidas
+      .slice(0, 4)
+      .map(c => `${c.cliente_nombre} ($${c.saldo_pendiente.toLocaleString('es-MX')})`)
+      .join('; ')
+    const totalVenc = vencidas.reduce((s, c) => s + c.saldo_pendiente, 0)
+    return {
+      mensaje: `${vencidas.length} cuenta${vencidas.length === 1 ? '' : 's'} vencida${vencidas.length === 1 ? '' : 's'} por $${totalVenc.toLocaleString('es-MX')}: ${lista}${vencidas.length > 4 ? '…' : ''}.`,
       accionLabel: 'Ver crédito',
       accionHref: '/dashboard/credito',
     }

@@ -6,6 +6,7 @@ import {
   type UnidadPedido,
 } from '@/lib/proof/toma-pedido-client'
 import {
+  extractTomaPedidoDraft,
   isConfirmationReply,
   looksLikeTomaPedidoQuery,
   resolveTomaPedidoDraft,
@@ -17,6 +18,7 @@ import {
   createOrdenCompraDistribuidor,
   fetchSkus,
   rpcEntregarPedido,
+  rpcRegistrarPagoCliente,
   rpcRegistrarPagoProveedor,
   type ConfirmarLlegadaOcLinea,
 } from '@/lib/supabase/distribuidor'
@@ -273,12 +275,14 @@ function resolveOrdenCompra(
 function parseCrearOrdenCompraIntent(
   q: string
 ): Extract<DistributorAgentAction, { type: 'crear_orden_compra' }> | null {
+  if (looksLikeVentaPedidoQuery(q)) return null
+
   const wantsOrder =
     q.includes('ordenar') ||
-    q.includes('hacer pedido') ||
-    q.includes('hacer un pedido') ||
+    q.includes('hacer pedido de compra') ||
+    q.includes('orden de compra') ||
     q.includes('comprar') ||
-    (q.includes('pedido') && q.includes('de') && !q.includes('llego') && !q.includes('llegó'))
+    (q.includes('pedido de') && !q.includes('pedido para') && !q.includes('llego') && !q.includes('llegó'))
 
   if (!wantsOrder) return null
 
@@ -411,17 +415,79 @@ function resolveCuentaPorCliente(
   q: string,
   ctx: DistributorAgentContext
 ): (typeof ctx.credito.cuentas)[number] | null {
+  const qCompact = q.replace(/\s+/g, '')
   let best: (typeof ctx.credito.cuentas)[number] | null = null
   let bestLen = 0
   for (const c of ctx.credito.cuentas) {
     const nombre = normQ(c.cliente_nombre)
     if (nombre.length < 2) continue
-    if (q.includes(nombre) && nombre.length > bestLen) {
+    const nombreCompact = nombre.replace(/\s+/g, '')
+    if (
+      (q.includes(nombre) || qCompact.includes(nombreCompact)) &&
+      nombre.length > bestLen
+    ) {
+      best = c
+      bestLen = nombre.length
+      continue
+    }
+    const tokens = nombre.split(/\s+/).filter(t => t.length >= 3)
+    if (tokens.length > 0 && tokens.every(t => q.includes(t)) && nombre.length > bestLen) {
       best = c
       bestLen = nombre.length
     }
   }
+
+  const debeMatch = q.match(/\bdebe[n]?\s+(?:a\s+)?([a-z0-9\s\-'&.]{2,60})$/i)
+  if (debeMatch?.[1]) {
+    const frag = normQ(debeMatch[1]).replace(/\s+/g, '')
+    for (const c of ctx.credito.cuentas) {
+      const nombreCompact = normQ(c.cliente_nombre).replace(/\s+/g, '')
+      if (frag.length >= 3 && (nombreCompact.includes(frag) || frag.includes(nombreCompact))) {
+        return c
+      }
+    }
+  }
+
   return best
+}
+
+function looksLikeVentaPedidoQuery(q: string): boolean {
+  if (/\bpedido\s+para\b/.test(q)) return true
+  if (/\bprepar(a|ame|ar)\s+(un\s+)?pedido\b/.test(q)) return true
+  if (/\b(entregar|vender)\s+\d/.test(q)) return true
+  if (/\bticket\b/.test(q) && !q.includes('compra')) return true
+  return false
+}
+
+function parseCrearTomaPedidoDirectIntent(
+  query: string,
+  ctx: DistributorAgentContext
+): Extract<DistributorAgentAction, { type: 'crear_toma_pedido' }> | null {
+  const q = normQ(query)
+  if (!looksLikeVentaPedidoQuery(q) && !looksLikeTomaPedidoQuery(q)) return null
+
+  const wantsDirect =
+    q.includes('prepara') ||
+    q.includes('preparame') ||
+    q.includes('genera el ticket') ||
+    q.includes('generar el ticket') ||
+    q.includes('generar ticket') ||
+    q.includes('confirmo') ||
+    isConfirmationReply(q)
+
+  if (!wantsDirect) return null
+
+  const draft = extractTomaPedidoDraft(query, ctx)
+  if (!draft) return null
+
+  return {
+    type: 'crear_toma_pedido',
+    cantidad: draft.cantidad,
+    unidad: draft.unidad,
+    etiqueta: draft.etiqueta,
+    cliente: draft.cliente,
+    sku_id: draft.sku_id,
+  }
 }
 
 function parseCrearTomaPedidoIntent(
@@ -429,6 +495,9 @@ function parseCrearTomaPedidoIntent(
   ctx: DistributorAgentContext,
   conversation?: AgentConversationTurn[]
 ): Extract<DistributorAgentAction, { type: 'crear_toma_pedido' }> | null {
+  const direct = parseCrearTomaPedidoDirectIntent(query, ctx)
+  if (direct) return direct
+
   const q = normQ(query)
   if (!isConfirmationReply(q) && !q.includes('confirmo')) return null
 
@@ -634,30 +703,13 @@ export async function executeDistributorAgentAction(
       }
     }
     case 'registrar_pago': {
-      const { data: cuenta, error: cErr } = await sb
-        .from('cuentas_clientes')
-        .select('id, saldo_pendiente, cliente_id')
-        .eq('id', action.cuenta_id)
-        .eq('clerk_id', clerkId)
-        .maybeSingle()
-      if (cErr) throw cErr
-      if (!cuenta) throw new Error('Cuenta de cliente no encontrada')
-      const saldo = Number(cuenta.saldo_pendiente)
-      const nuevo = Math.max(0, saldo - action.monto)
-      const { error: upErr } = await sb
-        .from('cuentas_clientes')
-        .update({
-          saldo_pendiente: nuevo,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', action.cuenta_id)
-        .eq('clerk_id', clerkId)
-      if (upErr) throw upErr
+      const updated = await rpcRegistrarPagoCliente(sb, action.cuenta_id, action.monto)
+      const saldo = Number(updated.saldo_pendiente)
       return {
         ok: true,
         entityId: action.cuenta_id,
-        entityKind: 'sku',
-        message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado para ${action.cliente_nombre} ✓ Saldo: $${nuevo.toLocaleString('es-MX')}`,
+        entityKind: 'pedido',
+        message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado ✓ Saldo pendiente: $${saldo.toLocaleString('es-MX')}`,
       }
     }
     case 'actualizar_precio': {

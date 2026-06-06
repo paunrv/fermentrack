@@ -962,6 +962,140 @@ export async function rpcRegistrarPagoProveedor(
 }
 
 // =============================================================================
+// Cuentas por cobrar (CxC)
+// =============================================================================
+
+export type EstadoCuentaPorCobrar = 'pendiente' | 'parcial' | 'pagada' | 'vencida'
+export type MetodoPagoCliente = 'efectivo' | 'transferencia' | 'cheque'
+
+export interface CuentaPorCobrarRow {
+  id: string
+  clerk_id: string
+  profile_type_v2: string
+  pedido_id: string
+  cliente_nombre: string
+  monto_total: number
+  monto_pagado: number
+  saldo_pendiente: number
+  estado: EstadoCuentaPorCobrar
+  fecha_vencimiento: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PagoClienteRow {
+  id: string
+  clerk_id: string
+  profile_type_v2: string
+  cuenta_por_cobrar_id: string
+  monto: number
+  metodo: MetodoPagoCliente
+  referencia: string | null
+  fecha_pago: string
+  nota: string | null
+  created_at: string
+}
+
+export type PedidoConCxC = PedidoRow & {
+  clients?: { name: string } | null
+  cxc: {
+    id: string
+    saldo_pendiente: number
+    monto_total: number
+    cliente_nombre: string
+    estado: EstadoCuentaPorCobrar
+    fecha_vencimiento: string | null
+  }
+}
+
+export async function fetchCuentasPorCobrarActivas(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<CuentaPorCobrarRow[]> {
+  let q = sb
+    .from('cuentas_por_cobrar')
+    .select('*')
+    .in('estado', ['pendiente', 'parcial', 'vencida'])
+    .order('created_at', { ascending: false })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  return (data || []) as CuentaPorCobrarRow[]
+}
+
+export async function fetchCuentaPorCobrarByPedidoId(
+  sb: SupabaseClient,
+  pedidoId: string,
+  scope?: ProfileScope
+): Promise<CuentaPorCobrarRow | null> {
+  let q = sb.from('cuentas_por_cobrar').select('*').eq('pedido_id', pedidoId)
+  q = scopeFilter(q, scope)
+  const { data, error } = await q.maybeSingle()
+  throwIfError(error)
+  return (data as CuentaPorCobrarRow | null) ?? null
+}
+
+export async function fetchPedidosConCxCPendiente(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<PedidoConCxC[]> {
+  let q = sb
+    .from('cuentas_por_cobrar')
+    .select(
+      'id, saldo_pendiente, monto_total, cliente_nombre, estado, fecha_vencimiento, pedidos(*, clients(name))'
+    )
+    .in('estado', ['pendiente', 'parcial', 'vencida'])
+    .order('created_at', { ascending: false })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  type CxcJoinRow = {
+    id: string
+    saldo_pendiente: number
+    monto_total: number
+    cliente_nombre: string
+    estado: EstadoCuentaPorCobrar
+    fecha_vencimiento: string | null
+    pedidos: (PedidoRow & { clients?: { name: string } | null }) | (PedidoRow & { clients?: { name: string } | null })[] | null
+  }
+  const rows = (data || []) as unknown as CxcJoinRow[]
+  return rows
+    .map(r => {
+      const pedido = Array.isArray(r.pedidos) ? r.pedidos[0] : r.pedidos
+      if (!pedido) return null
+      return {
+        ...pedido,
+        cxc: {
+          id: r.id,
+          saldo_pendiente: Number(r.saldo_pendiente),
+          monto_total: Number(r.monto_total),
+          cliente_nombre: r.cliente_nombre,
+          estado: r.estado,
+          fecha_vencimiento: r.fecha_vencimiento,
+        },
+      }
+    })
+    .filter((r): r is PedidoConCxC => r != null)
+}
+
+export async function rpcRegistrarPagoCliente(
+  sb: SupabaseClient,
+  cuentaId: string,
+  monto: number,
+  metodo: MetodoPagoCliente = 'transferencia'
+): Promise<CuentaPorCobrarRow> {
+  const { data, error } = await sb.rpc('registrar_pago_cliente', {
+    p_cuenta_id: cuentaId,
+    p_monto: monto,
+    p_metodo: metodo,
+    p_referencia: null,
+    p_nota: null,
+  })
+  throwIfError(error)
+  return data as CuentaPorCobrarRow
+}
+
+// =============================================================================
 // Crédito
 // =============================================================================
 
