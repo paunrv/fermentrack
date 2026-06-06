@@ -1,13 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
-import {
-  generarRemisionPedidoAction,
-  obtenerRemisionPedidoAction,
-} from '@/app/actions/remisiones-distribuidor'
 import { fmtDateOnly, fmtMoney } from '@/lib/proof/format'
+import { REMISIONES_BUCKET } from '@/lib/proof/storage-remisiones'
 import {
   buildPedidoShareText,
   pedidoMailtoUrl,
@@ -20,6 +17,7 @@ import {
 } from '@/lib/proof/toma-pedido-client'
 import {
   fetchPedidoWithItems,
+  fetchRemisionByPedidoId,
   type EstadoPedido,
   type PedidoWithItems,
 } from '@/lib/supabase/distribuidor'
@@ -94,41 +92,63 @@ function PedidoDetalleSkeleton() {
 export interface PedidoDetalleProps {
   pedidoId: string
   accent?: string
+  refreshKey?: number
   onClose: () => void
 }
 
-export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
+async function fetchWithTimeout<T>(promise: Promise<T>, ms = 12_000): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('La consulta tardó demasiado')), ms)
+    }),
+  ])
+}
+
+export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetalleProps) {
   const supabase = useSupabase()
   const { scope } = useProfile()
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [pedido, setPedido] = useState<PedidoWithItems | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [pdfError, setPdfError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    if (!scope) {
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    try {
-      const row = await fetchPedidoWithItems(supabase, pedidoId)
-      if (row && row.clerk_id !== scope.clerk_id) {
-        setPedido(null)
-        return
-      }
-      setPedido(row)
-    } catch (e) {
-      console.error('[PedidoDetalle] load', e)
-      setPedido(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase, pedidoId, scope])
+  const pedidoRef = useRef<PedidoWithItems | null>(null)
+  pedidoRef.current = pedido
 
   useEffect(() => {
-    void load()
-  }, [load])
+    let cancelled = false
+    const silent = pedidoRef.current != null && refreshKey > 0
+    if (!silent) {
+      setLoading(true)
+      setPedido(null)
+    }
+    setLoadError(null)
+
+    void fetchWithTimeout(fetchPedidoWithItems(supabase, pedidoId))
+      .then(row => {
+        if (cancelled) return
+        if (row && scope && row.clerk_id !== scope.clerk_id) {
+          setPedido(null)
+          setLoadError('No se encontró el pedido.')
+          return
+        }
+        setPedido(row)
+      })
+      .catch(e => {
+        if (cancelled) return
+        console.error('[PedidoDetalle] load', e)
+        if (!silent) setPedido(null)
+        setLoadError(e instanceof Error ? e.message : 'Error al cargar pedido')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [supabase, pedidoId, refreshKey, scope?.clerk_id])
 
   const toma = useMemo(
     () => parseTomaPedidoNotas(pedido?.notas ?? null),
@@ -176,6 +196,7 @@ export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
     toma?.anticipo_monto != null && toma.anticipo_monto > 0 ? toma.anticipo_monto : null
 
   const clienteNombre = pedido?.clients?.name ?? 'Cliente'
+  const displayTotal = total > 0 ? total : subtotal
 
   const shareText = useMemo(() => {
     if (!pedido) return ''
@@ -189,17 +210,48 @@ export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
   }, [pedido, clienteNombre, lineas, total, subtotal])
 
   async function handlePdf() {
-    if (!pedido || pedido.estado !== 'entregado') return
+    if (!pedido) return
     setPdfLoading(true)
     setPdfError(null)
     try {
-      const existing = await obtenerRemisionPedidoAction(pedido.id)
-      if (existing?.downloadUrl) {
-        window.open(existing.downloadUrl, '_blank', 'noopener,noreferrer')
-        return
+      const entregado = pedido.estado === 'entregado' || pedido.estado === 'parcial'
+      if (entregado && scope) {
+        const remision = await fetchRemisionByPedidoId(supabase, pedido.id, scope)
+        const path = remision?.pdf_url?.trim()
+        if (path) {
+          const { data, error } = await supabase.storage
+            .from(REMISIONES_BUCKET)
+            .createSignedUrl(path, 60 * 60)
+          if (error) throw error
+          if (data?.signedUrl) {
+            window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+            return
+          }
+        }
       }
-      const generated = await generarRemisionPedidoAction(pedido.id)
-      window.open(generated.downloadUrl, '_blank', 'noopener,noreferrer')
+
+      const pdfLineas = lineas.map(l => ({
+        producto: l.nombre,
+        cantidad: l.cantidad,
+        precioUnitario: l.precioUnitario,
+        subtotal:
+          l.subtotal > 0
+            ? l.subtotal
+            : l.precioUnitario > 0
+              ? l.cantidad * l.precioUnitario
+              : 0,
+      }))
+
+      const { downloadPedidoPreviewPdf } = await import('@/lib/proof/pedido-preview-pdf')
+      downloadPedidoPreviewPdf({
+        numeroPedido: pedido.numero,
+        clienteNombre,
+        fechaPedido: pedido.fecha_creacion ?? pedido.created_at,
+        fechaEntrega: pedido.fecha_entrega,
+        lineas: pdfLineas,
+        subtotal: subtotal > 0 ? subtotal : displayTotal,
+        total: displayTotal,
+      })
     } catch (e) {
       setPdfError(e instanceof Error ? e.message : 'No se pudo obtener el PDF')
     } finally {
@@ -207,7 +259,7 @@ export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
     }
   }
 
-  if (loading) return <PedidoDetalleSkeleton />
+  if (loading && !pedido) return <PedidoDetalleSkeleton />
 
   if (!pedido) {
     return (
@@ -219,7 +271,9 @@ export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
           textAlign: 'center',
         }}
       >
-        <p style={{ fontSize: 13, color: '#999' }}>No se encontró el pedido.</p>
+        <p style={{ fontSize: 13, color: '#999' }}>
+          {loadError ?? 'No se encontró el pedido.'}
+        </p>
         <button
           type="button"
           onClick={onClose}
@@ -240,8 +294,6 @@ export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
   }
 
   const estadoColor = pedidoEstadoColor(pedido.estado)
-  const canPdf = pedido.estado === 'entregado'
-  const displayTotal = total > 0 ? total : subtotal
 
   return (
     <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
@@ -491,24 +543,23 @@ export function PedidoDetalle({ pedidoId, onClose }: PedidoDetalleProps) {
         </a>
         <button
           type="button"
-          disabled={!canPdf || pdfLoading}
-          title={canPdf ? 'Descargar remisión PDF' : 'Disponible cuando el pedido esté entregado'}
+          disabled={pdfLoading}
           onClick={() => void handlePdf()}
           className="pedido-detalle-pdf-btn"
           style={{
             flex: '1 1 140px',
             padding: '12px 16px',
             borderRadius: 10,
-            background: canPdf ? '#1A1A1A' : '#E8E6E0',
-            color: canPdf ? '#fff' : '#999',
+            background: '#1A1A1A',
+            color: '#fff',
             fontSize: 13,
             fontWeight: 500,
             border: 'none',
-            cursor: canPdf && !pdfLoading ? 'pointer' : 'not-allowed',
+            cursor: pdfLoading ? 'wait' : 'pointer',
             transition: 'background 0.15s ease',
           }}
         >
-          {pdfLoading ? 'Generando…' : canPdf ? 'Descargar PDF' : 'PDF al entregar'}
+          {pdfLoading ? 'Generando…' : 'Descargar PDF'}
         </button>
       </div>
 

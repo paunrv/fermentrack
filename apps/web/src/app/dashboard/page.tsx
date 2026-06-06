@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
@@ -154,6 +154,7 @@ export default function DashboardPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dataVersion, setDataVersion] = useState(0)
   const [silentRefresh, setSilentRefresh] = useState(0)
+  const pendingSilentLoadRef = useRef(false)
   const [agentRequestId, setAgentRequestId] = useState(0)
   const [uploadingSkuId, setUploadingSkuId] = useState<string | null>(null)
   const [kpiEditor, setKpiEditor] = useState<{ skuId: string; slot: 0 | 1 | 2 } | null>(null)
@@ -270,7 +271,8 @@ export default function DashboardPage() {
     }
 
     let cancelled = false
-    const isSilent = silentRefresh > 0
+    const isSilent = pendingSilentLoadRef.current
+    pendingSilentLoadRef.current = false
     if (!isSilent) setLoading(true)
 
     const load = async () => {
@@ -419,6 +421,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!refreshLoteId && !refreshPedidoId) return
+    pendingSilentLoadRef.current = true
     setSilentRefresh(v => v + 1)
     if (refreshPedidoId) {
       setSelectedPedidoId(refreshPedidoId)
@@ -599,8 +602,9 @@ export default function DashboardPage() {
 
         {selectedPedidoId != null && !isDistiller && (
           <PedidoDetalle
-            key={`pedido-${selectedPedidoId}-${silentRefresh}`}
+            key={selectedPedidoId}
             pedidoId={selectedPedidoId}
+            refreshKey={silentRefresh}
             accent={accent}
             onClose={() => setSelectedPedidoId(null)}
           />

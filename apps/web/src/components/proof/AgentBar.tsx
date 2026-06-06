@@ -102,6 +102,20 @@ export function AgentBar({
       text === 'PROOF analizando…' ||
       text === 'PROOF analizando tu operación…'
     ) {
+      setMessages(prev => {
+        const last = prev[prev.length - 1]
+        if (last?.role === 'agent') return prev
+        return [
+          ...prev,
+          {
+            id: newId(),
+            role: 'agent',
+            content: 'No obtuve respuesta. Intenta de nuevo.',
+            timestamp: new Date(),
+          },
+        ]
+      })
+      scrollToEnd()
       return
     }
 

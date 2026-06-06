@@ -67,7 +67,7 @@ export function useProofContextBar(options: {
   const [accionHref, setAccionHref] = useState(options.fallback?.accionHref ?? '/dashboard/agente')
   const [refreshLoteId, setRefreshLoteId] = useState<string | null>(null)
   const [refreshPedidoId, setRefreshPedidoId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(Boolean(options.enabled !== false))
+  const [loading, setLoading] = useState(false)
   const fallbackRef = useRef(options.fallback)
   fallbackRef.current = options.fallback
   const hintsRef = useRef(options.hints)
