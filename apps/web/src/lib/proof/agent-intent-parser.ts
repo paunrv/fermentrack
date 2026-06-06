@@ -33,12 +33,15 @@ export type DistillerIntentContext = {
 export type AgentActionResult = {
   message: string
   entityId: string
+  entityKind?: 'sku' | 'pedido' | 'orden'
+  refreshSkuId?: string | null
 }
 
 export function parseIntent(
   query: string,
   profileType: AgentProfileType,
-  context: unknown
+  context: unknown,
+  conversation?: { role: 'user' | 'agent'; content: string }[]
 ): DistillerAgentAction | DistributorAgentAction | null {
   if (profileType === 'distiller') {
     const ctx = context as DistillerIntentContext
@@ -51,7 +54,11 @@ export function parseIntent(
     )
   }
   if (profileType === 'distributor') {
-    return parseDistributorActionIntent(query, context as DistributorAgentContext)
+    return parseDistributorActionIntent(
+      query,
+      context as DistributorAgentContext,
+      conversation
+    )
   }
   return null
 }
@@ -93,7 +100,12 @@ export async function executeIntent(
       scope,
       action as DistributorAgentAction
     )
-    return { message: result.message, entityId: result.entityId }
+    return {
+      message: result.message,
+      entityId: result.entityId,
+      entityKind: result.entityKind,
+      refreshSkuId: result.refreshSkuId,
+    }
   }
   throw new Error(`Perfil no soportado: ${profileType}`)
 }

@@ -142,7 +142,24 @@ export interface ItemPedidoRow {
 
 export interface PedidoWithItems extends PedidoRow {
   items_pedido: ItemPedidoRow[]
-  clients?: { id: string; name: string; phone: string | null; price_tier: string } | null
+  clients?: {
+    id: string
+    name: string
+    phone: string | null
+    price_tier: string
+    address?: string | null
+  } | null
+}
+
+export interface RemisionDistribuidorRow {
+  id: string
+  clerk_id: string
+  profile_type_v2: string
+  pedido_id: string
+  numero_remision: string
+  fecha_entrega: string
+  pdf_url: string | null
+  created_at: string
 }
 
 export type EstadoOrdenCompra = 'borrador' | 'enviada' | 'recibida' | 'parcial'
@@ -419,7 +436,7 @@ export async function fetchPedidoWithItems(
 ): Promise<PedidoWithItems | null> {
   const { data, error } = await sb
     .from('pedidos')
-    .select('*, items_pedido(*), clients(id, name, phone, price_tier)')
+    .select('*, items_pedido(*), clients(id, name, phone, price_tier, address)')
     .eq('id', pedidoId)
     .maybeSingle()
   throwIfError(error)
@@ -427,6 +444,18 @@ export async function fetchPedidoWithItems(
   const row = data as PedidoWithItems & { items_pedido: ItemPedidoRow[] }
   row.items_pedido = Array.isArray(row.items_pedido) ? row.items_pedido : []
   return row
+}
+
+export async function fetchRemisionByPedidoId(
+  sb: SupabaseClient,
+  pedidoId: string,
+  scope?: ProfileScope
+): Promise<RemisionDistribuidorRow | null> {
+  let q = sb.from('remisiones_distribuidor').select('*').eq('pedido_id', pedidoId)
+  q = scopeFilter(q, scope)
+  const { data, error } = await q.maybeSingle()
+  throwIfError(error)
+  return (data as RemisionDistribuidorRow | null) ?? null
 }
 
 export async function createPedidoBorrador(

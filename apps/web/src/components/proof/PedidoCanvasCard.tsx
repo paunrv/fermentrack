@@ -9,10 +9,11 @@ import {
 type Props = {
   pedido: PedidoRow & { clients?: { name: string } | null }
   accent: string
+  selected?: boolean
   onClick: () => void
 }
 
-export function PedidoCanvasCard({ pedido, accent, onClick }: Props) {
+export function PedidoCanvasCard({ pedido, accent, selected, onClick }: Props) {
   const toma = parseTomaPedidoNotas(pedido.notas)
   const cliente = pedido.clients?.name ?? 'Cliente'
   const lineas = toma?.lineas ?? []
@@ -29,8 +30,8 @@ export function PedidoCanvasCard({ pedido, accent, onClick }: Props) {
         textAlign: 'left',
         padding: 14,
         borderRadius: 12,
-        border: '0.5px solid #E8E6E0',
-        background: '#fff',
+        border: selected ? `1.5px solid ${accent}` : '0.5px solid #E8E6E0',
+        background: selected ? `${accent}08` : '#fff',
         cursor: 'pointer',
         minHeight: 160,
         display: 'flex',

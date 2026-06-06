@@ -2,6 +2,13 @@ import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-cont
 import { isSkuStockCritico } from '@/lib/proof/distributor-agent-context'
 import { looksLikeDistributorMutation } from '@/lib/proof/distributor-agent-actions'
 import { formatLineaToma, parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
+import {
+  extractTomaPedidoDraft,
+  isConfirmationReply,
+  resolveSkuFromQuery,
+  resolveTomaPedidoDraft,
+  type AgentConversationTurn,
+} from '@/lib/proof/toma-pedido-intent'
 
 export type DistributorQuickAnswer = {
   mensaje: string
@@ -17,41 +24,6 @@ function norm(s: string): string {
     .trim()
 }
 
-function resolveSkuFromQuery(
-  query: string,
-  ctx: DistributorAgentContext
-): DistributorAgentContext['skus'][number] | null {
-  const q = norm(query)
-
-  if (ctx.selectedSkuId) {
-    const selected = ctx.skus.find(s => s.id === ctx.selectedSkuId)
-    if (selected) return selected
-  }
-
-  const codigoMatch = q.match(/\b(sku[-\s]?\d+)\b/i)
-  if (codigoMatch?.[1]) {
-    const frag = codigoMatch[1].replace(/\s/g, '').toUpperCase()
-    const byCode = ctx.skus.find(
-      s =>
-        s.codigo.toUpperCase() === frag ||
-        s.codigo.toUpperCase().includes(frag.replace('SKU-', ''))
-    )
-    if (byCode) return byCode
-  }
-
-  let best: (typeof ctx.skus)[number] | null = null
-  let bestLen = 0
-  for (const s of ctx.skus) {
-    const nombre = norm(s.nombre)
-    if (nombre.length < 3) continue
-    if (q.includes(nombre) && nombre.length > bestLen) {
-      best = s
-      bestLen = nombre.length
-    }
-  }
-  return best
-}
-
 /** Respuesta determinística (sin LLM). */
 export function tryDistributorQuickAnswer(
   query: string,
@@ -61,7 +33,55 @@ export function tryDistributorQuickAnswer(
   if (ctx.perfil !== 'distribuidor' || !ctx.resumen) return null
 
   const q = norm(query)
-  if (looksLikeDistributorMutation(q)) return null
+  const conversation = Array.isArray(
+    (datos as { conversation?: AgentConversationTurn[] }).conversation
+  )
+    ? ((datos as { conversation: AgentConversationTurn[] }).conversation ?? [])
+    : []
+
+  const tomaDraft = extractTomaPedidoDraft(query, ctx)
+  if (isConfirmationReply(q) && !tomaDraft) {
+    const prior = resolveTomaPedidoDraft(query, conversation, ctx)
+    if (!prior) {
+      return {
+        mensaje:
+          'No tengo el pedido anterior. Escribe de nuevo: "entregar 100 latas de [producto] a [cliente]".',
+        accionLabel: 'Ver pedidos',
+        accionHref: '/dashboard/pedidos',
+      }
+    }
+  }
+
+  if (tomaDraft && !isConfirmationReply(q)) {
+    const unidadLabel =
+      tomaDraft.unidad === 'latas'
+        ? 'latas'
+        : tomaDraft.unidad === 'cajas'
+          ? 'cajas'
+          : 'botellas'
+    const producto = tomaDraft.sku_nombre ?? tomaDraft.etiqueta
+    const stock =
+      tomaDraft.stock_disponible != null
+        ? tomaDraft.stock_disponible.toLocaleString('es-MX')
+        : '—'
+    if (
+      tomaDraft.stock_disponible != null &&
+      tomaDraft.cantidad > tomaDraft.stock_disponible
+    ) {
+      return {
+        mensaje: `Solo tienes ${stock} ${unidadLabel} de ${producto} disponibles. No alcanza para ${tomaDraft.cantidad} a ${tomaDraft.cliente}.`,
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    return {
+      mensaje: `Tienes ${stock} ${unidadLabel} ${producto} disponibles. ¿Confirmo pedido de ${tomaDraft.cantidad} a ${tomaDraft.cliente}? Responde "sí, prepara ticket".`,
+      accionLabel: 'Ver pedidos',
+      accionHref: '/dashboard/pedidos',
+    }
+  }
+
+  if (looksLikeDistributorMutation(q) && !tomaDraft) return null
 
   const wantsStock =
     q.includes('stock') ||

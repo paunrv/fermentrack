@@ -13,6 +13,8 @@ export function toAgentProfileType(
 export type AgentContextHints = {
   query?: string | null
   selectedId?: string | null
+  /** Últimos turnos del chat (para confirmaciones como "sí, prepara ticket") */
+  conversation?: { role: 'user' | 'agent'; content: string }[]
   /** Estado de UI de la pantalla (filtros, KPIs); sin tablas del otro perfil */
   pantalla?: Record<string, unknown>
 }

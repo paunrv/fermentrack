@@ -14,6 +14,7 @@ import {
   loadIsolatedAgentContext,
 } from '@/lib/proof/agent-context-server'
 import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
+import { narrowDistributorContextForQuery } from '@/lib/proof/toma-pedido-intent'
 import { proofErrorMessage } from '@/lib/proof/proof-error'
 import {
   PROOF_AI_DESTILADOR,
@@ -44,13 +45,17 @@ function parseProfileType(raw: unknown): AgentProfileType | null {
 function sendQuickDone(
   send: (event: string, data: unknown) => void,
   quick: { mensaje: string; accionLabel: string; accionHref: string },
-  refreshEntityId: string | null
+  refresh: {
+    refreshLoteId?: string | null
+    refreshPedidoId?: string | null
+  }
 ) {
   send('done', {
     mensaje: quick.mensaje.replace(/\*\*/g, ''),
     accionLabel: quick.accionLabel,
     accionHref: quick.accionHref,
-    refreshLoteId: refreshEntityId,
+    refreshLoteId: refresh.refreshLoteId ?? null,
+    refreshPedidoId: refresh.refreshPedidoId ?? null,
   })
 }
 
@@ -95,7 +100,10 @@ export async function POST(req: NextRequest) {
 
       let datos: Record<string, unknown>
       let refreshEntityId: string | null = null
+      let refreshPedidoId: string | null = null
+      let refreshSkuId: string | null = null
       let actionMessage: string | null = null
+      const conversation = body.hints?.conversation ?? []
 
       const distributorScope = {
         clerk_id: clerkId,
@@ -127,7 +135,7 @@ export async function POST(req: NextRequest) {
             })),
             selectedLoteId: body.hints?.selectedId,
           }
-          const action = parseIntent(queryText, profileType, intentCtx)
+          const action = parseIntent(queryText, profileType, intentCtx, conversation)
           if (action) {
             console.log('[proof/contexto] ejecutando acción', action)
             const result = await executeIntent(sb, clerkId, profileType, action)
@@ -145,7 +153,7 @@ export async function POST(req: NextRequest) {
             const quick = quickAnswer(queryText, profileType, quickCtx)
             if (quick) {
               console.log('[proof/contexto] quick answer', { query: queryText })
-              sendQuickDone(send, quick, refreshEntityId)
+              sendQuickDone(send, quick, { refreshLoteId: refreshEntityId })
               return
             }
           }
@@ -158,7 +166,7 @@ export async function POST(req: NextRequest) {
             ...body.hints,
             query: queryText,
           })
-          const action = parseIntent(queryText, profileType, distCtx)
+          const action = parseIntent(queryText, profileType, distCtx, conversation)
           if (action) {
             console.log('[proof/contexto] ejecutando acción distribuidor', action)
             const result = await executeIntent(
@@ -170,14 +178,25 @@ export async function POST(req: NextRequest) {
             )
             actionMessage = result.message
             refreshEntityId = result.entityId
+            if (result.entityKind === 'pedido') {
+              refreshPedidoId = result.entityId
+            }
+            if (result.refreshSkuId) {
+              refreshSkuId = result.refreshSkuId
+            } else if (result.entityKind === 'sku') {
+              refreshSkuId = result.entityId
+            }
           }
           if (!actionMessage) {
-            const quick = quickAnswer(queryText, profileType, distCtx)
+            const quick = quickAnswer(queryText, profileType, {
+              ...distCtx,
+              conversation,
+            })
             if (quick) {
               console.log('[proof/contexto] quick answer distribuidor', {
                 query: queryText,
               })
-              sendQuickDone(send, quick, refreshEntityId)
+              sendQuickDone(send, quick, {})
               return
             }
           }
@@ -195,9 +214,14 @@ export async function POST(req: NextRequest) {
         const isDestilador = profileType === 'distiller'
         send('done', {
           mensaje: actionMessage,
-          accionLabel: isDestilador ? 'Ver bodega' : 'Ver inventario',
-          accionHref: isDestilador ? '/dashboard' : '/dashboard/inventario',
-          refreshLoteId: refreshEntityId,
+          accionLabel: refreshPedidoId ? 'Ver pedido' : isDestilador ? 'Ver bodega' : 'Ver inventario',
+          accionHref: refreshPedidoId
+            ? `/dashboard/pedidos/${refreshPedidoId}`
+            : isDestilador
+              ? '/dashboard'
+              : '/dashboard/inventario',
+          refreshLoteId: refreshSkuId ?? (refreshPedidoId ? null : refreshEntityId),
+          refreshPedidoId,
         })
         return
       }
@@ -210,9 +234,16 @@ export async function POST(req: NextRequest) {
         const quick = quickAnswer(queryText, profileType, datos)
         if (quick) {
           console.log('[proof/contexto] quick answer (full ctx)', { query: queryText })
-          sendQuickDone(send, quick, refreshEntityId)
+          sendQuickDone(send, quick, {})
           return
         }
+      }
+
+      if (profileType === 'distributor' && queryText) {
+        datos = narrowDistributorContextForQuery(
+          datos as import('@/lib/proof/distributor-agent-context').DistributorAgentContext,
+          queryText
+        )
       }
 
       const userPayload = JSON.stringify(
@@ -305,11 +336,21 @@ Responde SOLO JSON válido:
         /* usar texto crudo */
       }
 
-      send('done', { mensaje, accionLabel, accionHref, refreshLoteId: refreshEntityId })
+      send('done', {
+        mensaje,
+        accionLabel,
+        accionHref,
+        refreshLoteId: refreshSkuId ?? refreshEntityId,
+        refreshPedidoId,
+      })
     } catch (e) {
       console.error('[proof/contexto] error', e)
-      send('error', {
-        message: proofErrorMessage(e),
+      send('done', {
+        mensaje: proofErrorMessage(e),
+        accionLabel: 'Ver inicio',
+        accionHref: '/dashboard',
+        refreshLoteId: null,
+        refreshPedidoId: null,
       })
     } finally {
       close()

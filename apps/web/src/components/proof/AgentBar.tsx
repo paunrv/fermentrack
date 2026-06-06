@@ -62,7 +62,7 @@ export function AgentBar({
   quickActions = [],
 }: {
   accent: string
-  onSend: (message: string) => void
+  onSend: (message: string, conversation: Message[]) => void
   response?: string
   /** Respuesta en curso (si no se pasa, se infiere de response) */
   isLoading?: boolean
@@ -93,6 +93,9 @@ export function AgentBar({
       return
     }
 
+    pendingSendRef.current = 0
+    setIsTyping(false)
+
     const text = response?.trim()
     if (
       !text ||
@@ -101,9 +104,6 @@ export function AgentBar({
     ) {
       return
     }
-
-    pendingSendRef.current = 0
-    setIsTyping(false)
 
     setMessages(prev => {
       const last = prev[prev.length - 1]
@@ -140,14 +140,19 @@ export function AgentBar({
     const trimmed = text.trim()
     if (!trimmed || isTyping) return
 
-    setMessages(prev => [
-      ...prev,
-      { id: newId(), role: 'user', content: trimmed, timestamp: new Date() },
-    ])
+    const userMsg: Message = {
+      id: newId(),
+      role: 'user',
+      content: trimmed,
+      timestamp: new Date(),
+    }
+    const nextConversation = [...messages, userMsg]
+
+    setMessages(nextConversation)
     setInputValue('')
     setIsTyping(true)
     pendingSendRef.current += 1
-    onSend(trimmed)
+    onSend(trimmed, nextConversation)
     scrollToEnd()
   }
 

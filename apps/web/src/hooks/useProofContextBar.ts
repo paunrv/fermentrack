@@ -11,6 +11,7 @@ function parseSseChunk(
     accionLabel?: string
     accionHref?: string
     refreshLoteId?: string | null
+    refreshPedidoId?: string | null
   }) => void,
   onError: (message: string) => void
 ): boolean {
@@ -31,6 +32,7 @@ function parseSseChunk(
     accionLabel?: string
     accionHref?: string
     refreshLoteId?: string | null
+    refreshPedidoId?: string | null
   }
   try {
     payload = JSON.parse(line.slice(6))
@@ -38,7 +40,7 @@ function parseSseChunk(
     return false
   }
   if (payload.message) {
-    onError(payload.message)
+    onDone({ mensaje: payload.message })
     return true
   }
   if (payload.text) onDelta(payload.text)
@@ -64,6 +66,7 @@ export function useProofContextBar(options: {
   const [accionLabel, setAccionLabel] = useState(options.fallback?.accionLabel ?? 'Ver más')
   const [accionHref, setAccionHref] = useState(options.fallback?.accionHref ?? '/dashboard/agente')
   const [refreshLoteId, setRefreshLoteId] = useState<string | null>(null)
+  const [refreshPedidoId, setRefreshPedidoId] = useState<string | null>(null)
   const [loading, setLoading] = useState(Boolean(options.enabled !== false))
   const fallbackRef = useRef(options.fallback)
   fallbackRef.current = options.fallback
@@ -151,6 +154,7 @@ export function useProofContextBar(options: {
           accionLabel?: string
           accionHref?: string
           refreshLoteId?: string | null
+          refreshPedidoId?: string | null
         }) => {
           gotDone = true
           hasAgentReplyRef.current = true
@@ -158,6 +162,7 @@ export function useProofContextBar(options: {
           if (payload.accionLabel) setAccionLabel(payload.accionLabel)
           if (payload.accionHref) setAccionHref(payload.accionHref)
           if (payload.refreshLoteId) setRefreshLoteId(payload.refreshLoteId)
+          if (payload.refreshPedidoId) setRefreshPedidoId(payload.refreshPedidoId)
         }
 
         const processBuffer = () => {
@@ -208,7 +213,8 @@ export function useProofContextBar(options: {
           }
         }
       } catch (err) {
-        if (cancelled || (err instanceof Error && err.name === 'AbortError')) return
+        if (err instanceof Error && err.name === 'AbortError') return
+        if (cancelled) return
         console.error('[useProofContextBar] error', {
           profileType: options.profileType,
           pantalla: options.pantalla,
@@ -227,7 +233,7 @@ export function useProofContextBar(options: {
           setAccionHref(fb.accionHref ?? '/dashboard/agente')
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        setLoading(false)
       }
     })()
 
@@ -244,5 +250,5 @@ export function useProofContextBar(options: {
     options.enabled,
   ])
 
-  return { mensaje, accionLabel, accionHref, loading, refreshLoteId }
+  return { mensaje, accionLabel, accionHref, loading, refreshLoteId, refreshPedidoId }
 }

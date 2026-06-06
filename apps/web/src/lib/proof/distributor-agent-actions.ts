@@ -1,9 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
+import { ensureRemisionPdfForPedido } from '@/lib/proof/remision-salida-server'
+import {
+  finalizarTomaPedido,
+  type UnidadPedido,
+} from '@/lib/proof/toma-pedido-client'
+import {
+  isConfirmationReply,
+  looksLikeTomaPedidoQuery,
+  resolveTomaPedidoDraft,
+  type AgentConversationTurn,
+} from '@/lib/proof/toma-pedido-intent'
 import type { ProfileScope } from '@/lib/supabase'
 import {
   confirmarLlegadaOrdenCompraDistribuidor,
   createOrdenCompraDistribuidor,
+  fetchSkus,
   rpcEntregarPedido,
   rpcRegistrarPagoProveedor,
   type ConfirmarLlegadaOcLinea,
@@ -11,15 +23,25 @@ import {
 
 export type DistributorAgentActionType =
   | 'confirmar_entrega'
+  | 'crear_toma_pedido'
   | 'registrar_pago'
   | 'actualizar_precio'
   | 'agregar_nota'
   | 'crear_orden_compra'
   | 'confirmar_llegada_distribuidor'
   | 'registrar_pago_proveedor'
+  | 'generar_remision'
 
 export type DistributorAgentAction =
-  | { type: 'confirmar_entrega'; pedido_id: string }
+  | { type: 'confirmar_entrega'; pedido_id: string; sku_id?: string | null }
+  | {
+      type: 'crear_toma_pedido'
+      cantidad: number
+      unidad: UnidadPedido
+      etiqueta: string
+      cliente: string
+      sku_id: string | null
+    }
   | {
       type: 'registrar_pago'
       cuenta_id: string
@@ -49,6 +71,7 @@ export type DistributorAgentAction =
       monto: number
       proveedor_nombre: string
     }
+  | { type: 'generar_remision'; pedido_id: string; numero: string }
 
 function normQ(s: string): string {
   return s
@@ -60,6 +83,7 @@ function normQ(s: string): string {
 
 export function looksLikeDistributorMutation(q: string): boolean {
   const n = normQ(q)
+  if (looksLikeTomaPedidoQuery(n) || isConfirmationReply(n)) return true
   if (
     (n.includes('entregar') || n.includes('entregado') || n.includes('marcar')) &&
     (n.includes('pedido') || n.includes('entrega'))
@@ -74,6 +98,12 @@ export function looksLikeDistributorMutation(q: string): boolean {
     return true
   }
   if (n.includes('nota') || n.includes('anotar') || n.includes('comentario')) return true
+  if (
+    (n.includes('remision') || n.includes('remisión')) &&
+    (n.includes('generar') || n.includes('crear') || n.includes('pedido'))
+  ) {
+    return true
+  }
   if (
     n.includes('orden') &&
     (n.includes('compr') || n.includes('pedido') || n.includes('ordenar'))
@@ -166,6 +196,11 @@ function resolvePedido(
 }
 
 function parseCantidadFromQuery(q: string): number | null {
+  const latas = q.match(/(\d[\d,]*)\s*latas?/)
+  if (latas?.[1]) {
+    const n = Number(latas[1].replace(/,/g, ''))
+    if (Number.isFinite(n) && n > 0) return n
+  }
   const cajas = q.match(/(\d[\d,]*)\s*cajas?/)
   if (cajas?.[1]) {
     const n = Number(cajas[1].replace(/,/g, ''))
@@ -389,17 +424,52 @@ function resolveCuentaPorCliente(
   return best
 }
 
+function parseCrearTomaPedidoIntent(
+  query: string,
+  ctx: DistributorAgentContext,
+  conversation?: AgentConversationTurn[]
+): Extract<DistributorAgentAction, { type: 'crear_toma_pedido' }> | null {
+  const q = normQ(query)
+  if (!isConfirmationReply(q) && !q.includes('confirmo')) return null
+
+  const draft = resolveTomaPedidoDraft(query, conversation, ctx)
+  if (!draft) return null
+
+  return {
+    type: 'crear_toma_pedido',
+    cantidad: draft.cantidad,
+    unidad: draft.unidad,
+    etiqueta: draft.etiqueta,
+    cliente: draft.cliente,
+    sku_id: draft.sku_id,
+  }
+}
+
 export function parseDistributorActionIntent(
   query: string,
-  ctx: DistributorAgentContext
+  ctx: DistributorAgentContext,
+  conversation?: AgentConversationTurn[]
 ): DistributorAgentAction | null {
   const q = normQ(query)
+
+  const toma = parseCrearTomaPedidoIntent(query, ctx, conversation)
+  if (toma) return toma
 
   const llegada = parseConfirmarLlegadaOcIntent(q, ctx)
   if (llegada) return llegada
 
   const crearOc = parseCrearOrdenCompraIntent(q)
   if (crearOc) return crearOc
+
+  if (
+    (q.includes('remision') || q.includes('remisión')) &&
+    (q.includes('generar') || q.includes('crear') || q.includes('descargar'))
+  ) {
+    const pedido = resolvePedido(q, ctx)
+    if (!pedido) return null
+    if (pedido.estado !== 'entregado') return null
+    return { type: 'generar_remision', pedido_id: pedido.id, numero: pedido.numero }
+  }
 
   if (
     (q.includes('entregar') || q.includes('entregado') || q.includes('marcar')) &&
@@ -470,13 +540,52 @@ export function parseDistributorActionIntent(
   return null
 }
 
+function todayIsoDate(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+}
+
 export async function executeDistributorAgentAction(
   sb: SupabaseClient,
   clerkId: string,
   scope: ProfileScope,
   action: DistributorAgentAction
-): Promise<{ ok: true; message: string; entityId: string }> {
+): Promise<{
+  ok: true
+  message: string
+  entityId: string
+  entityKind?: 'sku' | 'pedido' | 'orden'
+  refreshSkuId?: string | null
+}> {
   switch (action.type) {
+    case 'crear_toma_pedido': {
+      const skus = await fetchSkus(sb, scope)
+      const result = await finalizarTomaPedido(sb, scope, {
+        clienteName: action.cliente,
+        lineas: [
+          {
+            etiqueta: action.etiqueta,
+            cantidad: action.cantidad,
+            unidad: action.unidad,
+          },
+        ],
+        fechaEntrega: todayIsoDate(),
+        anticipo: false,
+        skus,
+      })
+      const unidadLabel =
+        action.unidad === 'latas'
+          ? 'latas'
+          : action.unidad === 'cajas'
+            ? 'cajas'
+            : 'botellas'
+      return {
+        ok: true,
+        entityId: result.pedido.id,
+        entityKind: 'pedido',
+        refreshSkuId: action.sku_id,
+        message: `Pedido ${result.pedido.numero} confirmado ✓ ${action.cantidad} ${unidadLabel} ${action.etiqueta} → ${action.cliente}. Stock reservado.`,
+      }
+    }
     case 'confirmar_entrega': {
       const { data: pedido, error: pedErr } = await sb
         .from('pedidos')
@@ -490,10 +599,38 @@ export async function executeDistributorAgentAction(
         throw new Error(`El pedido ${pedido.numero} ya está entregado`)
       }
       const updated = await rpcEntregarPedido(sb, action.pedido_id, false)
+      let refreshSkuId = action.sku_id ?? null
+      if (!refreshSkuId) {
+        const { data: items } = await sb
+          .from('items_pedido')
+          .select('sku_id')
+          .eq('pedido_id', action.pedido_id)
+          .limit(1)
+        refreshSkuId = items?.[0]?.sku_id ?? null
+      }
+      let remisionLine = ''
+      try {
+        const rem = await ensureRemisionPdfForPedido(action.pedido_id, clerkId)
+        remisionLine = ` Remisión ${rem.remision.numero_remision} lista ✓`
+      } catch (e) {
+        console.error('[agent] remision pdf after entrega', e)
+        remisionLine = ' (PDF de remisión pendiente — genera desde el pedido)'
+      }
       return {
         ok: true,
         entityId: updated.id,
-        message: `Pedido ${pedido.numero} marcado como entregado ✓`,
+        entityKind: 'pedido',
+        refreshSkuId,
+        message: `Pedido ${pedido.numero} marcado como entregado ✓${remisionLine}`,
+      }
+    }
+    case 'generar_remision': {
+      const rem = await ensureRemisionPdfForPedido(action.pedido_id, clerkId)
+      return {
+        ok: true,
+        entityId: rem.remision.id,
+        entityKind: 'pedido',
+        message: `Remisión ${rem.remision.numero_remision} del pedido ${action.numero} lista ✓ Descarga: ${rem.downloadUrl}`,
       }
     }
     case 'registrar_pago': {
@@ -519,6 +656,7 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: action.cuenta_id,
+        entityKind: 'sku',
         message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado para ${action.cliente_nombre} ✓ Saldo: $${nuevo.toLocaleString('es-MX')}`,
       }
     }
@@ -536,6 +674,7 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: action.sku_id,
+        entityKind: 'sku',
         message: `Precio de ${action.nombre} actualizado a $${action.precio.toLocaleString('es-MX')} ✓`,
       }
     }
@@ -561,6 +700,7 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: action.sku_id,
+        entityKind: 'sku',
         message: `Nota guardada en ${action.nombre} ✓`,
       }
     }
@@ -578,6 +718,7 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: orden.id,
+        entityKind: 'orden',
         message: `Orden ${orden.numero_orden} creada ✓ ${action.cantidad} unidades de ${action.producto} pendientes de llegada`,
       }
     }
@@ -586,6 +727,7 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: action.orden_id,
+        entityKind: 'orden',
         message: `Recibidas ${action.total_recibido} unidades de ${action.proveedor} ✓ Stock actualizado: ${action.total_recibido} unidades en bodega`,
       }
     }
@@ -595,6 +737,7 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: action.cuenta_id,
+        entityKind: 'sku',
         message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado ✓ Saldo pendiente con ${action.proveedor_nombre}: $${saldo.toLocaleString('es-MX')}`,
       }
     }

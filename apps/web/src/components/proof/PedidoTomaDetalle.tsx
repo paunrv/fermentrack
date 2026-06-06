@@ -1,16 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import type { PedidoWithItems } from '@/lib/supabase'
+import type { PedidoWithItems, RemisionDistribuidorRow } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
 import { formatLineaToma, type TomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
+import { RemisionPedidoActions } from '@/components/proof/RemisionPedidoActions'
 
 type Props = {
   pedido: PedidoWithItems
   toma: TomaPedidoNotas
+  remision?: RemisionDistribuidorRow | null
 }
 
-export function PedidoTomaDetalle({ pedido, toma }: Props) {
+export function PedidoTomaDetalle({ pedido, toma, remision }: Props) {
   const cliente = pedido.clients?.name ?? 'Cliente'
   const confirmado = pedido.estado !== 'borrador'
 
@@ -87,6 +89,20 @@ export function PedidoTomaDetalle({ pedido, toma }: Props) {
           confirmar desde catálogo.
         </p>
       )}
+
+      <RemisionPedidoActions
+        pedidoId={pedido.id}
+        estado={pedido.estado}
+        initialRemision={
+          remision
+            ? {
+                numero: remision.numero_remision,
+                hasPdf: Boolean(remision.pdf_url?.trim()),
+                downloadUrl: null,
+              }
+            : null
+        }
+      />
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <Link

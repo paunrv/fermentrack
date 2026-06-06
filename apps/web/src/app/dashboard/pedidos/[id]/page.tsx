@@ -10,15 +10,18 @@ import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchSkus,
   fetchPedidoWithItems,
+  fetchRemisionByPedidoId,
   replacePedidoItems,
   rpcConfirmarPedido,
   subscribeSkuStock,
   type SkuRow,
   type PedidoWithItems,
+  type RemisionDistribuidorRow,
   type EstadoPedido,
 } from '@/lib/supabase'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import { PedidoTomaDetalle } from '@/components/proof/PedidoTomaDetalle'
+import { RemisionPedidoActions } from '@/components/proof/RemisionPedidoActions'
 import { parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 
@@ -53,6 +56,7 @@ export default function PedidoComposerPage() {
   const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [remision, setRemision] = useState<RemisionDistribuidorRow | null>(null)
 
   const skuMap = useMemo(() => new Map(skus.map(s => [s.id, s])), [skus])
 
@@ -63,6 +67,12 @@ export default function PedidoComposerPage() {
     ])
     setPedido(p)
     setSkus(s)
+    if (p?.estado === 'entregado' && scope) {
+      const r = await fetchRemisionByPedidoId(supabase, pedidoId, scope).catch(() => null)
+      setRemision(r)
+    } else {
+      setRemision(null)
+    }
     if (p?.items_pedido?.length) {
       setLines(
         p.items_pedido.map(it => ({
@@ -216,7 +226,7 @@ export default function PedidoComposerPage() {
 
   const tomaNotas = parseTomaPedidoNotas(pedido.notas)
   if (tomaNotas) {
-    return <PedidoTomaDetalle pedido={pedido} toma={tomaNotas} />
+    return <PedidoTomaDetalle pedido={pedido} toma={tomaNotas} remision={remision} />
   }
 
   return (
@@ -368,6 +378,20 @@ export default function PedidoComposerPage() {
       {error && (
         <p style={{ color: 'var(--crit)', fontSize: 13, marginBottom: 12 }}>{error}</p>
       )}
+
+      <RemisionPedidoActions
+        pedidoId={pedidoId}
+        estado={pedido.estado}
+        initialRemision={
+          remision
+            ? {
+                numero: remision.numero_remision,
+                hasPdf: Boolean(remision.pdf_url?.trim()),
+                downloadUrl: null,
+              }
+            : null
+        }
+      />
 
       {editable && (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

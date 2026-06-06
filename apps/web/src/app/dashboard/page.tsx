@@ -7,8 +7,10 @@ import { useRouter } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useProofContextBar } from '@/hooks/useProofContextBar'
-import { AgentBar } from '@/components/proof/AgentBar'
+import { AgentBar, type Message as AgentMessage } from '@/components/proof/AgentBar'
 import { BotellaCard, mapLoteEstadoToBotella } from '@/components/proof/BotellaCard'
+import { PedidoCanvasCard } from '@/components/proof/PedidoCanvasCard'
+import { PedidoDetalle } from '@/components/proof/PedidoDetalle'
 import { SkuCard, mapSkuEstadoToCard } from '@/components/proof/SkuCard'
 import { KpiConfigDrawer } from '@/components/proof/KpiConfigDrawer'
 import { LoteDetalle } from '@/components/proof/LoteDetalle'
@@ -133,9 +135,11 @@ export default function DashboardPage() {
   const isDistiller = profileType === 'distiller'
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedPedidoId, setSelectedPedidoId] = useState<string | null>(null)
   const [selectedViajeId, setSelectedViajeId] = useState<string | null>(null)
   const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState<string | null>(null)
+  const [agentConversation, setAgentConversation] = useState<AgentMessage[]>([])
   const [lotes, setLotes] = useState<LoteRow[]>([])
   const [viajes, setViajes] = useState<ViajeRow[]>([])
   const [productosViaje, setProductosViaje] = useState<ProductoViajeRow[]>([])
@@ -149,6 +153,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dataVersion, setDataVersion] = useState(0)
+  const [silentRefresh, setSilentRefresh] = useState(0)
   const [agentRequestId, setAgentRequestId] = useState(0)
   const [uploadingSkuId, setUploadingSkuId] = useState<string | null>(null)
   const [kpiEditor, setKpiEditor] = useState<{ skuId: string; slot: 0 | 1 | 2 } | null>(null)
@@ -184,6 +189,13 @@ export default function DashboardPage() {
     return ordenesCompra.filter(o => o.estado === 'pendiente' || o.estado === 'parcial')
   }, [isDistiller, ordenesCompra])
 
+  const activePedidoCards = useMemo(() => {
+    if (isDistiller) return []
+    return pedidos.filter(p =>
+      ['confirmado', 'preparando', 'en_ruta', 'parcial'].includes(p.estado)
+    )
+  }, [isDistiller, pedidos])
+
   const proveedorPorSkuId = useMemo(() => {
     const map = new Map<string, string>()
     for (const oc of [...ordenesCompra, ...ordenesConCxP]) {
@@ -207,7 +219,7 @@ export default function DashboardPage() {
 
   const bodegaCount = isDistiller
     ? lotes.length + pendingViajeCards.length
-    : skus.length + pendingOrdenCards.length + ordenesConCxP.length
+    : skus.length + pendingOrdenCards.length + ordenesConCxP.length + activePedidoCards.length
 
   const handleSkuImageUpload = useCallback(
     async (skuId: string, file: File) => {
@@ -258,7 +270,8 @@ export default function DashboardPage() {
     }
 
     let cancelled = false
-    setLoading(true)
+    const isSilent = silentRefresh > 0
+    if (!isSilent) setLoading(true)
 
     const load = async () => {
       setLoadError(null)
@@ -339,7 +352,7 @@ export default function DashboardPage() {
           setLoadError(e instanceof Error ? e.message : 'Error cargando dashboard')
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        setLoading(false)
       }
     }
 
@@ -347,14 +360,26 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [scopeProfileType, scope?.clerk_id, profileType, clerkId, supabase, dataVersion])
+  }, [scopeProfileType, scope?.clerk_id, profileType, clerkId, supabase, dataVersion, silentRefresh])
 
-  const agentHints = useMemo(
+  /** Evita re-fetch del agente cuando solo cambia el historial del chat */
+  const agentFetchHints = useMemo(
     () => ({
       query: userQuery,
       selectedId,
     }),
     [userQuery, selectedId]
+  )
+
+  const agentHints = useMemo(
+    () => ({
+      ...agentFetchHints,
+      conversation: agentConversation.map(m => ({
+        role: m.role,
+        content: m.content,
+      })),
+    }),
+    [agentFetchHints, agentConversation]
   )
 
   const agentFallback = useMemo(() => {
@@ -378,7 +403,7 @@ export default function DashboardPage() {
     }
   }, [agentProfileType, lotes.length, skus.length, pedidos.length, pendingOrdenCards.length])
 
-  const { mensaje, loading: agentLoading, refreshLoteId } = useProofContextBar({
+  const { mensaje, loading: agentLoading, refreshLoteId, refreshPedidoId } = useProofContextBar({
     pantalla: 'inicio',
     vista: agentProfileType === 'distiller' ? 'destilador' : 'distribuidor',
     profileType: agentProfileType,
@@ -393,14 +418,22 @@ export default function DashboardPage() {
     : [...DISTRIBUTOR_QUICK_ACTIONS]
 
   useEffect(() => {
-    if (!refreshLoteId) return
-    setSelectedId(refreshLoteId)
-    setDataVersion(v => v + 1)
-  }, [refreshLoteId])
+    if (!refreshLoteId && !refreshPedidoId) return
+    setSilentRefresh(v => v + 1)
+    if (refreshPedidoId) {
+      setSelectedPedidoId(refreshPedidoId)
+      setSelectedId(null)
+      setSelectedOrdenId(null)
+    } else if (refreshLoteId) {
+      setSelectedId(refreshLoteId)
+      setSelectedPedidoId(null)
+    }
+  }, [refreshLoteId, refreshPedidoId])
 
   const handleAgentSend = useCallback(
-    (message: string) => {
+    (message: string, conversation: AgentMessage[]) => {
       const q = message.toLowerCase()
+      setAgentConversation(conversation)
       if (
         q.includes('nuevo viaje') ||
         q.includes('nuevo pedido') ||
@@ -564,7 +597,20 @@ export default function DashboardPage() {
           />
         )}
 
-        {selectedId != null && selectedViajeId == null && selectedOrdenId == null && profileType && (
+        {selectedPedidoId != null && !isDistiller && (
+          <PedidoDetalle
+            key={`pedido-${selectedPedidoId}-${silentRefresh}`}
+            pedidoId={selectedPedidoId}
+            accent={accent}
+            onClose={() => setSelectedPedidoId(null)}
+          />
+        )}
+
+        {selectedId != null &&
+          selectedViajeId == null &&
+          selectedOrdenId == null &&
+          selectedPedidoId == null &&
+          profileType && (
           <LoteDetalle
             key={`${selectedId}-${dataVersion}`}
             loteId={selectedId}
@@ -638,6 +684,22 @@ export default function DashboardPage() {
 
         {!loading &&
           !isDistiller &&
+          activePedidoCards.map(p => (
+            <PedidoCanvasCard
+              key={p.id}
+              pedido={p}
+              accent={accent}
+              selected={selectedPedidoId === p.id}
+              onClick={() => {
+                setSelectedPedidoId(p.id)
+                setSelectedId(null)
+                setSelectedOrdenId(null)
+              }}
+            />
+          ))}
+
+        {!loading &&
+          !isDistiller &&
           ordenesConCxP.map(o => (
             <OrdenCompraCanvasCard
               key={`cxp-${o.id}`}
@@ -687,11 +749,14 @@ export default function DashboardPage() {
                 imagenUrl={s.imagen_url}
                 estado={mapSkuEstadoToCard(s.estado)}
                 dataItems={dataItems}
-                selected={selectedId === s.id}
+                selected={selectedId === s.id && selectedPedidoId == null}
                 accent={accent}
                 uploading={uploadingSkuId === s.id}
                 configOpen={editorOpen}
-                onClick={() => setSelectedId(s.id)}
+                onClick={() => {
+                  setSelectedPedidoId(null)
+                  setSelectedId(s.id)
+                }}
                 onConfigClick={() =>
                   setKpiEditor(prev =>
                     prev?.skuId === s.id ? null : { skuId: s.id, slot: 0 }
