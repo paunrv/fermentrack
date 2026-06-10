@@ -59,7 +59,7 @@ function CanvasDivider({ label }: { label: string }) {
 }
 
 export default function CreditoPage() {
-  const { scope, profilesResolved, activeProfile } = useProfile()
+  const { scope, profilesResolved, activeProfile, loading: profileLoading } = useProfile()
   const supabase = useSupabase()
   const accent = getProfileTheme(activeProfile?.profile_type_v2).accent
   const [resumen, setResumen] = useState<CreditoCxCResumen | null>(null)
@@ -95,13 +95,13 @@ export default function CreditoPage() {
   }, [scope, supabase])
 
   useEffect(() => {
-    if (!profilesResolved) return
+    if (profileLoading) return
     if (!scope) {
       setLoading(false)
       return
     }
     void load()
-  }, [load, scope, profilesResolved])
+  }, [load, scope, profileLoading])
 
   async function onAbrirDetalle(cliente: DeudaClienteAgregada) {
     if (!scope) return
@@ -156,7 +156,9 @@ export default function CreditoPage() {
   )
 
   const primerVencido = deudas.find(d => d.estado === 'vencido')
-  const waitingProfile = !profilesResolved || (profilesResolved && !scope)
+  const bootstrapping = profileLoading
+  const showSkeleton = bootstrapping || loading
+  const profileBlocked = profilesResolved && !profileLoading && !scope
 
   return (
     <div style={{ paddingBottom: 100, color: '#1A1A1A' }}>
@@ -169,7 +171,13 @@ export default function CreditoPage() {
         </p>
       </div>
 
-      {!waitingProfile && loadError && (
+      {profileBlocked && (
+        <div style={{ margin: '0 24px 16px', padding: 16, fontSize: 13, color: '#888' }}>
+          No hay perfil activo. Selecciona un perfil en ajustes.
+        </div>
+      )}
+
+      {!profileBlocked && loadError && (
         <div
           style={{
             margin: '0 24px 16px',
@@ -194,7 +202,7 @@ export default function CreditoPage() {
           padding: '0 24px 16px',
         }}
       >
-        {(waitingProfile || loading) &&
+        {(showSkeleton && !profileBlocked) &&
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -208,7 +216,7 @@ export default function CreditoPage() {
             />
           ))}
 
-        {!waitingProfile && !loading && resumen && (
+        {!showSkeleton && !profileBlocked && resumen && (
           <>
             <KpiCard
               label="Por cobrar"
@@ -231,7 +239,7 @@ export default function CreditoPage() {
 
       <CanvasDivider
         label={
-          waitingProfile || loading
+          showSkeleton && !profileBlocked
             ? 'Cargando…'
             : `${deudas.length} cliente${deudas.length !== 1 ? 's' : ''} con saldo`
         }
@@ -245,7 +253,7 @@ export default function CreditoPage() {
           padding: '0 24px 24px',
         }}
       >
-        {(waitingProfile || loading) &&
+        {(showSkeleton && !profileBlocked) &&
           Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -259,14 +267,14 @@ export default function CreditoPage() {
             />
           ))}
 
-        {!waitingProfile && !loading && deudas.length === 0 && (
+        {!showSkeleton && !profileBlocked && deudas.length === 0 && (
           <p style={{ gridColumn: '1 / -1', color: '#AAA', fontSize: 13, margin: 0 }}>
             Sin saldos pendientes de clientes.
           </p>
         )}
 
-        {!waitingProfile &&
-          !loading &&
+        {!showSkeleton &&
+          !profileBlocked &&
           deudas.map(d => (
             <CreditoClienteCanvasCard
               key={d.cliente_nombre}

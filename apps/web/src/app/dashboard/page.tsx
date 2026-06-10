@@ -225,7 +225,7 @@ function SectionSkeleton({ count = 3 }: { count?: number }) {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { scope, activeProfile, loading: profileLoading } = useProfile()
+  const { scope, activeProfile, loading: profileLoading, profilesResolved } = useProfile()
   const supabase = useSupabase()
 
   const agentProfileType = toAgentProfileType(activeProfile?.profile_type_v2)
@@ -253,7 +253,7 @@ export default function DashboardPage() {
     []
   )
   const [pedidosConCxC, setPedidosConCxC] = useState<PedidoConCxC[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [dataVersion, setDataVersion] = useState(0)
   const [silentRefresh, setSilentRefresh] = useState(0)
@@ -371,7 +371,7 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (!scope || !profileType) {
+    if (!profilesResolved || !scope || !profileType) {
       setLoading(false)
       return
     }
@@ -474,7 +474,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [scopeProfileType, scope?.clerk_id, profileType, clerkId, supabase, dataVersion, silentRefresh])
+  }, [profilesResolved, scopeProfileType, scope?.clerk_id, profileType, clerkId, supabase, dataVersion, silentRefresh])
 
   /** Evita re-fetch del agente cuando solo cambia el historial del chat */
   const agentFetchHints = useMemo(
@@ -586,7 +586,8 @@ export default function DashboardPage() {
             ? `Pedidos — ${pedidos.length} registrados`
             : 'Inventario — 0 SKUs'
 
-  const showProfileGate = profileLoading && !activeProfile
+  const showProfileGate = profileLoading
+  const showSkeleton = profileLoading || loading
 
   if (showProfileGate) {
     return (
@@ -741,7 +742,7 @@ export default function DashboardPage() {
           <CanvasSectionDivider
             accent={PROVEEDOR_ACCENT}
             label={
-              loading
+              showSkeleton
                 ? 'PROVEEDORES · …'
                 : `PROVEEDORES · ${proveedorCount} orden${proveedorCount !== 1 ? 'es' : ''} activa${proveedorCount !== 1 ? 's' : ''}`
             }
@@ -749,8 +750,8 @@ export default function DashboardPage() {
             ctaHref="/dashboard/distribuidor/compras/nuevo"
           />
           <SectionGrid>
-            {loading && <SectionSkeleton count={2} />}
-            {!loading &&
+            {showSkeleton && <SectionSkeleton count={2} />}
+            {!showSkeleton &&
               pendingOrdenCards.map(o => (
                 <OrdenCompraCanvasCard
                   key={o.id}
@@ -764,7 +765,7 @@ export default function DashboardPage() {
                   }}
                 />
               ))}
-            {!loading &&
+            {!showSkeleton &&
               ordenesConCxP.map(o => (
                 <OrdenCompraCanvasCard
                   key={`cxp-${o.id}`}
@@ -778,7 +779,7 @@ export default function DashboardPage() {
                   }}
                 />
               ))}
-            {!loading && proveedorCount === 0 && (
+            {!showSkeleton && proveedorCount === 0 && (
               <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
                 Sin órdenes de compra activas.
               </p>
@@ -788,7 +789,7 @@ export default function DashboardPage() {
           <CanvasSectionDivider
             accent={CLIENTE_ACCENT}
             label={
-              loading
+              showSkeleton
                 ? 'CLIENTES · …'
                 : `CLIENTES · ${clienteCount} pedido${clienteCount !== 1 ? 's' : ''} activo${clienteCount !== 1 ? 's' : ''}`
             }
@@ -796,8 +797,8 @@ export default function DashboardPage() {
             ctaHref="/dashboard/pedidos/nuevo"
           />
           <SectionGrid>
-            {loading && <SectionSkeleton count={2} />}
-            {!loading &&
+            {showSkeleton && <SectionSkeleton count={2} />}
+            {!showSkeleton &&
               activePedidoCards.map(p => (
                 <PedidoCanvasCard
                   key={p.id}
@@ -811,7 +812,7 @@ export default function DashboardPage() {
                   }}
                 />
               ))}
-            {!loading &&
+            {!showSkeleton &&
               pedidosConCxC.map(p => (
                 <PedidoCanvasCard
                   key={`cxc-${p.id}`}
@@ -826,7 +827,7 @@ export default function DashboardPage() {
                   }}
                 />
               ))}
-            {!loading && clienteCount === 0 && (
+            {!showSkeleton && clienteCount === 0 && (
               <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
                 Sin pedidos activos.
               </p>
@@ -836,7 +837,7 @@ export default function DashboardPage() {
           <CanvasSectionDivider
             accent={INVENTARIO_ACCENT}
             label={
-              loading
+              showSkeleton
                 ? 'INVENTARIO · …'
                 : `INVENTARIO · ${skus.length} SKU${skus.length !== 1 ? 's' : ''}`
             }
@@ -854,7 +855,7 @@ export default function DashboardPage() {
           padding: isDistiller ? '0 24px 32px' : '0 24px 32px',
         }}
       >
-        {loading && isDistiller &&
+        {showSkeleton && isDistiller &&
           Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
@@ -868,9 +869,9 @@ export default function DashboardPage() {
             />
           ))}
 
-        {loading && !isDistiller && <SectionSkeleton count={4} />}
+        {showSkeleton && !isDistiller && <SectionSkeleton count={4} />}
 
-        {!loading &&
+        {!showSkeleton &&
           isDistiller &&
           lotes.map(l => (
             <BotellaCard
@@ -890,7 +891,7 @@ export default function DashboardPage() {
             />
           ))}
 
-        {!loading &&
+        {!showSkeleton &&
           isDistiller &&
           pendingViajeCards.map(v => (
             <BotellaCard
@@ -910,7 +911,7 @@ export default function DashboardPage() {
             />
           ))}
 
-        {!loading &&
+        {!showSkeleton &&
           !isDistiller &&
           skus.map(s => {
             const dataItems = skuKpiConfig.map(k => {
@@ -999,13 +1000,13 @@ export default function DashboardPage() {
             )
           })}
 
-        {!loading && !isDistiller && skus.length === 0 && (
+        {!showSkeleton && !isDistiller && skus.length === 0 && (
           <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
             Sin SKUs en inventario.
           </p>
         )}
 
-        {!loading && bodegaCount === 0 && (
+        {!showSkeleton && bodegaCount === 0 && (
           <div
             style={{
               gridColumn: '1 / -1',

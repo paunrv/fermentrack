@@ -181,21 +181,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
         try {
           const done = await load()
-          if (done) {
-            setProfilesResolved(true)
-            break
-          }
+          if (done) break
         } catch (err) {
           console.error('[ProfileContext] error cargando profiles', err)
-          if (attempt === maxAttempts - 1) {
-            setProfilesResolved(false)
-            break
-          }
         }
         await new Promise(r => setTimeout(r, 250))
       }
 
-      if (!cancelled) setLoading(false)
+      if (!cancelled) {
+        setProfilesResolved(true)
+        setLoading(false)
+      }
     }
 
     run()
