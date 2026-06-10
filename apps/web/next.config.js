@@ -3,6 +3,8 @@ const nextConfig = {
   output: 'standalone',
   experimental: {
     missingSuspenseWithCSRBailout: false,
+    // Next 14: serverComponentsExternalPackages (renamed serverExternalPackages in v15)
+    serverComponentsExternalPackages: ['@clerk/nextjs', '@clerk/backend'],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
