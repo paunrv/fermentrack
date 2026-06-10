@@ -42,6 +42,7 @@ import {
 import {
   fetchOrdenesCompraDistribuidorPendientes,
   fetchOrdenesCompraConCxPendiente,
+  fetchPagosProveedorByCuentaIds,
   fetchPedidosConCxCPendiente,
   type OrdenCompraConCxP,
   type OrdenCompraDistribuidorWithItems,
@@ -452,11 +453,30 @@ export default function DashboardPage() {
               'fetchPedidosConCxCPendiente'
             ),
           ])
+          const cxpIds = ocCxPRows.map(o => o.cxp.id)
+          const pagosProveedor = await loadWithTimeout(
+            fetchPagosProveedorByCuentaIds(supabase, cxpIds, scope),
+            [],
+            'fetchPagosProveedorByCuentaIds'
+          )
+          const pagosByCxp = new Map<string, typeof pagosProveedor>()
+          for (const p of pagosProveedor) {
+            const list = pagosByCxp.get(p.cuenta_por_pagar_id) ?? []
+            list.push(p)
+            pagosByCxp.set(p.cuenta_por_pagar_id, list)
+          }
+          const ocCxPConPagos = ocCxPRows.map(o => ({
+            ...o,
+            cxp: {
+              ...o.cxp,
+              pagos: pagosByCxp.get(o.cxp.id) ?? [],
+            },
+          }))
           if (!cancelled) {
             setSkus(rows)
             setPedidos(pedidoRows as (PedidoRow & { clients?: { name: string } | null })[])
             setOrdenesCompra(ocRows)
-            setOrdenesConCxP(ocCxPRows)
+            setOrdenesConCxP(ocCxPConPagos)
             setPedidosConCxC(pedCxCRows)
           }
         }
@@ -756,7 +776,6 @@ export default function DashboardPage() {
                 <OrdenCompraCanvasCard
                   key={o.id}
                   orden={o}
-                  accent={PROVEEDOR_ACCENT}
                   selected={selectedOrdenId === o.id}
                   onClick={() => {
                     setSelectedId(null)
@@ -770,7 +789,6 @@ export default function DashboardPage() {
                 <OrdenCompraCanvasCard
                   key={`cxp-${o.id}`}
                   orden={o}
-                  accent={PROVEEDOR_ACCENT}
                   selected={selectedOrdenId === o.id}
                   onClick={() => {
                     setSelectedId(null)

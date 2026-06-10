@@ -93,6 +93,7 @@ export {
   confirmarLlegadaOrdenCompraDistribuidor,
   fetchCuentasPorPagarActivas,
   fetchOrdenesCompraConCxPendiente,
+  fetchPagosProveedorByCuentaIds,
   rpcRegistrarPagoProveedor,
   fetchCuentasPorCobrarActivas,
   fetchCuentaPorCobrarByPedidoId,

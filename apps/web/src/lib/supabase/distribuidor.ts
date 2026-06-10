@@ -884,7 +884,9 @@ export type OrdenCompraConCxP = OrdenCompraDistribuidorWithItems & {
     id: string
     saldo_pendiente: number
     monto_total: number
+    monto_pagado: number
     proveedor_nombre: string
+    pagos?: PagoProveedorRow[]
   }
 }
 
@@ -910,7 +912,7 @@ export async function fetchOrdenesCompraConCxPendiente(
   let q = sb
     .from('cuentas_por_pagar')
     .select(
-      'id, saldo_pendiente, monto_total, proveedor_nombre, ordenes_compra_distribuidor(*, items_orden_compra_distribuidor(*))'
+      'id, saldo_pendiente, monto_total, monto_pagado, proveedor_nombre, ordenes_compra_distribuidor(*, items_orden_compra_distribuidor(*))'
     )
     .in('estado', ['pendiente', 'parcial'])
     .order('created_at', { ascending: false })
@@ -921,6 +923,7 @@ export async function fetchOrdenesCompraConCxPendiente(
     id: string
     saldo_pendiente: number
     monto_total: number
+    monto_pagado: number
     proveedor_nombre: string
     ordenes_compra_distribuidor: OrdenCompraDistribuidorWithItems | OrdenCompraDistribuidorWithItems[] | null
   }
@@ -937,11 +940,29 @@ export async function fetchOrdenesCompraConCxPendiente(
           id: r.id,
           saldo_pendiente: Number(r.saldo_pendiente),
           monto_total: Number(r.monto_total),
+          monto_pagado: Number(r.monto_pagado),
           proveedor_nombre: r.proveedor_nombre,
         },
       }
     })
     .filter((r): r is OrdenCompraConCxP => r != null)
+}
+
+export async function fetchPagosProveedorByCuentaIds(
+  sb: SupabaseClient,
+  cuentaIds: string[],
+  scope?: ProfileScope
+): Promise<PagoProveedorRow[]> {
+  if (cuentaIds.length === 0) return []
+  let q = sb
+    .from('pagos_proveedor')
+    .select('*')
+    .in('cuenta_por_pagar_id', cuentaIds)
+    .order('fecha_pago', { ascending: true })
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  return (data || []) as PagoProveedorRow[]
 }
 
 export async function rpcRegistrarPagoProveedor(
