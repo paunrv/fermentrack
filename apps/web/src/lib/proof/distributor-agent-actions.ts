@@ -12,6 +12,7 @@ import {
   resolveTomaPedidoDraft,
   type AgentConversationTurn,
 } from '@/lib/proof/toma-pedido-intent'
+import { uploadSkuImagen } from '@/lib/proof/storage-skus'
 import type { ProfileScope } from '@/lib/supabase'
 import {
   confirmarLlegadaOrdenCompraDistribuidor,
@@ -33,6 +34,7 @@ export type DistributorAgentActionType =
   | 'confirmar_llegada_distribuidor'
   | 'registrar_pago_proveedor'
   | 'generar_remision'
+  | 'set_sku_image'
 
 export type DistributorAgentAction =
   | { type: 'confirmar_entrega'; pedido_id: string; sku_id?: string | null }
@@ -74,6 +76,7 @@ export type DistributorAgentAction =
       proveedor_nombre: string
     }
   | { type: 'generar_remision'; pedido_id: string; numero: string }
+  | { type: 'set_sku_image'; sku_id: string; nombre: string; image: string }
 
 function normQ(s: string): string {
   return s
@@ -606,6 +609,19 @@ export function parseDistributorActionIntent(
     }
   }
 
+  // SET_SKU_IMAGE — se activa cuando hay imagen adjunta y hay SKU resuelto
+  if (ctx.image) {
+    const sku = resolveSku(q, ctx)
+    if (sku) {
+      return {
+        type: 'set_sku_image',
+        sku_id: sku.id,
+        nombre: sku.nombre,
+        image: ctx.image,
+      }
+    }
+  }
+
   return null
 }
 
@@ -791,6 +807,16 @@ export async function executeDistributorAgentAction(
         entityId: action.cuenta_id,
         entityKind: 'sku',
         message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado ✓ Saldo pendiente con ${action.proveedor_nombre}: $${saldo.toLocaleString('es-MX')}`,
+      }
+    }
+    case 'set_sku_image': {
+      await uploadSkuImagen(sb, action.sku_id, action.image)
+      return {
+        ok: true,
+        entityId: action.sku_id,
+        entityKind: 'sku',
+        refreshSkuId: action.sku_id,
+        message: `Imagen de ${action.nombre} actualizada ✓`,
       }
     }
   }
