@@ -1095,6 +1095,152 @@ export async function rpcRegistrarPagoCliente(
   return data as CuentaPorCobrarRow
 }
 
+function todayMexicoIso(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
+}
+
+function mesInicioMexicoIso(): string {
+  const today = todayMexicoIso()
+  return `${today.slice(0, 8)}01`
+}
+
+function isCuentaVencida(c: CuentaPorCobrarRow, today: string): boolean {
+  return c.estado === 'vencida' || (c.fecha_vencimiento != null && c.fecha_vencimiento < today)
+}
+
+export interface CreditoCxCResumen {
+  totalPorCobrar: number
+  clientesVencidos: number
+  cobradoEsteMes: number
+}
+
+export interface DeudaClienteAgregada {
+  cliente_nombre: string
+  monto_total: number
+  saldo_pendiente: number
+  fecha_vencimiento: string | null
+  estado: 'al_dia' | 'vencido'
+  cuentas_count: number
+}
+
+export type CuentaPorCobrarConPedido = CuentaPorCobrarRow & {
+  pedidos: Pick<PedidoRow, 'id' | 'numero' | 'estado' | 'total' | 'fecha_entrega'> | null
+}
+
+export interface ClienteCreditoDetalle {
+  cliente_nombre: string
+  cuentas: CuentaPorCobrarConPedido[]
+  pagos: PagoClienteRow[]
+}
+
+export async function fetchCreditoCxCResumen(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<CreditoCxCResumen> {
+  const cuentas = await fetchCuentasPorCobrarActivas(sb, scope)
+  const activas = cuentas.filter(c => Number(c.saldo_pendiente) > 0)
+  const today = todayMexicoIso()
+  const totalPorCobrar = activas.reduce((s, c) => s + Number(c.saldo_pendiente), 0)
+  const clientesVencidos = new Set(
+    activas.filter(c => isCuentaVencida(c, today)).map(c => c.cliente_nombre || 'Cliente')
+  ).size
+
+  let q = sb
+    .from('pagos_cliente')
+    .select('monto')
+    .gte('fecha_pago', mesInicioMexicoIso())
+  q = scopeFilter(q, scope)
+  const { data, error } = await q
+  throwIfError(error)
+  const cobradoEsteMes = (data || []).reduce((s, p) => s + Number(p.monto), 0)
+
+  return { totalPorCobrar, clientesVencidos, cobradoEsteMes }
+}
+
+export async function fetchDeudasPorCliente(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<DeudaClienteAgregada[]> {
+  const cuentas = await fetchCuentasPorCobrarActivas(sb, scope)
+  const activas = cuentas.filter(c => Number(c.saldo_pendiente) > 0)
+  const today = todayMexicoIso()
+  const byCliente = new Map<string, CuentaPorCobrarRow[]>()
+
+  for (const c of activas) {
+    const key = c.cliente_nombre || 'Cliente'
+    const list = byCliente.get(key) ?? []
+    list.push(c)
+    byCliente.set(key, list)
+  }
+
+  return Array.from(byCliente.entries())
+    .map(([cliente_nombre, rows]) => {
+      const monto_total = rows.reduce((s, c) => s + Number(c.monto_total), 0)
+      const saldo_pendiente = rows.reduce((s, c) => s + Number(c.saldo_pendiente), 0)
+      const fechas = rows
+        .map(c => c.fecha_vencimiento)
+        .filter((f): f is string => f != null)
+        .sort()
+      const vencido = rows.some(c => isCuentaVencida(c, today))
+      return {
+        cliente_nombre,
+        monto_total,
+        saldo_pendiente,
+        fecha_vencimiento: fechas[0] ?? null,
+        estado: vencido ? ('vencido' as const) : ('al_dia' as const),
+        cuentas_count: rows.length,
+      }
+    })
+    .sort((a, b) => {
+      if (a.estado !== b.estado) return a.estado === 'vencido' ? -1 : 1
+      return b.saldo_pendiente - a.saldo_pendiente
+    })
+}
+
+export async function fetchDetalleClienteCredito(
+  sb: SupabaseClient,
+  clienteNombre: string,
+  scope?: ProfileScope
+): Promise<ClienteCreditoDetalle> {
+  let q = sb
+    .from('cuentas_por_cobrar')
+    .select('*, pedidos(id, numero, estado, total, fecha_entrega)')
+    .eq('cliente_nombre', clienteNombre)
+    .in('estado', ['pendiente', 'parcial', 'vencida'])
+    .order('fecha_vencimiento', { ascending: true })
+  q = scopeFilter(q, scope)
+  const { data: cuentasRaw, error } = await q
+  throwIfError(error)
+
+  type JoinRow = CuentaPorCobrarRow & {
+    pedidos:
+      | Pick<PedidoRow, 'id' | 'numero' | 'estado' | 'total' | 'fecha_entrega'>
+      | Pick<PedidoRow, 'id' | 'numero' | 'estado' | 'total' | 'fecha_entrega'>[]
+      | null
+  }
+  const cuentas = ((cuentasRaw || []) as JoinRow[]).map(r => {
+    const pedido = Array.isArray(r.pedidos) ? r.pedidos[0] : r.pedidos
+    const { pedidos: _p, ...rest } = r
+    return { ...rest, pedidos: pedido ?? null }
+  })
+
+  const cuentaIds = cuentas.map(c => c.id)
+  let pagos: PagoClienteRow[] = []
+  if (cuentaIds.length > 0) {
+    let pq = sb
+      .from('pagos_cliente')
+      .select('*')
+      .in('cuenta_por_cobrar_id', cuentaIds)
+      .order('fecha_pago', { ascending: false })
+    pq = scopeFilter(pq, scope)
+    const { data: pagosData, error: pagosError } = await pq
+    throwIfError(pagosError)
+    pagos = (pagosData || []) as PagoClienteRow[]
+  }
+
+  return { cliente_nombre: clienteNombre, cuentas, pagos }
+}
+
 // =============================================================================
 // Crédito
 // =============================================================================
