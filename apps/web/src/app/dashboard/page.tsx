@@ -243,6 +243,7 @@ export default function DashboardPage() {
   const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [agentConversation, setAgentConversation] = useState<AgentMessage[]>([])
+  const [agentImage, setAgentImage] = useState<string | null>(null)
   const [lotes, setLotes] = useState<LoteRow[]>([])
   const [viajes, setViajes] = useState<ViajeRow[]>([])
   const [productosViaje, setProductosViaje] = useState<ProductoViajeRow[]>([])
@@ -501,8 +502,9 @@ export default function DashboardPage() {
     () => ({
       query: userQuery,
       selectedId,
+      ...(agentImage ? { image: agentImage } : {}),
     }),
-    [userQuery, selectedId]
+    [userQuery, selectedId, agentImage]
   )
 
   const agentHints = useMemo(
@@ -566,9 +568,10 @@ export default function DashboardPage() {
   }, [refreshLoteId, refreshPedidoId])
 
   const handleAgentSend = useCallback(
-    (message: string, conversation: AgentMessage[]) => {
+    (message: string, conversation: AgentMessage[], image?: string | null) => {
       const q = message.toLowerCase()
       setAgentConversation(conversation)
+      setAgentImage(image ?? null)
       if (
         q.includes('nuevo viaje') ||
         q.includes('nuevo pedido') ||

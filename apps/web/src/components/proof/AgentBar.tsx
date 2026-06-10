@@ -62,7 +62,7 @@ export function AgentBar({
   quickActions = [],
 }: {
   accent: string
-  onSend: (message: string, conversation: Message[]) => void
+  onSend: (message: string, conversation: Message[], image?: string | null) => void
   response?: string
   /** Respuesta en curso (si no se pasa, se infiere de response) */
   isLoading?: boolean
@@ -71,7 +71,9 @@ export function AgentBar({
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [pendingImage, setPendingImage] = useState<string | null>(null)
   const pendingSendRef = useRef(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const chatScrollRef = useRef<HTMLDivElement>(null)
 
@@ -150,6 +152,15 @@ export function AgentBar({
     if (hasMessages) scrollToEnd()
   }, [messages.length, isTyping, hasMessages, scrollToEnd])
 
+  function handleImageFile(file: File) {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result as string
+      setPendingImage(result.split(',')[1] ?? null)
+    }
+    reader.readAsDataURL(file)
+  }
+
   function submitText(text: string) {
     const trimmed = text.trim()
     if (!trimmed || isTyping) return
@@ -166,7 +177,8 @@ export function AgentBar({
     setInputValue('')
     setIsTyping(true)
     pendingSendRef.current += 1
-    onSend(trimmed, nextConversation)
+    onSend(trimmed, nextConversation, pendingImage)
+    setPendingImage(null)
     scrollToEnd()
   }
 
@@ -362,6 +374,38 @@ export function AgentBar({
             }}
           />
           <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0]
+              if (file) handleImageFile(file)
+              e.target.value = ''
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isTyping}
+            aria-label="Adjuntar imagen"
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 8,
+              border: 'none',
+              background: pendingImage ? accent : 'transparent',
+              color: pendingImage ? '#fff' : '#CCC',
+              display: 'grid',
+              placeItems: 'center',
+              cursor: isTyping ? 'default' : 'pointer',
+              flexShrink: 0,
+              transition: 'background 0.15s ease, color 0.15s ease',
+            }}
+          >
+            <CameraIcon />
+          </button>
+          <input
             type="text"
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
@@ -457,6 +501,14 @@ export function AgentBar({
         </div>
       ) : null}
     </section>
+  )
+}
+
+function CameraIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7zm7-13h-2.17l-1.24-1.35A1.99 1.99 0 0 0 14.12 1H9.88c-.56 0-1.1.24-1.47.65L7.17 2.5H5C3.9 2.5 3 3.4 3 4.5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-14c0-1.1-.9-2-2-2z" />
+    </svg>
   )
 }
 

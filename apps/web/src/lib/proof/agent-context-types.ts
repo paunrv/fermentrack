@@ -17,4 +17,6 @@ export type AgentContextHints = {
   conversation?: { role: 'user' | 'agent'; content: string }[]
   /** Estado de UI de la pantalla (filtros, KPIs); sin tablas del otro perfil */
   pantalla?: Record<string, unknown>
+  /** Imagen adjunta en base64 (para intents visuales como SET_SKU_IMAGE) */
+  image?: string | null
 }
