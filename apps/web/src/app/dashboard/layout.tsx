@@ -10,6 +10,7 @@ import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
   distillerBlockedFromPath,
   distributorBlockedFromPath,
+  isCanvasStylePath,
   isDestiladorPath,
   isProducerOnlyPath,
   isProducerProfile,
@@ -203,6 +204,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isCanvas = path === '/dashboard'
+  const isCanvasStyle = isCanvasStylePath(path)
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
@@ -269,6 +271,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const showInnerHeader =
     !isCanvas &&
+    !isCanvasStyle &&
     !isOnAssistant &&
     !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path))) &&
     !(isDistiller && isProducerOnlyPath(path))
@@ -278,8 +281,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: isCanvas ? CANVAS_BG : 'var(--ink)',
-        color: 'var(--fg-1)',
+        background: isCanvas || isCanvasStyle ? CANVAS_BG : 'var(--ink)',
+        color: isCanvasStyle ? '#1A1A1A' : 'var(--fg-1)',
         ...proofAccentCssVars(theme),
       }}
     >
@@ -376,7 +379,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{
           flex: 1,
           minWidth: 0,
-          background: isCanvas ? CANVAS_BG : 'var(--ink)',
+          background: isCanvas || isCanvasStyle ? CANVAS_BG : 'var(--ink)',
           position: 'relative',
           zIndex: 2,
           display: 'flex',

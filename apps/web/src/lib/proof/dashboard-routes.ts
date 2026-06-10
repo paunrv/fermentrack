@@ -1,5 +1,8 @@
 import type { ExtraProfile } from '@/lib/supabase'
 
+/** Subpáginas con estilo canvas (fondo claro, sin topbar oscuro). */
+export const CANVAS_STYLE_PREFIXES = ['/dashboard/credito'] as const
+
 /** Rutas PROOF Destilador (mezcal / Patrón). */
 export const DESTILADOR_PREFIXES = [
   '/dashboard/destilador',
@@ -15,6 +18,12 @@ export const PRODUCER_ONLY_PREFIXES = [
   '/dashboard/etiquetas',
   '/dashboard/agente',
 ] as const
+
+export function isCanvasStylePath(pathname: string): boolean {
+  return CANVAS_STYLE_PREFIXES.some(
+    prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )
+}
 
 export function isDestiladorPath(pathname: string): boolean {
   return DESTILADOR_PREFIXES.some(

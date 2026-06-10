@@ -1151,6 +1151,14 @@ export async function fetchCreditoCxCResumen(
     .gte('fecha_pago', mesInicioMexicoIso())
   q = scopeFilter(q, scope)
   const { data, error } = await q
+  if (
+    error &&
+    (error.code === 'PGRST205' ||
+      error.message.includes('pagos_cliente') ||
+      error.message.includes('schema cache'))
+  ) {
+    return { totalPorCobrar, clientesVencidos, cobradoEsteMes: 0 }
+  }
   throwIfError(error)
   const cobradoEsteMes = (data || []).reduce((s, p) => s + Number(p.monto), 0)
 

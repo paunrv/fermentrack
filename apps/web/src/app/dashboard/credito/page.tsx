@@ -14,16 +14,11 @@ import {
   type DeudaClienteAgregada,
   type ClienteCreditoDetalle,
 } from '@/lib/supabase'
+import { CreditoClienteCanvasCard } from '@/components/proof/CreditoClienteCanvasCard'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
-import { CANVAS_BG } from '@/lib/proof/profile-theme'
+import { getProfileTheme } from '@/lib/proof/profile-theme'
 import { fmtMoney } from '@/lib/proof/format'
 
-const ACCENT = '#C2410C'
-const CARD_BG = '#fff'
-const BORDER = '#E8E6E0'
-const FG = '#1A1A1A'
-const FG_MUTED = '#666'
-const FG_LIGHT = '#AAA'
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 
 function diasVencido(fecha: string | null): number {
@@ -35,12 +30,43 @@ function diasVencido(fecha: string | null): number {
   return Math.max(0, Math.floor((b.getTime() - a.getTime()) / 86400000))
 }
 
+function CanvasDivider({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '0 24px',
+        marginBottom: 8,
+      }}
+    >
+      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <span
+        style={{
+          fontSize: 9,
+          color: '#CCC',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          fontFamily: MONO,
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+    </div>
+  )
+}
+
 export default function CreditoPage() {
-  const { scope } = useProfile()
+  const { scope, profilesResolved, activeProfile } = useProfile()
   const supabase = useSupabase()
+  const accent = getProfileTheme(activeProfile?.profile_type_v2).accent
   const [resumen, setResumen] = useState<CreditoCxCResumen | null>(null)
   const [deudas, setDeudas] = useState<DeudaClienteAgregada[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [selectedCliente, setSelectedCliente] = useState<string | null>(null)
   const [detalle, setDetalle] = useState<ClienteCreditoDetalle | null>(null)
   const [detalleLoading, setDetalleLoading] = useState(false)
   const [cobroModal, setCobroModal] = useState<{
@@ -52,6 +78,7 @@ export default function CreditoPage() {
   const load = useCallback(async () => {
     if (!scope) return
     setLoading(true)
+    setLoadError(null)
     try {
       const [r, d] = await Promise.all([
         fetchCreditoCxCResumen(supabase, scope),
@@ -59,22 +86,33 @@ export default function CreditoPage() {
       ])
       setResumen(r)
       setDeudas(d)
+    } catch (err) {
+      console.error('[credito] fetchCreditoCxCResumen / fetchDeudasPorCliente', err)
+      setLoadError(err instanceof Error ? err.message : 'Error al cargar crédito')
     } finally {
       setLoading(false)
     }
   }, [scope, supabase])
 
   useEffect(() => {
+    if (!profilesResolved) return
+    if (!scope) {
+      setLoading(false)
+      return
+    }
     void load()
-  }, [load])
+  }, [load, scope, profilesResolved])
 
   async function onAbrirDetalle(cliente: DeudaClienteAgregada) {
     if (!scope) return
+    setSelectedCliente(cliente.cliente_nombre)
     setDetalleLoading(true)
     setDetalle(null)
     try {
       const d = await fetchDetalleClienteCredito(supabase, cliente.cliente_nombre, scope)
       setDetalle(d)
+    } catch (err) {
+      console.error('[credito] fetchDetalleClienteCredito', err)
     } finally {
       setDetalleLoading(false)
     }
@@ -96,7 +134,8 @@ export default function CreditoPage() {
       })
       const data = await res.json()
       setCobroModal({ cliente: nombre, mensaje: data.mensaje || '', loading: false })
-    } catch {
+    } catch (err) {
+      console.error('[credito] redactar-cobro', err)
       setCobroModal({
         cliente: nombre,
         mensaje: `Hola ${nombre}, te escribo por el saldo pendiente de ${fmtMoney(cliente.saldo_pendiente)}. ¿Podemos coordinar pago esta semana?`,
@@ -117,145 +156,142 @@ export default function CreditoPage() {
   )
 
   const primerVencido = deudas.find(d => d.estado === 'vencido')
+  const waitingProfile = !profilesResolved || (profilesResolved && !scope)
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: CANVAS_BG,
-        color: FG,
-        padding: '28px 28px 100px',
-        maxWidth: 960,
-        margin: '0 auto',
-      }}
-    >
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: FG }}>
+    <div style={{ paddingBottom: 100, color: '#1A1A1A' }}>
+      <div style={{ padding: '24px 24px 8px' }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#1A1A1A' }}>
           Crédito
         </h1>
-        <p style={{ margin: 0, fontSize: 13, color: FG_MUTED }}>
-          Cuentas por cobrar desde pedidos entregados.
+        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>
+          Cuentas por cobrar desde pedidos entregados
         </p>
-      </header>
+      </div>
 
-      {loading ? (
-        <p style={{ color: FG_LIGHT, fontSize: 13 }}>Cargando crédito…</p>
-      ) : (
-        <>
-          {resumen && (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: 10,
-                marginBottom: 24,
-              }}
-            >
-              <Kpi
-                label="Total por cobrar"
-                value={fmtMoney(resumen.totalPorCobrar)}
-                tone={resumen.totalPorCobrar > 0 ? ACCENT : FG}
-              />
-              <Kpi
-                label="Clientes con deuda vencida"
-                value={String(resumen.clientesVencidos)}
-                tone={resumen.clientesVencidos > 0 ? '#E24B4A' : '#4CAF7D'}
-              />
-              <Kpi
-                label="Cobrado este mes"
-                value={fmtMoney(resumen.cobradoEsteMes)}
-                tone="#4CAF7D"
-              />
-            </div>
-          )}
-
-          <div
-            style={{
-              fontSize: 9,
-              fontFamily: MONO,
-              letterSpacing: '0.08em',
-              color: FG_LIGHT,
-              marginBottom: 10,
-              textTransform: 'uppercase',
-            }}
-          >
-            Deudas por cliente
-          </div>
-
-          <div
-            style={{
-              border: `0.5px solid ${BORDER}`,
-              borderRadius: 12,
-              background: CARD_BG,
-              overflow: 'hidden',
-            }}
-          >
-            {deudas.length === 0 ? (
-              <p style={{ padding: 20, color: FG_LIGHT, fontSize: 13, margin: 0 }}>
-                Sin saldos pendientes de clientes.
-              </p>
-            ) : (
-              deudas.map((d, i) => (
-                <button
-                  key={d.cliente_nombre}
-                  type="button"
-                  onClick={() => void onAbrirDetalle(d)}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto auto auto',
-                    alignItems: 'center',
-                    gap: 12,
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '14px 16px',
-                    border: 'none',
-                    borderBottom: i < deudas.length - 1 ? `0.5px solid ${BORDER}` : 'none',
-                    background: CARD_BG,
-                    cursor: 'pointer',
-                    transition: 'background 0.15s ease',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = `${ACCENT}06`
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = CARD_BG
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: FG }}>{d.cliente_nombre}</div>
-                    <div style={{ fontSize: 10, fontFamily: MONO, color: FG_MUTED, marginTop: 2 }}>
-                      {d.cuentas_count} pedido{d.cuentas_count !== 1 ? 's' : ''}
-                      {d.fecha_vencimiento ? ` · vence ${d.fecha_vencimiento}` : ''}
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 10, fontFamily: MONO, color: FG_MUTED }}>
-                    {fmtMoney(d.monto_total)}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontFamily: MONO,
-                      fontWeight: 600,
-                      color: FG,
-                    }}
-                  >
-                    {fmtMoney(d.saldo_pendiente)}
-                  </span>
-                  <EstadoBadge estado={d.estado} />
-                </button>
-              ))
-            )}
-          </div>
-
-          <p style={{ marginTop: 16, fontSize: 11, color: FG_LIGHT }}>
-            Deudas a productores en{' '}
-            <Link href="/dashboard/productores" style={{ color: ACCENT }}>
-              Productores
-            </Link>
-            .
-          </p>
-        </>
+      {!waitingProfile && loadError && (
+        <div
+          style={{
+            margin: '0 24px 16px',
+            padding: '12px 16px',
+            borderRadius: 10,
+            border: '0.5px solid #E8B4B4',
+            background: '#FFF5F5',
+            fontSize: 12,
+            color: '#8B2E2E',
+            lineHeight: 1.5,
+          }}
+        >
+          No pude cargar crédito: {loadError}
+        </div>
       )}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+          gap: 12,
+          padding: '0 24px 16px',
+        }}
+      >
+        {(waitingProfile || loading) &&
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              aria-hidden
+              style={{
+                height: 72,
+                borderRadius: 12,
+                background: '#F4F2EE',
+                animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
+              }}
+            />
+          ))}
+
+        {!waitingProfile && !loading && resumen && (
+          <>
+            <KpiCard
+              label="Por cobrar"
+              value={fmtMoney(resumen.totalPorCobrar)}
+              tone={resumen.totalPorCobrar > 0 ? accent : '#1A1A1A'}
+            />
+            <KpiCard
+              label="Clientes vencidos"
+              value={String(resumen.clientesVencidos)}
+              tone={resumen.clientesVencidos > 0 ? '#E24B4A' : '#4CAF7D'}
+            />
+            <KpiCard
+              label="Cobrado este mes"
+              value={fmtMoney(resumen.cobradoEsteMes)}
+              tone="#4CAF7D"
+            />
+          </>
+        )}
+      </div>
+
+      <CanvasDivider
+        label={
+          waitingProfile || loading
+            ? 'Cargando…'
+            : `${deudas.length} cliente${deudas.length !== 1 ? 's' : ''} con saldo`
+        }
+      />
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+          gap: 12,
+          padding: '0 24px 24px',
+        }}
+      >
+        {(waitingProfile || loading) &&
+          Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              aria-hidden
+              style={{
+                height: 140,
+                borderRadius: 12,
+                background: '#F4F2EE',
+                animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
+              }}
+            />
+          ))}
+
+        {!waitingProfile && !loading && deudas.length === 0 && (
+          <p style={{ gridColumn: '1 / -1', color: '#AAA', fontSize: 13, margin: 0 }}>
+            Sin saldos pendientes de clientes.
+          </p>
+        )}
+
+        {!waitingProfile &&
+          !loading &&
+          deudas.map(d => (
+            <CreditoClienteCanvasCard
+              key={d.cliente_nombre}
+              deuda={d}
+              accent={accent}
+              selected={selectedCliente === d.cliente_nombre}
+              onClick={() => void onAbrirDetalle(d)}
+            />
+          ))}
+      </div>
+
+      <p style={{ padding: '0 24px', margin: 0, fontSize: 11, color: '#AAA' }}>
+        Deudas a productores en{' '}
+        <Link href="/dashboard/productores" style={{ color: accent }}>
+          Productores
+        </Link>
+        .
+      </p>
+
+      <style>{`
+        @keyframes proof-skeleton-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.45; }
+        }
+      `}</style>
 
       {(detalleLoading || detalle) && (
         <div
@@ -270,6 +306,7 @@ export default function CreditoPage() {
           }}
           onClick={() => {
             setDetalle(null)
+            setSelectedCliente(null)
             setDetalleLoading(false)
           }}
         >
@@ -280,34 +317,34 @@ export default function CreditoPage() {
               maxHeight: '85vh',
               overflow: 'auto',
               padding: 20,
-              background: CARD_BG,
+              background: '#fff',
               borderRadius: 12,
-              border: `0.5px solid ${BORDER}`,
+              border: '0.5px solid #E8E6E0',
             }}
             onClick={e => e.stopPropagation()}
           >
             {detalleLoading && !detalle ? (
-              <p style={{ color: FG_MUTED, fontSize: 13 }}>Cargando detalle…</p>
+              <p style={{ color: '#666', fontSize: 13 }}>Cargando detalle…</p>
             ) : detalle ? (
               <>
                 <div
                   style={{
                     fontSize: 9,
                     fontFamily: MONO,
-                    color: ACCENT,
+                    color: accent,
                     letterSpacing: '0.06em',
                     marginBottom: 6,
                   }}
                 >
                   DETALLE CLIENTE
                 </div>
-                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: FG }}>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: '#1A1A1A' }}>
                   {detalle.cliente_nombre}
                 </h2>
 
                 <SectionLabel>Pedidos con saldo</SectionLabel>
                 {detalle.cuentas.length === 0 ? (
-                  <p style={{ fontSize: 12, color: FG_MUTED }}>Sin cuentas activas.</p>
+                  <p style={{ fontSize: 12, color: '#666' }}>Sin cuentas activas.</p>
                 ) : (
                   detalle.cuentas.map(c => (
                     <div
@@ -316,43 +353,30 @@ export default function CreditoPage() {
                         padding: '10px 12px',
                         marginBottom: 8,
                         borderRadius: 8,
-                        border: `0.5px solid ${BORDER}`,
+                        border: '0.5px solid #E8E6E0',
                         background: '#FAFAF8',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                        <span style={{ fontSize: 10, fontFamily: MONO, color: ACCENT }}>
+                        <span style={{ fontSize: 10, fontFamily: MONO, color: accent }}>
                           {c.pedidos?.numero ?? '—'}
                         </span>
                         <span style={{ fontSize: 11, fontFamily: MONO, fontWeight: 600 }}>
                           {fmtMoney(Number(c.saldo_pendiente))}
                         </span>
                       </div>
-                      <div style={{ fontSize: 10, color: FG_MUTED, marginTop: 4 }}>
+                      <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
                         Total {fmtMoney(Number(c.monto_total))}
                         {c.fecha_vencimiento ? ` · vence ${c.fecha_vencimiento}` : ''}
                         {c.pedidos?.fecha_entrega ? ` · entrega ${c.pedidos.fecha_entrega}` : ''}
                       </div>
-                      <EstadoBadge
-                        estado={
-                          c.estado === 'vencida' ||
-                          (c.fecha_vencimiento != null &&
-                            c.fecha_vencimiento <
-                              new Date().toLocaleDateString('en-CA', {
-                                timeZone: 'America/Mexico_City',
-                              }))
-                            ? 'vencido'
-                            : 'al_dia'
-                        }
-                        small
-                      />
                     </div>
                   ))
                 )}
 
                 <SectionLabel>Pagos registrados</SectionLabel>
                 {detalle.pagos.length === 0 ? (
-                  <p style={{ fontSize: 12, color: FG_MUTED }}>Sin pagos registrados.</p>
+                  <p style={{ fontSize: 12, color: '#666' }}>Sin pagos registrados.</p>
                 ) : (
                   detalle.pagos.map(p => (
                     <div
@@ -361,11 +385,11 @@ export default function CreditoPage() {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '8px 0',
-                        borderBottom: `0.5px solid ${BORDER}`,
+                        borderBottom: '0.5px solid #E8E6E0',
                         fontSize: 11,
                       }}
                     >
-                      <span style={{ color: FG_MUTED }}>
+                      <span style={{ color: '#666' }}>
                         {p.fecha_pago} · {p.metodo}
                         {p.referencia ? ` · ${p.referencia}` : ''}
                       </span>
@@ -387,7 +411,14 @@ export default function CreditoPage() {
                   >
                     Redactar cobro
                   </button>
-                  <button type="button" onClick={() => setDetalle(null)} style={btnSmall}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDetalle(null)
+                      setSelectedCliente(null)
+                    }}
+                    style={btnSmall}
+                  >
                     Cerrar
                   </button>
                 </div>
@@ -415,9 +446,9 @@ export default function CreditoPage() {
               maxWidth: 420,
               width: '100%',
               padding: 20,
-              background: CARD_BG,
+              background: '#fff',
               borderRadius: 12,
-              border: `0.5px solid ${BORDER}`,
+              border: '0.5px solid #E8E6E0',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -425,7 +456,7 @@ export default function CreditoPage() {
               style={{
                 fontSize: 9,
                 fontFamily: MONO,
-                color: ACCENT,
+                color: accent,
                 letterSpacing: '0.06em',
                 marginBottom: 8,
               }}
@@ -433,7 +464,7 @@ export default function CreditoPage() {
               COBRO · {cobroModal.cliente}
             </div>
             {cobroModal.loading ? (
-              <p style={{ color: FG_MUTED }}>Redactando…</p>
+              <p style={{ color: '#666' }}>Redactando…</p>
             ) : (
               <>
                 <pre
@@ -441,7 +472,7 @@ export default function CreditoPage() {
                     whiteSpace: 'pre-wrap',
                     fontFamily: MONO,
                     fontSize: 12,
-                    color: FG,
+                    color: '#1A1A1A',
                     margin: '0 0 12px',
                   }}
                 >
@@ -480,10 +511,10 @@ export default function CreditoPage() {
   )
 }
 
-function Kpi({
+function KpiCard({
   label,
   value,
-  tone = FG,
+  tone = '#1A1A1A',
 }: {
   label: string
   value: string
@@ -493,8 +524,8 @@ function Kpi({
     <div
       style={{
         padding: 14,
-        background: CARD_BG,
-        border: `0.5px solid ${BORDER}`,
+        background: '#fff',
+        border: '0.5px solid #E8E6E0',
         borderRadius: 12,
       }}
     >
@@ -503,14 +534,14 @@ function Kpi({
           fontSize: 9,
           fontFamily: MONO,
           letterSpacing: '0.08em',
-          color: FG_LIGHT,
+          color: '#AAA',
           textTransform: 'uppercase',
           marginBottom: 6,
         }}
       >
         {label}
       </div>
-      <div style={{ fontSize: 20, fontWeight: 600, fontFamily: MONO, color: tone }}>
+      <div style={{ fontSize: 18, fontWeight: 600, fontFamily: MONO, color: tone }}>
         {value}
       </div>
     </div>
@@ -524,7 +555,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontSize: 9,
         fontFamily: MONO,
         letterSpacing: '0.08em',
-        color: FG_LIGHT,
+        color: '#AAA',
         textTransform: 'uppercase',
         margin: '16px 0 8px',
       }}
@@ -534,36 +565,13 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
-function EstadoBadge({
-  estado,
-  small,
-}: {
-  estado: 'al_dia' | 'vencido'
-  small?: boolean
-}) {
-  const vencido = estado === 'vencido'
-  return (
-    <span
-      style={{
-        fontSize: small ? 9 : 10,
-        fontFamily: MONO,
-        fontWeight: 600,
-        color: vencido ? '#E24B4A' : '#4CAF7D',
-        letterSpacing: '0.04em',
-      }}
-    >
-      {vencido ? 'VENCIDO' : 'AL DÍA'}
-    </span>
-  )
-}
-
 const btnSmall: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 600,
   padding: '6px 10px',
-  border: `0.5px solid ${BORDER}`,
-  background: CARD_BG,
-  color: FG,
+  border: '0.5px solid #E8E6E0',
+  background: '#fff',
+  color: '#1A1A1A',
   borderRadius: 6,
   cursor: 'pointer',
   fontFamily: MONO,
