@@ -11,6 +11,9 @@
     "lint": "turbo run lint"
   },
   "packageManager": "npm@11.11.0",
+  "engines": {
+    "node": "20.x"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "eslint": "^8.57.0",
