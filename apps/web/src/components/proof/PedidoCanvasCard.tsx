@@ -8,6 +8,9 @@ import {
   parseTomaPedidoNotas,
 } from '@/lib/proof/toma-pedido-client'
 
+const CLIENTE_ACCENT = '#2D6A4F'
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+
 type CxcBadge = {
   id: string
   saldo_pendiente: number
@@ -16,13 +19,19 @@ type CxcBadge = {
 
 type Props = {
   pedido: PedidoRow & { clients?: { name: string } | null }
-  accent: string
+  accent?: string
   cxc?: CxcBadge
   selected?: boolean
   onClick: () => void
 }
 
-export function PedidoCanvasCard({ pedido, accent, cxc, selected, onClick }: Props) {
+export function PedidoCanvasCard({
+  pedido,
+  accent = CLIENTE_ACCENT,
+  cxc,
+  selected,
+  onClick,
+}: Props) {
   const toma = parseTomaPedidoNotas(pedido.notas)
   const cliente = pedido.clients?.name ?? 'Cliente'
   const lineas = toma?.lineas ?? []
@@ -32,6 +41,12 @@ export function PedidoCanvasCard({ pedido, accent, cxc, selected, onClick }: Pro
       : pedido.etiqueta_nombre ?? 'Sin productos'
   const entregado = pedido.estado === 'entregado' || pedido.estado === 'parcial'
 
+  const statusLine = cxc && cxc.saldo_pendiente > 0 && entregado
+    ? `CxC ${fmtMoney(cxc.saldo_pendiente)}`
+    : entregado
+      ? 'Entregado'
+      : `Entrega ${pedido.fecha_entrega ?? '—'}`
+
   return (
     <button
       type="button"
@@ -40,26 +55,40 @@ export function PedidoCanvasCard({ pedido, accent, cxc, selected, onClick }: Pro
         textAlign: 'left',
         padding: 14,
         borderRadius: 12,
-        border: selected ? `1.5px solid ${accent}` : '0.5px solid #E8E6E0',
+        border: selected ? `1.5px solid ${accent}` : `0.5px solid ${accent}22`,
         background: selected ? `${accent}08` : '#fff',
         cursor: 'pointer',
-        minHeight: 160,
+        minHeight: 140,
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
         transition: 'border-color 0.15s ease',
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.borderColor = accent
+        if (!selected) e.currentTarget.style.borderColor = accent
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderColor = '#E8E6E0'
+        if (!selected) e.currentTarget.style.borderColor = `${accent}22`
       }}
     >
       <span
         style={{
+          alignSelf: 'flex-start',
+          fontSize: 8,
+          fontFamily: MONO,
+          letterSpacing: '0.08em',
+          padding: '3px 6px',
+          borderRadius: 4,
+          background: `${accent}18`,
+          color: accent,
+        }}
+      >
+        CLIENTE
+      </span>
+      <span
+        style={{
           fontSize: 9,
-          fontFamily: 'ui-monospace, monospace',
+          fontFamily: MONO,
           color: accent,
           letterSpacing: '0.06em',
         }}
@@ -76,24 +105,26 @@ export function PedidoCanvasCard({ pedido, accent, cxc, selected, onClick }: Pro
           lineHeight: 1.45,
           whiteSpace: 'pre-line',
           flex: 1,
+          overflow: 'hidden',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
         }}
       >
         {resumen}
       </span>
-      {cxc && cxc.saldo_pendiente > 0 && entregado && (
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 600,
-            color: cxc.estado === 'vencida' ? '#E24B4A' : '#C2410C',
-            fontFamily: 'ui-monospace, monospace',
-          }}
-        >
-          CxC pendiente {fmtMoney(cxc.saldo_pendiente)}
-        </span>
-      )}
-      <span style={{ fontSize: 10, color: '#AAA' }}>
-        {entregado ? 'Entregado' : `Entrega ${pedido.fecha_entrega}`}
+      <span
+        style={{
+          fontSize: 10,
+          fontFamily: MONO,
+          fontWeight: 600,
+          color:
+            cxc?.estado === 'vencida' ? '#E24B4A' : accent,
+          paddingTop: 6,
+          borderTop: `1.5px solid ${accent}`,
+        }}
+      >
+        {statusLine}
         {pedido.anticipo ? ' · Anticipo' : ''}
       </span>
     </button>

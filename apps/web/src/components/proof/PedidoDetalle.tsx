@@ -26,6 +26,7 @@ import {
 } from '@/lib/supabase/distribuidor'
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+const CLIENTE_ACCENT = '#2D6A4F'
 
 function pedidoEstadoLabel(estado: EstadoPedido): string {
   const labels: Record<EstadoPedido, string> = {
@@ -42,52 +43,37 @@ function pedidoEstadoLabel(estado: EstadoPedido): string {
 
 function pedidoEstadoColor(estado: EstadoPedido): string {
   if (estado === 'confirmado' || estado === 'preparando' || estado === 'en_ruta') {
-    return '#C2410C'
+    return CLIENTE_ACCENT
   }
   if (estado === 'entregado') return '#4CAF7D'
   if (estado === 'parcial') return '#E8A020'
   return '#999'
 }
 
-function DataPair({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div
+    <p
       style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: 12,
-        padding: '8px 0',
-        borderBottom: '0.5px solid #F4F2EE',
+        margin: '0 0 10px',
+        fontSize: 9,
+        color: '#CCC',
+        letterSpacing: '0.1em',
+        textTransform: 'uppercase',
+        fontFamily: MONO,
       }}
     >
-      <span style={{ fontSize: 12, color: '#AAA' }}>{label}</span>
-      <span
-        style={{
-          fontSize: 13,
-          color: valueColor ?? '#1A1A1A',
-          fontFamily: MONO,
-          textAlign: 'right',
-        }}
-      >
-        {value}
-      </span>
-    </div>
+      {children}
+    </p>
   )
 }
 
 function PedidoDetalleSkeleton() {
   return (
     <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
-      <div style={{ padding: '28px 24px 24px' }}>
+      <div style={{ padding: '24px 24px 20px' }}>
         <div style={{ height: 10, width: 72, background: '#F4F2EE', borderRadius: 4, marginBottom: 12 }} />
-        <div style={{ height: 26, width: '55%', background: '#F4F2EE', borderRadius: 4, marginBottom: 8 }} />
-        <div style={{ height: 12, width: 80, background: '#F4F2EE', borderRadius: 4 }} />
+        <div style={{ height: 26, width: '55%', background: '#F4F2EE', borderRadius: 4 }} />
       </div>
-      {[0, 1, 2].map(i => (
-        <div key={i} style={{ padding: '12px 24px', borderBottom: '0.5px solid #F4F2EE' }}>
-          <div style={{ height: 14, width: '70%', background: '#F4F2EE', borderRadius: 4 }} />
-        </div>
-      ))}
     </div>
   )
 }
@@ -203,15 +189,8 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     return []
   }, [pedido, toma])
 
-  const subtotal = useMemo(
-    () => lineas.reduce((s, l) => s + l.subtotal, 0),
-    [lineas]
-  )
+  const subtotal = useMemo(() => lineas.reduce((s, l) => s + l.subtotal, 0), [lineas])
   const total = pedido ? Number(pedido.total) : 0
-  const descuento = subtotal > total && total > 0 ? subtotal - total : 0
-  const anticipoMonto =
-    toma?.anticipo_monto != null && toma.anticipo_monto > 0 ? toma.anticipo_monto : null
-
   const clienteNombre = pedido?.clients?.name ?? 'Cliente'
   const displayTotal = total > 0 ? total : subtotal
 
@@ -222,9 +201,9 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       cliente: clienteNombre,
       fechaEntrega: pedido.fecha_entrega,
       lineas,
-      total: total > 0 ? total : subtotal,
+      total: displayTotal,
     })
-  }, [pedido, clienteNombre, lineas, total, subtotal])
+  }, [pedido, clienteNombre, lineas, displayTotal])
 
   async function handlePdf() {
     if (!pedido) return
@@ -339,13 +318,18 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
   }
 
   const estadoColor = pedidoEstadoColor(pedido.estado)
+  const condicionPago = pedido.condicion_pago ?? '—'
+  const showCobro =
+    pedido.estado === 'entregado' &&
+    cuenta != null &&
+    Number(cuenta.saldo_pendiente) > 0
 
   return (
     <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
-      {/* Header */}
+      {/* HERO */}
       <div
         style={{
-          padding: '28px 24px 20px',
+          padding: '24px 24px 16px',
           borderBottom: '0.5px solid #EEECEA',
           position: 'relative',
         }}
@@ -372,163 +356,80 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           ×
         </button>
 
-        <p
+        <div
           style={{
-            margin: '0 0 8px',
-            fontSize: 11,
-            fontFamily: MONO,
-            color: '#AAA',
-            letterSpacing: '0.04em',
-          }}
-        >
-          {pedido.numero}
-        </p>
-
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontWeight: 500,
-            color: '#1A1A1A',
-            letterSpacing: '-0.02em',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 16,
             paddingRight: 36,
           }}
         >
-          {clienteNombre}
-        </h2>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: estadoColor,
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ fontSize: 12, color: '#666' }}>{pedidoEstadoLabel(pedido.estado)}</span>
-        </div>
-      </div>
-
-      {/* Datos del pedido */}
-      <div style={{ padding: '16px 24px', borderBottom: '0.5px solid #EEECEA' }}>
-        <p
-          style={{
-            margin: '0 0 8px',
-            fontSize: 9,
-            color: '#CCC',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            fontFamily: MONO,
-          }}
-        >
-          Datos del pedido
-        </p>
-        <DataPair
-          label="Fecha de pedido"
-          value={fmtDateOnly(pedido.fecha_creacion ?? pedido.created_at)}
-        />
-        <DataPair label="Fecha de entrega" value={fmtDateOnly(pedido.fecha_entrega)} />
-        {anticipoMonto != null && (
-          <DataPair label="Anticipo" value={fmtMoney(anticipoMonto)} valueColor="#C2410C" />
-        )}
-        {pedido.condicion_pago && !anticipoMonto && (
-          <DataPair label="Condición de pago" value={pedido.condicion_pago} />
-        )}
-        <div style={{ borderBottom: 'none' }} />
-      </div>
-
-      {/* Productos */}
-      <div style={{ padding: '16px 24px', borderBottom: '0.5px solid #EEECEA' }}>
-        <p
-          style={{
-            margin: '0 0 12px',
-            fontSize: 9,
-            color: '#CCC',
-            letterSpacing: '0.1em',
-            textTransform: 'uppercase',
-            fontFamily: MONO,
-          }}
-        >
-          Productos
-        </p>
-        <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-          {lineas.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 12, color: '#BBB' }}>Sin líneas registradas.</p>
-          ) : (
-            lineas.map((l, i) => (
-              <div
-                key={`${l.nombre}-${i}`}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p
+              style={{
+                margin: '0 0 6px',
+                fontSize: 9,
+                fontFamily: MONO,
+                color: '#AAA',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {pedido.numero}
+            </p>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 22,
+                fontWeight: 500,
+                color: '#1A1A1A',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+              }}
+            >
+              {clienteNombre}
+            </h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+              <span
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr auto auto auto',
-                  gap: '8px 16px',
-                  alignItems: 'baseline',
-                  padding: '10px 0',
-                  borderBottom: i < lineas.length - 1 ? '0.5px solid #F4F2EE' : 'none',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: estadoColor,
+                  flexShrink: 0,
                 }}
-              >
-                <span style={{ fontSize: 12, color: '#1A1A1A', lineHeight: 1.4 }}>{l.nombre}</span>
-                <span style={{ fontSize: 12, fontFamily: MONO, color: '#666', whiteSpace: 'nowrap' }}>
-                  {l.cantidad.toLocaleString('es-MX')}
-                </span>
-                <span style={{ fontSize: 12, fontFamily: MONO, color: '#999', whiteSpace: 'nowrap' }}>
-                  {l.precioUnitario > 0 ? fmtMoney(l.precioUnitario) : '—'}
-                </span>
-                <span
+              />
+              <span style={{ fontSize: 11, fontFamily: MONO, color: '#666' }}>
+                {pedidoEstadoLabel(pedido.estado)}
+              </span>
+              <span style={{ fontSize: 11, color: '#CCC' }}>·</span>
+              <span style={{ fontSize: 11, fontFamily: MONO, color: '#888' }}>
+                {condicionPago}
+              </span>
+            </div>
+            {cuenta &&
+              cuenta.estado !== 'pagada' &&
+              cuenta.fecha_vencimiento &&
+              Number(cuenta.saldo_pendiente) > 0 && (
+                <p
                   style={{
-                    fontSize: 12,
+                    margin: '8px 0 0',
+                    fontSize: 11,
                     fontFamily: MONO,
-                    fontWeight: 600,
-                    color: '#1A1A1A',
-                    whiteSpace: 'nowrap',
+                    color: cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : '#888',
                   }}
                 >
-                  {l.subtotal > 0 ? fmtMoney(l.subtotal) : '—'}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Totales */}
-      <div style={{ padding: '16px 24px', borderBottom: '0.5px solid #EEECEA' }}>
-        {subtotal > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: descuento > 0 ? 8 : 12,
-            }}
-          >
-            <span style={{ fontSize: 12, color: '#AAA' }}>Subtotal</span>
-            <span style={{ fontSize: 13, fontFamily: MONO, color: '#666' }}>{fmtMoney(subtotal)}</span>
+                  Vence {fmtDateOnly(cuenta.fecha_vencimiento)}
+                </p>
+              )}
           </div>
-        )}
-        {descuento > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: 12,
-            }}
-          >
-            <span style={{ fontSize: 12, color: '#AAA' }}>Descuento</span>
-            <span style={{ fontSize: 13, fontFamily: MONO, color: '#C2410C' }}>
-              −{fmtMoney(descuento)}
-            </span>
-          </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span style={{ fontSize: 14, fontWeight: 500, color: '#1A1A1A' }}>Total</span>
           <span
             style={{
-              fontSize: 16,
+              fontSize: 22,
               fontWeight: 500,
               fontFamily: MONO,
-              color: '#C2410C',
+              color: '#1A1A1A',
+              flexShrink: 0,
             }}
           >
             {fmtMoney(displayTotal)}
@@ -536,124 +437,164 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         </div>
       </div>
 
-      {cuenta && (
-        <div style={{ padding: '16px 24px', borderBottom: '0.5px solid #EEECEA' }}>
-          <p
-            style={{
-              margin: '0 0 8px',
-              fontSize: 9,
-              color: '#CCC',
-              letterSpacing: '0.1em',
-              textTransform: 'uppercase',
-              fontFamily: MONO,
-            }}
-          >
-            Cobro
-          </p>
-          <DataPair label="Monto total" value={fmtMoney(Number(cuenta.monto_total))} />
-          <DataPair label="Pagado" value={fmtMoney(Number(cuenta.monto_pagado))} />
-          <DataPair
-            label="Saldo pendiente"
-            value={fmtMoney(Number(cuenta.saldo_pendiente))}
-            valueColor={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : '#C2410C'}
-          />
-          {cuenta.fecha_vencimiento && (
-            <DataPair
-              label="Fecha vencimiento"
-              value={fmtDateOnly(cuenta.fecha_vencimiento)}
-              valueColor={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : undefined}
+      {/* DATOS */}
+      <div style={{ padding: '14px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+        <SectionLabel>Datos</SectionLabel>
+        <p style={{ margin: 0, fontSize: 12, color: '#666', fontFamily: MONO }}>
+          Pedido {fmtDateOnly(pedido.fecha_creacion ?? pedido.created_at)} · Entrega{' '}
+          {fmtDateOnly(pedido.fecha_entrega)}
+        </p>
+      </div>
+
+      {/* PRODUCTOS */}
+      <div style={{ padding: '14px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+        <SectionLabel>Productos</SectionLabel>
+        {lineas.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 12, color: '#BBB' }}>Sin líneas registradas.</p>
+        ) : (
+          lineas.map((l, i) => (
+            <div
+              key={`${l.nombre}-${i}`}
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '8px 0',
+                borderBottom: i < lineas.length - 1 ? '0.5px solid #F4F2EE' : 'none',
+              }}
+            >
+              <span style={{ fontSize: 12, color: '#1A1A1A', flex: 1, lineHeight: 1.4 }}>
+                {l.nombre}
+              </span>
+              <span style={{ fontSize: 11, fontFamily: MONO, color: '#888', whiteSpace: 'nowrap' }}>
+                {l.cantidad.toLocaleString('es-MX')} ×{' '}
+                {l.precioUnitario > 0 ? fmtMoney(l.precioUnitario) : '—'}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontFamily: MONO,
+                  fontWeight: 600,
+                  color: '#1A1A1A',
+                  whiteSpace: 'nowrap',
+                  minWidth: 72,
+                  textAlign: 'right',
+                }}
+              >
+                {l.subtotal > 0 ? fmtMoney(l.subtotal) : '—'}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* COBRO */}
+      {showCobro && cuenta && (
+        <div style={{ padding: '14px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+          <SectionLabel>Cobro</SectionLabel>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
+            <CobroStat
+              label="Saldo pendiente"
+              value={fmtMoney(Number(cuenta.saldo_pendiente))}
+              tone={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : CLIENTE_ACCENT}
             />
-          )}
-          {cuenta.estado !== 'pagada' && Number(cuenta.saldo_pendiente) > 0 && (
-            <div style={{ marginTop: 12 }}>
-              {!pagoOpen ? (
+            <CobroStat label="Pagado" value={fmtMoney(Number(cuenta.monto_pagado))} />
+            {cuenta.fecha_vencimiento && (
+              <CobroStat
+                label="Vence"
+                value={fmtDateOnly(cuenta.fecha_vencimiento)}
+                tone={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : undefined}
+              />
+            )}
+          </div>
+          {!pagoOpen ? (
+            <button
+              type="button"
+              onClick={() => {
+                setPagoOpen(true)
+                setPagoMonto(String(Number(cuenta.saldo_pendiente)))
+                setPagoError(null)
+              }}
+              style={{
+                marginTop: 12,
+                width: '100%',
+                padding: '10px 16px',
+                borderRadius: 8,
+                border: `0.5px solid ${CLIENTE_ACCENT}44`,
+                background: `${CLIENTE_ACCENT}08`,
+                fontSize: 13,
+                fontWeight: 500,
+                color: CLIENTE_ACCENT,
+                cursor: 'pointer',
+              }}
+            >
+              Registrar pago
+            </button>
+          ) : (
+            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={pagoMonto}
+                onChange={e => setPagoMonto(e.target.value)}
+                placeholder="Monto"
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: '0.5px solid #E0DDD6',
+                  fontSize: 13,
+                  fontFamily: MONO,
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  disabled={pagoLoading}
+                  onClick={() => void handleRegistrarPago()}
+                  style={{
+                    flex: 1,
+                    padding: '10px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: CLIENTE_ACCENT,
+                    color: '#fff',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: pagoLoading ? 'wait' : 'pointer',
+                  }}
+                >
+                  {pagoLoading ? 'Guardando…' : 'Confirmar pago'}
+                </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setPagoOpen(true)
-                    setPagoMonto(String(Number(cuenta.saldo_pendiente)))
+                    setPagoOpen(false)
                     setPagoError(null)
                   }}
                   style={{
-                    width: '100%',
                     padding: '10px 16px',
                     borderRadius: 8,
                     border: '0.5px solid #E0DDD6',
-                    background: '#FAFAF8',
+                    background: '#fff',
                     fontSize: 13,
-                    fontWeight: 500,
-                    color: '#1A1A1A',
                     cursor: 'pointer',
                   }}
                 >
-                  Registrar pago
+                  Cancelar
                 </button>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={pagoMonto}
-                    onChange={e => setPagoMonto(e.target.value)}
-                    placeholder="Monto"
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: '0.5px solid #E0DDD6',
-                      fontSize: 13,
-                      fontFamily: MONO,
-                    }}
-                  />
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      type="button"
-                      disabled={pagoLoading}
-                      onClick={() => void handleRegistrarPago()}
-                      style={{
-                        flex: 1,
-                        padding: '10px 16px',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: '#C2410C',
-                        color: '#fff',
-                        fontSize: 13,
-                        fontWeight: 500,
-                        cursor: pagoLoading ? 'wait' : 'pointer',
-                      }}
-                    >
-                      {pagoLoading ? 'Guardando…' : 'Confirmar pago'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPagoOpen(false)
-                        setPagoError(null)
-                      }}
-                      style={{
-                        padding: '10px 16px',
-                        borderRadius: 8,
-                        border: '0.5px solid #E0DDD6',
-                        background: '#fff',
-                        fontSize: 13,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-              {pagoError && (
-                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#E24B4A' }}>{pagoError}</p>
-              )}
+              </div>
             </div>
+          )}
+          {pagoError && (
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#E24B4A' }}>{pagoError}</p>
           )}
         </div>
       )}
 
-      {/* Acciones compartir */}
+      {/* ACCIONES */}
       <div
         style={{
           padding: '20px 24px 24px',
@@ -667,11 +608,10 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            flex: '1 1 140px',
+            flex: '1 1 120px',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
             padding: '12px 16px',
             borderRadius: 10,
             background: '#25D366',
@@ -679,7 +619,6 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             fontSize: 13,
             fontWeight: 500,
             textDecoration: 'none',
-            border: 'none',
           }}
         >
           WhatsApp
@@ -687,7 +626,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         <a
           href={pedidoMailtoUrl(pedido.numero, clienteNombre, shareText)}
           style={{
-            flex: '1 1 140px',
+            flex: '1 1 120px',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -707,9 +646,8 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           type="button"
           disabled={pdfLoading}
           onClick={() => void handlePdf()}
-          className="pedido-detalle-pdf-btn"
           style={{
-            flex: '1 1 140px',
+            flex: '1 1 120px',
             padding: '12px 16px',
             borderRadius: 10,
             background: '#1A1A1A',
@@ -718,10 +656,9 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             fontWeight: 500,
             border: 'none',
             cursor: pdfLoading ? 'wait' : 'pointer',
-            transition: 'background 0.15s ease',
           }}
         >
-          {pdfLoading ? 'Generando…' : 'Descargar PDF'}
+          {pdfLoading ? 'Generando…' : 'PDF'}
         </button>
       </div>
 
@@ -730,12 +667,27 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           {pdfError}
         </p>
       )}
+    </div>
+  )
+}
 
-      <style>{`
-        .pedido-detalle-pdf-btn:not(:disabled):hover {
-          background: #C2410C !important;
-        }
-      `}</style>
+function CobroStat({
+  label,
+  value,
+  tone = '#1A1A1A',
+}: {
+  label: string
+  value: string
+  tone?: string
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 9, fontFamily: MONO, color: '#AAA', letterSpacing: '0.06em' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 14, fontFamily: MONO, fontWeight: 600, color: tone, marginTop: 2 }}>
+        {value}
+      </div>
     </div>
   )
 }

@@ -3,6 +3,9 @@
 import { fmtMoney } from '@/lib/proof/format'
 import type { OrdenCompraConCxP, OrdenCompraDistribuidorWithItems } from '@/lib/supabase/distribuidor'
 
+const PROVEEDOR_ACCENT = '#1E6FA8'
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+
 type OrdenInput = OrdenCompraDistribuidorWithItems | OrdenCompraConCxP
 
 function isRecibidaConCxP(orden: OrdenInput): orden is OrdenCompraConCxP {
@@ -11,12 +14,12 @@ function isRecibidaConCxP(orden: OrdenInput): orden is OrdenCompraConCxP {
 
 export function OrdenCompraCanvasCard({
   orden,
-  accent,
+  accent = PROVEEDOR_ACCENT,
   selected = false,
   onClick,
 }: {
   orden: OrdenInput
-  accent: string
+  accent?: string
   selected?: boolean
   onClick: () => void
 }) {
@@ -30,135 +33,84 @@ export function OrdenCompraCanvasCard({
         ? items[0]!.producto_nombre
         : items.map(i => i.producto_nombre).join(' · ')
 
-  const borderStyle = recibida
-    ? selected
-      ? `0.5px solid ${accent}`
-      : '0.5px solid #E8E6E0'
-    : selected
-      ? `0.5px solid ${accent}`
-      : `0.5px dashed ${accent}`
+  const statusLine = recibida
+    ? `CxP ${fmtMoney(orden.cxp.saldo_pendiente)}`
+    : `${cantidadEsperada} uds · ${orden.proveedor_nombre}`
 
   return (
     <button
       type="button"
       onClick={onClick}
-      title={
-        recibida
-          ? `CxP pendiente ${fmtMoney(orden.cxp.saldo_pendiente)} · ${orden.proveedor_nombre}`
-          : `${cantidadEsperada} unidades esperadas · ${orden.proveedor_nombre}`
-      }
-      aria-label={
-        recibida
-          ? `Orden ${orden.numero_orden} recibida, CxP pendiente${selected ? ', seleccionado' : ''}`
-          : `Orden ${orden.numero_orden}, ${nombre}, por recibir${selected ? ', seleccionado' : ''}`
-      }
+      title={statusLine}
+      aria-label={`Orden ${orden.numero_orden}${selected ? ', seleccionado' : ''}`}
       style={{
         width: '100%',
-        background: selected ? '#FAFAF8' : '#fff',
-        border: borderStyle,
+        textAlign: 'left',
+        background: selected ? `${accent}08` : '#fff',
+        border: selected ? `1.5px solid ${accent}` : `0.5px solid ${accent}22`,
         borderRadius: 12,
-        padding: '16px 12px 12px',
+        padding: 14,
         cursor: 'pointer',
-        transition:
-          'border-color 0.15s ease, transform 0.15s ease, background 0.15s ease',
-        position: 'relative',
-        textAlign: 'center',
+        minHeight: 140,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        transition: 'border-color 0.15s ease',
       }}
       onMouseEnter={e => {
-        if (selected) return
-        e.currentTarget.style.transform = 'translateY(-1px)'
+        if (!selected) e.currentTarget.style.borderColor = accent
       }}
       onMouseLeave={e => {
-        if (selected) return
-        e.currentTarget.style.transform = 'translateY(0)'
+        if (!selected) e.currentTarget.style.borderColor = `${accent}22`
       }}
     >
       <span
-        aria-hidden
         style={{
-          position: 'absolute',
-          top: 10,
-          right: 10,
-          fontSize: 12,
-          lineHeight: 1,
-          opacity: 0.7,
-        }}
-      >
-        {recibida ? '💳' : '🚚'}
-      </span>
-      <div
-        aria-hidden
-        style={{
-          width: 40,
-          height: 56,
-          margin: '0 auto 8px',
-          borderRadius: 6,
-          background: recibida ? '#FFF8E8' : `${accent}12`,
-          border: recibida ? '0.5px solid #E8D4A0' : `0.5px dashed ${accent}55`,
-          display: 'grid',
-          placeItems: 'center',
-          fontSize: 18,
-        }}
-      >
-        {recibida ? '✓' : '⏱'}
-      </div>
-      <div
-        style={{
-          background: '#F4F2EE',
+          alignSelf: 'flex-start',
+          fontSize: 8,
+          fontFamily: MONO,
+          letterSpacing: '0.08em',
+          padding: '3px 6px',
           borderRadius: 4,
-          padding: '8px 8px 6px',
+          background: `${accent}18`,
+          color: accent,
         }}
       >
-        <div
-          style={{
-            fontSize: 10,
-            fontWeight: 500,
-            color: '#1A1A1A',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {nombre}
-        </div>
-        <div
-          style={{
-            fontSize: 9,
-            color: '#999',
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            marginTop: 2,
-          }}
-        >
-          {orden.numero_orden}
-          {recibida ? ' · Recibida' : ` · ${cantidadEsperada} uds`}
-        </div>
-      </div>
-      {recibida ? (
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 9,
-            color: '#B8860B',
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            fontWeight: 600,
-          }}
-        >
-          CxP pendiente {fmtMoney(orden.cxp.saldo_pendiente)}
-        </div>
-      ) : (
-        <div
-          style={{
-            marginTop: 8,
-            fontSize: 9,
-            color: accent,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Confirmar llegada
-        </div>
-      )}
+        PROVEEDOR
+      </span>
+      <span style={{ fontSize: 9, fontFamily: MONO, color: accent, letterSpacing: '0.06em' }}>
+        {orden.numero_orden}
+      </span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A1A', lineHeight: 1.2 }}>
+        {orden.proveedor_nombre || nombre}
+      </span>
+      <span
+        style={{
+          fontSize: 11,
+          color: '#666',
+          lineHeight: 1.45,
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+        }}
+      >
+        {nombre}
+      </span>
+      <span
+        style={{
+          fontSize: 10,
+          fontFamily: MONO,
+          fontWeight: 600,
+          color: accent,
+          paddingTop: 6,
+          borderTop: `1.5px solid ${accent}`,
+        }}
+      >
+        {recibida ? `Recibida · ${statusLine}` : `Por recibir · ${statusLine}`}
+      </span>
     </button>
   )
 }

@@ -96,6 +96,11 @@ async function loadWithTimeout<T>(
   }
 }
 
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+const PROVEEDOR_ACCENT = '#1E6FA8'
+const CLIENTE_ACCENT = '#2D6A4F'
+const INVENTARIO_ACCENT = '#C2410C'
+
 function CanvasDivider({ label }: { label: string }) {
   return (
     <div
@@ -114,13 +119,107 @@ function CanvasDivider({ label }: { label: string }) {
           color: '#CCC',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
-          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+          fontFamily: MONO,
         }}
       >
         {label}
       </span>
       <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
     </div>
+  )
+}
+
+function CanvasSectionDivider({
+  accent,
+  label,
+  ctaLabel,
+  ctaHref,
+}: {
+  accent: string
+  label: string
+  ctaLabel?: string
+  ctaHref?: string
+}) {
+  const router = useRouter()
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '0 24px 10px',
+        marginTop: 20,
+      }}
+    >
+      <div style={{ flex: 1, height: 1.5, background: `${accent}22` }} />
+      <span
+        style={{
+          fontSize: 9,
+          fontFamily: MONO,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: accent,
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {label}
+      </span>
+      {ctaLabel && ctaHref ? (
+        <button
+          type="button"
+          onClick={() => router.push(ctaHref)}
+          style={{
+            fontSize: 11,
+            padding: '4px 10px',
+            borderRadius: 6,
+            border: `0.5px solid ${accent}44`,
+            background: 'transparent',
+            color: accent,
+            cursor: 'pointer',
+            fontFamily: MONO,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {ctaLabel}
+        </button>
+      ) : (
+        <div style={{ flex: 1, height: 1.5, background: `${accent}22` }} />
+      )}
+    </div>
+  )
+}
+
+function SectionGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+        gap: 12,
+        padding: '0 24px 8px',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function SectionSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          aria-hidden
+          style={{
+            height: 140,
+            borderRadius: 12,
+            background: '#F4F2EE',
+            animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
+          }}
+        />
+      ))}
+    </>
   )
 }
 
@@ -222,9 +321,12 @@ export default function DashboardPage() {
     [proveedorPorSkuId]
   )
 
+  const proveedorCount = pendingOrdenCards.length + ordenesConCxP.length
+  const clienteCount = activePedidoCards.length + pedidosConCxC.length
+
   const bodegaCount = isDistiller
     ? lotes.length + pendingViajeCards.length
-    : skus.length + pendingOrdenCards.length + ordenesConCxP.length + activePedidoCards.length + pedidosConCxC.length
+    : skus.length + proveedorCount + clienteCount
 
   const handleSkuImageUpload = useCallback(
     async (skuId: string, file: File) => {
@@ -547,7 +649,7 @@ export default function DashboardPage() {
         quickActions={quickActionsForProfile}
       />
 
-      <CanvasDivider label={dividerLabel} />
+      {isDistiller && <CanvasDivider label={dividerLabel} />}
 
       {!loading && loadError && (
         <div
@@ -601,7 +703,7 @@ export default function DashboardPage() {
           <OrdenCompraPendienteDetalle
             key={`oc-${selectedOrdenId}-${dataVersion}`}
             ordenId={selectedOrdenId}
-            accent={accent}
+            accent={PROVEEDOR_ACCENT}
             onClose={() => setSelectedOrdenId(null)}
             onRecibido={() => {
               setSelectedOrdenId(null)
@@ -634,15 +736,125 @@ export default function DashboardPage() {
           />
         )}
 
+      {!isDistiller && (
+        <>
+          <CanvasSectionDivider
+            accent={PROVEEDOR_ACCENT}
+            label={
+              loading
+                ? 'PROVEEDORES · …'
+                : `PROVEEDORES · ${proveedorCount} orden${proveedorCount !== 1 ? 'es' : ''} activa${proveedorCount !== 1 ? 's' : ''}`
+            }
+            ctaLabel="+ Orden de compra"
+            ctaHref="/dashboard/distribuidor/compras/nuevo"
+          />
+          <SectionGrid>
+            {loading && <SectionSkeleton count={2} />}
+            {!loading &&
+              pendingOrdenCards.map(o => (
+                <OrdenCompraCanvasCard
+                  key={o.id}
+                  orden={o}
+                  accent={PROVEEDOR_ACCENT}
+                  selected={selectedOrdenId === o.id}
+                  onClick={() => {
+                    setSelectedId(null)
+                    setSelectedPedidoId(null)
+                    setSelectedOrdenId(o.id)
+                  }}
+                />
+              ))}
+            {!loading &&
+              ordenesConCxP.map(o => (
+                <OrdenCompraCanvasCard
+                  key={`cxp-${o.id}`}
+                  orden={o}
+                  accent={PROVEEDOR_ACCENT}
+                  selected={selectedOrdenId === o.id}
+                  onClick={() => {
+                    setSelectedId(null)
+                    setSelectedPedidoId(null)
+                    setSelectedOrdenId(o.id)
+                  }}
+                />
+              ))}
+            {!loading && proveedorCount === 0 && (
+              <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
+                Sin órdenes de compra activas.
+              </p>
+            )}
+          </SectionGrid>
+
+          <CanvasSectionDivider
+            accent={CLIENTE_ACCENT}
+            label={
+              loading
+                ? 'CLIENTES · …'
+                : `CLIENTES · ${clienteCount} pedido${clienteCount !== 1 ? 's' : ''} activo${clienteCount !== 1 ? 's' : ''}`
+            }
+            ctaLabel="+ Nuevo pedido"
+            ctaHref="/dashboard/pedidos/nuevo"
+          />
+          <SectionGrid>
+            {loading && <SectionSkeleton count={2} />}
+            {!loading &&
+              activePedidoCards.map(p => (
+                <PedidoCanvasCard
+                  key={p.id}
+                  pedido={p}
+                  accent={CLIENTE_ACCENT}
+                  selected={selectedPedidoId === p.id}
+                  onClick={() => {
+                    setSelectedPedidoId(p.id)
+                    setSelectedId(null)
+                    setSelectedOrdenId(null)
+                  }}
+                />
+              ))}
+            {!loading &&
+              pedidosConCxC.map(p => (
+                <PedidoCanvasCard
+                  key={`cxc-${p.id}`}
+                  pedido={p}
+                  accent={CLIENTE_ACCENT}
+                  cxc={p.cxc}
+                  selected={selectedPedidoId === p.id}
+                  onClick={() => {
+                    setSelectedPedidoId(p.id)
+                    setSelectedId(null)
+                    setSelectedOrdenId(null)
+                  }}
+                />
+              ))}
+            {!loading && clienteCount === 0 && (
+              <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
+                Sin pedidos activos.
+              </p>
+            )}
+          </SectionGrid>
+
+          <CanvasSectionDivider
+            accent={INVENTARIO_ACCENT}
+            label={
+              loading
+                ? 'INVENTARIO · …'
+                : `INVENTARIO · ${skus.length} SKU${skus.length !== 1 ? 's' : ''}`
+            }
+          />
+        </>
+      )}
+
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))',
+          gridTemplateColumns: isDistiller
+            ? 'repeat(auto-fill, minmax(132px, 1fr))'
+            : 'repeat(auto-fill, minmax(160px, 1fr))',
           gap: 12,
-          padding: '0 24px 32px',
+          padding: isDistiller ? '0 24px 32px' : '0 24px 32px',
         }}
       >
-        {loading &&
+        {loading && isDistiller &&
           Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
@@ -655,6 +867,8 @@ export default function DashboardPage() {
               }}
             />
           ))}
+
+        {loading && !isDistiller && <SectionSkeleton count={4} />}
 
         {!loading &&
           isDistiller &&
@@ -698,69 +912,6 @@ export default function DashboardPage() {
 
         {!loading &&
           !isDistiller &&
-          pedidosConCxC.map(p => (
-            <PedidoCanvasCard
-              key={`cxc-${p.id}`}
-              pedido={p}
-              accent={accent}
-              cxc={p.cxc}
-              selected={selectedPedidoId === p.id}
-              onClick={() => {
-                setSelectedPedidoId(p.id)
-                setSelectedId(null)
-                setSelectedOrdenId(null)
-              }}
-            />
-          ))}
-
-        {!loading &&
-          !isDistiller &&
-          activePedidoCards.map(p => (
-            <PedidoCanvasCard
-              key={p.id}
-              pedido={p}
-              accent={accent}
-              selected={selectedPedidoId === p.id}
-              onClick={() => {
-                setSelectedPedidoId(p.id)
-                setSelectedId(null)
-                setSelectedOrdenId(null)
-              }}
-            />
-          ))}
-
-        {!loading &&
-          !isDistiller &&
-          ordenesConCxP.map(o => (
-            <OrdenCompraCanvasCard
-              key={`cxp-${o.id}`}
-              orden={o}
-              accent={accent}
-              selected={selectedOrdenId === o.id}
-              onClick={() => {
-                setSelectedId(null)
-                setSelectedOrdenId(o.id)
-              }}
-            />
-          ))}
-
-        {!loading &&
-          !isDistiller &&
-          pendingOrdenCards.map(o => (
-            <OrdenCompraCanvasCard
-              key={o.id}
-              orden={o}
-              accent={accent}
-              selected={selectedOrdenId === o.id}
-              onClick={() => {
-                setSelectedId(null)
-                setSelectedOrdenId(o.id)
-              }}
-            />
-          ))}
-
-        {!loading &&
-          !isDistiller &&
           skus.map(s => {
             const dataItems = skuKpiConfig.map(k => {
               const metric = k.metric as KpiMetric
@@ -781,7 +932,7 @@ export default function DashboardPage() {
                 estado={mapSkuEstadoToCard(s.estado)}
                 dataItems={dataItems}
                 selected={selectedId === s.id && selectedPedidoId == null}
-                accent={accent}
+                accent={INVENTARIO_ACCENT}
                 uploading={uploadingSkuId === s.id}
                 configOpen={editorOpen}
                 onClick={() => {
@@ -818,10 +969,10 @@ export default function DashboardPage() {
                               borderRadius: 4,
                               border:
                                 editorSlot === slot
-                                  ? `0.5px solid ${accent}`
+                                  ? `0.5px solid ${INVENTARIO_ACCENT}`
                                   : '0.5px solid #E8E6E0',
-                              background: editorSlot === slot ? `${accent}12` : '#fff',
-                              color: editorSlot === slot ? accent : '#AAA',
+                              background: editorSlot === slot ? `${INVENTARIO_ACCENT}12` : '#fff',
+                              color: editorSlot === slot ? INVENTARIO_ACCENT : '#AAA',
                               cursor: 'pointer',
                             }}
                           >
@@ -834,7 +985,7 @@ export default function DashboardPage() {
                         profileType="distributor"
                         currentMetric={skuKpiConfig[editorSlot]?.metric ?? 'stock_disponible'}
                         currentScope={skuKpiConfig[editorSlot]?.scope ?? 'all'}
-                        accent={accent}
+                        accent={INVENTARIO_ACCENT}
                         onSelect={(metric, scope) => {
                           void updateKpi(editorSlot, metric, scope)
                         }}
@@ -847,6 +998,12 @@ export default function DashboardPage() {
               />
             )
           })}
+
+        {!loading && !isDistiller && skus.length === 0 && (
+          <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
+            Sin SKUs en inventario.
+          </p>
+        )}
 
         {!loading && bodegaCount === 0 && (
           <div
