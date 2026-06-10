@@ -1,7 +1,7 @@
 'use client'
 
 import type { PedidoRow } from '@/lib/supabase'
-import { fmtMoney } from '@/lib/proof/format'
+import { fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
 import type { EstadoCuentaPorCobrar } from '@/lib/supabase/distribuidor'
 import {
   formatLineaToma,
@@ -10,6 +10,7 @@ import {
 
 const CLIENTE_ACCENT = '#2D6A4F'
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
+const FG = '#1A1A1A'
 
 type CxcBadge = {
   id: string
@@ -25,6 +26,23 @@ type Props = {
   onClick: () => void
 }
 
+function fmtApertura(iso: string): string {
+  return parseDateOnlyLocal(iso).toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+function buildConcepto(
+  pedido: PedidoRow,
+  lineas: NonNullable<ReturnType<typeof parseTomaPedidoNotas>>['lineas']
+): string {
+  if (lineas.length > 0) {
+    return lineas.map(l => `${l.etiqueta} · ${formatLineaToma(l)}`).join(' · ')
+  }
+  return pedido.etiqueta_nombre ?? 'Sin productos'
+}
+
 export function PedidoCanvasCard({
   pedido,
   accent = CLIENTE_ACCENT,
@@ -35,10 +53,7 @@ export function PedidoCanvasCard({
   const toma = parseTomaPedidoNotas(pedido.notas)
   const cliente = pedido.clients?.name ?? 'Cliente'
   const lineas = toma?.lineas ?? []
-  const resumen =
-    lineas.length > 0
-      ? lineas.map(l => `${l.etiqueta} · ${formatLineaToma(l)}`).join('\n')
-      : pedido.etiqueta_nombre ?? 'Sin productos'
+  const concepto = buildConcepto(pedido, lineas)
   const entregado = pedido.estado === 'entregado' || pedido.estado === 'parcial'
 
   const statusLine = cxc && cxc.saldo_pendiente > 0 && entregado
@@ -52,11 +67,12 @@ export function PedidoCanvasCard({
       type="button"
       onClick={onClick}
       style={{
+        width: '100%',
         textAlign: 'left',
         padding: 14,
         borderRadius: 12,
-        border: selected ? `1.5px solid ${accent}` : `0.5px solid ${accent}22`,
-        background: selected ? `${accent}08` : '#fff',
+        border: selected ? `1.5px solid ${FG}` : `0.5px solid ${accent}22`,
+        background: selected ? '#FAFAF8' : '#fff',
         cursor: 'pointer',
         minHeight: 140,
         display: 'flex',
@@ -71,56 +87,46 @@ export function PedidoCanvasCard({
         if (!selected) e.currentTarget.style.borderColor = `${accent}22`
       }}
     >
-      <span
-        style={{
-          alignSelf: 'flex-start',
-          fontSize: 8,
-          fontFamily: MONO,
-          letterSpacing: '0.08em',
-          padding: '3px 6px',
-          borderRadius: 4,
-          background: `${accent}18`,
-          color: accent,
-        }}
-      >
-        CLIENTE
-      </span>
-      <span
-        style={{
-          fontSize: 9,
-          fontFamily: MONO,
-          color: accent,
-          letterSpacing: '0.06em',
-        }}
-      >
-        {pedido.numero}
-      </span>
-      <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A1A', lineHeight: 1.2 }}>
-        {cliente}
-      </span>
-      <span
-        style={{
-          fontSize: 11,
-          color: '#666',
-          lineHeight: 1.45,
-          whiteSpace: 'pre-line',
-          flex: 1,
-          overflow: 'hidden',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-        }}
-      >
-        {resumen}
-      </span>
+      <div>
+        <div
+          style={{
+            fontSize: 9,
+            fontFamily: MONO,
+            color: '#AAA',
+            letterSpacing: '0.04em',
+            marginBottom: 6,
+          }}
+        >
+          {pedido.numero} · {cliente}
+        </div>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: FG,
+            lineHeight: 1.3,
+            marginBottom: 6,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {concepto}
+        </div>
+        <div style={{ fontSize: 10, fontFamily: MONO, color: '#CCC' }}>
+          {fmtApertura(pedido.fecha_creacion || pedido.created_at)}
+        </div>
+      </div>
+
       <span
         style={{
           fontSize: 10,
           fontFamily: MONO,
           fontWeight: 600,
-          color:
-            cxc?.estado === 'vencida' ? '#E24B4A' : accent,
+          color: cxc?.estado === 'vencida' ? '#E24B4A' : accent,
           paddingTop: 6,
+          marginTop: 'auto',
           borderTop: `1.5px solid ${accent}`,
         }}
       >
