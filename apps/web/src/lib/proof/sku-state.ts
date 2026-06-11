@@ -9,6 +9,7 @@ export function mapSkuRowToSKU(row: SkuRow): SKU {
     nombre: row.nombre,
     productor: row.productor || '—',
     categoria: row.categoria,
+    categoriaLiquido: row.categoria_liquido ?? 'otro',
     bodega: row.bodega || 'Principal',
     stockTotal: row.stock_total,
     stockReservado: row.stock_reservado,

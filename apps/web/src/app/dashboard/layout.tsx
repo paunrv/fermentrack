@@ -253,7 +253,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!q) return
     setAsk('')
     if (isDistributor) {
-      router.push('/dashboard/recepcion')
+      router.push(`/dashboard?q=${encodeURIComponent(q)}`)
       return
     }
     if (isProducerProfile(activeProfile?.profile_type_v2)) {

@@ -1,3 +1,4 @@
+import { looksLikeEditarSkuQuery } from '@/lib/proof/categoria-liquido'
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
 import type { UnidadPedido } from '@/lib/proof/toma-pedido-client'
 
@@ -47,6 +48,8 @@ function parseUnidadEntrega(q: string): UnidadPedido {
 }
 
 function parseProductoEntrega(q: string): string | null {
+  if (looksLikeEditarSkuQuery(q)) return null
+
   const cajasDe = q.match(
     /\bde\s+\d[\d,]*\s+(?:cajas?|latas?|botellas?|unidades?)\s+de\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,50})/i
   )
@@ -69,6 +72,8 @@ function parseProductoEntrega(q: string): string | null {
 }
 
 function parseClienteEntrega(q: string): string | null {
+  if (looksLikeEditarSkuQuery(q)) return null
+
   const paraDe = q.match(
     /\bpara\s+([a-záéíóúñ][a-záéíóúñ0-9\s\-'&.]{2,60}?)\s+de\s+\d/i
   )
@@ -104,6 +109,7 @@ function resolveSkuByNombre(
 }
 
 export function looksLikeTomaPedidoQuery(q: string): boolean {
+  if (looksLikeEditarSkuQuery(q)) return false
   const n = norm(q)
   if (isConfirmationReply(n)) return true
   const hasQty = parseCantidadEntrega(n) != null

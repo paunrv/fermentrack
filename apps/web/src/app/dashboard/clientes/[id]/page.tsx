@@ -54,6 +54,7 @@ export default function ClienteDetallePage() {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
+  const [direccion, setDireccion] = useState('')
   const [diasCredito, setDiasCredito] = useState(0)
   const [notas, setNotas] = useState('')
 
@@ -67,6 +68,7 @@ export default function ClienteDetallePage() {
         setNombre(data.nombre)
         setTelefono(data.telefono || '')
         setEmail(data.email || '')
+        setDireccion(data.direccion || '')
         setDiasCredito(data.dias_credito)
         setNotas(data.notas || '')
       }
@@ -98,6 +100,7 @@ export default function ClienteDetallePage() {
         nombre: nombre.trim(),
         telefono: telefono.trim() || null,
         email: email.trim() || null,
+        direccion: direccion.trim() || null,
         dias_credito: diasCredito,
         notas: notas.trim() || null,
         profile_type_v2: scope.profile_type_v2,
@@ -234,6 +237,14 @@ export default function ClienteDetallePage() {
                 style={inputStyle}
               />
             </Field>
+            <Field label="Dirección" span={2}>
+              <textarea
+                value={direccion}
+                onChange={e => setDireccion(e.target.value)}
+                placeholder="Calle, colonia, ciudad"
+                style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }}
+              />
+            </Field>
             <Field label="Días de crédito">
               <select
                 value={diasCredito}
@@ -271,6 +282,7 @@ export default function ClienteDetallePage() {
                 setNombre(cliente.nombre)
                 setTelefono(cliente.telefono || '')
                 setEmail(cliente.email || '')
+                setDireccion(cliente.direccion || '')
                 setDiasCredito(cliente.dias_credito)
                 setNotas(cliente.notas || '')
               }}
@@ -288,6 +300,7 @@ export default function ClienteDetallePage() {
         <Section title="Datos">
           <DataRow label="Teléfono" value={cliente.telefono || '—'} />
           <DataRow label="Email" value={cliente.email || '—'} />
+          <DataRow label="Dirección" value={cliente.direccion || '—'} />
           <DataRow label="Crédito" value={creditoLabel(cliente.dias_credito)} />
           <DataRow label="Notas" value={cliente.notas || '—'} />
         </Section>

@@ -12,6 +12,11 @@ import {
   resolveTomaPedidoDraft,
   type AgentConversationTurn,
 } from '@/lib/proof/toma-pedido-intent'
+import {
+  categoriaLiquidoLabel,
+  looksLikeEditarSkuQuery,
+  parseCategoriaLiquidoFromQuery,
+} from '@/lib/proof/categoria-liquido'
 import { uploadSkuImagen } from '@/lib/proof/storage-skus'
 import type { ProfileScope } from '@/lib/supabase'
 import {
@@ -21,6 +26,8 @@ import {
   rpcEntregarPedido,
   rpcRegistrarPagoCliente,
   rpcRegistrarPagoProveedor,
+  updateSkuCartera,
+  type CategoriaLiquido,
   type ConfirmarLlegadaOcLinea,
 } from '@/lib/supabase/distribuidor'
 
@@ -29,12 +36,14 @@ export type DistributorAgentActionType =
   | 'crear_toma_pedido'
   | 'registrar_pago'
   | 'actualizar_precio'
+  | 'editar_sku'
   | 'agregar_nota'
   | 'crear_orden_compra'
   | 'confirmar_llegada_distribuidor'
   | 'registrar_pago_proveedor'
   | 'generar_remision'
   | 'set_sku_image'
+  | 'abrir_imagen_sku'
 
 export type DistributorAgentAction =
   | { type: 'confirmar_entrega'; pedido_id: string; sku_id?: string | null }
@@ -53,6 +62,13 @@ export type DistributorAgentAction =
       cliente_nombre: string
     }
   | { type: 'actualizar_precio'; sku_id: string; precio: number; nombre: string }
+  | {
+      type: 'editar_sku'
+      sku_id: string
+      nombre: string
+      categoria_liquido?: CategoriaLiquido
+      precio_venta?: number
+    }
   | { type: 'agregar_nota'; sku_id: string; nota: string; nombre: string }
   | {
       type: 'crear_orden_compra'
@@ -77,6 +93,7 @@ export type DistributorAgentAction =
     }
   | { type: 'generar_remision'; pedido_id: string; numero: string }
   | { type: 'set_sku_image'; sku_id: string; nombre: string; image: string }
+  | { type: 'abrir_imagen_sku'; sku_id: string; nombre: string }
 
 function normQ(s: string): string {
   return s
@@ -102,6 +119,18 @@ export function looksLikeDistributorMutation(q: string): boolean {
   ) {
     return true
   }
+  if (
+    (n.includes('categor') || n.includes('categoria')) &&
+    (n.includes('cambiar') ||
+      n.includes('editar') ||
+      n.includes('actualizar') ||
+      n.includes('poner'))
+  ) {
+    return true
+  }
+  if (n.includes('editar') && (n.includes('sku') || n.includes('producto'))) {
+    return true
+  }
   if (n.includes('nota') || n.includes('anotar') || n.includes('comentario')) return true
   if (
     (n.includes('remision') || n.includes('remisión')) &&
@@ -121,7 +150,49 @@ export function looksLikeDistributorMutation(q: string): boolean {
   ) {
     return true
   }
+  if (
+    n.includes('imagen') ||
+    n.includes('foto') ||
+    n.includes('fotografia') ||
+    n.includes('fotografía') ||
+    n.includes('subir imagen') ||
+    n.includes('agregar imagen')
+  ) {
+    return true
+  }
   return false
+}
+
+function parseEditarSkuIntent(
+  query: string,
+  ctx: DistributorAgentContext
+): Extract<DistributorAgentAction, { type: 'editar_sku' }> | null {
+  if (!looksLikeEditarSkuQuery(query)) return null
+
+  const q = normQ(query)
+
+  const sku = resolveSku(q, ctx)
+  if (!sku) {
+    console.log('[agente] editar_sku: SKU no resuelto', {
+      query,
+      skusEnContexto: ctx.skus.length,
+      nombres: ctx.skus.slice(0, 5).map(s => s.nombre),
+    })
+    return null
+  }
+
+  const categoria_liquido = parseCategoriaLiquidoFromQuery(query) ?? undefined
+  const precio_venta = parsePrecioFromQuery(q) ?? undefined
+
+  if (categoria_liquido == null && precio_venta == null) return null
+
+  return {
+    type: 'editar_sku',
+    sku_id: sku.id,
+    nombre: sku.nombre,
+    ...(categoria_liquido != null ? { categoria_liquido } : {}),
+    ...(precio_venta != null ? { precio_venta } : {}),
+  }
 }
 
 function parsePrecioFromQuery(q: string): number | null {
@@ -225,6 +296,7 @@ function parseCantidadFromQuery(q: string): number | null {
 }
 
 function parseProductoFromQuery(q: string): string | null {
+  if (looksLikeEditarSkuQuery(q)) return null
   const de = q.match(/\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-]{2,40}?)(?:\s+a\s+\$|\s+por\s+\$|\s+cajas?|\s+unidades?|$)/)
   if (de?.[1]) return de[1].trim()
   const orden = q.match(/(?:ordenar|comprar|pedir)\s+\d+\s+(?:cajas?\s+)?de\s+([a-záéíóúñ0-9][^,$]+)/)
@@ -278,6 +350,7 @@ function resolveOrdenCompra(
 function parseCrearOrdenCompraIntent(
   q: string
 ): Extract<DistributorAgentAction, { type: 'crear_orden_compra' }> | null {
+  if (looksLikeEditarSkuQuery(q)) return null
   if (looksLikeVentaPedidoQuery(q)) return null
 
   const wantsOrder =
@@ -309,6 +382,8 @@ function parseConfirmarLlegadaOcIntent(
   q: string,
   ctx: DistributorAgentContext
 ): Extract<DistributorAgentAction, { type: 'confirmar_llegada_distribuidor' }> | null {
+  if (looksLikeEditarSkuQuery(q)) return null
+
   const wantsConfirm =
     (q.includes('llego') ||
       q.includes('llegó') ||
@@ -466,6 +541,7 @@ function parseCrearTomaPedidoDirectIntent(
   query: string,
   ctx: DistributorAgentContext
 ): Extract<DistributorAgentAction, { type: 'crear_toma_pedido' }> | null {
+  if (looksLikeEditarSkuQuery(query)) return null
   const q = normQ(query)
   if (!looksLikeVentaPedidoQuery(q) && !looksLikeTomaPedidoQuery(q)) return null
 
@@ -523,6 +599,12 @@ export function parseDistributorActionIntent(
   conversation?: AgentConversationTurn[]
 ): DistributorAgentAction | null {
   const q = normQ(query)
+
+  const editarSkuAction = parseEditarSkuIntent(query, ctx)
+  if (editarSkuAction) {
+    console.log('[agente] intent editar_sku', editarSkuAction)
+    return editarSkuAction
+  }
 
   const toma = parseCrearTomaPedidoIntent(query, ctx, conversation)
   if (toma) return toma
@@ -609,6 +691,31 @@ export function parseDistributorActionIntent(
     }
   }
 
+  // Abrir file picker del SkuCard (sin imagen adjunta aún)
+  if (!ctx.image) {
+    const wantsImage =
+      q.includes('imagen') ||
+      q.includes('foto') ||
+      q.includes('fotografia') ||
+      q.includes('fotografía') ||
+      q.includes('subir imagen') ||
+      q.includes('agregar imagen') ||
+      q.includes('subir foto') ||
+      q.includes('agregar foto') ||
+      (q.includes('subir') && (q.includes('sku') || q.includes('producto'))) ||
+      (q.includes('agregar') && (q.includes('imagen') || q.includes('foto')))
+    if (wantsImage) {
+      const sku = resolveSku(q, ctx)
+      if (sku) {
+        return {
+          type: 'abrir_imagen_sku',
+          sku_id: sku.id,
+          nombre: sku.nombre,
+        }
+      }
+    }
+  }
+
   // SET_SKU_IMAGE — se activa cuando hay imagen adjunta y hay SKU resuelto
   if (ctx.image) {
     const sku = resolveSku(q, ctx)
@@ -640,6 +747,7 @@ export async function executeDistributorAgentAction(
   entityId: string
   entityKind?: 'sku' | 'pedido' | 'orden'
   refreshSkuId?: string | null
+  openImagePicker?: boolean
 }> {
   switch (action.type) {
     case 'crear_toma_pedido': {
@@ -729,21 +837,51 @@ export async function executeDistributorAgentAction(
       }
     }
     case 'actualizar_precio': {
-      const { error: upErr } = await sb
-        .from('skus')
-        .update({
+      try {
+        await updateSkuCartera(sb, scope, action.sku_id, {
           precio_venta: action.precio,
-          updated_at: new Date().toISOString(),
         })
-        .eq('id', action.sku_id)
-        .eq('clerk_id', clerkId)
-        .eq('profile_type_v2', scope.profile_type_v2)
-      if (upErr) throw upErr
-      return {
-        ok: true,
-        entityId: action.sku_id,
-        entityKind: 'sku',
-        message: `Precio de ${action.nombre} actualizado a $${action.precio.toLocaleString('es-MX')} ✓`,
+        return {
+          ok: true,
+          entityId: action.sku_id,
+          entityKind: 'sku',
+          refreshSkuId: action.sku_id,
+          message: `Precio de ${action.nombre} actualizado a $${action.precio.toLocaleString('es-MX')} ✓`,
+        }
+      } catch (e) {
+        console.error('[agente] editarSku', e)
+        throw new Error(
+          e instanceof Error ? e.message : 'No se pudo actualizar el precio del SKU'
+        )
+      }
+    }
+    case 'editar_sku': {
+      try {
+        await updateSkuCartera(sb, scope, action.sku_id, {
+          ...(action.categoria_liquido != null
+            ? { categoria_liquido: action.categoria_liquido }
+            : {}),
+          ...(action.precio_venta != null ? { precio_venta: action.precio_venta } : {}),
+        })
+        const parts: string[] = []
+        if (action.categoria_liquido != null) {
+          parts.push(`categoría ${categoriaLiquidoLabel(action.categoria_liquido)}`)
+        }
+        if (action.precio_venta != null) {
+          parts.push(`precio $${action.precio_venta.toLocaleString('es-MX')}`)
+        }
+        return {
+          ok: true,
+          entityId: action.sku_id,
+          entityKind: 'sku',
+          refreshSkuId: action.sku_id,
+          message: `${action.nombre} actualizado ✓ ${parts.join(' · ')}`,
+        }
+      } catch (e) {
+        console.error('[agente] editarSku', e)
+        throw new Error(
+          e instanceof Error ? e.message : 'No se pudo editar el SKU'
+        )
       }
     }
     case 'agregar_nota': {
@@ -818,6 +956,20 @@ export async function executeDistributorAgentAction(
         refreshSkuId: action.sku_id,
         message: `Imagen de ${action.nombre} actualizada ✓`,
       }
+    }
+    case 'abrir_imagen_sku': {
+      return {
+        ok: true,
+        entityId: action.sku_id,
+        entityKind: 'sku',
+        refreshSkuId: action.sku_id,
+        openImagePicker: true,
+        message: `Selecciona la imagen para ${action.nombre}`,
+      }
+    }
+    default: {
+      const _exhaustive: never = action
+      throw new Error(`Acción de agente no soportada: ${(_exhaustive as DistributorAgentAction).type}`)
     }
   }
 }

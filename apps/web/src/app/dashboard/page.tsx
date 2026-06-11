@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useProofContextBar } from '@/hooks/useProofContextBar'
@@ -226,6 +226,7 @@ function SectionSkeleton({ count = 3 }: { count?: number }) {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { scope, activeProfile, loading: profileLoading, profilesResolved } = useProfile()
   const supabase = useSupabase()
 
@@ -242,6 +243,8 @@ export default function DashboardPage() {
   const [selectedViajeId, setSelectedViajeId] = useState<string | null>(null)
   const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState<string | null>(null)
+  const [urlQuery, setUrlQuery] = useState<string | null>(null)
+  const consumedAskRef = useRef<string | null>(null)
   const [agentConversation, setAgentConversation] = useState<AgentMessage[]>([])
   const [agentImage, setAgentImage] = useState<string | null>(null)
   const [lotes, setLotes] = useState<LoteRow[]>([])
@@ -342,21 +345,43 @@ export default function DashboardPage() {
             contentType: file.type || 'image/jpeg',
             upsert: true,
           })
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error(
+            '[dashboard] storage bucket product-images',
+            uploadError.message,
+            (uploadError as { details?: string }).details,
+            (uploadError as { hint?: string }).hint
+          )
+          throw uploadError
+        }
 
         const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
         const { error: updateError } = await supabase
           .from('skus')
           .update({ imagen_url: urlData.publicUrl })
           .eq('id', skuId)
-        if (updateError) throw updateError
+        if (updateError) {
+          console.error(
+            '[dashboard] table skus (imagen_url)',
+            updateError.message,
+            updateError.details,
+            updateError.hint
+          )
+          throw updateError
+        }
 
         setSkus(prev =>
           prev.map(s => (s.id === skuId ? { ...s, imagen_url: urlData.publicUrl } : s))
         )
       } catch (e) {
-        console.error('[dashboard] sku image upload', e)
-        alert(`No se pudo subir la imagen: ${e instanceof Error ? e.message : 'error'}`)
+        const err = e as { message?: string; details?: string; hint?: string }
+        console.error(
+          '[dashboard] sku image upload',
+          err.message,
+          err.details,
+          err.hint
+        )
+        alert(`No se pudo subir la imagen: ${err.message ?? 'error'}`)
       } finally {
         setUploadingSkuId(null)
       }
@@ -475,6 +500,7 @@ export default function DashboardPage() {
           }))
           if (!cancelled) {
             setSkus(rows)
+            console.log('[dashboard] clerk_id', scope.clerk_id, 'skus', rows.length)
             setPedidos(pedidoRows as (PedidoRow & { clients?: { name: string } | null })[])
             setOrdenesCompra(ocRows)
             setOrdenesConCxP(ocCxPConPagos)
@@ -539,7 +565,15 @@ export default function DashboardPage() {
     }
   }, [agentProfileType, lotes.length, skus.length, pedidos.length, pendingOrdenCards.length])
 
-  const { mensaje, loading: agentLoading, refreshLoteId, refreshPedidoId } = useProofContextBar({
+  const [imagePickerSkuId, setImagePickerSkuId] = useState<string | null>(null)
+
+  const {
+    mensaje,
+    loading: agentLoading,
+    refreshLoteId,
+    refreshPedidoId,
+    openSkuImagePicker,
+  } = useProofContextBar({
     pantalla: 'inicio',
     vista: agentProfileType === 'distiller' ? 'destilador' : 'distribuidor',
     profileType: agentProfileType,
@@ -566,6 +600,22 @@ export default function DashboardPage() {
       setSelectedPedidoId(null)
     }
   }, [refreshLoteId, refreshPedidoId])
+
+  useEffect(() => {
+    if (!openSkuImagePicker) return
+    setSelectedId(openSkuImagePicker)
+    setSelectedPedidoId(null)
+    setImagePickerSkuId(openSkuImagePicker)
+  }, [openSkuImagePicker])
+
+  useEffect(() => {
+    const q = searchParams.get('q')?.trim()
+    if (!q || consumedAskRef.current === q) return
+    consumedAskRef.current = q
+    console.log('[agente] query desde URL', q)
+    setUrlQuery(q)
+    router.replace('/dashboard', { scroll: false })
+  }, [searchParams, router])
 
   const handleAgentSend = useCallback(
     (message: string, conversation: AgentMessage[], image?: string | null) => {
@@ -671,6 +721,7 @@ export default function DashboardPage() {
         response={mensaje}
         isLoading={agentLoading}
         quickActions={quickActionsForProfile}
+        queryFromUrl={urlQuery}
       />
 
       {isDistiller && <CanvasDivider label={dividerLabel} />}
@@ -949,6 +1000,7 @@ export default function DashboardPage() {
               <SkuCard
                 key={s.id}
                 nombre={s.nombre}
+                categoriaLiquido={s.categoria_liquido ?? 'otro'}
                 proveedorNombre={resolveProveedorSku(s)}
                 imagenUrl={s.imagen_url}
                 estado={mapSkuEstadoToCard(s.estado)}
@@ -1016,7 +1068,12 @@ export default function DashboardPage() {
                     </>
                   ) : undefined
                 }
-                onImageSelect={file => void handleSkuImageUpload(s.id, file)}
+                openImagePicker={imagePickerSkuId === s.id}
+                onImagePickerOpened={() => setImagePickerSkuId(null)}
+                onImageSelect={file => {
+                  console.log('[dashboard] onImageSelect callback', s.id, file.name)
+                  void handleSkuImageUpload(s.id, file)
+                }}
               />
             )
           })}

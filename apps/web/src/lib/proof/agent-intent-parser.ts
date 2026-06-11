@@ -35,6 +35,7 @@ export type AgentActionResult = {
   entityId: string
   entityKind?: 'sku' | 'pedido' | 'orden'
   refreshSkuId?: string | null
+  openImagePicker?: boolean
 }
 
 export function parseIntent(
@@ -54,9 +55,10 @@ export function parseIntent(
     )
   }
   if (profileType === 'distributor') {
+    const raw = context as DistributorAgentContext & { image?: string | null }
     return parseDistributorActionIntent(
       query,
-      context as DistributorAgentContext,
+      { ...raw, image: raw.image ?? undefined },
       conversation
     )
   }
@@ -82,7 +84,8 @@ export async function executeIntent(
   clerkId: string,
   profileType: AgentProfileType,
   action: DistillerAgentAction | DistributorAgentAction,
-  scope?: ProfileScope
+  scope?: ProfileScope,
+  image?: string | null
 ): Promise<AgentActionResult> {
   if (profileType === 'distiller') {
     const result = await executeDistillerAgentAction(
@@ -94,17 +97,30 @@ export async function executeIntent(
   }
   if (profileType === 'distributor') {
     if (!scope) throw new Error('scope requerido para acciones de distribuidor')
-    const result = await executeDistributorAgentAction(
-      sb,
-      clerkId,
-      scope,
-      action as DistributorAgentAction
-    )
-    return {
-      message: result.message,
-      entityId: result.entityId,
-      entityKind: result.entityKind,
-      refreshSkuId: result.refreshSkuId,
+    const distAction = action as DistributorAgentAction
+    const resolvedAction =
+      distAction.type === 'set_sku_image' && image && !distAction.image
+        ? { ...distAction, image }
+        : distAction
+    try {
+      const result = await executeDistributorAgentAction(
+        sb,
+        clerkId,
+        scope,
+        resolvedAction
+      )
+      return {
+        message: result.message,
+        entityId: result.entityId,
+        entityKind: result.entityKind,
+        refreshSkuId: result.refreshSkuId,
+        openImagePicker: result.openImagePicker,
+      }
+    } catch (e) {
+      console.error('[agente] executeDistributorAgentAction', resolvedAction.type, e)
+      throw new Error(
+        e instanceof Error ? e.message : 'No se pudo completar la acción del agente'
+      )
     }
   }
   throw new Error(`Perfil no soportado: ${profileType}`)

@@ -12,6 +12,7 @@ function parseSseChunk(
     accionHref?: string
     refreshLoteId?: string | null
     refreshPedidoId?: string | null
+    openSkuImagePicker?: string | null
   }) => void,
   onError: (message: string) => void
 ): boolean {
@@ -33,6 +34,7 @@ function parseSseChunk(
     accionHref?: string
     refreshLoteId?: string | null
     refreshPedidoId?: string | null
+    openSkuImagePicker?: string | null
   }
   try {
     payload = JSON.parse(line.slice(6))
@@ -67,6 +69,7 @@ export function useProofContextBar(options: {
   const [accionHref, setAccionHref] = useState(options.fallback?.accionHref ?? '/dashboard/agente')
   const [refreshLoteId, setRefreshLoteId] = useState<string | null>(null)
   const [refreshPedidoId, setRefreshPedidoId] = useState<string | null>(null)
+  const [openSkuImagePicker, setOpenSkuImagePicker] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const fallbackRef = useRef(options.fallback)
   fallbackRef.current = options.fallback
@@ -114,6 +117,7 @@ export function useProofContextBar(options: {
     hasAgentReplyRef.current = false
     let cancelled = false
     setLoading(true)
+    setOpenSkuImagePicker(null)
     setMensaje('PROOF analizando…')
 
     console.log('[useProofContextBar] fetch', {
@@ -155,6 +159,7 @@ export function useProofContextBar(options: {
           accionHref?: string
           refreshLoteId?: string | null
           refreshPedidoId?: string | null
+          openSkuImagePicker?: string | null
         }) => {
           gotDone = true
           hasAgentReplyRef.current = true
@@ -163,6 +168,7 @@ export function useProofContextBar(options: {
           if (payload.accionHref) setAccionHref(payload.accionHref)
           if (payload.refreshLoteId) setRefreshLoteId(payload.refreshLoteId)
           if (payload.refreshPedidoId) setRefreshPedidoId(payload.refreshPedidoId)
+          if (payload.openSkuImagePicker) setOpenSkuImagePicker(payload.openSkuImagePicker)
         }
 
         const processBuffer = () => {
@@ -250,5 +256,13 @@ export function useProofContextBar(options: {
     options.enabled,
   ])
 
-  return { mensaje, accionLabel, accionHref, loading, refreshLoteId, refreshPedidoId }
+  return {
+    mensaje,
+    accionLabel,
+    accionHref,
+    loading,
+    refreshLoteId,
+    refreshPedidoId,
+    openSkuImagePicker,
+  }
 }

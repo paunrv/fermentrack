@@ -159,7 +159,7 @@ export async function finalizarTomaPedido(
 
   const pedido = await createPedidoBorrador(sb, {
     numero,
-    cliente_id: cliente.id,
+    clients_id: cliente.id,
     etiqueta_id: primary.id,
     etiqueta_nombre: lineas.length === 1 ? primary.nombre : `${primary.nombre} +${lineas.length - 1}`,
     fecha_entrega: input.fechaEntrega,

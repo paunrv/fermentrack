@@ -2,10 +2,15 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { crearSku, editarSku } from '@/app/actions/skus'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import {
+  CATEGORIA_LIQUIDO_OPTIONS,
+  categoriaLiquidoLabel,
+} from '@/lib/proof/categoria-liquido'
 import { fetchSkus, rpcSyncAllSkusForScope } from '@/lib/supabase'
 import { mapSkuRowToSKU } from '@/lib/proof/sku-state'
 import type { EstadoSKU } from '@/lib/proof/types'
@@ -13,19 +18,10 @@ import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 import { StatusBadge } from '@/components/proof/StatusBadge'
 import { StockBar } from '@/components/proof/StockBar'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
+import type { CategoriaLiquido } from '@/lib/supabase/distribuidor'
 
 type Vista = 'sku' | 'bodega' | 'riesgo'
 type Filtro = 'todos' | 'quiebre' | 'sin_rotar' | 'con_deuda' | 'sobrevendido'
-
-const CATEGORIA_LABEL: Record<string, string> = {
-  tequila: 'Tequila',
-  vino: 'Vino',
-  mezcal: 'Mezcal',
-  cerveza: 'Cerveza',
-  destilado: 'Destilado',
-  gin: 'Gin',
-  otro: 'Otro',
-}
 
 export default function InventarioPage() {
   const { scope } = useProfile()
@@ -35,6 +31,76 @@ export default function InventarioPage() {
   const [syncing, setSyncing] = useState(false)
   const [vista, setVista] = useState<Vista>('sku')
   const [filtro, setFiltro] = useState<Filtro>('todos')
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [nombre, setNombre] = useState('')
+  const [categoriaLiquido, setCategoriaLiquido] = useState<CategoriaLiquido>('otro')
+  const [precioVenta, setPrecioVenta] = useState('')
+  const formRef = useRef<HTMLFormElement>(null)
+
+  function resetForm() {
+    setNombre('')
+    setCategoriaLiquido('otro')
+    setPrecioVenta('')
+    setEditingId(null)
+    setSaveError(null)
+  }
+
+  function openCreateForm() {
+    resetForm()
+    setVista('sku')
+    setShowForm(true)
+  }
+
+  function openEditForm(skuId: string) {
+    const sku = skuRows.find(r => r.id === skuId)
+    if (!sku) return
+
+    setEditingId(sku.id)
+    setNombre(sku.nombre)
+    setCategoriaLiquido(sku.categoria_liquido ?? 'otro')
+    setPrecioVenta(String(sku.precio_venta ?? 0))
+    setSaveError(null)
+    setVista('sku')
+    setShowForm(true)
+  }
+
+  useEffect(() => {
+    if (!showForm) return
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    })
+  }, [showForm, editingId])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!nombre.trim() || !scope) return
+
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const payload = {
+        nombre: nombre.trim(),
+        categoria_liquido: categoriaLiquido,
+        precio_venta: parseFloat(precioVenta) || 0,
+        profile_type_v2: scope.profile_type_v2,
+      }
+      if (editingId) {
+        await editarSku(editingId, payload)
+      } else {
+        await crearSku(payload)
+      }
+      resetForm()
+      setShowForm(false)
+      await loadSkus()
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'No se pudo guardar el SKU')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   async function loadSkus() {
     if (!scope) return
@@ -52,6 +118,7 @@ export default function InventarioPage() {
   }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
   const skus = useMemo(() => skuRows.map(mapSkuRowToSKU), [skuRows])
+  const skuRowById = useMemo(() => new Map(skuRows.map(r => [r.id, r])), [skuRows])
   const needsSync = !loading && skus.length === 0
 
   async function onSyncCatalog() {
@@ -156,22 +223,42 @@ export default function InventarioPage() {
               Stock vivo — disponible vs reservado (tabla skus)
             </p>
           </div>
-          <Link
-            href="/dashboard/recepcion"
-            style={{
-              padding: '10px 16px',
-              background: 'var(--gold)',
-              color: 'var(--ink)',
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-              borderRadius: 'var(--radius-sm)',
-            }}
-          >
-            Entrada foto
-          </Link>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => (showForm ? (resetForm(), setShowForm(false)) : openCreateForm())}
+              style={{
+                padding: '10px 16px',
+                background: showForm ? 'transparent' : 'var(--gold)',
+                color: showForm ? 'var(--fg-0)' : 'var(--ink)',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                border: showForm ? '1px solid var(--hairline)' : 'none',
+                borderRadius: 'var(--radius-sm)',
+                cursor: 'pointer',
+              }}
+            >
+              {showForm ? 'Cancelar' : '+ Nuevo SKU'}
+            </button>
+            <Link
+              href="/dashboard/recepcion"
+              style={{
+                padding: '10px 16px',
+                background: 'var(--gold)',
+                color: 'var(--ink)',
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                textDecoration: 'none',
+                borderRadius: 'var(--radius-sm)',
+              }}
+            >
+              Entrada foto
+            </Link>
+          </div>
         </header>
 
         <div
@@ -220,6 +307,118 @@ export default function InventarioPage() {
               ))}
             </div>
 
+            {showForm && (
+              <form
+                ref={formRef}
+                onSubmit={handleSubmit}
+                style={{
+                  border: '1px solid var(--hairline)',
+                  borderRadius: 'var(--radius-card)',
+                  padding: 20,
+                  marginBottom: 16,
+                  background: 'var(--panel)',
+                }}
+              >
+                <h2
+                  className="eyebrow"
+                  style={{
+                    margin: '0 0 16px',
+                    fontSize: 10,
+                    color: 'var(--fg-3)',
+                    letterSpacing: '0.12em',
+                  }}
+                >
+                  {editingId ? 'Editar SKU' : 'Nuevo SKU'}
+                </h2>
+                {saveError && (
+                  <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
+                    {saveError}
+                  </p>
+                )}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 12,
+                  }}
+                >
+                  <SkuField label="Nombre" span={2}>
+                    <input
+                      type="text"
+                      value={nombre}
+                      onChange={e => setNombre(e.target.value)}
+                      required
+                      placeholder="Nombre comercial"
+                      style={inputStyle}
+                    />
+                  </SkuField>
+                  <SkuField label="Categoría">
+                    <select
+                      value={categoriaLiquido}
+                      onChange={e => setCategoriaLiquido(e.target.value as CategoriaLiquido)}
+                      required
+                      style={inputStyle}
+                    >
+                      {CATEGORIA_LIQUIDO_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </SkuField>
+                  <SkuField label="Precio venta">
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={precioVenta}
+                      onChange={e => setPrecioVenta(e.target.value)}
+                      required
+                      placeholder="0.00"
+                      style={inputStyle}
+                    />
+                  </SkuField>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                  <button
+                    type="submit"
+                    disabled={saving || !nombre.trim()}
+                    style={{
+                      padding: '10px 16px',
+                      background: 'var(--gold)',
+                      border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--ink)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: saving ? 'wait' : 'pointer',
+                      opacity: saving || !nombre.trim() ? 0.6 : 1,
+                    }}
+                  >
+                    {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear SKU'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForm()
+                      setShowForm(false)
+                    }}
+                    style={{
+                      padding: '10px 16px',
+                      background: 'transparent',
+                      border: '1px solid var(--hairline)',
+                      borderRadius: 'var(--radius-sm)',
+                      color: 'var(--fg-2)',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            )}
+
             <div
               style={{
                 border: '1px solid var(--hairline)',
@@ -232,7 +431,7 @@ export default function InventarioPage() {
                 className="mono"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '100px 1fr 90px 80px 160px 70px 80px 90px 100px',
+                  gridTemplateColumns: '100px 1fr 90px 80px 160px 70px 80px 90px 100px 56px',
                   gap: 8,
                   padding: '10px 14px',
                   fontSize: 9,
@@ -252,6 +451,7 @@ export default function InventarioPage() {
                 <span>Días</span>
                 <span>Margen</span>
                 <span>Estado</span>
+                <span />
               </div>
 
               {loading ? (
@@ -268,20 +468,17 @@ export default function InventarioPage() {
                 filtered.map(s => {
                   const href = s.distProductId
                     ? `/dashboard/productos/${s.distProductId}`
-                    : '/dashboard/inventario'
+                    : null
                   return (
-                    <Link
+                    <div
                       key={s.id}
-                      href={href}
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '100px 1fr 90px 80px 160px 70px 80px 90px 100px',
+                        gridTemplateColumns: '100px 1fr 90px 80px 160px 70px 80px 90px 100px 56px',
                         gap: 8,
                         padding: '12px 14px',
                         alignItems: 'center',
                         borderBottom: '1px solid var(--hairline)',
-                        textDecoration: 'none',
-                        color: 'inherit',
                         transition: 'background 150ms',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--panel-2)')}
@@ -291,11 +488,27 @@ export default function InventarioPage() {
                         {s.id.slice(0, 8)}
                       </span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)' }}>{s.nombre}</div>
+                        {href ? (
+                          <Link
+                            href={href}
+                            style={{
+                              fontSize: 13,
+                              fontWeight: 600,
+                              color: 'var(--fg-0)',
+                              textDecoration: 'none',
+                            }}
+                          >
+                            {s.nombre}
+                          </Link>
+                        ) : (
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)' }}>
+                            {s.nombre}
+                          </div>
+                        )}
                         <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.productor}</div>
                       </div>
                       <span style={{ fontSize: 11, color: 'var(--fg-2)' }}>
-                        {CATEGORIA_LABEL[s.categoria] || s.categoria}
+                        {categoriaLiquidoLabel(s.categoriaLiquido)}
                       </span>
                       <span style={{ fontSize: 11, color: 'var(--fg-3)' }}>{s.bodega}</span>
                       <StockBar
@@ -314,7 +527,26 @@ export default function InventarioPage() {
                         {s.margenPorcentaje}%
                       </span>
                       <StatusBadge estado={s.estado as EstadoSKU} diasSinMovimiento={s.diasSinMovimiento} />
-                    </Link>
+                      <button
+                        type="button"
+                        disabled={!skuRowById.has(s.id)}
+                        onClick={e => {
+                          e.stopPropagation()
+                          openEditForm(s.id)
+                        }}
+                        style={{
+                          fontSize: 10,
+                          color: 'var(--gold)',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        Editar
+                      </button>
+                    </div>
                   )
                 })
               )}
@@ -477,5 +709,42 @@ function RiesgoBlock({
         {value}
       </div>
     </div>
+  )
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 10px',
+  fontSize: 13,
+  border: '1px solid var(--hairline)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--panel-2)',
+  color: 'var(--fg-0)',
+}
+
+function SkuField({
+  label,
+  children,
+  span,
+}: {
+  label: string
+  children: React.ReactNode
+  span?: number
+}) {
+  return (
+    <label style={{ gridColumn: span === 2 ? '1 / -1' : undefined }}>
+      <div
+        className="eyebrow"
+        style={{
+          fontSize: 9,
+          color: 'var(--fg-3)',
+          letterSpacing: '0.1em',
+          marginBottom: 6,
+        }}
+      >
+        {label}
+      </div>
+      {children}
+    </label>
   )
 }

@@ -1,3 +1,4 @@
+import { looksLikeEditarSkuQuery } from '@/lib/proof/categoria-liquido'
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
 import { isSkuStockCritico } from '@/lib/proof/distributor-agent-context'
 import { looksLikeDistributorMutation } from '@/lib/proof/distributor-agent-actions'
@@ -74,6 +75,8 @@ export function tryDistributorQuickAnswer(
   if (ctx.perfil !== 'distribuidor' || !ctx.resumen) return null
 
   const q = norm(query)
+  if (looksLikeEditarSkuQuery(query)) return null
+
   const conversation = Array.isArray(
     (datos as { conversation?: AgentConversationTurn[] }).conversation
   )

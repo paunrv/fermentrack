@@ -1,7 +1,12 @@
 'use client'
 
-import { useRef, useState, type ReactNode } from 'react'
-import type { EstadoSku } from '@/lib/supabase/distribuidor'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
+import {
+  CATEGORIA_LIQUIDO_BADGE,
+  categoriaLiquidoLabel,
+  normalizeCategoriaLiquido,
+} from '@/lib/proof/categoria-liquido'
+import type { CategoriaLiquido, EstadoSku } from '@/lib/supabase/distribuidor'
 
 export type SkuCardEstado = 'ok' | 'bajo' | 'sin_stock' | 'sobrevendido'
 
@@ -103,8 +108,32 @@ function IconAdjustments() {
   )
 }
 
+function CategoriaBadge({ categoria }: { categoria: CategoriaLiquido }) {
+  const tone = CATEGORIA_LIQUIDO_BADGE[categoria]
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        marginTop: 4,
+        padding: '2px 6px',
+        borderRadius: 4,
+        fontSize: 8,
+        fontWeight: 600,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        background: tone.bg,
+        color: tone.color,
+        lineHeight: 1.2,
+      }}
+    >
+      {categoriaLiquidoLabel(categoria)}
+    </span>
+  )
+}
+
 export function SkuCard({
   nombre,
+  categoriaLiquido = 'otro',
   proveedorNombre,
   imagenUrl,
   estado,
@@ -117,8 +146,11 @@ export function SkuCard({
   onClick,
   onConfigClick,
   onImageSelect,
+  openImagePicker = false,
+  onImagePickerOpened,
 }: {
   nombre: string
+  categoriaLiquido?: CategoriaLiquido
   proveedorNombre: string
   imagenUrl?: string | null
   estado: SkuCardEstado
@@ -131,11 +163,33 @@ export function SkuCard({
   onClick: () => void
   onConfigClick?: () => void
   onImageSelect?: (file: File) => void
+  /** Disparado por el agente para abrir el file picker de este card */
+  openImagePicker?: boolean
+  onImagePickerOpened?: () => void
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const fileInputId = useId()
+  const categoria = normalizeCategoriaLiquido(categoriaLiquido)
   const hasImage = Boolean(imagenUrl?.trim())
+  const hiddenFileInputStyle: React.CSSProperties = {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clip: 'rect(0,0,0,0)',
+    whiteSpace: 'nowrap',
+    border: 0,
+  }
   const pulse = estado === 'sin_stock' || estado === 'sobrevendido'
   const visibleItems = dataItems.slice(0, 3)
+
+  useEffect(() => {
+    if (!openImagePicker || !onImageSelect) return
+    fileRef.current?.click()
+    onImagePickerOpened?.()
+  }, [openImagePicker, onImageSelect, onImagePickerOpened])
 
   return (
     <div
@@ -268,12 +322,18 @@ export function SkuCard({
                 fontWeight: 500,
                 padding: '20px 8px 8px',
                 lineHeight: 1.3,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
               }}
             >
-              {nombre}
+              <div
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {nombre}
+              </div>
+              <CategoriaBadge categoria={categoria} />
             </div>
           </>
         ) : (
@@ -289,21 +349,23 @@ export function SkuCard({
             }}
           >
             <IconPhoto />
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: '#1A1A1A',
-                textAlign: 'center',
-                lineHeight: 1.25,
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                width: '100%',
-              }}
-            >
-              {nombre}
+            <div style={{ width: '100%', textAlign: 'center' }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: '#1A1A1A',
+                  lineHeight: 1.25,
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  width: '100%',
+                }}
+              >
+                {nombre}
+              </div>
+              <CategoriaBadge categoria={categoria} />
             </div>
             <div
               style={{
@@ -320,23 +382,32 @@ export function SkuCard({
         {onImageSelect && (
           <>
             <input
+              id={fileInputId}
               ref={fileRef}
               type="file"
               accept="image/*"
-              style={{ display: 'none' }}
+              tabIndex={-1}
+              aria-hidden
+              style={hiddenFileInputStyle}
               onChange={e => {
                 const file = e.target.files?.[0]
-                e.target.value = ''
-                if (file) onImageSelect(file)
+                console.log('input onChange disparado', file?.name ?? '(sin archivo)')
+                if (file) {
+                  onImageSelect(file)
+                }
+                // Reset tras el handler para permitir re-seleccionar el mismo archivo
+                window.setTimeout(() => {
+                  e.target.value = ''
+                }, 0)
               }}
             />
-            <button
-              type="button"
+            <label
+              htmlFor={fileInputId}
               className="sku-camera-btn"
               aria-label="Agregar o cambiar imagen"
               onClick={e => {
                 e.stopPropagation()
-                fileRef.current?.click()
+                console.log('[SkuCard] camera click', nombre, { input: fileRef.current?.id })
               }}
               style={{
                 position: 'absolute',
@@ -360,7 +431,7 @@ export function SkuCard({
               ) : (
                 <IconCamera />
               )}
-            </button>
+            </label>
           </>
         )}
       </div>

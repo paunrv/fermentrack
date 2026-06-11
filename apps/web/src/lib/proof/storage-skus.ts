@@ -1,5 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+function logSupabaseError(scope: string, error: unknown) {
+  const err = error as { message?: string; details?: string; hint?: string; code?: string }
+  console.error(
+    scope,
+    err.message,
+    err.details,
+    err.hint,
+    err.code ? `(code: ${err.code})` : ''
+  )
+}
+
 export async function uploadSkuImagen(
   sb: SupabaseClient,
   skuId: string,
@@ -15,7 +26,10 @@ export async function uploadSkuImagen(
       contentType: `image/${ext}`,
       upsert: true,
     })
-  if (uploadError) throw uploadError
+  if (uploadError) {
+    logSupabaseError('[uploadSkuImagen] storage bucket product-images', uploadError)
+    throw uploadError
+  }
 
   const { data: urlData } = sb.storage
     .from('product-images')
@@ -25,7 +39,10 @@ export async function uploadSkuImagen(
     .from('skus')
     .update({ imagen_url: urlData.publicUrl })
     .eq('id', skuId)
-  if (updateError) throw updateError
+  if (updateError) {
+    logSupabaseError('[uploadSkuImagen] table skus (imagen_url)', updateError)
+    throw updateError
+  }
 
   return urlData.publicUrl
 }

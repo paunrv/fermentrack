@@ -15,6 +15,7 @@ import {
   type Profile,
   type ProfileScope,
 } from '@/lib/supabase'
+import { resolveDistribuidorScopeClerkId } from '@/lib/supabase/distribuidor'
 import { createSupabaseBrowserClientWithToken } from '@/utils/supabase/browser'
 
 const STORAGE_KEY = 'proof_active_profile'
@@ -84,6 +85,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [profilesResolved, setProfilesResolved] = useState(false)
+  const [scopeClerkId, setScopeClerkId] = useState<string | null>(null)
 
   /** @returns true si la consulta a `profiles` terminó; false si falta JWT (reintentar). */
   const load = useCallback(async (): Promise<boolean> => {
@@ -194,11 +196,61 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    run()
+    void run()
     return () => {
       cancelled = true
     }
   }, [isLoaded, user?.id, load])
+
+  useEffect(() => {
+    if (isLoaded) return
+    const t = window.setTimeout(() => {
+      console.warn('[ProfileContext] Clerk no cargó a tiempo — desbloqueando UI')
+      setProfilesResolved(true)
+      setLoading(false)
+    }, 10_000)
+    return () => window.clearTimeout(t)
+  }, [isLoaded])
+
+  useEffect(() => {
+    if (!user || !activeProfile) {
+      setScopeClerkId(null)
+      return
+    }
+
+    if (activeProfile.profile_type_v2 !== 'distributor') {
+      setScopeClerkId(user.id)
+      return
+    }
+
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const token = await getToken({ template: 'supabase' })
+        if (!token) {
+          if (!cancelled) setScopeClerkId(user.id)
+          return
+        }
+        const sb = createSupabaseBrowserClientWithToken(token)
+        const orgClerkId = await resolveDistribuidorScopeClerkId(sb, user.id)
+        if (!cancelled) {
+          console.log('[ProfileContext] scope clerk_id', {
+            clerkUserId: user.id,
+            scopeClerkId: orgClerkId,
+          })
+          setScopeClerkId(orgClerkId)
+        }
+      } catch (err) {
+        console.warn('[ProfileContext] resolve scope clerk_id', err)
+        if (!cancelled) setScopeClerkId(user.id)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, activeProfile?.profile_type_v2, getToken, activeProfile])
 
   const switchProfile = useCallback(
     async (type: ExtraProfile) => {
@@ -218,9 +270,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   )
 
   const scope = useMemo((): ProfileScope | null => {
-    if (!user || !activeProfile) return null
-    return { clerk_id: user.id, profile_type_v2: activeProfile.profile_type_v2 }
-  }, [user?.id, activeProfile?.profile_type_v2])
+    if (!user || !activeProfile || !scopeClerkId) return null
+    return { clerk_id: scopeClerkId, profile_type_v2: activeProfile.profile_type_v2 }
+  }, [user, activeProfile, scopeClerkId])
 
   const contextValue = useMemo(
     () => ({

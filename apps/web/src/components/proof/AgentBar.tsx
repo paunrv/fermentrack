@@ -60,6 +60,7 @@ export function AgentBar({
   response,
   isLoading,
   quickActions = [],
+  queryFromUrl,
 }: {
   accent: string
   onSend: (message: string, conversation: Message[], image?: string | null) => void
@@ -67,12 +68,15 @@ export function AgentBar({
   /** Respuesta en curso (si no se pasa, se infiere de response) */
   isLoading?: boolean
   quickActions?: AgentQuickAction[]
+  /** Pregunta inyectada desde ?q= en la URL (layout → dashboard) */
+  queryFromUrl?: string | null
 }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [pendingImage, setPendingImage] = useState<string | null>(null)
   const pendingSendRef = useRef(0)
+  const consumedUrlQueryRef = useRef<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
   const chatScrollRef = useRef<HTMLDivElement>(null)
@@ -87,6 +91,24 @@ export function AgentBar({
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
     })
   }, [])
+
+  useEffect(() => {
+    const q = queryFromUrl?.trim()
+    if (!q || consumedUrlQueryRef.current === q) return
+    consumedUrlQueryRef.current = q
+    console.log('[agente] AgentBar query desde URL', q)
+
+    const userMsg: Message = {
+      id: newId(),
+      role: 'user',
+      content: q,
+      timestamp: new Date(),
+    }
+    setMessages([userMsg])
+    setIsTyping(true)
+    pendingSendRef.current += 1
+    onSend(q, [userMsg], null)
+  }, [queryFromUrl, onSend])
 
   useEffect(() => {
     if (pendingSendRef.current === 0) return
@@ -163,12 +185,13 @@ export function AgentBar({
 
   function submitText(text: string) {
     const trimmed = text.trim()
-    if (!trimmed || isTyping) return
+    if ((!trimmed && !pendingImage) || isTyping) return
 
+    const content = trimmed || '📎 imagen adjunta'
     const userMsg: Message = {
       id: newId(),
       role: 'user',
-      content: trimmed,
+      content,
       timestamp: new Date(),
     }
     const nextConversation = [...messages, userMsg]
@@ -177,7 +200,7 @@ export function AgentBar({
     setInputValue('')
     setIsTyping(true)
     pendingSendRef.current += 1
-    onSend(trimmed, nextConversation, pendingImage)
+    onSend(trimmed || 'agrega esta imagen al sku', nextConversation, pendingImage)
     setPendingImage(null)
     scrollToEnd()
   }
@@ -389,13 +412,14 @@ export function AgentBar({
             onClick={() => fileInputRef.current?.click()}
             disabled={isTyping}
             aria-label="Adjuntar imagen"
+            title={pendingImage ? 'Imagen lista — escribe para enviar' : 'Adjuntar imagen'}
             style={{
               width: 28,
               height: 28,
               borderRadius: 8,
               border: 'none',
               background: pendingImage ? accent : 'transparent',
-              color: pendingImage ? '#fff' : '#CCC',
+              color: pendingImage ? '#fff' : '#999',
               display: 'grid',
               placeItems: 'center',
               cursor: isTyping ? 'default' : 'pointer',
@@ -422,7 +446,7 @@ export function AgentBar({
           />
           <button
             type="submit"
-            disabled={!inputValue.trim() || isTyping}
+            disabled={(!inputValue.trim() && !pendingImage) || isTyping}
             aria-label="Enviar"
             className="proof-agent-send"
             style={{
@@ -434,9 +458,9 @@ export function AgentBar({
               color: '#fff',
               display: 'grid',
               placeItems: 'center',
-              cursor: inputValue.trim() && !isTyping ? 'pointer' : 'default',
+              cursor: (inputValue.trim() || pendingImage) && !isTyping ? 'pointer' : 'default',
               flexShrink: 0,
-              opacity: inputValue.trim() && !isTyping ? 1 : 0.4,
+              opacity: (inputValue.trim() || pendingImage) && !isTyping ? 1 : 0.4,
               transition: 'background 0.15s ease',
             }}
           >

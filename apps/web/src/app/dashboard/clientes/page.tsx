@@ -34,6 +34,7 @@ function ClientesDistribuidorPage() {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
+  const [direccion, setDireccion] = useState('')
   const [diasCredito, setDiasCredito] = useState(0)
   const [notas, setNotas] = useState('')
 
@@ -64,6 +65,7 @@ function ClientesDistribuidorPage() {
     setNombre('')
     setTelefono('')
     setEmail('')
+    setDireccion('')
     setDiasCredito(0)
     setNotas('')
   }
@@ -79,6 +81,7 @@ function ClientesDistribuidorPage() {
         nombre: nombre.trim(),
         telefono: telefono.trim() || null,
         email: email.trim() || null,
+        direccion: direccion.trim() || null,
         dias_credito: diasCredito,
         notas: notas.trim() || null,
         profile_type_v2: scope.profile_type_v2,
@@ -190,6 +193,14 @@ function ClientesDistribuidorPage() {
                 style={inputStyle}
               />
             </Field>
+            <Field label="Dirección" span={2}>
+              <textarea
+                value={direccion}
+                onChange={e => setDireccion(e.target.value)}
+                placeholder="Calle, colonia, ciudad"
+                style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }}
+              />
+            </Field>
             <Field label="Días de crédito">
               <select
                 value={diasCredito}
@@ -288,7 +299,23 @@ function ClientesDistribuidorPage() {
                 color: 'inherit',
               }}
             >
-              <span style={{ fontWeight: 600, color: 'var(--fg-0)', fontSize: 14 }}>{c.nombre}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600, color: 'var(--fg-0)', fontSize: 14 }}>{c.nombre}</div>
+                {c.direccion && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--fg-3)',
+                      marginTop: 2,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {c.direccion}
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: 13, color: 'var(--fg-2)' }}>{c.telefono || '—'}</span>
               <Badge muted>{creditoLabel(c.dias_credito)}</Badge>
               <span className="mono" style={{ fontWeight: 600, fontSize: 13, color: 'var(--fg-0)' }}>

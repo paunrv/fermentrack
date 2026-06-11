@@ -16,6 +16,7 @@ import {
   fetchOrdenesCompraDistribuidorPendientes,
   fetchPedidos,
   fetchSkus,
+  resolveDistribuidorScopeClerkId,
 } from '@/lib/supabase/distribuidor'
 import type { ProfileScope } from '@/lib/supabase'
 import type { CorridaRow, LoteRow, ViajeRow } from '@/lib/proof/destilador-types'
@@ -100,8 +101,9 @@ export async function loadDistributorAgentContext(
   clerkId: string,
   hints?: AgentContextHints
 ): Promise<DistributorAgentContext & Record<string, unknown>> {
+  const scopeClerkId = await resolveDistribuidorScopeClerkId(sb, clerkId)
   const scope: ProfileScope = {
-    clerk_id: clerkId,
+    clerk_id: scopeClerkId,
     profile_type_v2: 'distributor',
   }
   const [skus, pedidos, cuentasPorCobrar, ordenesCompra, cuentasPorPagar] = await Promise.all([
@@ -111,6 +113,11 @@ export async function loadDistributorAgentContext(
     fetchOrdenesCompraDistribuidorPendientes(sb, scope).catch(() => []),
     fetchCuentasPorPagarActivas(sb, scope).catch(() => []),
   ])
+  console.log('[agente] distributor context', {
+    clerkUserId: clerkId,
+    scopeClerkId,
+    skusEnContexto: skus.length,
+  })
   const datos = buildDistributorAgentContext(
     skus,
     pedidos,
@@ -123,9 +130,11 @@ export async function loadDistributorAgentContext(
   })
   return {
     ...datos,
-    clerk_id: clerkId,
+    clerk_id: scopeClerkId,
+    clerk_user_id: clerkId,
     profile_type: 'distributor',
     ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
+    ...(hints?.image ? { image: hints.image } : {}),
   }
 }
 

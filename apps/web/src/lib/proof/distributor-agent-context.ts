@@ -12,6 +12,8 @@ export type DistributorAgentContext = {
   perfil: 'distribuidor'
   query?: string
   selectedSkuId?: string | null
+  /** Imagen adjunta en base64 (para SET_SKU_IMAGE) */
+  image?: string | null
   resumen: {
     skusTotal: number
     stockDisponibleTotal: number
@@ -67,7 +69,8 @@ export type DistributorAgentContext = {
     estado: string
     total: number
     fecha_entrega: string | null
-    cliente_id: string
+    clients_id: string
+    cliente_id: string | null
     etiqueta_nombre: string | null
     notas: string | null
   }[]
@@ -189,6 +192,7 @@ export function buildDistributorAgentContext(
       estado: p.estado,
       total: Number(p.total),
       fecha_entrega: p.fecha_entrega,
+      clients_id: p.clients_id,
       cliente_id: p.cliente_id,
       etiqueta_nombre: p.etiqueta_nombre,
       notas: p.notas ?? null,

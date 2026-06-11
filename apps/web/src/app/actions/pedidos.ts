@@ -31,7 +31,7 @@ export async function createPedidoDraftAction(input: {
 
   return createPedidoBorrador(sb, {
     numero,
-    cliente_id: input.cliente_id,
+    clients_id: input.cliente_id,
     etiqueta_id: input.etiqueta_id,
     etiqueta_nombre: input.etiqueta_nombre.trim(),
     fecha_entrega: input.fecha_entrega,

@@ -81,6 +81,7 @@ export interface Cliente {
   nombre: string
   telefono?: string | null
   email?: string | null
+  direccion?: string | null
   diasCredito: number
   notas?: string | null
   activo?: boolean

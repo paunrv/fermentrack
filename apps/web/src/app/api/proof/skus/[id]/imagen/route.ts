@@ -38,8 +38,9 @@ export async function POST(
     const imagenUrl = await uploadSkuImagen(sb, skuId, base64, ext)
     return NextResponse.json({ imagenUrl })
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Error subiendo imagen'
-    console.error('[skus/imagen]', e)
+    const err = e as { message?: string; details?: string; hint?: string }
+    const message = err.message ?? 'Error subiendo imagen'
+    console.error('[skus/imagen]', err.message, err.details, err.hint)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

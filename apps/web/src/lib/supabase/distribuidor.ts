@@ -133,6 +133,7 @@ export interface ClienteRow {
   nombre: string
   telefono: string | null
   email: string | null
+  direccion: string | null
   dias_credito: number
   notas: string | null
   activo: boolean
@@ -412,6 +413,45 @@ export async function rpcProofNextCodigo(
 }
 
 // =============================================================================
+// Scope (patrón / trabajadores)
+// =============================================================================
+
+/** clerk_id de organización para datos distributor (patrón o staff → patron_clerk_id). */
+export async function resolveDistribuidorScopeClerkId(
+  sb: SupabaseClient,
+  clerkUserId: string
+): Promise<string> {
+  const { data, error } = await sb
+    .from('trabajadores')
+    .select('clerk_id')
+    .eq('clerk_user_id', clerkUserId)
+    .eq('profile_type_v2', 'distributor')
+    .eq('activo', true)
+    .maybeSingle()
+
+  if (error) {
+    console.warn('[distribuidor] resolveScopeClerkId', error.message)
+    return clerkUserId
+  }
+
+  const orgClerkId = data?.clerk_id ?? clerkUserId
+  if (orgClerkId !== clerkUserId) {
+    console.log('[distribuidor] scope clerk_id', { clerkUserId, orgClerkId })
+  }
+  return orgClerkId
+}
+
+export async function resolveDistribuidorScope(
+  sb: SupabaseClient,
+  clerkUserId: string
+): Promise<ProfileScope> {
+  return {
+    clerk_id: await resolveDistribuidorScopeClerkId(sb, clerkUserId),
+    profile_type_v2: 'distributor',
+  }
+}
+
+// =============================================================================
 // Queries
 // =============================================================================
 
@@ -446,8 +486,22 @@ export async function fetchSkus(
   let q = sb.from('skus').select('*').order('nombre', { ascending: true })
   q = scopeFilter(q, scope)
   const { data, error } = await q
-  throwIfError(error)
-  return (data || []) as SkuRow[]
+  if (error) {
+    console.error('[distribuidor] fetchSkus', {
+      clerk_id: scope?.clerk_id,
+      profile_type_v2: scope?.profile_type_v2,
+      error: error.message,
+    })
+    throwIfError(error)
+  }
+  const rows = (data || []) as SkuRow[]
+  if (scope && rows.length === 0) {
+    console.log('[distribuidor] fetchSkus 0 rows', {
+      clerk_id: scope.clerk_id,
+      profile_type_v2: scope.profile_type_v2,
+    })
+  }
+  return rows
 }
 
 export async function fetchSkuById(
@@ -460,6 +514,69 @@ export async function fetchSkuById(
   const { data, error } = await q.maybeSingle()
   throwIfError(error)
   return (data as SkuRow | null) ?? null
+}
+
+export async function createSkuCartera(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  input: SkuFormInput
+): Promise<SkuRow> {
+  const nombre = input.nombre.trim()
+  if (!nombre) throw new Error('Escribe el nombre del SKU')
+
+  const codigo = await rpcProofNextCodigo(
+    sb,
+    scope.clerk_id,
+    scope.profile_type_v2,
+    'sku'
+  )
+
+  const { data, error } = await sb
+    .from('skus')
+    .insert({
+      codigo,
+      nombre,
+      categoria_liquido: input.categoria_liquido ?? 'otro',
+      precio_venta: input.precio_venta ?? 0,
+      productor: input.productor?.trim() || '',
+      clerk_id: scope.clerk_id,
+      profile_type_v2: scope.profile_type_v2,
+    })
+    .select('*')
+    .single()
+
+  throwIfError(error)
+  return data as SkuRow
+}
+
+export async function updateSkuCartera(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  id: string,
+  input: Partial<SkuFormInput>
+): Promise<SkuRow> {
+  const patch: Record<string, unknown> = {}
+
+  if (input.nombre !== undefined) {
+    const nombre = input.nombre.trim()
+    if (!nombre) throw new Error('Escribe el nombre del SKU')
+    patch.nombre = nombre
+  }
+  if (input.categoria_liquido !== undefined) {
+    patch.categoria_liquido = input.categoria_liquido
+  }
+  if (input.precio_venta !== undefined) {
+    patch.precio_venta = input.precio_venta
+  }
+  if (input.productor !== undefined) {
+    patch.productor = input.productor?.trim() || ''
+  }
+
+  let q = sb.from('skus').update(patch).eq('id', id)
+  q = scopeFilter(q, scope)
+  const { data, error } = await q.select('*').single()
+  throwIfError(error)
+  return data as SkuRow
 }
 
 export async function fetchPedidos(
@@ -1102,8 +1219,16 @@ export interface ClienteFormInput {
   nombre: string
   telefono?: string | null
   email?: string | null
+  direccion?: string | null
   dias_credito: number
   notas?: string | null
+}
+
+export interface SkuFormInput {
+  nombre: string
+  categoria_liquido: CategoriaLiquido
+  precio_venta: number
+  productor?: string | null
 }
 
 export interface ClienteConSaldo extends ClienteRow {
@@ -1247,6 +1372,7 @@ export async function createClienteCartera(
     nombre,
     telefono: input.telefono?.trim() || null,
     email: input.email?.trim() || null,
+    direccion: input.direccion?.trim() || null,
     dias_credito: input.dias_credito,
     notas: input.notas?.trim() || null,
     activo: true,
@@ -1273,6 +1399,7 @@ export async function updateClienteCartera(
   }
   if (input.telefono !== undefined) patch.telefono = input.telefono?.trim() || null
   if (input.email !== undefined) patch.email = input.email?.trim() || null
+  if (input.direccion !== undefined) patch.direccion = input.direccion?.trim() || null
   if (input.dias_credito !== undefined) patch.dias_credito = input.dias_credito
   if (input.notas !== undefined) patch.notas = input.notas?.trim() || null
   if (input.activo !== undefined) patch.activo = input.activo

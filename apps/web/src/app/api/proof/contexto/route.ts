@@ -23,6 +23,7 @@ import {
 } from '@/lib/proof/prompts'
 import { createSseStream } from '@/lib/proof/sse'
 import { fetchProductosViaje, fetchViajes } from '@/lib/supabase/destilador'
+import { resolveDistribuidorScope } from '@/lib/supabase/distribuidor'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 
 export const runtime = 'nodejs'
@@ -102,13 +103,14 @@ export async function POST(req: NextRequest) {
       let refreshEntityId: string | null = null
       let refreshPedidoId: string | null = null
       let refreshSkuId: string | null = null
+      let openSkuImagePicker: string | null = null
       let actionMessage: string | null = null
       const conversation = body.hints?.conversation ?? []
 
-      const distributorScope = {
-        clerk_id: clerkId,
-        profile_type_v2: 'distributor' as const,
-      }
+      const distributorScope =
+        profileType === 'distributor'
+          ? await resolveDistribuidorScope(sb, clerkId)
+          : { clerk_id: clerkId, profile_type_v2: 'distributor' as const }
 
       if (queryText) {
         if (profileType === 'distiller') {
@@ -165,26 +167,45 @@ export async function POST(req: NextRequest) {
           const distCtx = await loadDistributorAgentContext(sb, clerkId, {
             ...body.hints,
             query: queryText,
+            image: body.hints?.image,
           })
           const action = parseIntent(queryText, profileType, distCtx, conversation)
+          console.log('[agente] intent resuelto', action ?? null, {
+            query: queryText,
+            clerkUserId: clerkId,
+            scopeClerkId: distributorScope.clerk_id,
+            skusEnContexto: distCtx.skus?.length ?? 0,
+          })
           if (action) {
             console.log('[proof/contexto] ejecutando acción distribuidor', action)
-            const result = await executeIntent(
-              sb,
-              clerkId,
-              profileType,
-              action,
-              distributorScope
-            )
-            actionMessage = result.message
-            refreshEntityId = result.entityId
-            if (result.entityKind === 'pedido') {
-              refreshPedidoId = result.entityId
-            }
-            if (result.refreshSkuId) {
-              refreshSkuId = result.refreshSkuId
-            } else if (result.entityKind === 'sku') {
-              refreshSkuId = result.entityId
+            try {
+              const result = await executeIntent(
+                sb,
+                clerkId,
+                profileType,
+                action,
+                distributorScope,
+                body.hints?.image
+              )
+              actionMessage = result.message
+              refreshEntityId = result.entityId
+              if (result.entityKind === 'pedido') {
+                refreshPedidoId = result.entityId
+              }
+              if (result.refreshSkuId) {
+                refreshSkuId = result.refreshSkuId
+              } else if (result.entityKind === 'sku') {
+                refreshSkuId = result.entityId
+              }
+              if (result.openImagePicker && refreshSkuId) {
+                openSkuImagePicker = refreshSkuId
+              }
+            } catch (e) {
+              console.error('[proof/contexto] acción distribuidor falló', action.type, e)
+              actionMessage =
+                e instanceof Error
+                  ? e.message
+                  : 'No se pudo completar la acción. Intenta de nuevo.'
             }
           }
           if (!actionMessage) {
@@ -222,6 +243,7 @@ export async function POST(req: NextRequest) {
               : '/dashboard/inventario',
           refreshLoteId: refreshSkuId ?? (refreshPedidoId ? null : refreshEntityId),
           refreshPedidoId,
+          openSkuImagePicker,
         })
         return
       }
@@ -342,6 +364,7 @@ Responde SOLO JSON válido:
         accionHref,
         refreshLoteId: refreshSkuId ?? refreshEntityId,
         refreshPedidoId,
+        openSkuImagePicker,
       })
     } catch (e) {
       console.error('[proof/contexto] error', e)
