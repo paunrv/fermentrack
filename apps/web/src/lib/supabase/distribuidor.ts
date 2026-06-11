@@ -14,6 +14,14 @@ export type CategoriaSku =
   | 'gin'
   | 'otro'
 
+export type CategoriaLiquido =
+  | 'cerveza'
+  | 'vino'
+  | 'mezcal'
+  | 'gin'
+  | 'destilado'
+  | 'otro'
+
 export type EstadoSku =
   | 'sano'
   | 'bajo'
@@ -71,6 +79,7 @@ export interface SkuRow {
   nombre: string
   productor: string
   categoria: CategoriaSku
+  categoria_liquido: CategoriaLiquido
   bodega: string
   botellas_por_caja: number
   stock_total: number
@@ -99,6 +108,41 @@ export interface SkuRow {
   updated_at: string
 }
 
+// =============================================================================
+// Trabajadores · clientes (cartera distribuidor)
+// =============================================================================
+
+export type RolTrabajador = 'patron' | 'manager' | 'bodega'
+
+export interface TrabajadorRow {
+  id: string
+  clerk_user_id: string
+  nombre: string
+  rol: RolTrabajador
+  clerk_id: string
+  profile_type_v2: string
+  patron_clerk_id: string
+  activo: boolean
+  created_at: string
+}
+
+export type Trabajador = TrabajadorRow
+
+export interface ClienteRow {
+  id: string
+  nombre: string
+  telefono: string | null
+  email: string | null
+  dias_credito: number
+  notas: string | null
+  activo: boolean
+  clerk_id: string
+  profile_type_v2: string
+  created_at: string
+}
+
+export type Cliente = ClienteRow
+
 export interface ClientEtiquetaRow {
   id: string
   client_id: string
@@ -111,7 +155,10 @@ export interface ClientEtiquetaRow {
 export interface PedidoRow {
   id: string
   numero: string
-  cliente_id: string
+  /** Legacy · tabla `clients` */
+  clients_id: string
+  /** Nueva cartera · tabla `clientes` (nullable hasta cutover) */
+  cliente_id: string | null
   etiqueta_id: string | null
   etiqueta_nombre: string | null
   fecha_creacion: string
@@ -121,6 +168,8 @@ export interface PedidoRow {
   total: number
   ticket_exportado: boolean
   notas: string | null
+  nota: string | null
+  imagen_origen_url: string | null
   anticipo: boolean
   clerk_id: string
   profile_type_v2: string
@@ -462,7 +511,7 @@ export async function createPedidoBorrador(
   sb: SupabaseClient,
   input: {
     numero: string
-    cliente_id: string
+    clients_id: string
     etiqueta_id: string
     etiqueta_nombre: string
     fecha_entrega: string
@@ -1015,6 +1064,274 @@ export interface PagoClienteRow {
   fecha_pago: string
   nota: string | null
   created_at: string
+}
+
+// =============================================================================
+// Pagos · cartera clientes (tablas pagos / pagos_pedidos)
+// =============================================================================
+
+export type EstadoPago = 'pendiente' | 'pagado' | 'vencido' | 'pago_parcial'
+
+export interface PagoRow {
+  id: string
+  cliente_id: string
+  monto: number
+  fecha_pago: string
+  fecha_vencimiento: string | null
+  estado: EstadoPago
+  referencia: string | null
+  banco_origen: string | null
+  banco_destino: string | null
+  imagen_comprobante_url: string | null
+  clerk_id: string
+  profile_type_v2: string
+  created_at: string
+}
+
+export interface PagoPedidoRow {
+  id: string
+  pago_id: string
+  pedido_id: string
+  monto_aplicado: number
+}
+
+export type Pago = PagoRow
+export type PagoPedido = PagoPedidoRow
+
+export interface ClienteFormInput {
+  nombre: string
+  telefono?: string | null
+  email?: string | null
+  dias_credito: number
+  notas?: string | null
+}
+
+export interface ClienteConSaldo extends ClienteRow {
+  saldo_pendiente: number
+  tiene_deuda_vencida: boolean
+}
+
+export interface PagoConPedido extends PagoRow {
+  pedidos_vinculados: Array<{
+    pedido_id: string
+    monto_aplicado: number
+    pedido_numero: string | null
+  }>
+}
+
+export interface ClienteDetalle extends ClienteRow {
+  saldo_pendiente: number
+  tiene_deuda_vencida: boolean
+  pedidos: PedidoRow[]
+  pagos: PagoConPedido[]
+}
+
+const ESTADOS_PAGO_PENDIENTE: EstadoPago[] = ['pendiente', 'vencido']
+
+function aggregateSaldoPendiente(
+  pagos: Pick<PagoRow, 'cliente_id' | 'monto' | 'estado'>[]
+): Map<string, { saldo: number; vencida: boolean }> {
+  const map = new Map<string, { saldo: number; vencida: boolean }>()
+  for (const p of pagos) {
+    if (!ESTADOS_PAGO_PENDIENTE.includes(p.estado)) continue
+    const prev = map.get(p.cliente_id) ?? { saldo: 0, vencida: false }
+    prev.saldo += Number(p.monto)
+    if (p.estado === 'vencido') prev.vencida = true
+    map.set(p.cliente_id, prev)
+  }
+  return map
+}
+
+export async function fetchClientesCartera(
+  sb: SupabaseClient,
+  scope: ProfileScope
+): Promise<ClienteConSaldo[]> {
+  let q = sb
+    .from('clientes')
+    .select('*')
+    .eq('activo', true)
+    .order('nombre', { ascending: true })
+  q = scopeFilter(q, scope)
+  const { data: clientes, error } = await q
+  throwIfError(error)
+  const rows = (clientes || []) as ClienteRow[]
+
+  let pq = sb
+    .from('pagos')
+    .select('cliente_id, monto, estado')
+    .in('estado', ESTADOS_PAGO_PENDIENTE)
+  pq = scopeFilter(pq, scope)
+  const { data: pagos, error: pagosErr } = await pq
+  throwIfError(pagosErr)
+
+  const saldos = aggregateSaldoPendiente((pagos || []) as PagoRow[])
+
+  return rows.map(c => {
+    const agg = saldos.get(c.id)
+    return {
+      ...c,
+      saldo_pendiente: agg?.saldo ?? 0,
+      tiene_deuda_vencida: agg?.vencida ?? false,
+    }
+  })
+}
+
+export async function fetchClienteCarteraById(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  clienteId: string
+): Promise<ClienteDetalle | null> {
+  let cq = sb.from('clientes').select('*').eq('id', clienteId)
+  cq = scopeFilter(cq, scope)
+  const { data: cliente, error } = await cq.maybeSingle()
+  throwIfError(error)
+  if (!cliente) return null
+
+  let pq = sb
+    .from('pedidos')
+    .select('*')
+    .eq('cliente_id', clienteId)
+    .order('fecha_creacion', { ascending: false })
+  pq = scopeFilter(pq, scope)
+  const { data: pedidos, error: pedidosErr } = await pq
+  throwIfError(pedidosErr)
+
+  let payQ = sb
+    .from('pagos')
+    .select(
+      '*, pagos_pedidos(pedido_id, monto_aplicado, pedidos(numero))'
+    )
+    .eq('cliente_id', clienteId)
+    .order('fecha_vencimiento', { ascending: false, nullsFirst: false })
+  payQ = scopeFilter(payQ, scope)
+  const { data: pagosRaw, error: pagosErr } = await payQ
+  throwIfError(pagosErr)
+
+  const pagos = ((pagosRaw || []) as Array<
+    PagoRow & {
+      pagos_pedidos?: Array<{
+        pedido_id: string
+        monto_aplicado: number
+        pedidos?: { numero: string } | null
+      }>
+    }
+  >).map(p => ({
+    ...p,
+    pedidos_vinculados: (p.pagos_pedidos || []).map(pp => ({
+      pedido_id: pp.pedido_id,
+      monto_aplicado: Number(pp.monto_aplicado),
+      pedido_numero: pp.pedidos?.numero ?? null,
+    })),
+  }))
+
+  const saldos = aggregateSaldoPendiente(pagos)
+
+  return {
+    ...(cliente as ClienteRow),
+    saldo_pendiente: saldos.get(clienteId)?.saldo ?? 0,
+    tiene_deuda_vencida: saldos.get(clienteId)?.vencida ?? false,
+    pedidos: (pedidos || []) as PedidoRow[],
+    pagos,
+  }
+}
+
+export async function createClienteCartera(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  input: ClienteFormInput
+): Promise<ClienteRow> {
+  const nombre = input.nombre.trim()
+  if (!nombre) throw new Error('El nombre es obligatorio')
+
+  const row = {
+    nombre,
+    telefono: input.telefono?.trim() || null,
+    email: input.email?.trim() || null,
+    dias_credito: input.dias_credito,
+    notas: input.notas?.trim() || null,
+    activo: true,
+    clerk_id: scope.clerk_id,
+    profile_type_v2: scope.profile_type_v2,
+  }
+
+  const { data, error } = await sb.from('clientes').insert(row).select('*').single()
+  throwIfError(error)
+  return data as ClienteRow
+}
+
+export async function updateClienteCartera(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  clienteId: string,
+  input: Partial<ClienteFormInput> & { activo?: boolean }
+): Promise<ClienteRow> {
+  const patch: Record<string, unknown> = {}
+  if (input.nombre !== undefined) {
+    const nombre = input.nombre.trim()
+    if (!nombre) throw new Error('El nombre es obligatorio')
+    patch.nombre = nombre
+  }
+  if (input.telefono !== undefined) patch.telefono = input.telefono?.trim() || null
+  if (input.email !== undefined) patch.email = input.email?.trim() || null
+  if (input.dias_credito !== undefined) patch.dias_credito = input.dias_credito
+  if (input.notas !== undefined) patch.notas = input.notas?.trim() || null
+  if (input.activo !== undefined) patch.activo = input.activo
+
+  let q = sb.from('clientes').update(patch).eq('id', clienteId)
+  q = scopeFilter(q, scope)
+  const { data, error } = await q.select('*').single()
+  throwIfError(error)
+  return data as ClienteRow
+}
+
+// =============================================================================
+// Cajas distribuidor · trazabilidad (cajas_distribuidor / eventos_caja)
+// =============================================================================
+
+export type EstadoCajaDistribuidor = 'en_bodega' | 'en_camino' | 'entregado'
+
+export type TipoEventoCaja = 'recepcion' | 'salida_bodega' | 'entrega'
+
+export interface CajaDistribuidor {
+  id: string
+  qr_code: string
+  sku_id: string
+  oc_id: string | null
+  estado: EstadoCajaDistribuidor
+  clerk_id: string
+  profile_type_v2: string
+  created_at: string
+}
+
+export interface EventoCaja {
+  id: string
+  caja_id: string
+  tipo: TipoEventoCaja
+  trabajador_id: string
+  pedido_id: string | null
+  created_at: string
+}
+
+// =============================================================================
+// Movimientos de stock (ledger inmutable)
+// =============================================================================
+
+export type TipoMovimientoStock = 'venta' | 'compra' | 'ajuste' | 'cancelacion'
+
+/** Entero con signo: positivo = entrada · negativo = salida */
+export type CantidadMovimientoStock = number
+
+export interface MovimientoStock {
+  id: string
+  sku_id: string
+  tipo: TipoMovimientoStock
+  cantidad: CantidadMovimientoStock
+  pedido_id: string | null
+  oc_id: string | null
+  trabajador_id: string | null
+  clerk_id: string
+  profile_type_v2: string
+  timestamp: string
 }
 
 export type PedidoConCxC = PedidoRow & {

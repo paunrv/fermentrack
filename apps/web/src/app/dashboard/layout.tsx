@@ -112,7 +112,8 @@ const NAV_OPERACION: NavItem[] = [
 ]
 
 const NAV_FINANZAS: NavItem[] = [
-  { href: '/dashboard/credito', label: 'Crédito', roles: ['distributor'], icon: ICONS.clientes },
+  { href: '/dashboard/clientes', label: 'Clientes', roles: ['distributor'], icon: ICONS.clientes },
+  { href: '/dashboard/credito', label: 'Crédito', roles: ['distributor'], icon: ICONS.movimientos },
   { href: '/dashboard/productores', label: 'Productores', roles: ['distributor'], icon: ICONS.catalogo },
 ]
 

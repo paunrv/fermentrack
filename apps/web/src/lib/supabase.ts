@@ -113,6 +113,17 @@ export {
   type CreditoResumen,
   type CuentaClienteWithClient,
   type AlertaCreditoCritica,
+  fetchClientesCartera,
+  fetchClienteCarteraById,
+  createClienteCartera,
+  updateClienteCartera,
+  type ClienteRow,
+  type ClienteFormInput,
+  type ClienteConSaldo,
+  type ClienteDetalle,
+  type PagoConPedido,
+  type TrabajadorRow,
+  type EstadoPago,
 } from './supabase/distribuidor'
 
 export type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'

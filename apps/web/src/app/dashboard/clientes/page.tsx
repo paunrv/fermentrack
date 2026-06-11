@@ -2,129 +2,87 @@
 
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useProfile } from '@/context/ProfileContext'
-import { useSupabase } from '@/hooks/useSupabase'
-import {
-  fetchClients,
-  createClient,
-  type Client,
-  type ClientType,
-  type PriceTier,
-} from '@/lib/supabase'
+import { crearCliente, obtenerClientes } from '@/app/actions/clientes'
+import type { ClienteConSaldo } from '@/lib/supabase/distribuidor'
+import { fmtMoney } from '@/lib/proof/format'
+import ClientesLegacyPage from './ClientesLegacyPage'
 
-const font = "'Space Grotesk', sans-serif"
+const DIAS_CREDITO_OPTIONS = [
+  { value: 0, label: 'Contado' },
+  { value: 15, label: '15 días' },
+  { value: 30, label: '30 días' },
+  { value: 60, label: '60 días' },
+  { value: 90, label: '90 días' },
+] as const
 
-const TYPE_COLORS: Record<ClientType, string> = {
-  restaurante: '#FAC775',
-  bar: '#9FE1CB',
-  tienda: '#F5C4B3',
-  'sub-distribuidor': '#B5D4F4',
+function creditoLabel(dias: number): string {
+  return dias === 0 ? 'Contado' : `${dias} días`
 }
 
-const TYPE_LABELS: Record<ClientType, string> = {
-  restaurante: 'Restaurante',
-  bar: 'Bar',
-  tienda: 'Tienda',
-  'sub-distribuidor': 'Sub-distribuidor',
-}
-
-const TIER_LABELS: Record<PriceTier, string> = {
-  regular: 'Regular',
-  mayoreo: 'Mayoreo',
-  especial: 'Especial',
-}
-
-const TIER_BG: Record<PriceTier, string> = {
-  regular: '#fff',
-  mayoreo: '#C0DD97',
-  especial: '#F4C0D1',
-}
-
-const label: React.CSSProperties = {
-  display: 'block',
-  fontSize: 10,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: '#111',
-  marginBottom: 6,
-}
-
-const input: React.CSSProperties = {
-  width: '100%',
-  background: '#fff',
-  border: '3px solid #111',
-  padding: '10px 12px',
-  fontSize: 13,
-  fontWeight: 500,
-  color: '#111',
-  outline: 'none',
-  fontFamily: font,
-}
-
-const CLIENT_TYPES: ClientType[] = ['restaurante', 'bar', 'tienda', 'sub-distribuidor']
-const PRICE_TIERS: PriceTier[] = ['regular', 'mayoreo', 'especial']
-
-export default function ClientesPage() {
+function ClientesDistribuidorPage() {
   const { scope } = useProfile()
-  const supabase = useSupabase()
-  const [clients, setClients] = useState<Client[]>([])
+  const [rows, setRows] = useState<ClienteConSaldo[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
 
-  const [name, setName] = useState('')
-  const [type, setType] = useState<ClientType>('restaurante')
-  const [contactName, setContactName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [nombre, setNombre] = useState('')
+  const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
-  const [address, setAddress] = useState('')
-  const [priceTier, setPriceTier] = useState<PriceTier>('regular')
-  const [notes, setNotes] = useState('')
+  const [diasCredito, setDiasCredito] = useState(0)
+  const [notas, setNotas] = useState('')
 
   async function load() {
-    const data = await fetchClients(supabase, scope ?? undefined)
-    setClients(data)
+    if (!scope) return
+    setError(null)
+    try {
+      const data = await obtenerClientes({ profile_type_v2: scope.profile_type_v2 })
+      setRows(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al cargar clientes')
+    }
   }
 
   useEffect(() => {
     if (!scope) return
-    load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+    let cancelled = false
+    setLoading(true)
+    load().finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [scope?.clerk_id, scope?.profile_type_v2])
 
   function resetForm() {
-    setName('')
-    setType('restaurante')
-    setContactName('')
-    setPhone('')
+    setNombre('')
+    setTelefono('')
     setEmail('')
-    setAddress('')
-    setPriceTier('regular')
-    setNotes('')
+    setDiasCredito(0)
+    setNotas('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim()) return
+    if (!nombre.trim() || !scope) return
 
     setSaving(true)
     setSaveError(null)
     try {
-      await createClient(supabase, {
-        name: name.trim(),
-        type,
-        contact_name: contactName.trim() || null,
-        phone: phone.trim() || null,
+      await crearCliente({
+        nombre: nombre.trim(),
+        telefono: telefono.trim() || null,
         email: email.trim() || null,
-        address: address.trim() || null,
-        price_tier: priceTier,
-        notes: notes.trim() || null,
-        ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
-          : {}),
-      } as Omit<Client, 'id' | 'created_at'> & { clerk_id?: string; profile_type_v2?: string })
+        dias_credito: diasCredito,
+        notas: notas.trim() || null,
+        profile_type_v2: scope.profile_type_v2,
+      })
       resetForm()
       setShowForm(false)
       await load()
@@ -136,77 +94,64 @@ export default function ClientesPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
-      <div
+    <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
+      <header
         style={{
-          marginBottom: 32,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'flex-end',
+          alignItems: 'flex-start',
+          marginBottom: 24,
           gap: 16,
           flexWrap: 'wrap',
         }}
       >
         <div>
-          <h1
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              letterSpacing: '-.04em',
-              color: '#111',
-              lineHeight: 1.1,
-              marginBottom: 6,
-            }}
-          >
+          <h1 style={{ margin: '0 0 6px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
             Clientes
           </h1>
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-            Cartera de restaurantes, bares, tiendas y sub-distribuidores
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
+            Cartera comercial · crédito y saldos pendientes
           </p>
         </div>
         <button
           type="button"
           onClick={() => setShowForm(v => !v)}
           style={{
-            padding: '12px 20px',
-            background: showForm ? '#fff' : '#111',
-            color: showForm ? '#111' : '#fff',
-            border: '3px solid #111',
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
+            padding: '10px 16px',
+            background: showForm ? 'transparent' : 'var(--gold)',
+            color: 'var(--ink)',
+            fontWeight: 600,
+            fontSize: 12,
+            border: showForm ? '1px solid var(--hairline)' : 'none',
+            borderRadius: 'var(--radius-sm)',
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            fontFamily: font,
           }}
         >
           {showForm ? 'Cancelar' : '+ Nuevo cliente'}
         </button>
-      </div>
+      </header>
 
       {showForm && (
         <form
           onSubmit={handleSubmit}
           style={{
-            border: '3px solid #111',
-            padding: 24,
-            marginBottom: 32,
-            background: TYPE_COLORS[type],
+            border: '1px solid var(--hairline)',
+            borderRadius: 'var(--radius-card)',
+            padding: 20,
+            marginBottom: 24,
+            background: 'var(--panel)',
           }}
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '.1em',
-              textTransform: 'uppercase',
-              marginBottom: 16,
-            }}
+          <h2
+            className="eyebrow"
+            style={{ margin: '0 0 16px', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.12em' }}
           >
             Nuevo cliente
-          </div>
+          </h2>
           {saveError && (
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#b00020', fontWeight: 600 }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
               {saveError}
             </p>
           )}
@@ -217,273 +162,221 @@ export default function ClientesPage() {
               gap: 12,
             }}
           >
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Nombre</label>
+            <Field label="Nombre" span={2}>
               <input
                 type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                style={input}
-                placeholder="Razón social o nombre comercial"
+                value={nombre}
+                onChange={e => setNombre(e.target.value)}
                 required
+                placeholder="Nombre comercial"
+                style={inputStyle}
               />
-            </div>
-            <div>
-              <label style={label}>Tipo</label>
-              <select
-                value={type}
-                onChange={e => setType(e.target.value as ClientType)}
-                style={input}
-                required
-              >
-                {CLIENT_TYPES.map(t => (
-                  <option key={t} value={t}>
-                    {TYPE_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={label}>Tier de precio</label>
-              <select
-                value={priceTier}
-                onChange={e => setPriceTier(e.target.value as PriceTier)}
-                style={input}
-                required
-              >
-                {PRICE_TIERS.map(t => (
-                  <option key={t} value={t}>
-                    {TIER_LABELS[t]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={label}>Nombre de contacto</label>
-              <input
-                type="text"
-                value={contactName}
-                onChange={e => setContactName(e.target.value)}
-                style={input}
-                placeholder="Persona responsable"
-              />
-            </div>
-            <div>
-              <label style={label}>Teléfono</label>
+            </Field>
+            <Field label="Teléfono">
               <input
                 type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                style={input}
+                value={telefono}
+                onChange={e => setTelefono(e.target.value)}
                 placeholder="55 1234 5678"
+                style={inputStyle}
               />
-            </div>
-            <div>
-              <label style={label}>Email</label>
+            </Field>
+            <Field label="Email">
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                style={input}
                 placeholder="contacto@cliente.com"
+                style={inputStyle}
               />
-            </div>
-            <div>
-              <label style={label}>Dirección</label>
-              <input
-                type="text"
-                value={address}
-                onChange={e => setAddress(e.target.value)}
-                style={input}
-                placeholder="Calle, colonia, ciudad"
-              />
-            </div>
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Notas</label>
+            </Field>
+            <Field label="Días de crédito">
+              <select
+                value={diasCredito}
+                onChange={e => setDiasCredito(Number(e.target.value))}
+                style={inputStyle}
+              >
+                {DIAS_CREDITO_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Notas" span={2}>
               <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                style={{ ...input, minHeight: 70, resize: 'vertical' }}
-                placeholder="Días de visita, preferencias, condiciones de pago..."
+                value={notas}
+                onChange={e => setNotas(e.target.value)}
+                placeholder="Condiciones, preferencias..."
+                style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }}
               />
-            </div>
+            </Field>
           </div>
           <button
             type="submit"
-            disabled={saving || !name.trim()}
+            disabled={saving || !nombre.trim()}
             style={{
               marginTop: 16,
-              padding: '12px 20px',
-              background: '#111',
-              color: '#fff',
-              border: '3px solid #111',
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: '.08em',
+              padding: '10px 16px',
+              background: 'var(--gold)',
+              color: 'var(--ink)',
+              fontWeight: 600,
+              fontSize: 12,
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              letterSpacing: '0.06em',
               textTransform: 'uppercase',
               cursor: saving ? 'wait' : 'pointer',
-              opacity: saving ? 0.5 : 1,
-              fontFamily: font,
+              opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? 'Guardando...' : 'Guardar cliente'}
+            {saving ? 'Guardando…' : 'Guardar cliente'}
           </button>
         </form>
       )}
 
-      <div>
-        {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
-        ) : clients.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>
-            Aún no hay clientes. Agrega el primero con el botón &quot;+ Nuevo cliente&quot;.
-          </p>
-        ) : (
+      {error && (
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--danger, #b00020)' }}>{error}</p>
+      )}
+
+      {loading ? (
+        <p style={{ color: 'var(--fg-3)' }}>Cargando…</p>
+      ) : rows.length === 0 ? (
+        <p style={{ color: 'var(--fg-2)' }}>
+          Sin clientes. Agrega el primero con &quot;+ Nuevo cliente&quot;.
+        </p>
+      ) : (
+        <div
+          style={{
+            border: '1px solid var(--hairline)',
+            borderRadius: 'var(--radius-card)',
+            overflow: 'hidden',
+          }}
+        >
           <div
+            className="mono"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: 16,
+              gridTemplateColumns: '1fr 120px 100px 120px 80px',
+              gap: 8,
+              padding: '10px 16px',
+              fontSize: 9,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--fg-3)',
+              borderBottom: '1px solid var(--hairline)',
             }}
           >
-            {clients.map(client => (
-              <div
-                key={client.id}
-                style={{
-                  border: '3px solid #111',
-                  padding: 20,
-                  background: TYPE_COLORS[client.type],
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 12,
-                  minHeight: 200,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                  }}
-                >
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 18,
-                        fontWeight: 800,
-                        lineHeight: 1.2,
-                        color: '#111',
-                      }}
-                    >
-                      {client.name}
-                    </div>
-                    {client.contact_name && (
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginTop: 4,
-                          color: '#333',
-                        }}
-                      >
-                        {client.contact_name}
-                      </div>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      fontWeight: 800,
-                      letterSpacing: '.1em',
-                      textTransform: 'uppercase',
-                      padding: '5px 8px',
-                      border: '3px solid #111',
-                      background: '#fff',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {TYPE_LABELS[client.type]}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {client.phone && (
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>
-                      <span style={{ opacity: 0.6 }}>TEL </span>
-                      {client.phone}
-                    </div>
-                  )}
-                  {client.email && (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#111',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span style={{ opacity: 0.6 }}>EMAIL </span>
-                      {client.email}
-                    </div>
-                  )}
-                  {client.address && (
-                    <div style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1.4 }}>
-                      {client.address}
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 'auto',
-                    paddingTop: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 8,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      letterSpacing: '.08em',
-                      textTransform: 'uppercase',
-                      padding: '6px 10px',
-                      border: '3px solid #111',
-                      background: TIER_BG[client.price_tier],
-                      color: '#111',
-                    }}
-                  >
-                    {TIER_LABELS[client.price_tier]}
-                  </span>
-                  {client.notes && (
-                    <span
-                      title={client.notes}
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: '#333',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        flex: 1,
-                        textAlign: 'right',
-                      }}
-                    >
-                      {client.notes}
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+            <span>Nombre</span>
+            <span>Teléfono</span>
+            <span>Crédito</span>
+            <span>Saldo</span>
+            <span />
           </div>
-        )}
-      </div>
+          {rows.map((c, i) => (
+            <Link
+              key={c.id}
+              href={`/dashboard/clientes/${c.id}`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 120px 100px 120px 80px',
+                gap: 8,
+                alignItems: 'center',
+                padding: '14px 16px',
+                borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              <span style={{ fontWeight: 600, color: 'var(--fg-0)', fontSize: 14 }}>{c.nombre}</span>
+              <span style={{ fontSize: 13, color: 'var(--fg-2)' }}>{c.telefono || '—'}</span>
+              <Badge muted>{creditoLabel(c.dias_credito)}</Badge>
+              <span className="mono" style={{ fontWeight: 600, fontSize: 13, color: 'var(--fg-0)' }}>
+                {c.saldo_pendiente > 0 ? fmtMoney(c.saldo_pendiente) : '—'}
+              </span>
+              <span style={{ justifySelf: 'end' }}>
+                {c.tiene_deuda_vencida && <Badge alert>Vencido</Badge>}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
+}
+
+export default function ClientesPage() {
+  const { activeProfile } = useProfile()
+  if (activeProfile?.profile_type_v2 === 'distributor') {
+    return <ClientesDistribuidorPage />
+  }
+  return <ClientesLegacyPage />
+}
+
+function Field({
+  label,
+  children,
+  span,
+}: {
+  label: string
+  children: React.ReactNode
+  span?: number
+}) {
+  return (
+    <label style={{ display: 'block', gridColumn: span ? `span ${span}` : undefined }}>
+      <span
+        className="eyebrow"
+        style={{
+          display: 'block',
+          marginBottom: 6,
+          fontSize: 10,
+          color: 'var(--fg-3)',
+          letterSpacing: '0.12em',
+        }}
+      >
+        {label}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+function Badge({
+  children,
+  muted,
+  alert,
+}: {
+  children: React.ReactNode
+  muted?: boolean
+  alert?: boolean
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+        padding: '4px 8px',
+        borderRadius: 'var(--radius-sm)',
+        background: alert ? 'rgba(180, 40, 40, 0.12)' : muted ? 'var(--panel-2, #f5f4f0)' : 'var(--gold)',
+        color: alert ? '#b42828' : 'var(--fg-1)',
+        border: alert ? '1px solid rgba(180, 40, 40, 0.25)' : '1px solid var(--hairline)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 12px',
+  fontSize: 13,
+  border: '1px solid var(--hairline)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--bg)',
+  color: 'var(--fg-0)',
+  outline: 'none',
 }

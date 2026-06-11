@@ -9,6 +9,14 @@ export type CategoriaSKU =
   | 'gin'
   | 'otro'
 
+export type CategoriaLiquido =
+  | 'cerveza'
+  | 'vino'
+  | 'mezcal'
+  | 'gin'
+  | 'destilado'
+  | 'otro'
+
 export type EstadoSKU =
   | 'sano'
   | 'bajo'
@@ -25,6 +33,7 @@ export interface SKU {
   nombre: string
   productor: string
   categoria: CategoriaSKU
+  categoriaLiquido: CategoriaLiquido
   bodega: string
   stockTotal: number
   stockReservado: number
@@ -53,11 +62,96 @@ export type EstadoPedido =
   | 'parcial'
   | 'cancelado'
 
+export type RolTrabajador = 'patron' | 'manager' | 'bodega'
+
+export interface Trabajador {
+  id: string
+  clerkUserId: string
+  nombre: string
+  rol: RolTrabajador
+  clerkId: string
+  profileTypeV2: string
+  patronClerkId: string
+  activo: boolean
+  createdAt: Date
+}
+
 export interface Cliente {
   id: string
   nombre: string
-  telefono?: string
-  email?: string
+  telefono?: string | null
+  email?: string | null
+  diasCredito: number
+  notas?: string | null
+  activo?: boolean
+  clerkId: string
+  profileTypeV2?: string
+  createdAt?: Date
+}
+
+export type EstadoPago = 'pendiente' | 'pagado' | 'vencido' | 'pago_parcial'
+
+export interface Pago {
+  id: string
+  clienteId: string
+  monto: number
+  fechaPago: Date
+  fechaVencimiento: Date | null
+  estado: EstadoPago
+  referencia?: string | null
+  bancoOrigen?: string | null
+  bancoDestino?: string | null
+  imagenComprobanteUrl?: string | null
+  clerkId: string
+  profileTypeV2: string
+  createdAt: Date
+}
+
+export interface PagoPedido {
+  id: string
+  pagoId: string
+  pedidoId: string
+  montoAplicado: number
+}
+
+export type EstadoCajaDistribuidor = 'en_bodega' | 'en_camino' | 'entregado'
+
+export interface CajaDistribuidor {
+  id: string
+  qrCode: string
+  skuId: string
+  ocId: string | null
+  estado: EstadoCajaDistribuidor
+  clerkId: string
+  profileTypeV2: string
+  createdAt: Date
+}
+
+export type TipoEventoCaja = 'recepcion' | 'salida_bodega' | 'entrega'
+
+export interface EventoCaja {
+  id: string
+  cajaId: string
+  tipo: TipoEventoCaja
+  trabajadorId: string
+  pedidoId: string | null
+  createdAt: Date
+}
+
+export type TipoMovimientoStock = 'venta' | 'compra' | 'ajuste' | 'cancelacion'
+
+export interface MovimientoStock {
+  id: string
+  skuId: string
+  tipo: TipoMovimientoStock
+  /** Entero con signo: positivo = entrada · negativo = salida */
+  cantidad: number
+  pedidoId: string | null
+  ocId: string | null
+  trabajadorId: string | null
+  clerkId: string
+  profileTypeV2: string
+  timestamp: Date
 }
 
 export interface ItemPedido {
@@ -72,6 +166,8 @@ export interface ItemPedido {
 export interface Pedido {
   id: string
   cliente: Cliente
+  /** Nueva cartera · tabla `clientes` (nullable hasta cutover) */
+  clienteId?: string | null
   items: ItemPedido[]
   fechaCreacion: Date
   fechaEntrega: Date
@@ -80,6 +176,8 @@ export interface Pedido {
   total: number
   ticketExportado: boolean
   notas?: string
+  nota?: string
+  imagenOrigenUrl?: string
 }
 
 export type NivelAlerta = 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6'
