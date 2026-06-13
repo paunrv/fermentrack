@@ -15,7 +15,7 @@ import {
   type ProductUnitType,
 } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
+
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
   cerveza: '#FAC775',
@@ -54,20 +54,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 function formatMoney(n: number, currency = 'MXN') {
@@ -149,7 +149,7 @@ export default function ProductosPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
       <div
         style={{
           marginBottom: 32,
@@ -166,7 +166,7 @@ export default function ProductosPage() {
               fontSize: 28,
               fontWeight: 800,
               letterSpacing: '-.04em',
-              color: '#111',
+              color: 'var(--fg-0)',
               lineHeight: 1.1,
               marginBottom: 6,
             }}
@@ -182,15 +182,15 @@ export default function ProductosPage() {
           onClick={() => setShowForm(v => !v)}
           style={{
             padding: '12px 20px',
-            background: showForm ? '#fff' : '#111',
-            color: showForm ? '#111' : '#fff',
-            border: '3px solid #111',
+            background: showForm ? '#fff' : 'var(--fg-0)',
+            color: showForm ? 'var(--fg-0)' : '#fff',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           {showForm ? 'Cancelar' : '+ Nuevo producto'}
@@ -201,7 +201,7 @@ export default function ProductosPage() {
         <form
           onSubmit={handleSubmit}
           style={{
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             padding: 24,
             marginBottom: 32,
             background: CATEGORY_COLORS[category],
@@ -380,16 +380,16 @@ export default function ProductosPage() {
             style={{
               marginTop: 16,
               padding: '12px 20px',
-              background: '#111',
+              background: 'var(--fg-0)',
               color: '#fff',
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               fontSize: 11,
               fontWeight: 800,
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               cursor: saving ? 'wait' : 'pointer',
               opacity: saving ? 0.5 : 1,
-              fontFamily: font,
+              fontFamily: 'var(--font-display)',
             }}
           >
             {saving ? 'Guardando...' : 'Guardar producto'}
@@ -417,7 +417,7 @@ export default function ProductosPage() {
                 key={product.id}
                 href={`/dashboard/productos/${product.id}`}
                 style={{
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   padding: 20,
                   background: CATEGORY_COLORS[product.category],
                   display: 'flex',
@@ -443,7 +443,7 @@ export default function ProductosPage() {
                         fontSize: 18,
                         fontWeight: 800,
                         lineHeight: 1.2,
-                        color: '#111',
+                        color: 'var(--fg-0)',
                       }}
                     >
                       {product.name}
@@ -468,7 +468,7 @@ export default function ProductosPage() {
                       letterSpacing: '.1em',
                       textTransform: 'uppercase',
                       padding: '5px 8px',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: '#fff',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -486,9 +486,9 @@ export default function ProductosPage() {
                       letterSpacing: '.1em',
                       textTransform: 'uppercase',
                       padding: '5px 8px',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: ORIGIN_BG[product.origin],
-                      color: '#111',
+                      color: 'var(--fg-0)',
                     }}
                   >
                     {ORIGIN_LABELS[product.origin]}
@@ -500,9 +500,9 @@ export default function ProductosPage() {
                       letterSpacing: '.1em',
                       textTransform: 'uppercase',
                       padding: '5px 8px',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: '#fff',
-                      color: '#111',
+                      color: 'var(--fg-0)',
                     }}
                   >
                     {UNIT_LABELS[product.unit_type]} · {product.bottles_per_case}/caja
@@ -512,7 +512,7 @@ export default function ProductosPage() {
                 <div
                   style={{
                     marginTop: 'auto',
-                    border: '3px solid #111',
+                    border: '1px solid var(--hairline)',
                     background: '#fff',
                     padding: 10,
                   }}
@@ -529,7 +529,7 @@ export default function ProductosPage() {
                   >
                     Precio regular
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#111', lineHeight: 1 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg-0)', lineHeight: 1 }}>
                     {formatMoney(Number(product.price_regular), product.currency)}
                   </div>
                   <div

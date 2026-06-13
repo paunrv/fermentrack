@@ -41,8 +41,8 @@ export function ProofTopbar({
         position: 'sticky',
         top: 0,
         zIndex: 20,
-        background: '#F8F7F4',
-        borderBottom: '0.5px solid #E8E6E0',
+        background: 'var(--ink)',
+        borderBottom: '0.5px solid var(--hairline)',
         borderTop: `2px solid ${accent}`,
         padding: '14px 24px',
         height: 56,
@@ -58,7 +58,7 @@ export function ProofTopbar({
             fontSize: 13,
             fontWeight: 500,
             letterSpacing: '0.15em',
-            color: '#1A1A1A',
+            color: 'var(--fg-0)',
           }}
         >
           PR<span style={{ color: accent }}>O</span>OF
@@ -148,7 +148,7 @@ export function CanvasDivider({ label }: { label: string }) {
         marginBottom: 8,
       }}
     >
-      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
       <div
         style={{
           fontSize: 9,
@@ -160,7 +160,7 @@ export function CanvasDivider({ label }: { label: string }) {
       >
         {label}
       </div>
-      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
     </div>
   )
 }

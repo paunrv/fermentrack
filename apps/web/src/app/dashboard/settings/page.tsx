@@ -15,7 +15,7 @@ import {
   type Profile,
 } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
+
 
 const PROFILE_META: Record<
   ExtraProfile,
@@ -33,20 +33,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 export default function SettingsPage() {
@@ -119,14 +119,14 @@ export default function SettingsPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div style={{ fontFamily: font, padding: 32 }}>
+      <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
         <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
       </div>
     )
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
       <div
         style={{
           marginBottom: 24,
@@ -143,7 +143,7 @@ export default function SettingsPage() {
               fontSize: 28,
               fontWeight: 800,
               letterSpacing: '-.04em',
-              color: '#111',
+              color: 'var(--fg-0)',
               lineHeight: 1.1,
               marginBottom: 6,
             }}
@@ -160,14 +160,14 @@ export default function SettingsPage() {
           style={{
             padding: '12px 20px',
             background: '#fff',
-            color: '#111',
-            border: '3px solid #111',
+            color: 'var(--fg-0)',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           Cambiar perfil
@@ -176,7 +176,7 @@ export default function SettingsPage() {
 
       <section
         style={{
-          border: '3px solid #111',
+          border: '1px solid var(--hairline)',
           padding: 24,
           marginBottom: 24,
           background: '#fff',
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                 <div
                   key={p.profile_type_v2}
                   style={{
-                    border: '3px solid #111',
+                    border: '1px solid var(--hairline)',
                     background: meta.color,
                     padding: 14,
                     display: 'flex',
@@ -238,7 +238,7 @@ export default function SettingsPage() {
                           fontWeight: 800,
                           letterSpacing: '.05em',
                           textTransform: 'uppercase',
-                          color: '#111',
+                          color: 'var(--fg-0)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -252,7 +252,7 @@ export default function SettingsPage() {
                           fontWeight: 700,
                           letterSpacing: '.08em',
                           textTransform: 'uppercase',
-                          color: '#111',
+                          color: 'var(--fg-0)',
                           opacity: 0.6,
                           marginTop: 2,
                         }}
@@ -270,8 +270,8 @@ export default function SettingsPage() {
                           letterSpacing: '.1em',
                           textTransform: 'uppercase',
                           padding: '4px 8px',
-                          border: '3px solid #111',
-                          background: '#111',
+                          border: '1px solid var(--hairline)',
+                          background: 'var(--fg-0)',
                           color: '#fff',
                         }}
                       >
@@ -286,9 +286,9 @@ export default function SettingsPage() {
                           letterSpacing: '.1em',
                           textTransform: 'uppercase',
                           padding: '4px 8px',
-                          border: '3px solid #111',
+                          border: '1px solid var(--hairline)',
                           background: '#C0DD97',
-                          color: '#111',
+                          color: 'var(--fg-0)',
                         }}
                       >
                         Super
@@ -301,16 +301,16 @@ export default function SettingsPage() {
                     disabled={isActive || isDeleting}
                     style={{
                       padding: '8px 12px',
-                      background: isActive ? 'transparent' : '#111',
+                      background: isActive ? 'transparent' : 'var(--fg-0)',
                       color: isActive ? '#888' : '#fff',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: '.08em',
                       textTransform: 'uppercase',
                       cursor: isActive || isDeleting ? 'not-allowed' : 'pointer',
                       opacity: isActive || isDeleting ? 0.4 : 1,
-                      fontFamily: font,
+                      fontFamily: 'var(--font-display)',
                       marginTop: 'auto',
                     }}
                   >
@@ -334,7 +334,7 @@ export default function SettingsPage() {
         >
           <section
             style={{
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               padding: 24,
               background: '#fff',
             }}
@@ -433,10 +433,10 @@ export default function SettingsPage() {
 
           <section
             style={{
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               padding: 24,
-              background: isSuperUser ? '#111' : '#fff',
-              color: isSuperUser ? '#fff' : '#111',
+              background: isSuperUser ? 'var(--fg-0)' : '#fff',
+              color: isSuperUser ? '#fff' : 'var(--fg-0)',
             }}
           >
             <div
@@ -481,7 +481,7 @@ export default function SettingsPage() {
                   width: 64,
                   height: 32,
                   background: isSuperUser ? '#C0DD97' : '#fff',
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   padding: 0,
                   cursor: isSuperEmail ? 'not-allowed' : 'pointer',
                   flexShrink: 0,
@@ -495,7 +495,7 @@ export default function SettingsPage() {
                     left: isSuperUser ? 32 : 0,
                     width: 26,
                     height: 26,
-                    background: '#111',
+                    background: 'var(--fg-0)',
                     transition: 'left .15s ease',
                   }}
                 />
@@ -516,16 +516,16 @@ export default function SettingsPage() {
               disabled={saving}
               style={{
                 padding: '14px 24px',
-                background: '#111',
+                background: 'var(--fg-0)',
                 color: '#fff',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
                 cursor: saving ? 'wait' : 'pointer',
                 opacity: saving ? 0.5 : 1,
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
               }}
             >
               {saving ? 'Guardando...' : 'Guardar cambios'}

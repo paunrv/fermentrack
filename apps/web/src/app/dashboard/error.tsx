@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { CANVAS_BG } from '@/lib/proof/profile-theme'
 
 export default function DashboardError({
   error,
@@ -18,7 +17,7 @@ export default function DashboardError({
     <div
       style={{
         minHeight: '100vh',
-        background: CANVAS_BG,
+        background: 'var(--ink)',
         display: 'grid',
         placeItems: 'center',
         padding: 24,
@@ -28,27 +27,28 @@ export default function DashboardError({
         style={{
           maxWidth: 420,
           textAlign: 'center',
-          background: '#fff',
-          border: '0.5px solid #E8E6E0',
-          borderRadius: 12,
+          background: 'var(--ink)',
+          border: '1px solid var(--hairline)',
+          borderRadius: 'var(--radius-md)',
           padding: '32px 24px',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <p style={{ margin: '0 0 8px', fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>
+        <p style={{ margin: '0 0 8px', fontSize: 14, color: 'var(--fg-0)', fontWeight: 500 }}>
           Algo falló al cargar el dashboard
         </p>
-        <p style={{ margin: '0 0 20px', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+        <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
           {error.message || 'Error desconocido'}
         </p>
         <button
           type="button"
           onClick={() => reset()}
           style={{
-            fontSize: 12,
-            padding: '10px 18px',
-            borderRadius: 8,
-            border: '0.5px solid #E0DDD6',
-            background: '#1A1A1A',
+            fontSize: 14,
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: 'none',
+            background: 'var(--fg-0)',
             color: '#fff',
             cursor: 'pointer',
           }}

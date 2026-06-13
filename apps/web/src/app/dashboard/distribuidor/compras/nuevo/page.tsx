@@ -13,10 +13,10 @@ import { createOrdenCompraDistribuidor } from '@/lib/supabase/distribuidor'
 const field: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '0.5px solid #E8E6E0',
+  border: '0.5px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
-  color: '#1A1A1A',
+  color: 'var(--fg-0)',
   outline: 'none',
   borderRadius: 8,
 }
@@ -123,7 +123,7 @@ export default function NuevaOrdenCompraPage() {
         ← Inicio
       </Link>
 
-      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 500, color: '#1A1A1A' }}>
+      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 500, color: 'var(--fg-0)' }}>
         Nueva orden de compra
       </h1>
       <p style={{ margin: '0 0 28px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
@@ -163,7 +163,7 @@ export default function NuevaOrdenCompraPage() {
               fontSize: 11,
               padding: '6px 10px',
               borderRadius: 6,
-              border: '0.5px solid #E8E6E0',
+              border: '0.5px solid var(--hairline)',
               background: '#fff',
               cursor: 'pointer',
               color: '#666',
@@ -183,9 +183,9 @@ export default function NuevaOrdenCompraPage() {
               style={{
                 padding: 16,
                 marginBottom: 12,
-                border: '0.5px solid #E8E6E0',
+                border: '0.5px solid var(--hairline)',
                 borderRadius: 10,
-                background: '#FAFAF8',
+                background: 'var(--panel-2)',
               }}
             >
               <div style={{ marginBottom: 10 }}>
@@ -258,14 +258,14 @@ export default function NuevaOrdenCompraPage() {
             marginTop: 20,
             padding: '14px 16px',
             borderRadius: 10,
-            background: '#F4F2EE',
+            background: 'var(--panel-2)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
           <span style={{ fontSize: 12, color: '#666' }}>Total de la orden</span>
-          <span style={{ fontSize: 16, fontWeight: 600, color: '#1A1A1A' }}>{fmtMoney(total)}</span>
+          <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg-0)' }}>{fmtMoney(total)}</span>
         </div>
 
         {error && (
@@ -281,7 +281,7 @@ export default function NuevaOrdenCompraPage() {
             padding: '14px 16px',
             borderRadius: 10,
             border: 'none',
-            background: '#1A1A1A',
+            background: 'var(--fg-0)',
             color: '#fff',
             fontSize: 14,
             fontWeight: 600,

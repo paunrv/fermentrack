@@ -16,7 +16,7 @@ import {
 } from '@/lib/supabase'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
-const font = "'Space Grotesk', sans-serif"
+
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -24,20 +24,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 export default function MuestrasPage() {
@@ -146,7 +146,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
   return (
     <div
       style={{
-        fontFamily: font,
+        fontFamily: 'var(--font-display)',
         background: '#fff',
         minHeight: '100vh',
         padding: 32,
@@ -158,7 +158,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
             fontSize: 28,
             fontWeight: 800,
             letterSpacing: '-.04em',
-            color: '#111',
+            color: 'var(--fg-0)',
             lineHeight: 1.1,
             marginBottom: 6,
           }}
@@ -171,14 +171,14 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 32 }}>
-        <div style={{ border: '3px solid #111', padding: 24, background: COLORS[1] }}>
+        <div style={{ border: '1px solid var(--hairline)', padding: 24, background: COLORS[1] }}>
           <div
             style={{
               fontSize: 11,
               fontWeight: 800,
               letterSpacing: '.1em',
               textTransform: 'uppercase',
-              color: '#111',
+              color: 'var(--fg-0)',
               marginBottom: 16,
             }}
           >
@@ -256,16 +256,16 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
             style={{
               width: '100%',
               padding: '14px 16px',
-              background: '#111',
+              background: 'var(--fg-0)',
               color: '#fff',
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               fontSize: 11,
               fontWeight: 800,
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               cursor: analyzing ? 'wait' : 'pointer',
               opacity: analyzing ? 0.5 : 1,
-              fontFamily: font,
+              fontFamily: 'var(--font-display)',
             }}
           >
             {analyzing ? 'Analizando...' : '✦ Analizar con IA y guardar'}
@@ -287,7 +287,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
             }}
             onClick={() => fileRef.current?.click()}
             style={{
-              border: '3px dashed #111',
+              border: '1px dashed var(--line)',
               padding: 32,
               textAlign: 'center',
               cursor: 'pointer',
@@ -300,12 +300,12 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
               justifyContent: 'center',
             }}
           >
-            <div style={{ fontSize: 32, marginBottom: 12, color: '#111' }}>◎</div>
+            <div style={{ fontSize: 32, marginBottom: 12, color: 'var(--fg-0)' }}>◎</div>
             <div
               style={{
                 fontSize: 13,
                 fontWeight: 800,
-                color: '#111',
+                color: 'var(--fg-0)',
                 marginBottom: 4,
                 letterSpacing: '-.02em',
               }}
@@ -335,7 +335,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                 width: '100%',
                 maxHeight: 160,
                 objectFit: 'cover',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
               }}
             />
           )}
@@ -343,7 +343,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
           {analysis && (
             <div
               style={{
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 padding: 16,
                 background: COLORS[3],
               }}
@@ -354,13 +354,13 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                   fontWeight: 800,
                   letterSpacing: '.1em',
                   textTransform: 'uppercase',
-                  color: '#111',
+                  color: 'var(--fg-0)',
                   marginBottom: 8,
                 }}
               >
                 ✦ Análisis IA
               </div>
-              <p style={{ fontSize: 13, color: '#111', lineHeight: 1.6, fontWeight: 500, margin: 0 }}>
+              <p style={{ fontSize: 13, color: 'var(--fg-0)', lineHeight: 1.6, fontWeight: 500, margin: 0 }}>
                 {analysis}
               </p>
             </div>
@@ -368,14 +368,14 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
         </div>
       </div>
 
-      <div style={{ border: '3px solid #111', padding: 24, background: '#fff' }}>
+      <div style={{ border: '1px solid var(--hairline)', padding: 24, background: '#fff' }}>
         <div
           style={{
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.1em',
             textTransform: 'uppercase',
-            color: '#111',
+            color: 'var(--fg-0)',
             marginBottom: 16,
           }}
         >
@@ -391,7 +391,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                 display: 'flex',
                 gap: 16,
                 padding: '12px 0',
-                borderBottom: i < samples.length - 1 ? '3px solid #111' : 'none',
+                borderBottom: i < samples.length - 1 ? '1px solid var(--hairline)' : 'none',
               }}
             >
               <div
@@ -399,7 +399,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                   width: 8,
                   height: 8,
                   background: COLORS[i % COLORS.length],
-                  border: '2px solid #111',
+                  border: '1px solid var(--hairline)',
                   marginTop: 6,
                   flexShrink: 0,
                 }}
@@ -422,7 +422,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                 })}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#111', letterSpacing: '-.02em' }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--fg-0)', letterSpacing: '-.02em' }}>
                   {s.batch_id} — {s.type}
                 </div>
                 <div style={{ fontSize: 11, color: '#888', marginTop: 4, fontWeight: 500 }}>
@@ -438,7 +438,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                       width: 64,
                       height: 64,
                       objectFit: 'cover',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       marginTop: 8,
                     }}
                   />
@@ -447,9 +447,9 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
                   <p
                     style={{
                       fontSize: 11,
-                      color: '#111',
+                      color: 'var(--fg-0)',
                       background: COLORS[(i + 2) % COLORS.length],
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       padding: 10,
                       marginTop: 8,
                       lineHeight: 1.5,

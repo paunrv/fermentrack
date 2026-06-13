@@ -23,7 +23,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
         textAlign: 'left',
         padding: 14,
         borderRadius: 12,
-        border: selected ? `1.5px solid ${accent}` : '0.5px solid #E8E6E0',
+        border: selected ? `1.5px solid ${accent}` : '0.5px solid var(--hairline)',
         background: selected ? `${accent}08` : '#fff',
         cursor: 'pointer',
         minHeight: 140,
@@ -36,7 +36,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
         e.currentTarget.style.borderColor = accent
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.borderColor = selected ? accent : '#E8E6E0'
+        e.currentTarget.style.borderColor = selected ? accent : 'var(--hairline)'
       }}
     >
       <span
@@ -49,7 +49,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
       >
         {vencido ? 'VENCIDO' : 'AL DÍA'}
       </span>
-      <span style={{ fontSize: 14, fontWeight: 600, color: '#1A1A1A', lineHeight: 1.2 }}>
+      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)', lineHeight: 1.2 }}>
         {deuda.cliente_nombre}
       </span>
       <span style={{ fontSize: 11, color: '#666', lineHeight: 1.45, flex: 1 }}>
@@ -65,7 +65,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
             fontSize: 12,
             fontWeight: 600,
             fontFamily: MONO,
-            color: vencido ? '#E24B4A' : '#1A1A1A',
+            color: vencido ? '#E24B4A' : 'var(--fg-0)',
           }}
         >
           {fmtMoney(deuda.saldo_pendiente)}

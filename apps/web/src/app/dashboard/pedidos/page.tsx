@@ -8,6 +8,8 @@ import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchPedidos, type PedidoRow, type EstadoPedido } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
+import { useIsMobile } from '@/hooks/useBreakpoint'
+import { pagePadding } from '@/lib/ui/page-shell'
 
 const ESTADO_LABEL: Record<EstadoPedido, string> = {
   borrador: 'Borrador',
@@ -22,6 +24,7 @@ const ESTADO_LABEL: Record<EstadoPedido, string> = {
 export default function PedidosPage() {
   const { scope } = useProfile()
   const supabase = useSupabase()
+  const isMobile = useIsMobile()
   const [rows, setRows] = useState<PedidoRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -42,7 +45,7 @@ export default function PedidosPage() {
   }, [scope?.clerk_id, scope?.profile_type_v2])
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 900, margin: '0 auto' }}>
+    <div style={pagePadding({ isMobile })}>
       <header
         style={{
           display: 'flex',
@@ -54,7 +57,7 @@ export default function PedidosPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: '0 0 6px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
+          <h1 style={{ margin: '0 0 6px', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: 'var(--fg-0)' }}>
             Pedidos
           </h1>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
@@ -96,26 +99,37 @@ export default function PedidosPage() {
               href={`/dashboard/pedidos/${p.id}`}
               style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: isMobile ? 'stretch' : 'center',
+                gap: isMobile ? 8 : 0,
                 padding: '14px 16px',
                 borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
                 textDecoration: 'none',
                 color: 'inherit',
               }}
             >
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <span className="mono" style={{ fontSize: 12, color: 'var(--gold)' }}>
                   {p.numero}
                 </span>
-                <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4, lineHeight: 1.45 }}>
                   {(p as PedidoRow & { clients?: { name: string } }).clients?.name ?? 'Cliente'}
                   {p.etiqueta_nombre ? ` · ${p.etiqueta_nombre}` : ''}
-                  {' · '}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 4 }}>
                   Entrega {p.fecha_entrega} · {ESTADO_LABEL[p.estado]}
                 </div>
               </div>
-              <span className="mono" style={{ fontWeight: 600, color: 'var(--fg-0)' }}>
+              <span
+                className="mono"
+                style={{
+                  fontWeight: 600,
+                  fontSize: isMobile ? 16 : 13,
+                  color: 'var(--fg-0)',
+                  alignSelf: isMobile ? 'flex-start' : undefined,
+                }}
+              >
                 {fmtMoney(Number(p.total))}
               </span>
             </Link>

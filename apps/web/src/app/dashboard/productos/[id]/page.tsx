@@ -20,7 +20,7 @@ import {
   type ProductCategory,
 } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
+
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
   cerveza: '#FAC775',
@@ -65,20 +65,20 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 function formatMoney(n: number, currency = 'MXN') {
@@ -302,7 +302,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ fontFamily: font, padding: 32 }}>
+      <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
         <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
       </div>
     )
@@ -310,7 +310,7 @@ export default function ProductDetailPage() {
 
   if (notFound || !product) {
     return (
-      <div style={{ fontFamily: font, padding: 32 }}>
+      <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
         <Link
           href="/dashboard/productos"
           style={{
@@ -321,9 +321,9 @@ export default function ProductDetailPage() {
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
-            color: '#111',
+            color: 'var(--fg-0)',
             textDecoration: 'none',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             padding: '8px 12px',
             marginBottom: 16,
           }}
@@ -331,7 +331,7 @@ export default function ProductDetailPage() {
           {BackIcon}
           <span>Mis etiquetas</span>
         </Link>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: '#111' }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg-0)' }}>
           Producto no encontrado
         </h1>
       </div>
@@ -343,7 +343,7 @@ export default function ProductDetailPage() {
   return (
     <div
       style={{
-        fontFamily: font,
+        fontFamily: 'var(--font-display)',
         background: '#fff',
         minHeight: '100vh',
         paddingBottom: 96,
@@ -354,7 +354,7 @@ export default function ProductDetailPage() {
         style={{
           height: 180,
           background: categoryColor,
-          borderBottom: '3px solid #111',
+          borderBottom: '1px solid var(--hairline)',
           padding: '14px 20px',
           display: 'flex',
           flexDirection: 'column',
@@ -380,9 +380,9 @@ export default function ProductDetailPage() {
               fontWeight: 800,
               letterSpacing: '.08em',
               textTransform: 'uppercase',
-              color: '#111',
+              color: 'var(--fg-0)',
               textDecoration: 'none',
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               background: '#fff',
               padding: '6px 10px',
             }}
@@ -404,12 +404,12 @@ export default function ProductDetailPage() {
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               color: '#fff',
-              background: '#111',
-              border: '3px solid #111',
+              background: 'var(--fg-0)',
+              border: '1px solid var(--hairline)',
               padding: '6px 10px',
               cursor: uploading ? 'wait' : 'pointer',
               opacity: uploading ? 0.5 : 1,
-              fontFamily: font,
+              fontFamily: 'var(--font-display)',
             }}
           >
             {UploadIcon}
@@ -435,7 +435,7 @@ export default function ProductDetailPage() {
               width: 130,
               height: 130,
               flexShrink: 0,
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               background: '#fff',
               padding: 0,
               cursor: uploading ? 'wait' : 'pointer',
@@ -466,7 +466,7 @@ export default function ProductDetailPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 4,
-                  color: '#111',
+                  color: 'var(--fg-0)',
                 }}
               >
                 {CameraIcon}
@@ -498,8 +498,8 @@ export default function ProductDetailPage() {
         {/* Nombre + stock */}
         <section
           style={{
-            border: '3px solid #111',
-            background: '#111',
+            border: '1px solid var(--hairline)',
+            background: 'var(--fg-0)',
             color: '#fff',
             padding: 20,
             display: 'flex',
@@ -621,7 +621,7 @@ export default function ProductDetailPage() {
                 marginTop: 12,
                 height: 12,
                 border: '3px solid #fff',
-                background: '#111',
+                background: 'var(--fg-0)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -761,7 +761,7 @@ export default function ProductDetailPage() {
                   <div
                     key={label}
                     style={{
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       padding: 12,
                       background: bg,
                     }}
@@ -772,14 +772,14 @@ export default function ProductDetailPage() {
                         fontWeight: 800,
                         letterSpacing: '.1em',
                         textTransform: 'uppercase',
-                        color: '#111',
+                        color: 'var(--fg-0)',
                         opacity: 0.7,
                         marginBottom: 4,
                       }}
                     >
                       {label}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: '#111' }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--fg-0)' }}>
                       {formatMoney(value, product.currency || 'MXN')}
                     </div>
                     <div
@@ -787,7 +787,7 @@ export default function ProductDetailPage() {
                         marginTop: 2,
                         fontSize: 10,
                         fontWeight: 700,
-                        color: '#111',
+                        color: 'var(--fg-0)',
                         opacity: 0.6,
                       }}
                     >
@@ -827,9 +827,9 @@ export default function ProductDetailPage() {
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
-                color: '#111',
+                color: 'var(--fg-0)',
                 textDecoration: 'none',
-                borderBottom: '2px solid #111',
+                borderBottom: '1px solid var(--hairline)',
               }}
             >
               Ver todos →
@@ -866,7 +866,7 @@ export default function ProductDetailPage() {
                   <div
                     key={m.id}
                     style={{
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: '#fff',
                       padding: 12,
                       display: 'flex',
@@ -881,9 +881,9 @@ export default function ProductDetailPage() {
                         letterSpacing: '.08em',
                         textTransform: 'uppercase',
                         padding: '6px 10px',
-                        border: '3px solid #111',
+                        border: '1px solid var(--hairline)',
                         background: TYPE_BADGE[type] || '#fff',
-                        color: '#111',
+                        color: 'var(--fg-0)',
                         flexShrink: 0,
                         minWidth: 90,
                         textAlign: 'center',
@@ -896,7 +896,7 @@ export default function ProductDetailPage() {
                         style={{
                           fontSize: 13,
                           fontWeight: 800,
-                          color: '#111',
+                          color: 'var(--fg-0)',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -960,7 +960,7 @@ export default function ProductDetailPage() {
           right: 0,
           padding: 16,
           background: '#fff',
-          borderTop: '3px solid #111',
+          borderTop: '1px solid var(--hairline)',
           display: 'flex',
           justifyContent: 'center',
           zIndex: 10,
@@ -971,15 +971,15 @@ export default function ProductDetailPage() {
           onClick={() => setShowModal(true)}
           style={{
             padding: '14px 28px',
-            background: '#111',
+            background: 'var(--fg-0)',
             color: '#fff',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             fontSize: 12,
             fontWeight: 800,
             letterSpacing: '.1em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
             minWidth: 280,
           }}
         >
@@ -1016,7 +1016,7 @@ function Collapsible({
   children: React.ReactNode
 }) {
   return (
-    <section style={{ border: '3px solid #111', overflow: 'hidden' }}>
+    <section style={{ border: '1px solid var(--hairline)', overflow: 'hidden' }}>
       <button
         type="button"
         onClick={onToggle}
@@ -1026,16 +1026,16 @@ function Collapsible({
           alignItems: 'center',
           width: '100%',
           padding: '14px 18px',
-          background: open ? '#111' : '#fff',
-          color: open ? '#fff' : '#111',
+          background: open ? 'var(--fg-0)' : '#fff',
+          color: open ? '#fff' : 'var(--fg-0)',
           border: 'none',
-          borderBottom: open ? '3px solid #111' : 'none',
+          borderBottom: open ? '1px solid var(--hairline)' : 'none',
           fontSize: 12,
           fontWeight: 800,
           letterSpacing: '.1em',
           textTransform: 'uppercase',
           cursor: 'pointer',
-          fontFamily: font,
+          fontFamily: 'var(--font-display)',
           transition: 'background .2s ease',
         }}
       >
@@ -1081,7 +1081,7 @@ function StatCard({
   return (
     <div
       style={{
-        border: '3px solid #111',
+        border: '1px solid var(--hairline)',
         padding: 12,
         background: '#fff',
       }}
@@ -1098,7 +1098,7 @@ function StatCard({
       >
         {label}
       </div>
-      <div style={{ fontSize: 18, fontWeight: 800, color: '#111' }}>{value}</div>
+      <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--fg-0)' }}>{value}</div>
       {hint && (
         <div
           style={{
@@ -1124,9 +1124,9 @@ function SubHeader({ text }: { text: string }) {
         fontWeight: 800,
         letterSpacing: '.12em',
         textTransform: 'uppercase',
-        color: '#111',
+        color: 'var(--fg-0)',
         opacity: 0.6,
-        borderBottom: '3px solid #111',
+        borderBottom: '1px solid var(--hairline)',
         paddingBottom: 6,
       }}
     >
@@ -1261,7 +1261,7 @@ function MovementModal({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 16,
-        fontFamily: font,
+        fontFamily: 'var(--font-display)',
       }}
       onClick={onClose}
     >
@@ -1269,7 +1269,7 @@ function MovementModal({
         onClick={e => e.stopPropagation()}
         style={{
           background: '#fff',
-          border: '3px solid #111',
+          border: '1px solid var(--hairline)',
           width: '100%',
           maxWidth: 560,
           maxHeight: '90vh',
@@ -1281,7 +1281,7 @@ function MovementModal({
         <div
           style={{
             padding: 20,
-            borderBottom: '3px solid #111',
+            borderBottom: '1px solid var(--hairline)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -1293,7 +1293,7 @@ function MovementModal({
               style={{
                 fontSize: 18,
                 fontWeight: 800,
-                color: '#111',
+                color: 'var(--fg-0)',
                 lineHeight: 1.1,
               }}
             >
@@ -1318,12 +1318,12 @@ function MovementModal({
             style={{
               width: 36,
               height: 36,
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               background: '#fff',
               cursor: 'pointer',
               fontSize: 18,
               fontWeight: 800,
-              fontFamily: font,
+              fontFamily: 'var(--font-display)',
             }}
             aria-label="Cerrar"
           >
@@ -1335,7 +1335,7 @@ function MovementModal({
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            borderBottom: '3px solid #111',
+            borderBottom: '1px solid var(--hairline)',
           }}
         >
           {SALIDA_TYPES.map(t => {
@@ -1351,15 +1351,15 @@ function MovementModal({
                 style={{
                   padding: '14px 8px',
                   border: 'none',
-                  borderRight: t === 'muestra' ? 'none' : '3px solid #111',
-                  background: active ? '#111' : TYPE_BADGE[t],
-                  color: active ? '#fff' : '#111',
+                  borderRight: t === 'muestra' ? 'none' : '1px solid var(--hairline)',
+                  background: active ? 'var(--fg-0)' : TYPE_BADGE[t],
+                  color: active ? '#fff' : 'var(--fg-0)',
                   fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.08em',
                   textTransform: 'uppercase',
                   cursor: 'pointer',
-                  fontFamily: font,
+                  fontFamily: 'var(--font-display)',
                 }}
               >
                 {TYPE_LABELS[t]}
@@ -1439,7 +1439,7 @@ function MovementModal({
                 <div
                   style={{
                     ...inputStyle,
-                    background: '#111',
+                    background: 'var(--fg-0)',
                     color: '#fff',
                     fontWeight: 800,
                     fontSize: 15,
@@ -1530,14 +1530,14 @@ function MovementModal({
               style={{
                 padding: '12px 20px',
                 background: '#fff',
-                color: '#111',
-                border: '3px solid #111',
+                color: 'var(--fg-0)',
+                border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
               }}
             >
               Cancelar
@@ -1548,16 +1548,16 @@ function MovementModal({
               style={{
                 flex: 1,
                 padding: '12px 20px',
-                background: '#111',
+                background: 'var(--fg-0)',
                 color: '#fff',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
                 cursor: saving ? 'wait' : 'pointer',
                 opacity: saving ? 0.5 : 1,
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
               }}
             >
               {saving

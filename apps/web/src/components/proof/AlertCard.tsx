@@ -11,7 +11,7 @@ const BORDER: Record<AlertaOperativa['color'], string> = {
 const BG: Record<AlertaOperativa['color'], string> = {
   rojo: 'var(--crit-soft)',
   amarillo: 'var(--warn-soft)',
-  pasivo: 'rgba(68, 68, 68, 0.12)',
+  pasivo: 'var(--panel-2)',
   verde: 'var(--ok-soft)',
 }
 

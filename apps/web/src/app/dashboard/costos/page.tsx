@@ -17,7 +17,7 @@ import {
 } from '@/lib/supabase'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
-const font = "'Space Grotesk', sans-serif"
+
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -25,20 +25,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 const CATEGORIES: { value: ProductionCostCategory; label: string }[] = [
@@ -139,14 +139,14 @@ export default function CostosPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
             fontSize: 28,
             fontWeight: 800,
             letterSpacing: '-.04em',
-            color: '#111',
+            color: 'var(--fg-0)',
             lineHeight: 1.1,
             marginBottom: 6,
           }}
@@ -161,7 +161,7 @@ export default function CostosPage() {
       <form
         onSubmit={handleSubmit}
         style={{
-          border: '3px solid #111',
+          border: '1px solid var(--hairline)',
           padding: 24,
           marginBottom: 24,
           background: COLORS[4],
@@ -256,16 +256,16 @@ export default function CostosPage() {
           style={{
             marginTop: 16,
             padding: '12px 20px',
-            background: '#111',
+            background: 'var(--fg-0)',
             color: '#fff',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: saving ? 'wait' : 'pointer',
             opacity: saving ? 0.5 : 1,
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           {saving ? 'Guardando...' : 'Agregar costo'}
@@ -296,7 +296,7 @@ export default function CostosPage() {
           <div
             key={i}
             style={{
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               padding: 16,
               background: card.bg,
             }}
@@ -325,10 +325,10 @@ export default function CostosPage() {
       ) : costs.length === 0 ? (
         <p style={{ fontSize: 13, color: '#888' }}>Sin costos registrados</p>
       ) : (
-        <div style={{ border: '3px solid #111', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--hairline)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#111', color: '#fff' }}>
+              <tr style={{ background: 'var(--fg-0)', color: '#fff' }}>
                 {['Fecha', 'Categoría', 'Descripción', 'Monto'].map(h => (
                   <th
                     key={h}
@@ -349,19 +349,19 @@ export default function CostosPage() {
             <tbody>
               {costs.map((row, i) => (
                 <tr key={row.id} style={{ background: i % 2 === 0 ? '#fff' : '#f9f9f9' }}>
-                  <td style={{ padding: '12px 14px', borderTop: '2px solid #111' }}>
+                  <td style={{ padding: '12px 14px', borderTop: '1px solid var(--hairline)' }}>
                     {new Date(row.cost_date).toLocaleDateString('es-MX')}
                   </td>
-                  <td style={{ padding: '12px 14px', borderTop: '2px solid #111', fontWeight: 700 }}>
+                  <td style={{ padding: '12px 14px', borderTop: '1px solid var(--hairline)', fontWeight: 700 }}>
                     {categoryLabel(row.category)}
                   </td>
-                  <td style={{ padding: '12px 14px', borderTop: '2px solid #111' }}>
+                  <td style={{ padding: '12px 14px', borderTop: '1px solid var(--hairline)' }}>
                     {row.description}
                   </td>
                   <td
                     style={{
                       padding: '12px 14px',
-                      borderTop: '2px solid #111',
+                      borderTop: '1px solid var(--hairline)',
                       fontWeight: 800,
                     }}
                   >

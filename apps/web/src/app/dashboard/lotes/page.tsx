@@ -8,7 +8,7 @@ import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, createBatch, logActivity, type Batch } from '@/lib/supabase'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
-const font = "'Space Grotesk', sans-serif"
+
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -16,20 +16,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 function AlertBox({ text }: { text: string }) {
@@ -42,11 +42,11 @@ function AlertBox({ text }: { text: string }) {
         marginTop: 12,
         padding: '10px 12px',
         background: '#FAC775',
-        border: '3px solid #111',
+        border: '1px solid var(--hairline)',
         fontSize: 11,
         fontWeight: 700,
-        color: '#111',
-        fontFamily: font,
+        color: 'var(--fg-0)',
+        fontFamily: 'var(--font-display)',
       }}
     >
       <span>⚠</span> {text}
@@ -115,7 +115,7 @@ export default function LotesPage() {
   return (
     <div
       style={{
-        fontFamily: font,
+        fontFamily: 'var(--font-display)',
         background: '#fff',
         minHeight: '100vh',
         padding: 32,
@@ -128,7 +128,7 @@ export default function LotesPage() {
               fontSize: 28,
               fontWeight: 800,
               letterSpacing: '-.04em',
-              color: '#111',
+              color: 'var(--fg-0)',
               lineHeight: 1.1,
               marginBottom: 6,
             }}
@@ -144,15 +144,15 @@ export default function LotesPage() {
           onClick={() => setShowForm(v => !v)}
           style={{
             padding: '12px 16px',
-            background: '#111',
+            background: 'var(--fg-0)',
             color: '#fff',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           + Nuevo lote
@@ -162,7 +162,7 @@ export default function LotesPage() {
       {showForm && (
         <div
           style={{
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             padding: 24,
             marginBottom: 24,
             background: '#9FE1CB',
@@ -174,7 +174,7 @@ export default function LotesPage() {
               fontWeight: 800,
               letterSpacing: '.1em',
               textTransform: 'uppercase',
-              color: '#111',
+              color: 'var(--fg-0)',
               marginBottom: 16,
             }}
           >
@@ -220,16 +220,16 @@ export default function LotesPage() {
               disabled={saving}
               style={{
                 padding: '12px 16px',
-                background: '#111',
+                background: 'var(--fg-0)',
                 color: '#fff',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
                 cursor: saving ? 'wait' : 'pointer',
                 opacity: saving ? 0.5 : 1,
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
               }}
             >
               {saving ? 'Guardando...' : '✓ Crear lote'}
@@ -240,14 +240,14 @@ export default function LotesPage() {
               style={{
                 padding: '12px 16px',
                 background: '#fff',
-                color: '#111',
-                border: '3px solid #111',
+                color: 'var(--fg-0)',
+                border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
                 cursor: 'pointer',
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
               }}
             >
               Cancelar
@@ -265,7 +265,7 @@ export default function LotesPage() {
             <div
               key={b.id}
               style={{
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 borderLeft: `12px solid ${accent}`,
                 padding: 20,
                 marginBottom: 8,
@@ -286,7 +286,7 @@ export default function LotesPage() {
                       fontFamily: 'monospace',
                       fontSize: 14,
                       fontWeight: 800,
-                      color: '#111',
+                      color: 'var(--fg-0)',
                     }}
                   >
                     {b.id}
@@ -297,13 +297,13 @@ export default function LotesPage() {
                       alignItems: 'center',
                       gap: 6,
                       padding: '4px 10px',
-                      border: '2px solid #111',
+                      border: '1px solid var(--hairline)',
                       fontSize: 10,
                       fontWeight: 800,
                       letterSpacing: '.06em',
                       textTransform: 'uppercase',
                       background: accent,
-                      color: '#111',
+                      color: 'var(--fg-0)',
                     }}
                   >
                     <span
@@ -353,18 +353,18 @@ export default function LotesPage() {
                   <div
                     key={p.label}
                     style={{
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       padding: 10,
                       background: '#fff',
                     }}
                   >
                     <div style={{ ...label, marginBottom: 4 }}>{p.label}</div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#111' }}>{p.value}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-0)' }}>{p.value}</div>
                   </div>
                 ))}
               </div>
 
-              <div style={{ border: '3px solid #111', height: 8, background: '#fff' }}>
+              <div style={{ border: '1px solid var(--hairline)', height: 8, background: '#fff' }}>
                 <div
                   style={{
                     height: '100%',
@@ -382,7 +382,7 @@ export default function LotesPage() {
                 }}
               >
                 <span style={{ ...label, marginBottom: 0 }}>Progreso</span>
-                <span style={{ fontSize: 10, fontWeight: 800, color: '#111' }}>{b.progress}%</span>
+                <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--fg-0)' }}>{b.progress}%</span>
               </div>
               {b.alert && <AlertBox text={b.alert} />}
             </div>

@@ -9,7 +9,7 @@ import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, type Batch } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
+
 
 const LABEL_W_MM = 101.6
 const LABEL_H_MM = 152.4
@@ -20,20 +20,20 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 function barcodeValue(batchId: string, boxNum: number): string {
@@ -243,14 +243,14 @@ export default function EtiquetasPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
             fontSize: 28,
             fontWeight: 800,
             letterSpacing: '-.04em',
-            color: '#111',
+            color: 'var(--fg-0)',
             lineHeight: 1.1,
             marginBottom: 6,
           }}
@@ -273,7 +273,7 @@ export default function EtiquetasPage() {
         <form
           onSubmit={e => e.preventDefault()}
           style={{
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             padding: 24,
             background: '#fff',
           }}
@@ -349,16 +349,16 @@ export default function EtiquetasPage() {
               marginTop: 20,
               width: '100%',
               padding: '14px 20px',
-              background: '#111',
+              background: 'var(--fg-0)',
               color: '#fff',
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               fontSize: 11,
               fontWeight: 800,
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               cursor: generating ? 'wait' : 'pointer',
               opacity: generating || !batchId ? 0.5 : 1,
-              fontFamily: font,
+              fontFamily: 'var(--font-display)',
             }}
           >
             {generating ? 'Generando PDF...' : 'Generar PDF'}
@@ -384,14 +384,14 @@ export default function EtiquetasPage() {
                 width: '100%',
                 maxWidth: 280,
                 aspectRatio: '4 / 6',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 background: '#fff',
                 padding: 18,
                 display: 'flex',
                 flexDirection: 'column',
                 boxSizing: 'border-box',
-                fontFamily: font,
-                color: '#111',
+                fontFamily: 'var(--font-display)',
+                color: 'var(--fg-0)',
               }}
             >
               <div

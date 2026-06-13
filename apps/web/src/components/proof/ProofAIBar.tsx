@@ -13,88 +13,65 @@ export function ProofAIBar({
   actionHref?: string
   onActionClick?: () => void
 }) {
+  const actionStyle: React.CSSProperties = {
+    flexShrink: 0,
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--gold)',
+    padding: '10px 14px',
+    minHeight: 44,
+    border: '1px solid var(--gold-soft)',
+    borderRadius: 'var(--radius-sm)',
+    background: 'transparent',
+    cursor: 'pointer',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
+
   return (
-    <div
-      style={{
-        position: 'fixed',
-        left: 84,
-        right: 0,
-        bottom: 0,
-        zIndex: 12,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '12px 28px',
-        background: 'var(--panel)',
-        borderTop: '1px solid var(--hairline)',
-      }}
-    >
-      <span
-        className="mono"
-        style={{
-          width: 28,
-          height: 28,
-          display: 'grid',
-          placeItems: 'center',
-          color: 'var(--gold)',
-          fontSize: 14,
-          fontWeight: 700,
-          flexShrink: 0,
-        }}
-      >
-        ✦
-      </span>
-      <p
-        style={{
-          flex: 1,
-          margin: 0,
-          fontSize: 13,
-          color: 'var(--fg-1)',
-          lineHeight: 1.45,
-          letterSpacing: '-0.005em',
-        }}
-      >
-        {message}
-      </p>
-      {onActionClick ? (
-        <button
-          type="button"
-          onClick={onActionClick}
+    <div className="proof-ai-bar">
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1, minWidth: 0 }}>
+        <span
+          className="mono"
           style={{
-            flexShrink: 0,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
+            width: 32,
+            height: 32,
+            display: 'grid',
+            placeItems: 'center',
             color: 'var(--gold)',
-            padding: '8px 12px',
-            border: '1px solid var(--gold-soft)',
-            borderRadius: 8,
-            background: 'transparent',
-            cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 700,
+            flexShrink: 0,
           }}
         >
-          {actionLabel} ↗
-        </button>
-      ) : (
-        <Link
-          href={actionHref || '/dashboard/agente'}
+          ✦
+        </span>
+        <p
           style={{
-            flexShrink: 0,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--gold)',
-            textDecoration: 'none',
-            padding: '8px 12px',
-            border: '1px solid var(--gold-soft)',
-            borderRadius: 8,
+            flex: 1,
+            margin: 0,
+            fontSize: 14,
+            color: 'var(--fg-1)',
+            lineHeight: 1.45,
+            letterSpacing: '-0.005em',
           }}
         >
-          {actionLabel} ↗
-        </Link>
-      )}
+          {message}
+        </p>
+      </div>
+      <div className="proof-ai-bar__actions">
+        {onActionClick ? (
+          <button type="button" onClick={onActionClick} style={actionStyle}>
+            {actionLabel} ↗
+          </button>
+        ) : (
+          <Link href={actionHref || '/dashboard/agente'} style={actionStyle}>
+            {actionLabel} ↗
+          </Link>
+        )}
+      </div>
     </div>
   )
 }

@@ -70,7 +70,7 @@ function IconCamera() {
       height="12"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#1A1A1A"
+      stroke="var(--fg-0)"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -207,8 +207,8 @@ export function SkuCard({
       aria-label={`${nombre}, ${proveedorNombre}${selected ? ', seleccionado' : ''}`}
       style={{
         width: '100%',
-        background: selected ? '#FAFAF8' : '#fff',
-        border: selected ? '0.5px solid #1A1A1A' : '0.5px solid #E8E6E0',
+        background: selected ? 'var(--panel-2)' : '#fff',
+        border: selected ? '0.5px solid var(--fg-0)' : '0.5px solid var(--hairline)',
         borderRadius: 12,
         padding: 0,
         cursor: 'pointer',
@@ -225,7 +225,7 @@ export function SkuCard({
       }}
       onMouseLeave={e => {
         if (selected) return
-        e.currentTarget.style.borderColor = '#E8E6E0'
+        e.currentTarget.style.borderColor = 'var(--hairline)'
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
@@ -249,7 +249,7 @@ export function SkuCard({
           position: 'relative',
           aspectRatio: '1',
           overflow: 'hidden',
-          background: hasImage ? '#E8E6E0' : '#F4F2EE',
+          background: hasImage ? 'var(--hairline)' : 'var(--panel-2)',
         }}
       >
         <span
@@ -284,7 +284,7 @@ export function SkuCard({
               height: 22,
               borderRadius: 6,
               background: 'rgba(255,255,255,0.85)',
-              border: '0.5px solid #E8E6E0',
+              border: '0.5px solid var(--hairline)',
               display: 'grid',
               placeItems: 'center',
               cursor: 'pointer',
@@ -354,7 +354,7 @@ export function SkuCard({
                 style={{
                   fontSize: 12,
                   fontWeight: 500,
-                  color: '#1A1A1A',
+                  color: 'var(--fg-0)',
                   lineHeight: 1.25,
                   overflow: 'hidden',
                   display: '-webkit-box',
@@ -455,7 +455,7 @@ export function SkuCard({
             style={{
               marginTop: 8,
               paddingTop: 8,
-              borderTop: '0.5px solid #EEECEA',
+              borderTop: '0.5px solid var(--hairline)',
             }}
           >
             {visibleItems.map((item, i) => (
@@ -481,7 +481,7 @@ export function SkuCard({
                   style={{
                     fontSize: 13,
                     fontFamily: MONO,
-                    color: item.tone ?? '#1A1A1A',
+                    color: item.tone ?? 'var(--fg-0)',
                     marginTop: 1,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',

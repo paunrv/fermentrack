@@ -17,11 +17,12 @@ import {
 } from '@/lib/proof/dashboard-routes'
 import type { DestMembresia } from '@/lib/proof/destilador-types'
 import {
-  CANVAS_BG,
   getProfileTheme,
   proofAccentCssVars,
 } from '@/lib/proof/profile-theme'
 import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
+import { useIsMobile } from '@/hooks/useBreakpoint'
+import { MobileBottomNav, MOBILE_BOTTOM_NAV_HEIGHT } from '@/components/proof/MobileBottomNav'
 
 type Role = ExtraProfile | 'producer'
 
@@ -210,6 +211,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const pageTitle = pageTitleFor(path)
+  const isMobile = useIsMobile()
+  const showSidebar = !isCanvas && !isMobile
+  const showMobileNav = isMobile
 
   const initials =
     user?.firstName && user?.lastName
@@ -282,12 +286,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: isCanvas || isCanvasStyle ? CANVAS_BG : 'var(--ink)',
-        color: isCanvasStyle ? '#1A1A1A' : 'var(--fg-1)',
+        background: 'var(--ink)',
+        color: 'var(--fg-0)',
         ...proofAccentCssVars(theme),
       }}
     >
-      {!isCanvas && (
+      {showMobileNav && (
+        <MobileBottomNav
+          primaryItems={navItems}
+          overflowItems={navItems.slice(4)}
+          settingsIcon={ICONS.ajustes}
+        />
+      )}
+
+      {showSidebar && (
         <aside
           style={{
             width: 52,
@@ -298,7 +310,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            background: theme.navGradient,
+            background: 'var(--canvas)',
+            borderRight: '1px solid var(--hairline)',
             padding: '14px 0 12px',
             zIndex: 20,
           }}
@@ -324,7 +337,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 letterSpacing: '0.08em',
                 lineHeight: 1.15,
                 textAlign: 'center',
-                color: '#fff',
+                color: 'var(--fg-0)',
               }}
             >
               PR
@@ -380,7 +393,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{
           flex: 1,
           minWidth: 0,
-          background: isCanvas || isCanvasStyle ? CANVAS_BG : 'var(--ink)',
+          background: 'var(--ink)',
           position: 'relative',
           zIndex: 2,
           display: 'flex',
@@ -389,6 +402,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {isCanvas && (
           <header
+            className="proof-canvas-header"
             style={{
               position: 'fixed',
               top: 0,
@@ -400,21 +414,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '14px 24px',
-              background: CANVAS_BG,
-              borderBottom: `2px solid ${theme.accent}`,
+              padding: isMobile ? '14px 16px' : '14px 24px',
+              background: 'var(--ink)',
+              borderBottom: '1px solid var(--hairline)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span
                 style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  letterSpacing: '0.15em',
-                  color: '#1A1A1A',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  letterSpacing: '-0.01em',
+                  color: 'var(--fg-0)',
                 }}
               >
-                PR<span style={{ color: theme.accent }}>O</span>OF
+                PROOF
               </span>
               <span
                 style={{
@@ -436,10 +450,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {isDistiller && (
                 <span
                   style={{
-                    fontSize: 10,
-                    color: '#BBB',
-                    fontFamily:
-                      'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    fontSize: 11,
+                    color: 'var(--fg-3)',
+                    fontFamily: 'var(--font-mono)',
                   }}
                 >
                   {MEMBRESIA_LABEL[membresia]}
@@ -463,135 +476,54 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               position: 'sticky',
               top: 0,
               zIndex: 15,
-              backdropFilter: 'blur(14px)',
-              background: 'rgba(10, 10, 10, 0.88)',
+              backdropFilter: 'blur(8px)',
+              background: 'rgba(255, 255, 255, 0.92)',
               borderBottom: '1px solid var(--hairline)',
-              padding: '14px 28px',
-              display: 'grid',
-              gridTemplateColumns: 'minmax(140px, 220px) minmax(0, 1fr) minmax(160px, auto)',
-              alignItems: 'center',
-              gap: 16,
+              padding: isMobile ? '10px 16px' : '12px 28px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-              <span
-                style={{
-                  fontSize: 18,
-                  fontWeight: 600,
-                  letterSpacing: '-0.015em',
-                  color: 'var(--fg-0)',
-                }}
-              >
-                {pageTitle}
-              </span>
-              <span
-                aria-hidden
-                className="status-dot ok live"
-                style={{ width: 5, height: 5, background: 'var(--proof-accent)' }}
-              />
-            </div>
-
-            <form
-              onSubmit={submitAsk}
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
-                background: 'var(--panel)',
-                border: '1px solid var(--hairline)',
-                padding: '6px 6px 6px 12px',
-                transition: 'border-color 200ms var(--ease-out), background 200ms var(--ease-out)',
-              }}
-              onFocus={e => {
-                e.currentTarget.style.borderColor = 'var(--proof-accent)'
-                e.currentTarget.style.background = 'var(--panel-2)'
-              }}
-              onBlur={e => {
-                e.currentTarget.style.borderColor = 'var(--hairline)'
-                e.currentTarget.style.background = 'var(--panel)'
+                justifyContent: 'space-between',
+                gap: 12,
+                width: '100%',
               }}
             >
-              <span
-                aria-hidden
-                style={{
-                  width: 22,
-                  height: 22,
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: 'var(--proof-accent)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  flexShrink: 0,
-                }}
-              >
-                ✦
-              </span>
-              <input
-                type="text"
-                value={ask}
-                onChange={e => setAsk(e.target.value)}
-                placeholder="Pregúntale a PROOF — stock, productos, entregas…"
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  fontSize: 13.5,
-                  color: 'var(--fg-0)',
-                  letterSpacing: '-0.005em',
-                  fontFamily: 'var(--font-display)',
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => askCameraRef.current?.click()}
-                aria-label="Subir foto a PROOF"
-                style={{
-                  width: 30,
-                  height: 30,
-                  display: 'grid',
-                  placeItems: 'center',
-                  background: 'var(--canvas)',
-                  border: '1px solid var(--hairline)',
-                  color: 'var(--fg-2)',
-                  flexShrink: 0,
-                  transition: 'color 180ms var(--ease-out), border-color 180ms var(--ease-out)',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = 'var(--proof-accent)'
-                  e.currentTarget.style.color = 'var(--proof-accent)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = 'var(--hairline)'
-                  e.currentTarget.style.color = 'var(--fg-2)'
-                }}
-              >
-                {ICONS.camera}
-              </button>
-              <button
-                type="submit"
-                disabled={!ask.trim()}
-                style={{
-                  padding: '7px 12px',
-                  background: ask.trim() ? 'var(--proof-accent)' : 'var(--canvas)',
-                  border: '1px solid',
-                  borderColor: ask.trim() ? 'var(--proof-accent)' : 'var(--hairline)',
-                  color: ask.trim() ? '#fff' : 'var(--fg-4)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  flexShrink: 0,
-                  transition: 'background 180ms var(--ease-out), color 180ms var(--ease-out)',
-                }}
-              >
-                Preguntar
-              </button>
-            </form>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <span
+                  style={{
+                    fontSize: isMobile ? 15 : 16,
+                    fontWeight: 600,
+                    letterSpacing: '-0.015em',
+                    color: 'var(--fg-0)',
+                  }}
+                >
+                  {pageTitle}
+                </span>
+                {!isMobile && (
+                  <span
+                    aria-hidden
+                    className="status-dot ok live"
+                    style={{ width: 5, height: 5, background: 'var(--proof-accent)' }}
+                  />
+                )}
+              </div>
+              {!isMobile && (
+                <div style={{ flex: 1, minWidth: 0, maxWidth: 560, margin: '0 auto' }}>
+                  <ProofAskForm
+                    ask={ask}
+                    setAsk={setAsk}
+                    onSubmit={submitAsk}
+                    onCamera={() => askCameraRef.current?.click()}
+                    compact={false}
+                  />
+                </div>
+              )}
               <AvatarMenu
                 initials={initials}
                 imageUrl={user?.imageUrl}
@@ -601,6 +533,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
               />
             </div>
+            {isMobile && (
+              <ProofAskForm
+                ask={ask}
+                setAsk={setAsk}
+                onSubmit={submitAsk}
+                onCamera={() => askCameraRef.current?.click()}
+                compact
+              />
+            )}
           </header>
         )}
 
@@ -613,9 +554,131 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{ display: 'none' }}
         />
 
-        <div style={{ flex: 1, minHeight: 0, paddingTop: isCanvas ? 56 : 0 }}>{children}</div>
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            paddingTop: isCanvas ? 56 : 0,
+            paddingBottom: showMobileNav
+              ? `calc(${MOBILE_BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
+              : 0,
+          }}
+        >
+          {children}
+        </div>
       </main>
     </div>
+  )
+}
+
+function ProofAskForm({
+  ask,
+  setAsk,
+  onSubmit,
+  onCamera,
+  compact,
+}: {
+  ask: string
+  setAsk: (v: string) => void
+  onSubmit: (e: React.FormEvent) => void
+  onCamera: () => void
+  compact?: boolean
+}) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        width: '100%',
+        background: 'var(--panel-2)',
+        border: '1px solid var(--hairline)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '6px 6px 6px 12px',
+        transition: 'border-color 150ms var(--ease-out), background 150ms var(--ease-out)',
+      }}
+      onFocus={e => {
+        e.currentTarget.style.borderColor = 'var(--line)'
+        e.currentTarget.style.background = 'var(--ink)'
+      }}
+      onBlur={e => {
+        e.currentTarget.style.borderColor = 'var(--hairline)'
+        e.currentTarget.style.background = 'var(--panel-2)'
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          width: 22,
+          height: 22,
+          display: 'grid',
+          placeItems: 'center',
+          color: 'var(--proof-accent)',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 13,
+          fontWeight: 600,
+          flexShrink: 0,
+        }}
+      >
+        ✦
+      </span>
+      <input
+        type="text"
+        value={ask}
+        onChange={e => setAsk(e.target.value)}
+        placeholder={compact ? 'Pregunta a PROOF…' : 'Pregúntale a PROOF — stock, productos, entregas…'}
+        style={{
+          flex: 1,
+          minWidth: 0,
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
+          fontSize: 16,
+          color: 'var(--fg-0)',
+          letterSpacing: '-0.005em',
+          fontFamily: 'var(--font-display)',
+        }}
+      />
+      <button
+        type="button"
+        onClick={onCamera}
+        aria-label="Subir foto a PROOF"
+        style={{
+          width: 44,
+          height: 44,
+          display: 'grid',
+          placeItems: 'center',
+          background: 'var(--canvas)',
+          border: '1px solid var(--hairline)',
+          color: 'var(--fg-2)',
+          flexShrink: 0,
+          borderRadius: 'var(--radius-sm)',
+        }}
+      >
+        {ICONS.camera}
+      </button>
+      {!compact && (
+        <button
+          type="submit"
+          disabled={!ask.trim()}
+          style={{
+            padding: '10px 14px',
+            minHeight: 44,
+            background: ask.trim() ? 'var(--proof-accent)' : 'var(--canvas)',
+            border: '1px solid',
+            borderColor: ask.trim() ? 'var(--proof-accent)' : 'var(--hairline)',
+            color: ask.trim() ? '#fff' : 'var(--fg-4)',
+            fontSize: 12,
+            fontWeight: 600,
+            flexShrink: 0,
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          Preguntar
+        </button>
+      )}
+    </form>
   )
 }
 
@@ -654,8 +717,8 @@ function AvatarMenu({
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
         style={{
-          width: 28,
-          height: 28,
+          width: 44,
+          height: 44,
           borderRadius: '50%',
           padding: 0,
           border: 'none',
@@ -664,6 +727,7 @@ function AvatarMenu({
           overflow: 'hidden',
           display: 'grid',
           placeItems: 'center',
+          flexShrink: 0,
         }}
       >
         {imageUrl ? (
@@ -695,7 +759,7 @@ function AvatarMenu({
             right: 0,
             minWidth: 168,
             background: '#fff',
-            border: '0.5px solid #E8E8E4',
+            border: '0.5px solid var(--hairline)',
             borderRadius: 10,
             boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
             padding: '6px 0',
@@ -746,7 +810,7 @@ function DropdownItem({
     textAlign: 'left',
     padding: '10px 14px',
     fontSize: 13,
-    color: '#1A1A1A',
+    color: 'var(--fg-0)',
     background: 'transparent',
     border: 'none',
     cursor: 'pointer',
@@ -774,14 +838,13 @@ function SideRailLink({
   label,
   icon,
   active,
-  iconColor,
   accent,
 }: {
   href: string
   label: string
   icon: React.ReactNode
   active: boolean
-  iconColor: string
+  iconColor?: string
   accent: string
 }) {
   return (
@@ -796,20 +859,20 @@ function SideRailLink({
         width: '100%',
         height: 36,
         textDecoration: 'none',
-        color: active ? '#fff' : iconColor,
-        background: active ? 'rgba(255,255,255,0.14)' : 'transparent',
-        borderRadius: 8,
-        transition: 'background 180ms var(--ease-out), color 180ms var(--ease-out)',
+        color: active ? 'var(--fg-0)' : 'var(--fg-3)',
+        background: active ? 'var(--hover)' : 'transparent',
+        borderRadius: 'var(--radius-sm)',
+        transition: 'background 150ms var(--ease-out), color 150ms var(--ease-out)',
       }}
       onMouseEnter={e => {
         if (active) return
-        e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-        e.currentTarget.style.color = '#fff'
+        e.currentTarget.style.background = 'var(--hover)'
+        e.currentTarget.style.color = 'var(--fg-0)'
       }}
       onMouseLeave={e => {
         if (active) return
         e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.color = iconColor
+        e.currentTarget.style.color = 'var(--fg-3)'
       }}
     >
       {active && (
@@ -817,17 +880,17 @@ function SideRailLink({
           aria-hidden
           style={{
             position: 'absolute',
-            left: 0,
+            left: -8,
+            top: '50%',
+            transform: 'translateY(-50%)',
             width: 2,
-            height: 20,
+            height: 18,
+            borderRadius: 1,
             background: accent,
-            borderRadius: '0 2px 2px 0',
           }}
         />
       )}
-      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {icon}
-      </span>
+      {icon}
     </Link>
   )
 }

@@ -12,29 +12,45 @@ export default function NotFound() {
         justifyContent: 'center',
         gap: 16,
         padding: 32,
-        background: '#111',
-        color: '#fff',
-        fontFamily: 'system-ui, sans-serif',
+        background: 'var(--ink)',
+        color: 'var(--fg-0)',
+        fontFamily: 'var(--font-display)',
         textAlign: 'center',
       }}
     >
-      <p style={{ margin: 0, fontSize: 13, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.5 }}>
+      <p
+        style={{
+          margin: 0,
+          fontSize: 12,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'var(--fg-3)',
+        }}
+      >
         PROOF
       </p>
       <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>Página no encontrada</h1>
-      <p style={{ margin: 0, fontSize: 14, color: '#999', maxWidth: 360, lineHeight: 1.5 }}>
+      <p
+        style={{
+          margin: 0,
+          fontSize: 14,
+          color: 'var(--fg-2)',
+          maxWidth: 360,
+          lineHeight: 1.5,
+        }}
+      >
         La ruta no existe o la sesión expiró. Vuelve al inicio o inicia sesión de nuevo.
       </p>
       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
         <a
           href="/sign-in"
           style={{
-            padding: '10px 18px',
-            borderRadius: 8,
-            background: '#fff',
-            color: '#111',
-            fontSize: 13,
-            fontWeight: 600,
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--fg-0)',
+            color: '#fff',
+            fontSize: 14,
+            fontWeight: 500,
             textDecoration: 'none',
           }}
         >
@@ -43,11 +59,11 @@ export default function NotFound() {
         <a
           href="/dashboard"
           style={{
-            padding: '10px 18px',
-            borderRadius: 8,
-            border: '1px solid #444',
-            color: '#fff',
-            fontSize: 13,
+            padding: '8px 16px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--hairline)',
+            color: 'var(--fg-0)',
+            fontSize: 14,
             textDecoration: 'none',
           }}
         >

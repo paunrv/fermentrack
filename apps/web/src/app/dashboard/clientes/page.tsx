@@ -2,13 +2,18 @@
 
 export const dynamic = 'force-dynamic'
 
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useProfile } from '@/context/ProfileContext'
 import { crearCliente, obtenerClientes } from '@/app/actions/clientes'
 import type { ClienteConSaldo } from '@/lib/supabase/distribuidor'
 import { fmtMoney } from '@/lib/proof/format'
 import ClientesLegacyPage from './ClientesLegacyPage'
+import { useIsMobile } from '@/hooks/useBreakpoint'
+import { pagePadding } from '@/lib/ui/page-shell'
+import { CanvasHorizontalSection } from '@/components/proof/CanvasHorizontalSection'
+import { ClienteRailCard } from '@/components/proof/ClienteRailCard'
+import { KpiRailChip } from '@/components/proof/KpiRailChip'
+import { CLIENTE_ACCENT } from '@/lib/proof/canvas-accents'
 
 const DIAS_CREDITO_OPTIONS = [
   { value: 0, label: 'Contado' },
@@ -18,12 +23,9 @@ const DIAS_CREDITO_OPTIONS = [
   { value: 90, label: '90 días' },
 ] as const
 
-function creditoLabel(dias: number): string {
-  return dias === 0 ? 'Contado' : `${dias} días`
-}
-
 function ClientesDistribuidorPage() {
   const { scope } = useProfile()
+  const isMobile = useIsMobile()
   const [rows, setRows] = useState<ClienteConSaldo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -96,8 +98,19 @@ function ClientesDistribuidorPage() {
     }
   }
 
+  const conSaldo = useMemo(() => rows.filter(c => c.saldo_pendiente > 0), [rows])
+  const vencidos = useMemo(() => rows.filter(c => c.tiene_deuda_vencida), [rows])
+  const alCorriente = useMemo(
+    () => rows.filter(c => c.saldo_pendiente <= 0 && !c.tiene_deuda_vencida),
+    [rows]
+  )
+  const carteraTotal = useMemo(
+    () => rows.reduce((sum, c) => sum + c.saldo_pendiente, 0),
+    [rows]
+  )
+
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
+    <div style={pagePadding({ isMobile })}>
       <header
         style={{
           display: 'flex',
@@ -109,7 +122,7 @@ function ClientesDistribuidorPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: '0 0 6px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
+          <h1 style={{ margin: '0 0 6px', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: 'var(--fg-0)' }}>
             Clientes
           </h1>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
@@ -159,6 +172,7 @@ function ClientesDistribuidorPage() {
             </p>
           )}
           <div
+            className="proof-form-grid--responsive"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -250,84 +264,50 @@ function ClientesDistribuidorPage() {
         <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--danger, #b00020)' }}>{error}</p>
       )}
 
-      {loading ? (
-        <p style={{ color: 'var(--fg-3)' }}>Cargando…</p>
-      ) : rows.length === 0 ? (
-        <p style={{ color: 'var(--fg-2)' }}>
-          Sin clientes. Agrega el primero con &quot;+ Nuevo cliente&quot;.
-        </p>
-      ) : (
-        <div
-          style={{
-            border: '1px solid var(--hairline)',
-            borderRadius: 'var(--radius-card)',
-            overflow: 'hidden',
-          }}
+      <div className="proof-canvas-stack">
+        <CanvasHorizontalSection
+          accent={CLIENTE_ACCENT}
+          title="Resumen"
+          subtitle={loading ? 'Cargando…' : `${rows.length} cliente${rows.length !== 1 ? 's' : ''}`}
+          loading={loading}
+          itemWidth={132}
+          skeletonCount={3}
         >
-          <div
-            className="mono"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 120px 100px 120px 80px',
-              gap: 8,
-              padding: '10px 16px',
-              fontSize: 9,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--fg-3)',
-              borderBottom: '1px solid var(--hairline)',
-            }}
-          >
-            <span>Nombre</span>
-            <span>Teléfono</span>
-            <span>Crédito</span>
-            <span>Saldo</span>
-            <span />
-          </div>
-          {rows.map((c, i) => (
-            <Link
-              key={c.id}
-              href={`/dashboard/clientes/${c.id}`}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 120px 100px 120px 80px',
-                gap: 8,
-                alignItems: 'center',
-                padding: '14px 16px',
-                borderBottom: i < rows.length - 1 ? '1px solid var(--hairline)' : 'none',
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 600, color: 'var(--fg-0)', fontSize: 14 }}>{c.nombre}</div>
-                {c.direccion && (
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--fg-3)',
-                      marginTop: 2,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {c.direccion}
-                  </div>
-                )}
-              </div>
-              <span style={{ fontSize: 13, color: 'var(--fg-2)' }}>{c.telefono || '—'}</span>
-              <Badge muted>{creditoLabel(c.dias_credito)}</Badge>
-              <span className="mono" style={{ fontWeight: 600, fontSize: 13, color: 'var(--fg-0)' }}>
-                {c.saldo_pendiente > 0 ? fmtMoney(c.saldo_pendiente) : '—'}
-              </span>
-              <span style={{ justifySelf: 'end' }}>
-                {c.tiene_deuda_vencida && <Badge alert>Vencido</Badge>}
-              </span>
-            </Link>
+          <KpiRailChip label="Clientes" value={String(rows.length)} />
+          <KpiRailChip label="Cartera pendiente" value={fmtMoney(carteraTotal)} tone={CLIENTE_ACCENT} />
+          <KpiRailChip
+            label="Con saldo vencido"
+            value={String(vencidos.length)}
+            tone={vencidos.length ? 'var(--crit)' : undefined}
+          />
+        </CanvasHorizontalSection>
+
+        <CanvasHorizontalSection
+          accent={CLIENTE_ACCENT}
+          title="Con saldo"
+          subtitle={`${conSaldo.length} cliente${conSaldo.length !== 1 ? 's' : ''}`}
+          emptyMessage="Ningún cliente con saldo pendiente."
+          loading={loading}
+          itemWidth={172}
+        >
+          {conSaldo.map(c => (
+            <ClienteRailCard key={c.id} cliente={c} />
           ))}
-        </div>
-      )}
+        </CanvasHorizontalSection>
+
+        <CanvasHorizontalSection
+          accent={CLIENTE_ACCENT}
+          title="Al corriente"
+          subtitle={`${alCorriente.length} cliente${alCorriente.length !== 1 ? 's' : ''}`}
+          emptyMessage={rows.length === 0 ? 'Sin clientes. Agrega el primero con "+ Nuevo cliente".' : 'Todos tienen saldo pendiente.'}
+          loading={loading}
+          itemWidth={172}
+        >
+          {alCorriente.map(c => (
+            <ClienteRailCard key={c.id} cliente={c} />
+          ))}
+        </CanvasHorizontalSection>
+      </div>
     </div>
   )
 }
@@ -365,35 +345,6 @@ function Field({
       </span>
       {children}
     </label>
-  )
-}
-
-function Badge({
-  children,
-  muted,
-  alert,
-}: {
-  children: React.ReactNode
-  muted?: boolean
-  alert?: boolean
-}) {
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        fontSize: 10,
-        fontWeight: 600,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        padding: '4px 8px',
-        borderRadius: 'var(--radius-sm)',
-        background: alert ? 'rgba(180, 40, 40, 0.12)' : muted ? 'var(--panel-2, #f5f4f0)' : 'var(--gold)',
-        color: alert ? '#b42828' : 'var(--fg-1)',
-        border: alert ? '1px solid rgba(180, 40, 40, 0.25)' : '1px solid var(--hairline)',
-      }}
-    >
-      {children}
-    </span>
   )
 }
 

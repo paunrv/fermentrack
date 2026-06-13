@@ -16,7 +16,7 @@ import {
 } from '@/lib/supabase'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
-const font = "'Space Grotesk', sans-serif"
+
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -24,20 +24,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 function formatMoney(n: number) {
@@ -154,14 +154,14 @@ export default function BodegaPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
             fontSize: 28,
             fontWeight: 800,
             letterSpacing: '-.04em',
-            color: '#111',
+            color: 'var(--fg-0)',
             lineHeight: 1.1,
             marginBottom: 6,
           }}
@@ -201,7 +201,7 @@ export default function BodegaPage() {
               <div
                 key={row.batch_id}
                 style={{
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   padding: 20,
                   background: COLORS[i % COLORS.length],
                   minHeight: 140,
@@ -246,7 +246,7 @@ export default function BodegaPage() {
       <form
         onSubmit={handleExit}
         style={{
-          border: '3px solid #111',
+          border: '1px solid var(--hairline)',
           padding: 24,
           marginBottom: 32,
           background: COLORS[3],
@@ -327,16 +327,16 @@ export default function BodegaPage() {
           style={{
             marginTop: 16,
             padding: '12px 20px',
-            background: '#111',
+            background: 'var(--fg-0)',
             color: '#fff',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: saving ? 'wait' : 'pointer',
             opacity: saving ? 0.5 : 1,
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           {saving ? 'Guardando...' : 'Registrar salida'}
@@ -367,7 +367,7 @@ export default function BodegaPage() {
                 <div
                   key={row.id}
                   style={{
-                    border: '3px solid #111',
+                    border: '1px solid var(--hairline)',
                     padding: 16,
                     background: COLORS[i % COLORS.length],
                     display: 'flex',
@@ -395,7 +395,7 @@ export default function BodegaPage() {
                       letterSpacing: '.08em',
                       textTransform: 'uppercase',
                       padding: '8px 12px',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: '#fff',
                     }}
                   >

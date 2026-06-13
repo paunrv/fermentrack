@@ -20,7 +20,7 @@ import {
   profileTypeFromV2,
   resolveDistributorKpi,
 } from '@/lib/proof/canvas-kpi'
-import { CANVAS_BG, getProfileTheme } from '@/lib/proof/profile-theme'
+import { getProfileTheme } from '@/lib/proof/profile-theme'
 import { metricCardLabel, type KpiMetric, type ProfileType } from '@/lib/proof/kpi-metrics'
 import { useKpiConfig } from '@/hooks/useKpiConfig'
 import type {
@@ -32,6 +32,7 @@ import type {
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { fetchSkus, fetchPedidos, type PedidoRow, type SkuRow } from '@/lib/supabase'
 import { OrdenCompraCanvasCard } from '@/components/proof/OrdenCompraCanvasCard'
+import { CanvasHorizontalSection } from '@/components/proof/CanvasHorizontalSection'
 import { OrdenCompraPendienteDetalle } from '@/components/proof/OrdenCompraPendienteDetalle'
 import {
   fetchCorridas,
@@ -113,7 +114,7 @@ function CanvasDivider({ label }: { label: string }) {
         marginBottom: 8,
       }}
     >
-      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
       <span
         style={{
           fontSize: 9,
@@ -125,102 +126,8 @@ function CanvasDivider({ label }: { label: string }) {
       >
         {label}
       </span>
-      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
     </div>
-  )
-}
-
-function CanvasSectionDivider({
-  accent,
-  label,
-  ctaLabel,
-  ctaHref,
-}: {
-  accent: string
-  label: string
-  ctaLabel?: string
-  ctaHref?: string
-}) {
-  const router = useRouter()
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '0 24px 10px',
-        marginTop: 20,
-      }}
-    >
-      <div style={{ flex: 1, height: 1.5, background: `${accent}22` }} />
-      <span
-        style={{
-          fontSize: 9,
-          fontFamily: MONO,
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: accent,
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-      </span>
-      {ctaLabel && ctaHref ? (
-        <button
-          type="button"
-          onClick={() => router.push(ctaHref)}
-          style={{
-            fontSize: 11,
-            padding: '4px 10px',
-            borderRadius: 6,
-            border: `0.5px solid ${accent}44`,
-            background: 'transparent',
-            color: accent,
-            cursor: 'pointer',
-            fontFamily: MONO,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {ctaLabel}
-        </button>
-      ) : (
-        <div style={{ flex: 1, height: 1.5, background: `${accent}22` }} />
-      )}
-    </div>
-  )
-}
-
-function SectionGrid({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-        gap: 12,
-        padding: '0 24px 8px',
-      }}
-    >
-      {children}
-    </div>
-  )
-}
-
-function SectionSkeleton({ count = 3 }: { count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          aria-hidden
-          style={{
-            height: 140,
-            borderRadius: 12,
-            background: '#F4F2EE',
-            animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
-          }}
-        />
-      ))}
-    </>
   )
 }
 
@@ -667,7 +574,7 @@ export default function DashboardPage() {
       <div
         style={{
           minHeight: '100vh',
-          background: CANVAS_BG,
+          background: 'var(--ink)',
           display: 'grid',
           placeItems: 'center',
           color: '#999',
@@ -683,7 +590,7 @@ export default function DashboardPage() {
     return (
       <div
         style={{
-          background: CANVAS_BG,
+          background: 'var(--ink)',
           minHeight: '100vh',
           padding: 48,
           textAlign: 'center',
@@ -700,8 +607,8 @@ export default function DashboardPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: CANVAS_BG,
-        color: '#1A1A1A',
+        background: 'var(--ink)',
+        color: 'var(--fg-0)',
       }}
     >
       <style>{`
@@ -711,7 +618,7 @@ export default function DashboardPage() {
         }
         .proof-quick-action:hover {
           border-color: var(--proof-accent) !important;
-          color: #1A1A1A !important;
+          color: var(--fg-0) !important;
         }
       `}</style>
 
@@ -812,119 +719,229 @@ export default function DashboardPage() {
         )}
 
       {!isDistiller && (
-        <>
-          <CanvasSectionDivider
+        <div className="proof-canvas-stack">
+          <CanvasHorizontalSection
             accent={PROVEEDOR_ACCENT}
-            label={
+            title="Proveedores"
+            subtitle={
               showSkeleton
-                ? 'PROVEEDORES · …'
-                : `PROVEEDORES · ${proveedorCount} orden${proveedorCount !== 1 ? 'es' : ''} activa${proveedorCount !== 1 ? 's' : ''}`
+                ? 'Cargando…'
+                : `${proveedorCount} orden${proveedorCount !== 1 ? 'es' : ''} activa${proveedorCount !== 1 ? 's' : ''}`
             }
             ctaLabel="+ Orden de compra"
             ctaHref="/dashboard/distribuidor/compras/nuevo"
-          />
-          <SectionGrid>
-            {showSkeleton && <SectionSkeleton count={2} />}
-            {!showSkeleton &&
-              pendingOrdenCards.map(o => (
-                <OrdenCompraCanvasCard
-                  key={o.id}
-                  orden={o}
-                  selected={selectedOrdenId === o.id}
-                  onClick={() => {
-                    setSelectedId(null)
-                    setSelectedPedidoId(null)
-                    setSelectedOrdenId(o.id)
-                  }}
-                />
-              ))}
-            {!showSkeleton &&
-              ordenesConCxP.map(o => (
-                <OrdenCompraCanvasCard
-                  key={`cxp-${o.id}`}
-                  orden={o}
-                  selected={selectedOrdenId === o.id}
-                  onClick={() => {
-                    setSelectedId(null)
-                    setSelectedPedidoId(null)
-                    setSelectedOrdenId(o.id)
-                  }}
-                />
-              ))}
-            {!showSkeleton && proveedorCount === 0 && (
-              <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
-                Sin órdenes de compra activas.
-              </p>
-            )}
-          </SectionGrid>
+            emptyMessage="Sin órdenes de compra activas."
+            loading={showSkeleton}
+            itemWidth={172}
+          >
+            {pendingOrdenCards.map(o => (
+              <OrdenCompraCanvasCard
+                key={o.id}
+                orden={o}
+                selected={selectedOrdenId === o.id}
+                onClick={() => {
+                  setSelectedId(null)
+                  setSelectedPedidoId(null)
+                  setSelectedOrdenId(o.id)
+                }}
+              />
+            ))}
+            {ordenesConCxP.map(o => (
+              <OrdenCompraCanvasCard
+                key={`cxp-${o.id}`}
+                orden={o}
+                selected={selectedOrdenId === o.id}
+                onClick={() => {
+                  setSelectedId(null)
+                  setSelectedPedidoId(null)
+                  setSelectedOrdenId(o.id)
+                }}
+              />
+            ))}
+          </CanvasHorizontalSection>
 
-          <CanvasSectionDivider
+          <CanvasHorizontalSection
             accent={CLIENTE_ACCENT}
-            label={
+            title="Clientes"
+            subtitle={
               showSkeleton
-                ? 'CLIENTES · …'
-                : `CLIENTES · ${clienteCount} pedido${clienteCount !== 1 ? 's' : ''} activo${clienteCount !== 1 ? 's' : ''}`
+                ? 'Cargando…'
+                : `${clienteCount} pedido${clienteCount !== 1 ? 's' : ''} activo${clienteCount !== 1 ? 's' : ''}`
             }
             ctaLabel="+ Nuevo pedido"
             ctaHref="/dashboard/pedidos/nuevo"
-          />
-          <SectionGrid>
-            {showSkeleton && <SectionSkeleton count={2} />}
-            {!showSkeleton &&
-              activePedidoCards.map(p => (
-                <PedidoCanvasCard
-                  key={p.id}
-                  pedido={p}
-                  accent={CLIENTE_ACCENT}
-                  selected={selectedPedidoId === p.id}
-                  onClick={() => {
-                    setSelectedPedidoId(p.id)
-                    setSelectedId(null)
-                    setSelectedOrdenId(null)
-                  }}
-                />
-              ))}
-            {!showSkeleton &&
-              pedidosConCxC.map(p => (
-                <PedidoCanvasCard
-                  key={`cxc-${p.id}`}
-                  pedido={p}
-                  accent={CLIENTE_ACCENT}
-                  cxc={p.cxc}
-                  selected={selectedPedidoId === p.id}
-                  onClick={() => {
-                    setSelectedPedidoId(p.id)
-                    setSelectedId(null)
-                    setSelectedOrdenId(null)
-                  }}
-                />
-              ))}
-            {!showSkeleton && clienteCount === 0 && (
-              <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
-                Sin pedidos activos.
-              </p>
-            )}
-          </SectionGrid>
+            emptyMessage="Sin pedidos activos."
+            loading={showSkeleton}
+            itemWidth={172}
+          >
+            {activePedidoCards.map(p => (
+              <PedidoCanvasCard
+                key={p.id}
+                pedido={p}
+                accent={CLIENTE_ACCENT}
+                selected={selectedPedidoId === p.id}
+                onClick={() => {
+                  setSelectedPedidoId(p.id)
+                  setSelectedId(null)
+                  setSelectedOrdenId(null)
+                }}
+              />
+            ))}
+            {pedidosConCxC.map(p => (
+              <PedidoCanvasCard
+                key={`cxc-${p.id}`}
+                pedido={p}
+                accent={CLIENTE_ACCENT}
+                cxc={p.cxc}
+                selected={selectedPedidoId === p.id}
+                onClick={() => {
+                  setSelectedPedidoId(p.id)
+                  setSelectedId(null)
+                  setSelectedOrdenId(null)
+                }}
+              />
+            ))}
+          </CanvasHorizontalSection>
 
-          <CanvasSectionDivider
+          <CanvasHorizontalSection
             accent={INVENTARIO_ACCENT}
-            label={
+            title="Inventario"
+            subtitle={
               showSkeleton
-                ? 'INVENTARIO · …'
-                : `INVENTARIO · ${skus.length} SKU${skus.length !== 1 ? 's' : ''}`
+                ? 'Cargando…'
+                : `${skus.length} SKU${skus.length !== 1 ? 's' : ''}`
             }
-          />
-        </>
+            emptyMessage="Sin SKUs en inventario."
+            loading={showSkeleton}
+            itemWidth={176}
+            skeletonCount={3}
+          >
+            {skus.map(s => {
+              const dataItems = skuKpiConfig.map(k => {
+                const metric = k.metric as KpiMetric
+                return {
+                  label: metricCardLabel('distributor', metric),
+                  value: resolveDistributorKpi(metric, s, [s]),
+                  tone: distributorMetricTone(metric, s),
+                }
+              })
+              const editorOpen = kpiEditor?.skuId === s.id
+              const editorSlot = kpiEditor?.slot ?? 0
+              return (
+                <SkuCard
+                  key={s.id}
+                  nombre={s.nombre}
+                  categoriaLiquido={s.categoria_liquido ?? 'otro'}
+                  proveedorNombre={resolveProveedorSku(s)}
+                  imagenUrl={s.imagen_url}
+                  estado={mapSkuEstadoToCard(s.estado)}
+                  dataItems={dataItems}
+                  selected={selectedId === s.id && selectedPedidoId == null}
+                  accent={INVENTARIO_ACCENT}
+                  uploading={uploadingSkuId === s.id}
+                  configOpen={editorOpen}
+                  onClick={() => {
+                    setSelectedPedidoId(null)
+                    setSelectedId(s.id)
+                  }}
+                  onConfigClick={() =>
+                    setKpiEditor(prev =>
+                      prev?.skuId === s.id ? null : { skuId: s.id, slot: 0 }
+                    )
+                  }
+                  configPanel={
+                    editorOpen ? (
+                      <>
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: 4,
+                            marginTop: 8,
+                            marginBottom: 4,
+                          }}
+                        >
+                          {([0, 1, 2] as const).map(slot => (
+                            <button
+                              key={slot}
+                              type="button"
+                              onClick={() => setKpiEditor({ skuId: s.id, slot })}
+                              style={{
+                                flex: 1,
+                                fontSize: 9,
+                                fontFamily:
+                                  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                                padding: '4px 0',
+                                borderRadius: 4,
+                                border:
+                                  editorSlot === slot
+                                    ? `0.5px solid ${INVENTARIO_ACCENT}`
+                                    : '0.5px solid var(--hairline)',
+                                background: editorSlot === slot ? `${INVENTARIO_ACCENT}12` : '#fff',
+                                color: editorSlot === slot ? INVENTARIO_ACCENT : '#888',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {slot + 1}
+                            </button>
+                          ))}
+                        </div>
+                        <KpiConfigDrawer
+                          slot={editorSlot}
+                          profileType="distributor"
+                          currentMetric={skuKpiConfig[editorSlot]?.metric ?? 'stock_disponible'}
+                          currentScope={skuKpiConfig[editorSlot]?.scope ?? 'all'}
+                          accent={INVENTARIO_ACCENT}
+                          onSelect={(metric, scope) => {
+                            void updateKpi(editorSlot, metric, scope)
+                          }}
+                          onClose={() => setKpiEditor(null)}
+                        />
+                      </>
+                    ) : undefined
+                  }
+                  openImagePicker={imagePickerSkuId === s.id}
+                  onImagePickerOpened={() => setImagePickerSkuId(null)}
+                  onImageSelect={file => {
+                    void handleSkuImageUpload(s.id, file)
+                  }}
+                />
+              )
+            })}
+          </CanvasHorizontalSection>
+
+          {!showSkeleton && bodegaCount === 0 && (
+            <div style={{ textAlign: 'center', padding: '24px 16px 8px' }}>
+              <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
+                Registra tu primera orden de compra o entrada de inventario
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard/distribuidor/compras/nuevo')}
+                className="proof-quick-action"
+                style={{
+                  fontSize: 13,
+                  padding: '10px 18px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: '1px solid var(--hairline)',
+                  background: 'transparent',
+                  color: 'var(--fg-2)',
+                  cursor: 'pointer',
+                }}
+              >
+                Nueva orden de compra
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
+      {isDistiller && (
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: isDistiller
-            ? 'repeat(auto-fill, minmax(132px, 1fr))'
-            : 'repeat(auto-fill, minmax(160px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))',
           gap: 12,
-          padding: isDistiller ? '0 24px 32px' : '0 24px 32px',
+          padding: '0 24px 32px',
         }}
       >
         {showSkeleton && isDistiller &&
@@ -935,13 +952,11 @@ export default function DashboardPage() {
               style={{
                 height: 200,
                 borderRadius: 12,
-                background: '#F4F2EE',
+                background: 'var(--panel-2)',
                 animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
               }}
             />
           ))}
-
-        {showSkeleton && !isDistiller && <SectionSkeleton count={4} />}
 
         {!showSkeleton &&
           isDistiller &&
@@ -983,108 +998,7 @@ export default function DashboardPage() {
             />
           ))}
 
-        {!showSkeleton &&
-          !isDistiller &&
-          skus.map(s => {
-            const dataItems = skuKpiConfig.map(k => {
-              const metric = k.metric as KpiMetric
-              return {
-                label: metricCardLabel('distributor', metric),
-                value: resolveDistributorKpi(metric, s, [s]),
-                tone: distributorMetricTone(metric, s),
-              }
-            })
-            const editorOpen = kpiEditor?.skuId === s.id
-            const editorSlot = kpiEditor?.slot ?? 0
-            return (
-              <SkuCard
-                key={s.id}
-                nombre={s.nombre}
-                categoriaLiquido={s.categoria_liquido ?? 'otro'}
-                proveedorNombre={resolveProveedorSku(s)}
-                imagenUrl={s.imagen_url}
-                estado={mapSkuEstadoToCard(s.estado)}
-                dataItems={dataItems}
-                selected={selectedId === s.id && selectedPedidoId == null}
-                accent={INVENTARIO_ACCENT}
-                uploading={uploadingSkuId === s.id}
-                configOpen={editorOpen}
-                onClick={() => {
-                  setSelectedPedidoId(null)
-                  setSelectedId(s.id)
-                }}
-                onConfigClick={() =>
-                  setKpiEditor(prev =>
-                    prev?.skuId === s.id ? null : { skuId: s.id, slot: 0 }
-                  )
-                }
-                configPanel={
-                  editorOpen ? (
-                    <>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: 4,
-                          marginTop: 8,
-                          marginBottom: 4,
-                        }}
-                      >
-                        {([0, 1, 2] as const).map(slot => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => setKpiEditor({ skuId: s.id, slot })}
-                            style={{
-                              flex: 1,
-                              fontSize: 9,
-                              fontFamily:
-                                'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                              padding: '4px 0',
-                              borderRadius: 4,
-                              border:
-                                editorSlot === slot
-                                  ? `0.5px solid ${INVENTARIO_ACCENT}`
-                                  : '0.5px solid #E8E6E0',
-                              background: editorSlot === slot ? `${INVENTARIO_ACCENT}12` : '#fff',
-                              color: editorSlot === slot ? INVENTARIO_ACCENT : '#AAA',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {slot + 1}
-                          </button>
-                        ))}
-                      </div>
-                      <KpiConfigDrawer
-                        slot={editorSlot}
-                        profileType="distributor"
-                        currentMetric={skuKpiConfig[editorSlot]?.metric ?? 'stock_disponible'}
-                        currentScope={skuKpiConfig[editorSlot]?.scope ?? 'all'}
-                        accent={INVENTARIO_ACCENT}
-                        onSelect={(metric, scope) => {
-                          void updateKpi(editorSlot, metric, scope)
-                        }}
-                        onClose={() => setKpiEditor(null)}
-                      />
-                    </>
-                  ) : undefined
-                }
-                openImagePicker={imagePickerSkuId === s.id}
-                onImagePickerOpened={() => setImagePickerSkuId(null)}
-                onImageSelect={file => {
-                  console.log('[dashboard] onImageSelect callback', s.id, file.name)
-                  void handleSkuImageUpload(s.id, file)
-                }}
-              />
-            )
-          })}
-
-        {!showSkeleton && !isDistiller && skus.length === 0 && (
-          <p style={{ gridColumn: '1 / -1', margin: 0, fontSize: 12, color: '#BBB' }}>
-            Sin SKUs en inventario.
-          </p>
-        )}
-
-        {!showSkeleton && bodegaCount === 0 && (
+        {!showSkeleton && isDistiller && bodegaCount === 0 && (
           <div
             style={{
               gridColumn: '1 / -1',
@@ -1092,37 +1006,29 @@ export default function DashboardPage() {
               padding: '56px 24px',
             }}
           >
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: '#BBB' }}>
-              {isDistiller
-                ? 'Registra tu primer viaje a Oaxaca'
-                : 'Registra tu primera orden de compra o entrada de inventario'}
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
+              Registra tu primer viaje a Oaxaca
             </p>
             <button
               type="button"
-              onClick={() =>
-                router.push(
-                  isDistiller
-                    ? '/dashboard/destilador/compras/nuevo'
-                    : '/dashboard/distribuidor/compras/nuevo'
-                )
-              }
+              onClick={() => router.push('/dashboard/destilador/compras/nuevo')}
               className="proof-quick-action"
               style={{
                 fontSize: 12,
                 padding: '10px 18px',
                 borderRadius: 8,
-                border: '0.5px solid #E0DDD6',
+                border: '1px solid var(--hairline)',
                 background: 'transparent',
-                color: '#666',
+                color: 'var(--fg-2)',
                 cursor: 'pointer',
-                transition: 'border-color 0.15s ease, color 0.15s ease',
               }}
             >
-              {isDistiller ? 'Nuevo viaje' : 'Nueva orden de compra'}
+              Nuevo viaje
             </button>
           </div>
         )}
       </div>
+      )}
     </div>
   )
 }

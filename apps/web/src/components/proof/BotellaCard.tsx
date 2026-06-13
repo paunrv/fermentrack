@@ -85,12 +85,12 @@ export function BotellaCard({
       aria-label={`${nombre}, ${id}${selected ? ', seleccionado' : ''}`}
       style={{
         width: '100%',
-        background: selected ? '#FAFAF8' : '#fff',
+        background: selected ? 'var(--panel-2)' : '#fff',
         border: selected
-          ? '0.5px solid #1A1A1A'
+          ? '0.5px solid var(--fg-0)'
           : dashed
             ? '0.5px dashed #D4A017'
-            : '0.5px solid #E8E6E0',
+            : '0.5px solid var(--hairline)',
         borderRadius: 12,
         padding: '16px 12px 12px',
         cursor: 'pointer',
@@ -106,7 +106,7 @@ export function BotellaCard({
       }}
       onMouseLeave={e => {
         if (selected) return
-        e.currentTarget.style.borderColor = dashed ? '#D4A017' : '#E8E6E0'
+        e.currentTarget.style.borderColor = dashed ? '#D4A017' : 'var(--hairline)'
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
@@ -125,7 +125,7 @@ export function BotellaCard({
       <AgaveCardIcon accent={accent} />
       <div
         style={{
-          background: '#F4F2EE',
+          background: 'var(--panel-2)',
           borderRadius: 4,
           padding: '8px 8px 6px',
         }}
@@ -134,7 +134,7 @@ export function BotellaCard({
           style={{
             fontSize: 10,
             fontWeight: 500,
-            color: '#1A1A1A',
+            color: 'var(--fg-0)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',

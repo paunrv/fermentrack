@@ -15,7 +15,7 @@ import {
 } from '@/lib/supabase'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
-const font = "'Space Grotesk', sans-serif"
+
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -23,20 +23,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 const MATERIAL_KEYS = ['containers', 'labels', 'corks', 'capsules', 'boxes'] as const
@@ -140,7 +140,7 @@ export default function EmbotelladoPage() {
 
   return (
     <div
-      style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}
+      style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}
     >
       <div style={{ marginBottom: 32 }}>
         <h1
@@ -148,7 +148,7 @@ export default function EmbotelladoPage() {
             fontSize: 28,
             fontWeight: 800,
             letterSpacing: '-.04em',
-            color: '#111',
+            color: 'var(--fg-0)',
             lineHeight: 1.1,
             marginBottom: 6,
           }}
@@ -163,7 +163,7 @@ export default function EmbotelladoPage() {
       <form
         onSubmit={handleSubmit}
         style={{
-          border: '3px solid #111',
+          border: '1px solid var(--hairline)',
           padding: 24,
           marginBottom: 32,
           background: COLORS[1],
@@ -209,15 +209,15 @@ export default function EmbotelladoPage() {
                   style={{
                     flex: 1,
                     padding: '10px 12px',
-                    border: '3px solid #111',
-                    background: unitType === t ? '#111' : '#fff',
-                    color: unitType === t ? '#fff' : '#111',
+                    border: '1px solid var(--hairline)',
+                    background: unitType === t ? 'var(--fg-0)' : '#fff',
+                    color: unitType === t ? '#fff' : 'var(--fg-0)',
                     fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.08em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
-                    fontFamily: font,
+                    fontFamily: 'var(--font-display)',
                   }}
                 >
                   {t === 'botella' ? 'Botella' : 'Lata'}
@@ -249,7 +249,7 @@ export default function EmbotelladoPage() {
                 alignItems: 'end',
                 padding: 12,
                 background: COLORS[i % COLORS.length],
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
               }}
             >
               <div>
@@ -293,12 +293,12 @@ export default function EmbotelladoPage() {
           <div
             style={{
               padding: 16,
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               background: '#fff',
             }}
           >
             <div style={label}>Total unidades producidas</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#111' }}>{totalUnits}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>{totalUnits}</div>
             <p style={{ fontSize: 11, color: '#666', marginTop: 4, fontWeight: 500 }}>
               Calculado desde cantidad de {labels.containers.toLowerCase()}
             </p>
@@ -306,12 +306,12 @@ export default function EmbotelladoPage() {
           <div
             style={{
               padding: 16,
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               background: '#FAC775',
             }}
           >
             <div style={label}>Costo total materiales</div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: '#111' }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg-0)' }}>
               {formatMoney(materialsTotal)}
             </div>
           </div>
@@ -333,16 +333,16 @@ export default function EmbotelladoPage() {
           disabled={saving || !batchId || totalUnits <= 0}
           style={{
             padding: '12px 20px',
-            background: '#111',
+            background: 'var(--fg-0)',
             color: '#fff',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: saving ? 'wait' : 'pointer',
             opacity: saving || !batchId || totalUnits <= 0 ? 0.5 : 1,
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           {saving ? 'Guardando...' : 'Registrar embotellado'}
@@ -373,7 +373,7 @@ export default function EmbotelladoPage() {
                 <div
                   key={row.id}
                   style={{
-                    border: '3px solid #111',
+                    border: '1px solid var(--hairline)',
                     padding: 16,
                     background: COLORS[i % COLORS.length],
                     display: 'grid',

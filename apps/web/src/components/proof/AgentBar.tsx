@@ -20,7 +20,7 @@ export interface Message {
 const chipStyle: React.CSSProperties = {
   fontSize: 11,
   color: '#999',
-  border: '0.5px solid #E0DDD6',
+  border: '0.5px solid var(--line)',
   borderRadius: 20,
   padding: '5px 14px',
   background: '#fff',
@@ -220,7 +220,7 @@ export function AgentBar({
           maxWidth: 560,
           margin: '0 auto',
           padding: '32px 24px 24px',
-          background: '#F8F8F6',
+          background: 'var(--ink)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'stretch',
@@ -283,7 +283,7 @@ export function AgentBar({
             overflowX: 'hidden',
             transition: 'max-height 0.25s ease',
             background: '#fff',
-            border: hasMessages ? '0.5px solid #E8E6E0' : 'none',
+            border: hasMessages ? '0.5px solid var(--hairline)' : 'none',
             borderBottom: 'none',
             borderRadius: hasMessages ? '16px 16px 0 0' : 0,
             padding: hasMessages ? '12px 14px 10px' : 0,
@@ -320,8 +320,8 @@ export function AgentBar({
                         borderRadius: '10px 10px 2px 10px',
                       }
                     : {
-                        background: '#F8F8F6',
-                        color: '#1A1A1A',
+                        background: 'var(--ink)',
+                        color: 'var(--fg-0)',
                         fontFamily:
                           'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                         borderRadius: '10px 10px 10px 2px',
@@ -357,7 +357,7 @@ export function AgentBar({
               <div
                 style={{
                   padding: '10px 14px',
-                  background: '#F8F8F6',
+                  background: 'var(--ink)',
                   borderRadius: '10px 10px 10px 2px',
                 }}
               >
@@ -374,8 +374,8 @@ export function AgentBar({
           style={{
             width: '100%',
             background: '#fff',
-            border: '0.5px solid #E0DDD6',
-            borderTop: hasMessages ? '0.5px solid #E8E6E0' : undefined,
+            border: '0.5px solid var(--line)',
+            borderTop: hasMessages ? '0.5px solid var(--hairline)' : undefined,
             borderRadius: hasMessages ? '0 0 16px 16px' : 16,
             padding: '12px 16px',
             display: 'flex',
@@ -414,8 +414,8 @@ export function AgentBar({
             aria-label="Adjuntar imagen"
             title={pendingImage ? 'Imagen lista — escribe para enviar' : 'Adjuntar imagen'}
             style={{
-              width: 28,
-              height: 28,
+              width: 44,
+              height: 44,
               borderRadius: 8,
               border: 'none',
               background: pendingImage ? accent : 'transparent',
@@ -440,8 +440,8 @@ export function AgentBar({
               border: 'none',
               background: 'transparent',
               outline: 'none',
-              fontSize: 13,
-              color: '#1A1A1A',
+              fontSize: 16,
+              color: 'var(--fg-0)',
             }}
           />
           <button
@@ -450,11 +450,11 @@ export function AgentBar({
             aria-label="Enviar"
             className="proof-agent-send"
             style={{
-              width: 28,
-              height: 28,
+              width: 44,
+              height: 44,
               borderRadius: 8,
               border: 'none',
-              background: '#1A1A1A',
+              background: 'var(--fg-0)',
               color: '#fff',
               display: 'grid',
               placeItems: 'center',
@@ -487,12 +487,12 @@ export function AgentBar({
                 className="proof-quick-action"
                 style={chipStyle}
                 onMouseEnter={e => {
-                  e.currentTarget.style.color = '#1A1A1A'
+                  e.currentTarget.style.color = 'var(--fg-0)'
                   e.currentTarget.style.borderColor = `${accent}44`
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.color = '#999'
-                  e.currentTarget.style.borderColor = '#E0DDD6'
+                  e.currentTarget.style.borderColor = 'var(--line)'
                 }}
               >
                 {action.label}
@@ -510,12 +510,12 @@ export function AgentBar({
                 }}
                 onMouseEnter={e => {
                   if (isTyping) return
-                  e.currentTarget.style.color = '#1A1A1A'
+                  e.currentTarget.style.color = 'var(--fg-0)'
                   e.currentTarget.style.borderColor = `${accent}44`
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.color = '#999'
-                  e.currentTarget.style.borderColor = '#E0DDD6'
+                  e.currentTarget.style.borderColor = 'var(--line)'
                 }}
               >
                 {action.label}

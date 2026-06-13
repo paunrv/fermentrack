@@ -41,7 +41,7 @@ function CanvasDivider({ label }: { label: string }) {
         marginBottom: 8,
       }}
     >
-      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
       <span
         style={{
           fontSize: 9,
@@ -53,7 +53,7 @@ function CanvasDivider({ label }: { label: string }) {
       >
         {label}
       </span>
-      <div style={{ flex: 1, height: '0.5px', background: '#E8E6E0' }} />
+      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
     </div>
   )
 }
@@ -161,9 +161,9 @@ export default function CreditoPage() {
   const profileBlocked = profilesResolved && !profileLoading && !scope
 
   return (
-    <div style={{ paddingBottom: 100, color: '#1A1A1A' }}>
+    <div style={{ paddingBottom: 100, color: 'var(--fg-0)' }}>
       <div style={{ padding: '24px 24px 8px' }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: '#1A1A1A' }}>
+        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--fg-0)' }}>
           Crédito
         </h1>
         <p style={{ margin: 0, fontSize: 12, color: '#888' }}>
@@ -210,7 +210,7 @@ export default function CreditoPage() {
               style={{
                 height: 72,
                 borderRadius: 12,
-                background: '#F4F2EE',
+                background: 'var(--panel-2)',
                 animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
               }}
             />
@@ -221,7 +221,7 @@ export default function CreditoPage() {
             <KpiCard
               label="Por cobrar"
               value={fmtMoney(resumen.totalPorCobrar)}
-              tone={resumen.totalPorCobrar > 0 ? accent : '#1A1A1A'}
+              tone={resumen.totalPorCobrar > 0 ? accent : 'var(--fg-0)'}
             />
             <KpiCard
               label="Clientes vencidos"
@@ -261,7 +261,7 @@ export default function CreditoPage() {
               style={{
                 height: 140,
                 borderRadius: 12,
-                background: '#F4F2EE',
+                background: 'var(--panel-2)',
                 animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
               }}
             />
@@ -327,7 +327,7 @@ export default function CreditoPage() {
               padding: 20,
               background: '#fff',
               borderRadius: 12,
-              border: '0.5px solid #E8E6E0',
+              border: '0.5px solid var(--hairline)',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -346,7 +346,7 @@ export default function CreditoPage() {
                 >
                   DETALLE CLIENTE
                 </div>
-                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: '#1A1A1A' }}>
+                <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: 'var(--fg-0)' }}>
                   {detalle.cliente_nombre}
                 </h2>
 
@@ -361,8 +361,8 @@ export default function CreditoPage() {
                         padding: '10px 12px',
                         marginBottom: 8,
                         borderRadius: 8,
-                        border: '0.5px solid #E8E6E0',
-                        background: '#FAFAF8',
+                        border: '0.5px solid var(--hairline)',
+                        background: 'var(--panel-2)',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -393,7 +393,7 @@ export default function CreditoPage() {
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '8px 0',
-                        borderBottom: '0.5px solid #E8E6E0',
+                        borderBottom: '0.5px solid var(--hairline)',
                         fontSize: 11,
                       }}
                     >
@@ -456,7 +456,7 @@ export default function CreditoPage() {
               padding: 20,
               background: '#fff',
               borderRadius: 12,
-              border: '0.5px solid #E8E6E0',
+              border: '0.5px solid var(--hairline)',
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -480,7 +480,7 @@ export default function CreditoPage() {
                     whiteSpace: 'pre-wrap',
                     fontFamily: MONO,
                     fontSize: 12,
-                    color: '#1A1A1A',
+                    color: 'var(--fg-0)',
                     margin: '0 0 12px',
                   }}
                 >
@@ -522,7 +522,7 @@ export default function CreditoPage() {
 function KpiCard({
   label,
   value,
-  tone = '#1A1A1A',
+  tone = 'var(--fg-0)',
 }: {
   label: string
   value: string
@@ -533,7 +533,7 @@ function KpiCard({
       style={{
         padding: 14,
         background: '#fff',
-        border: '0.5px solid #E8E6E0',
+        border: '0.5px solid var(--hairline)',
         borderRadius: 12,
       }}
     >
@@ -577,9 +577,9 @@ const btnSmall: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 600,
   padding: '6px 10px',
-  border: '0.5px solid #E8E6E0',
+  border: '0.5px solid var(--hairline)',
   background: '#fff',
-  color: '#1A1A1A',
+  color: 'var(--fg-0)',
   borderRadius: 6,
   cursor: 'pointer',
   fontFamily: MONO,

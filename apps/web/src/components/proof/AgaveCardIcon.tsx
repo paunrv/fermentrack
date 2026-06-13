@@ -12,7 +12,7 @@ export function AgaveCardIcon({ accent }: { accent: string }) {
       aria-hidden
       style={{ display: 'block', margin: '0 auto 8px' }}
     >
-      <ellipse cx="20" cy="67" rx="13" ry="2.5" fill="#E8E6E0" />
+      <ellipse cx="20" cy="67" rx="13" ry="2.5" fill="var(--hairline)" />
 
       {/* hojas traseras */}
       <path

@@ -16,11 +16,11 @@ const field: React.CSSProperties = {
   width: '100%',
   marginTop: 4,
   padding: '8px 10px',
-  background: '#FAFAF8',
-  border: '0.5px solid #E8E6E0',
+  background: 'var(--panel-2)',
+  border: '0.5px solid var(--hairline)',
   borderRadius: 8,
   fontSize: 12,
-  color: '#1A1A1A',
+  color: 'var(--fg-0)',
   outline: 'none',
 }
 
@@ -33,18 +33,18 @@ type LineaForm = {
 
 function DetalleSkeleton() {
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '28px 24px 24px' }}>
         <div
           style={{
             height: 28,
             width: '50%',
-            background: '#F4F2EE',
+            background: 'var(--panel-2)',
             borderRadius: 4,
             marginBottom: 8,
           }}
         />
-        <div style={{ height: 12, width: '35%', background: '#F4F2EE', borderRadius: 4 }} />
+        <div style={{ height: 12, width: '35%', background: 'var(--panel-2)', borderRadius: 4 }} />
       </div>
     </div>
   )
@@ -132,7 +132,7 @@ export function OrdenCompraPendienteDetalle({
   if (loading) return <DetalleSkeleton />
   if (!orden) {
     return (
-      <div style={{ padding: 24, background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+      <div style={{ padding: 24, background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
         <p style={{ margin: 0, fontSize: 13, color: '#888' }}>Orden no encontrada.</p>
       </div>
     )
@@ -143,7 +143,7 @@ export function OrdenCompraPendienteDetalle({
     items.length === 1 ? items[0]!.producto_nombre : `${items.length} productos`
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '28px 24px 20px', position: 'relative' }}>
         <button
           type="button"
@@ -184,7 +184,7 @@ export function OrdenCompraPendienteDetalle({
             margin: 0,
             fontSize: 26,
             fontWeight: 500,
-            color: '#1A1A1A',
+            color: 'var(--fg-0)',
             letterSpacing: '-0.02em',
             paddingRight: 36,
           }}
@@ -214,12 +214,12 @@ export function OrdenCompraPendienteDetalle({
             key={it.id}
             style={{
               padding: '12px 0',
-              borderTop: i ? '0.5px solid #EEECEA' : undefined,
+              borderTop: i ? '0.5px solid var(--hairline)' : undefined,
               fontSize: 12,
               color: '#444',
             }}
           >
-            <div style={{ fontWeight: 600, color: '#1A1A1A' }}>{it.producto_nombre}</div>
+            <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{it.producto_nombre}</div>
             <div style={{ marginTop: 4, color: '#888' }}>
               {it.cantidad_ordenada} uds · {fmtMoney(Number(it.costo_unitario))}/ud
             </div>
@@ -239,9 +239,9 @@ export function OrdenCompraPendienteDetalle({
                 style={{
                   padding: 14,
                   marginBottom: 12,
-                  border: '0.5px solid #E8E6E0',
+                  border: '0.5px solid var(--hairline)',
                   borderRadius: 10,
-                  background: '#FAFAF8',
+                  background: 'var(--panel-2)',
                 }}
               >
                 <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 13 }}>

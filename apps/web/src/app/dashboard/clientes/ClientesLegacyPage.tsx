@@ -13,7 +13,7 @@ import {
   type PriceTier,
 } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
+
 
 const TYPE_COLORS: Record<ClientType, string> = {
   restaurante: '#FAC775',
@@ -47,20 +47,20 @@ const label: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const input: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 const CLIENT_TYPES: ClientType[] = ['restaurante', 'bar', 'tienda', 'sub-distribuidor']
@@ -136,7 +136,7 @@ export default function ClientesLegacyPage() {
   }
 
   return (
-    <div style={{ fontFamily: font, background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
       <div
         style={{
           marginBottom: 32,
@@ -153,7 +153,7 @@ export default function ClientesLegacyPage() {
               fontSize: 28,
               fontWeight: 800,
               letterSpacing: '-.04em',
-              color: '#111',
+              color: 'var(--fg-0)',
               lineHeight: 1.1,
               marginBottom: 6,
             }}
@@ -169,15 +169,15 @@ export default function ClientesLegacyPage() {
           onClick={() => setShowForm(v => !v)}
           style={{
             padding: '12px 20px',
-            background: showForm ? '#fff' : '#111',
-            color: showForm ? '#111' : '#fff',
-            border: '3px solid #111',
+            background: showForm ? '#fff' : 'var(--fg-0)',
+            color: showForm ? 'var(--fg-0)' : '#fff',
+            border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
             cursor: 'pointer',
-            fontFamily: font,
+            fontFamily: 'var(--font-display)',
           }}
         >
           {showForm ? 'Cancelar' : '+ Nuevo cliente'}
@@ -188,7 +188,7 @@ export default function ClientesLegacyPage() {
         <form
           onSubmit={handleSubmit}
           style={{
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             padding: 24,
             marginBottom: 32,
             background: TYPE_COLORS[type],
@@ -314,16 +314,16 @@ export default function ClientesLegacyPage() {
             style={{
               marginTop: 16,
               padding: '12px 20px',
-              background: '#111',
+              background: 'var(--fg-0)',
               color: '#fff',
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               fontSize: 11,
               fontWeight: 800,
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               cursor: saving ? 'wait' : 'pointer',
               opacity: saving ? 0.5 : 1,
-              fontFamily: font,
+              fontFamily: 'var(--font-display)',
             }}
           >
             {saving ? 'Guardando...' : 'Guardar cliente'}
@@ -350,7 +350,7 @@ export default function ClientesLegacyPage() {
               <div
                 key={client.id}
                 style={{
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   padding: 20,
                   background: TYPE_COLORS[client.type],
                   display: 'flex',
@@ -373,7 +373,7 @@ export default function ClientesLegacyPage() {
                         fontSize: 18,
                         fontWeight: 800,
                         lineHeight: 1.2,
-                        color: '#111',
+                        color: 'var(--fg-0)',
                       }}
                     >
                       {client.name}
@@ -398,7 +398,7 @@ export default function ClientesLegacyPage() {
                       letterSpacing: '.1em',
                       textTransform: 'uppercase',
                       padding: '5px 8px',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: '#fff',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
@@ -410,7 +410,7 @@ export default function ClientesLegacyPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {client.phone && (
-                    <div style={{ fontSize: 12, fontWeight: 600, color: '#111' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-0)' }}>
                       <span style={{ opacity: 0.6 }}>TEL </span>
                       {client.phone}
                     </div>
@@ -420,7 +420,7 @@ export default function ClientesLegacyPage() {
                       style={{
                         fontSize: 12,
                         fontWeight: 600,
-                        color: '#111',
+                        color: 'var(--fg-0)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -454,9 +454,9 @@ export default function ClientesLegacyPage() {
                       letterSpacing: '.08em',
                       textTransform: 'uppercase',
                       padding: '6px 10px',
-                      border: '3px solid #111',
+                      border: '1px solid var(--hairline)',
                       background: TIER_BG[client.price_tier],
-                      color: '#111',
+                      color: 'var(--fg-0)',
                     }}
                   >
                     {TIER_LABELS[client.price_tier]}

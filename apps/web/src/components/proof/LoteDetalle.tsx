@@ -99,13 +99,13 @@ function distMovementTone(type: string): string {
 
 function LoteDetalleSkeleton() {
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '28px 24px 24px' }}>
         <div
           style={{
             height: 10,
             width: 80,
-            background: '#F4F2EE',
+            background: 'var(--panel-2)',
             borderRadius: 4,
             marginBottom: 12,
           }}
@@ -114,7 +114,7 @@ function LoteDetalleSkeleton() {
           style={{
             height: 28,
             width: '60%',
-            background: '#F4F2EE',
+            background: 'var(--panel-2)',
             borderRadius: 4,
             marginBottom: 8,
           }}
@@ -123,7 +123,7 @@ function LoteDetalleSkeleton() {
           style={{
             height: 12,
             width: '45%',
-            background: '#F4F2EE',
+            background: 'var(--panel-2)',
             borderRadius: 4,
           }}
         />
@@ -134,14 +134,14 @@ function LoteDetalleSkeleton() {
             key={i}
             style={{
               padding: 20,
-              borderRight: i < 2 ? '0.5px solid #EEECEA' : undefined,
+              borderRight: i < 2 ? '0.5px solid var(--hairline)' : undefined,
             }}
           >
             <div
               style={{
                 height: 22,
                 width: 48,
-                background: '#F4F2EE',
+                background: 'var(--panel-2)',
                 borderRadius: 4,
               }}
             />
@@ -149,7 +149,7 @@ function LoteDetalleSkeleton() {
               style={{
                 height: 10,
                 width: 64,
-                background: '#F4F2EE',
+                background: 'var(--panel-2)',
                 borderRadius: 4,
                 marginTop: 8,
               }}
@@ -162,14 +162,14 @@ function LoteDetalleSkeleton() {
           key={i}
           style={{
             padding: '16px 24px',
-            borderBottom: '0.5px solid #EEECEA',
+            borderBottom: '0.5px solid var(--hairline)',
           }}
         >
           <div
             style={{
               height: 14,
               width: '40%',
-              background: '#F4F2EE',
+              background: 'var(--panel-2)',
               borderRadius: 4,
             }}
           />
@@ -190,7 +190,7 @@ function CollapsibleSection({
   const pairs = section.pairs
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -207,7 +207,7 @@ function CollapsibleSection({
           textAlign: 'left',
         }}
         onMouseEnter={e => {
-          e.currentTarget.style.background = '#FAFAF8'
+          e.currentTarget.style.background = 'var(--panel-2)'
         }}
         onMouseLeave={e => {
           e.currentTarget.style.background = 'transparent'
@@ -215,7 +215,7 @@ function CollapsibleSection({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <span style={{ color: '#BBB', display: 'flex', flexShrink: 0 }}>{section.icon}</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>{section.title}</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg-0)' }}>{section.title}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <span
@@ -250,14 +250,14 @@ function CollapsibleSection({
               justifyContent: 'space-between',
               gap: 12,
               padding: '8px 0',
-              borderBottom: i < pairs.length - 1 ? '0.5px solid #F4F2EE' : 'none',
+              borderBottom: i < pairs.length - 1 ? '0.5px solid var(--panel-2)' : 'none',
             }}
           >
             <span style={{ fontSize: 12, color: '#AAA' }}>{pair.label}</span>
             <span
               style={{
                 fontSize: 13,
-                color: '#1A1A1A',
+                color: 'var(--fg-0)',
                 fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 textAlign: 'right',
               }}
@@ -297,7 +297,7 @@ function CollapsibleSection({
               paddingTop: 12,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg-0)' }}>
               {section.highlight.label}
             </span>
             <span
@@ -320,7 +320,7 @@ function CollapsibleSection({
               gap: 10,
               padding: '10px 0',
               borderBottom:
-                i < (section.timeline?.length ?? 0) - 1 ? '0.5px solid #F4F2EE' : 'none',
+                i < (section.timeline?.length ?? 0) - 1 ? '0.5px solid var(--panel-2)' : 'none',
               alignItems: 'flex-start',
             }}
           >
@@ -769,7 +769,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
       <div
         style={{
           background: '#fff',
-          borderBottom: '0.5px solid #EEECEA',
+          borderBottom: '0.5px solid var(--hairline)',
           padding: 24,
           textAlign: 'center',
         }}
@@ -781,7 +781,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
           style={{
             marginTop: 12,
             fontSize: 12,
-            border: '0.5px solid #E0DDD6',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '8px 16px',
             background: '#fff',
@@ -806,11 +806,11 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
     : `${sku!.codigo} · ${sku!.productor}`
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       <div
         style={{
           padding: '28px 24px 24px',
-          borderBottom: '0.5px solid #EEECEA',
+          borderBottom: '0.5px solid var(--hairline)',
           position: 'relative',
         }}
       >
@@ -824,7 +824,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
             right: 16,
             width: 28,
             height: 28,
-            border: '0.5px solid #E0DDD6',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             background: '#fff',
             color: '#999',
@@ -861,7 +861,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
             margin: 0,
             fontSize: 26,
             fontWeight: 500,
-            color: '#1A1A1A',
+            color: 'var(--fg-0)',
             letterSpacing: '-0.02em',
             paddingRight: 36,
           }}
@@ -885,7 +885,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
           <div
             key={kpi.slot}
             style={{
-              borderRight: i < kpiValues.length - 1 ? '0.5px solid #EEECEA' : undefined,
+              borderRight: i < kpiValues.length - 1 ? '0.5px solid var(--hairline)' : undefined,
             }}
           >
             <KpiCell
@@ -921,7 +921,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
       <div
         style={{
           background: '#fff',
-          borderTop: '0.5px solid #EEECEA',
+          borderTop: '0.5px solid var(--hairline)',
           padding: '20px 24px',
           display: 'flex',
           gap: 8,
@@ -939,9 +939,9 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
               borderRadius: 8,
               padding: '10px 14px',
               cursor: 'pointer',
-              border: action.primary ? 'none' : '0.5px solid #E0DDD6',
-              background: action.primary ? '#1A1A1A' : '#fff',
-              color: action.primary ? '#F8F7F4' : '#666',
+              border: action.primary ? 'none' : '0.5px solid var(--line)',
+              background: action.primary ? 'var(--fg-0)' : '#fff',
+              color: action.primary ? 'var(--ink)' : '#666',
               transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
             }}
             onMouseEnter={e => {
@@ -950,15 +950,15 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
                 e.currentTarget.style.borderColor = accent
               } else {
                 e.currentTarget.style.borderColor = '#999'
-                e.currentTarget.style.color = '#1A1A1A'
+                e.currentTarget.style.color = 'var(--fg-0)'
               }
             }}
             onMouseLeave={e => {
               if (action.primary) {
-                e.currentTarget.style.background = '#1A1A1A'
+                e.currentTarget.style.background = 'var(--fg-0)'
                 e.currentTarget.style.borderColor = 'transparent'
               } else {
-                e.currentTarget.style.borderColor = '#E0DDD6'
+                e.currentTarget.style.borderColor = 'var(--line)'
                 e.currentTarget.style.color = '#666'
               }
             }}

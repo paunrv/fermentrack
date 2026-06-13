@@ -3,60 +3,76 @@
 @tailwind utilities;
 
 /* =========================================================================
-   PROOF · OPERATIONAL INTELLIGENCE PLATFORM
-   Design tokens for liquid operations — dark industrial, telemetry-grade.
+   PROOF · Notion-like light theme
+   White surfaces, subtle borders, calm typography.
    ========================================================================= */
 
 :root {
-  /* — PROOF Distribuidor v1.0 — flat dark — */
-  --ink: #0A0A0A;
-  --canvas: #111111;
-  --panel: #1A1A1A;
-  --panel-2: #141414;
-  --raised: #1A1A1A;
-  --hover: #1E1E1E;
+  /* — Surfaces — */
+  --ink: #FFFFFF;
+  --canvas: #F7F6F3;
+  --panel: #FFFFFF;
+  --panel-2: #F1F1EF;
+  --raised: #FFFFFF;
+  --hover: rgba(55, 53, 47, 0.08);
 
-  --hairline: #1E1E1E;
-  --line: #2A2A2A;
-  --line-strong: #2A2A2A;
+  /* — Borders — */
+  --hairline: rgba(55, 53, 47, 0.09);
+  --line: rgba(55, 53, 47, 0.16);
+  --line-strong: rgba(55, 53, 47, 0.24);
 
-  --fg-0: #F0EBE0;
-  --fg-1: #F0EBE0;
-  --fg-2: #B0AAA0;
-  --fg-3: #666666;
-  --fg-4: #444444;
-  --fg-5: #333333;
+  /* — Text (Notion palette) — */
+  --fg-0: #37352F;
+  --fg-1: #37352F;
+  --fg-2: #787774;
+  --fg-3: #9B9A97;
+  --fg-4: #C3C2C0;
+  --fg-5: #E9E9E7;
 
-  --proof-accent: #C2410C;
+  /* — Accent (overridden per profile via proofAccentCssVars) — */
+  --proof-accent: #2383E2;
   --gold: var(--proof-accent);
-  --gold-soft: color-mix(in srgb, var(--proof-accent) 35%, transparent);
+  --gold-soft: color-mix(in srgb, var(--proof-accent) 18%, transparent);
   --copper: var(--proof-accent);
   --copper-soft: var(--proof-accent);
-  --copper-glow: color-mix(in srgb, var(--proof-accent) 12%, transparent);
-  --wine: #8B2F38;
-  --wine-soft: #5F2026;
+  --copper-glow: color-mix(in srgb, var(--proof-accent) 10%, transparent);
+  --wine: #9B2335;
+  --wine-soft: rgba(155, 35, 53, 0.1);
 
-  --ok: #4CAF7D;
-  --ok-soft: rgba(76, 175, 125, 0.12);
-  --warn: #EF9F27;
-  --warn-soft: rgba(239, 159, 39, 0.12);
-  --crit: #E24B4A;
-  --crit-soft: rgba(226, 75, 74, 0.12);
-  --info: #378ADD;
-  --info-soft: rgba(55, 138, 221, 0.12);
-  --purple: #9B8FE0;
-  --purple-soft: rgba(155, 143, 224, 0.14);
+  /* — Status — */
+  --ok: #0F7B6C;
+  --ok-soft: rgba(15, 123, 108, 0.1);
+  --warn: #D9730D;
+  --warn-soft: rgba(217, 115, 13, 0.1);
+  --crit: #E03E3E;
+  --crit-soft: rgba(224, 62, 62, 0.1);
+  --info: #2383E2;
+  --info-soft: rgba(35, 131, 226, 0.1);
+  --purple: #6940A5;
+  --purple-soft: rgba(105, 64, 165, 0.1);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-card: 12px;
+  /* — Radii — */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-card: 8px;
 
-  --font-display: 'Syne', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  /* — Typography — */
+  --font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
+    'Apple Color Emoji', Arial, sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
 
   /* — Motion — */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.7, 0, 0.3, 1);
+
+  /* — Shadow (Notion-style, very subtle) — */
+  --shadow-sm: 0 1px 2px rgba(15, 15, 15, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 15, 15, 0.06);
+
+  /* — Mobile shell — */
+  --proof-bottom-nav: 0px;
+  --proof-sidebar: 52px;
 }
 
 * {
@@ -70,37 +86,36 @@ body {
   background: var(--ink);
   color: var(--fg-1);
   font-family: var(--font-display);
-  font-feature-settings: 'ss01', 'cv11', 'tnum';
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* — Scrollbar: thin, technical — */
+/* — Scrollbar — */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--line) transparent;
 }
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--line);
-  border: 2px solid var(--canvas);
-  border-radius: 0;
+  border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover {
   background: var(--line-strong);
 }
 
-/* — Selection — */
 ::selection {
-  background: var(--copper);
-  color: var(--ink);
+  background: color-mix(in srgb, var(--proof-accent) 25%, transparent);
+  color: var(--fg-0);
 }
 
 /* =========================================================================
@@ -114,10 +129,10 @@ body {
 }
 
 .eyebrow {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-display);
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--fg-3);
 }
@@ -126,37 +141,15 @@ body {
   background: var(--hairline);
 }
 
-/* Corner brackets — luxury cellar / motorsport telemetry framing */
 .frame {
   position: relative;
   border: 1px solid var(--hairline);
   background: var(--panel);
-}
-.frame::before,
-.frame::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-color: var(--copper);
-  border-style: solid;
-  pointer-events: none;
-  opacity: 0.55;
-}
-.frame::before {
-  top: -1px;
-  left: -1px;
-  border-width: 1px 0 0 1px;
-}
-.frame::after {
-  bottom: -1px;
-  right: -1px;
-  border-width: 0 1px 1px 0;
+  border-radius: var(--radius-md);
 }
 
-/* — Interactive surface — */
 .surface-hover {
-  transition: background 200ms var(--ease-out), border-color 200ms var(--ease-out);
+  transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out);
 }
 .surface-hover:hover {
   background: var(--panel-2);
@@ -185,16 +178,15 @@ body {
   inset: -3px;
   border-radius: 999px;
   background: inherit;
-  opacity: 0.6;
+  opacity: 0.5;
   animation: pulse-live 2.4s var(--ease-in-out) infinite;
 }
 
 @keyframes pulse-live {
-  0%, 100% { transform: scale(1); opacity: 0.55; }
+  0%, 100% { transform: scale(1); opacity: 0.45; }
   50% { transform: scale(1.9); opacity: 0; }
 }
 
-/* Telemetry sweep used in loading bars */
 @keyframes sweep {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
@@ -206,22 +198,20 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(194, 139, 90, 0.18) 50%,
+    color-mix(in srgb, var(--proof-accent) 12%, transparent) 50%,
     transparent 100%
   );
   animation: sweep 1.6s var(--ease-in-out) infinite;
 }
 
-/* Subtle entry */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 .fade-up {
-  animation: fade-up 380ms var(--ease-out) both;
+  animation: fade-up 320ms var(--ease-out) both;
 }
 
-/* Caret blink for terminal moments */
 @keyframes caret {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
@@ -229,27 +219,166 @@ body {
 .caret::after {
   content: '▍';
   margin-left: 2px;
-  color: var(--copper);
+  color: var(--proof-accent);
   animation: caret 1s steps(1) infinite;
 }
 
-/* Reusable focus ring (technical, not glossy) */
 :where(button, a, input, textarea, select):focus-visible {
-  outline: 1px solid var(--copper);
+  outline: 2px solid color-mix(in srgb, var(--proof-accent) 45%, transparent);
   outline-offset: 1px;
 }
 
-/* Buttons baseline */
 button {
   font-family: inherit;
   cursor: pointer;
 }
 button:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 input,
-textarea {
+textarea,
+select {
   font-family: inherit;
   color: inherit;
+}
+
+/* =========================================================================
+   MOBILE SHELL
+   ========================================================================= */
+
+@media (max-width: 767px) {
+  :root {
+    --proof-bottom-nav: calc(56px + env(safe-area-inset-bottom, 0px));
+    --proof-sidebar: 0px;
+  }
+}
+
+.proof-ai-bar {
+  position: fixed;
+  left: var(--proof-sidebar);
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  background: var(--panel);
+  border-top: 1px solid var(--hairline);
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .proof-ai-bar {
+    left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 16px;
+    padding-bottom: calc(10px + var(--proof-bottom-nav));
+  }
+
+  .proof-ai-bar__actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .proof-page--mobile {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .proof-agent-bar {
+    padding: 16px 16px 12px !important;
+  }
+
+  .proof-agent-bar .proof-agent-chat {
+    max-height: min(45vh, 320px) !important;
+  }
+
+  .proof-form-grid--responsive {
+    grid-template-columns: 1fr !important;
+  }
+
+  .proof-section-grid {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  }
+
+  .proof-canvas-rail {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .proof-canvas-header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+/* Canvas home — vertical sections, horizontal item rails */
+.proof-canvas-rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 4px;
+  scrollbar-width: none;
+}
+
+.proof-canvas-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.proof-canvas-rail__item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.proof-canvas-stack {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 16px;
+}
+
+.proof-chip-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 12px;
+  scrollbar-width: none;
+}
+
+.proof-chip-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.proof-rail-card {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--ink);
+  height: 100%;
+  min-height: 148px;
+  padding: 14px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .proof-ai-bar {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
 }

@@ -69,10 +69,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function PedidoDetalleSkeleton() {
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '24px 24px 20px' }}>
-        <div style={{ height: 10, width: 72, background: '#F4F2EE', borderRadius: 4, marginBottom: 12 }} />
-        <div style={{ height: 26, width: '55%', background: '#F4F2EE', borderRadius: 4 }} />
+        <div style={{ height: 10, width: 72, background: 'var(--panel-2)', borderRadius: 4, marginBottom: 12 }} />
+        <div style={{ height: 26, width: '55%', background: 'var(--panel-2)', borderRadius: 4 }} />
       </div>
     </div>
   )
@@ -290,7 +290,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       <div
         style={{
           background: '#fff',
-          borderBottom: '0.5px solid #EEECEA',
+          borderBottom: '0.5px solid var(--hairline)',
           padding: 24,
           textAlign: 'center',
         }}
@@ -304,7 +304,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           style={{
             marginTop: 12,
             fontSize: 12,
-            border: '0.5px solid #E0DDD6',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '8px 16px',
             background: '#fff',
@@ -325,12 +325,12 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     Number(cuenta.saldo_pendiente) > 0
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid #EEECEA' }}>
+    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
       {/* HERO */}
       <div
         style={{
           padding: '24px 24px 16px',
-          borderBottom: '0.5px solid #EEECEA',
+          borderBottom: '0.5px solid var(--hairline)',
           position: 'relative',
         }}
       >
@@ -344,7 +344,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             right: 16,
             width: 28,
             height: 28,
-            border: '0.5px solid #E0DDD6',
+            border: '0.5px solid var(--line)',
             borderRadius: 8,
             background: '#fff',
             color: '#999',
@@ -382,7 +382,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                 margin: 0,
                 fontSize: 22,
                 fontWeight: 500,
-                color: '#1A1A1A',
+                color: 'var(--fg-0)',
                 letterSpacing: '-0.02em',
                 lineHeight: 1.2,
               }}
@@ -428,7 +428,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
               fontSize: 22,
               fontWeight: 500,
               fontFamily: MONO,
-              color: '#1A1A1A',
+              color: 'var(--fg-0)',
               flexShrink: 0,
             }}
           >
@@ -438,7 +438,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       </div>
 
       {/* DATOS */}
-      <div style={{ padding: '14px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+      <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
         <SectionLabel>Datos</SectionLabel>
         <p style={{ margin: 0, fontSize: 12, color: '#666', fontFamily: MONO }}>
           Pedido {fmtDateOnly(pedido.fecha_creacion ?? pedido.created_at)} · Entrega{' '}
@@ -447,7 +447,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       </div>
 
       {/* PRODUCTOS */}
-      <div style={{ padding: '14px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+      <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
         <SectionLabel>Productos</SectionLabel>
         {lineas.length === 0 ? (
           <p style={{ margin: 0, fontSize: 12, color: '#BBB' }}>Sin líneas registradas.</p>
@@ -461,10 +461,10 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                 justifyContent: 'space-between',
                 gap: 12,
                 padding: '8px 0',
-                borderBottom: i < lineas.length - 1 ? '0.5px solid #F4F2EE' : 'none',
+                borderBottom: i < lineas.length - 1 ? '0.5px solid var(--panel-2)' : 'none',
               }}
             >
-              <span style={{ fontSize: 12, color: '#1A1A1A', flex: 1, lineHeight: 1.4 }}>
+              <span style={{ fontSize: 12, color: 'var(--fg-0)', flex: 1, lineHeight: 1.4 }}>
                 {l.nombre}
               </span>
               <span style={{ fontSize: 11, fontFamily: MONO, color: '#888', whiteSpace: 'nowrap' }}>
@@ -476,7 +476,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                   fontSize: 12,
                   fontFamily: MONO,
                   fontWeight: 600,
-                  color: '#1A1A1A',
+                  color: 'var(--fg-0)',
                   whiteSpace: 'nowrap',
                   minWidth: 72,
                   textAlign: 'right',
@@ -491,7 +491,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
 
       {/* COBRO */}
       {showCobro && cuenta && (
-        <div style={{ padding: '14px 24px', borderBottom: '0.5px solid #EEECEA' }}>
+        <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
           <SectionLabel>Cobro</SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
             <CobroStat
@@ -544,7 +544,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                   width: '100%',
                   padding: '10px 12px',
                   borderRadius: 8,
-                  border: '0.5px solid #E0DDD6',
+                  border: '0.5px solid var(--line)',
                   fontSize: 13,
                   fontFamily: MONO,
                 }}
@@ -577,7 +577,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                   style={{
                     padding: '10px 16px',
                     borderRadius: 8,
-                    border: '0.5px solid #E0DDD6',
+                    border: '0.5px solid var(--line)',
                     background: '#fff',
                     fontSize: 13,
                     cursor: 'pointer',
@@ -637,7 +637,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             fontSize: 13,
             fontWeight: 500,
             textDecoration: 'none',
-            border: '0.5px solid #E0DDD6',
+            border: '0.5px solid var(--line)',
           }}
         >
           Correo
@@ -650,7 +650,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             flex: '1 1 120px',
             padding: '12px 16px',
             borderRadius: 10,
-            background: '#1A1A1A',
+            background: 'var(--fg-0)',
             color: '#fff',
             fontSize: 13,
             fontWeight: 500,
@@ -674,7 +674,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
 function CobroStat({
   label,
   value,
-  tone = '#1A1A1A',
+  tone = 'var(--fg-0)',
 }: {
   label: string
   value: string

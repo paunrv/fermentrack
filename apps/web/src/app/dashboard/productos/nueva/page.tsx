@@ -12,7 +12,7 @@ import {
   type ProductCategory,
 } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
+
 
 const CATEGORIES: { value: ProductCategory; label: string; emoji: string }[] = [
   { value: 'cerveza', label: 'Cerveza', emoji: '🍺' },
@@ -34,20 +34,20 @@ const labelStyle: React.CSSProperties = {
   fontWeight: 800,
   letterSpacing: '.1em',
   textTransform: 'uppercase',
-  color: '#111',
+  color: 'var(--fg-0)',
   marginBottom: 6,
 }
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: '#fff',
-  border: '3px solid #111',
+  border: '1px solid var(--hairline)',
   padding: '12px 14px',
   fontSize: 14,
   fontWeight: 500,
-  color: '#111',
+  color: 'var(--fg-0)',
   outline: 'none',
-  fontFamily: font,
+  fontFamily: 'var(--font-display)',
 }
 
 const CameraIconLg = (
@@ -387,7 +387,7 @@ export default function NuevaProductoPage() {
       style={{
         background: '#fff',
         minHeight: '100vh',
-        fontFamily: font,
+        fontFamily: 'var(--font-display)',
         padding: 32,
       }}
     >
@@ -407,9 +407,9 @@ export default function NuevaProductoPage() {
             fontWeight: 800,
             letterSpacing: '.08em',
             textTransform: 'uppercase',
-            color: '#111',
+            color: 'var(--fg-0)',
             textDecoration: 'none',
-            border: '3px solid #111',
+            border: '1px solid var(--hairline)',
             background: '#fff',
             padding: '8px 12px',
           }}
@@ -423,7 +423,7 @@ export default function NuevaProductoPage() {
               fontSize: 26,
               fontWeight: 800,
               letterSpacing: '-.03em',
-              color: '#111',
+              color: 'var(--fg-0)',
               lineHeight: 1.1,
             }}
           >
@@ -449,8 +449,8 @@ export default function NuevaProductoPage() {
                 flex: 1,
                 padding: '14px 16px',
                 marginLeft: n === 2 ? -3 : 0,
-                border: active ? '3px solid #111' : '3px dashed #bbb',
-                background: active ? '#111' : '#fff',
+                border: active ? '1px solid var(--hairline)' : '3px dashed #bbb',
+                background: active ? 'var(--fg-0)' : '#fff',
                 color: active ? '#fff' : '#888',
                 fontSize: 11,
                 fontWeight: 800,
@@ -469,7 +469,7 @@ export default function NuevaProductoPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   background: active ? '#fff' : 'transparent',
-                  color: active ? '#111' : '#888',
+                  color: active ? 'var(--fg-0)' : '#888',
                   border: active ? '3px solid #fff' : '3px dashed #bbb',
                   fontSize: 11,
                   fontWeight: 800,
@@ -496,9 +496,9 @@ export default function NuevaProductoPage() {
               style={{
                 width: '100%',
                 minHeight: 320,
-                border: `3px dashed ${dragOver ? '#111' : '#111'}`,
+                border: `3px dashed ${dragOver ? 'var(--fg-0)' : 'var(--fg-0)'}`,
                 background: dragOver ? '#fafafa' : '#fff',
-                color: '#111',
+                color: 'var(--fg-0)',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
@@ -506,18 +506,18 @@ export default function NuevaProductoPage() {
                 justifyContent: 'center',
                 gap: 14,
                 padding: 32,
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
                 outline: 'none',
                 transition: 'background .15s',
               }}
             >
-              <div style={{ color: '#111' }}>{CameraIconLg}</div>
+              <div style={{ color: 'var(--fg-0)' }}>{CameraIconLg}</div>
               <div
                 style={{
                   fontSize: 18,
                   fontWeight: 800,
                   letterSpacing: '-.02em',
-                  color: '#111',
+                  color: 'var(--fg-0)',
                   textAlign: 'center',
                 }}
               >
@@ -543,9 +543,9 @@ export default function NuevaProductoPage() {
                   letterSpacing: '.1em',
                   textTransform: 'uppercase',
                   padding: '6px 10px',
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   background: '#fff',
-                  color: '#111',
+                  color: 'var(--fg-0)',
                 }}
               >
                 Seleccionar imagen
@@ -554,7 +554,7 @@ export default function NuevaProductoPage() {
           ) : (
             <div
               style={{
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 background: '#fff',
                 padding: 20,
                 display: 'flex',
@@ -564,7 +564,7 @@ export default function NuevaProductoPage() {
             >
               <div
                 style={{
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   background: '#f4f4f4',
                   height: 320,
                   display: 'flex',
@@ -586,15 +586,15 @@ export default function NuevaProductoPage() {
                   onClick={() => fileInputRef.current?.click()}
                   style={{
                     padding: '10px 14px',
-                    border: '3px solid #111',
+                    border: '1px solid var(--hairline)',
                     background: '#fff',
-                    color: '#111',
+                    color: 'var(--fg-0)',
                     fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.08em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
-                    fontFamily: font,
+                    fontFamily: 'var(--font-display)',
                   }}
                 >
                   Cambiar foto
@@ -607,15 +607,15 @@ export default function NuevaProductoPage() {
                   }}
                   style={{
                     padding: '10px 14px',
-                    border: '3px solid #111',
+                    border: '1px solid var(--hairline)',
                     background: '#F4C0D1',
-                    color: '#111',
+                    color: 'var(--fg-0)',
                     fontSize: 11,
                     fontWeight: 800,
                     letterSpacing: '.08em',
                     textTransform: 'uppercase',
                     cursor: 'pointer',
-                    fontFamily: font,
+                    fontFamily: 'var(--font-display)',
                   }}
                 >
                   Quitar
@@ -627,12 +627,12 @@ export default function NuevaProductoPage() {
           {analyzeError && (
             <div
               style={{
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 background: '#F4C0D1',
                 padding: 14,
                 fontSize: 13,
                 fontWeight: 700,
-                color: '#111',
+                color: 'var(--fg-0)',
               }}
             >
               {analyzeError}
@@ -648,8 +648,8 @@ export default function NuevaProductoPage() {
                 flex: 1,
                 minWidth: 200,
                 padding: '14px 18px',
-                border: '3px solid #111',
-                background: '#111',
+                border: '1px solid var(--hairline)',
+                background: 'var(--fg-0)',
                 color: '#fff',
                 fontSize: 12,
                 fontWeight: 800,
@@ -657,7 +657,7 @@ export default function NuevaProductoPage() {
                 textTransform: 'uppercase',
                 cursor: !photo || analyzing ? 'not-allowed' : 'pointer',
                 opacity: !photo || analyzing ? 0.5 : 1,
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -692,16 +692,16 @@ export default function NuevaProductoPage() {
               disabled={analyzing}
               style={{
                 padding: '14px 18px',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 background: '#fff',
-                color: '#111',
+                color: 'var(--fg-0)',
                 fontSize: 12,
                 fontWeight: 800,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
                 cursor: analyzing ? 'not-allowed' : 'pointer',
                 opacity: analyzing ? 0.5 : 1,
-                fontFamily: font,
+                fontFamily: 'var(--font-display)',
               }}
             >
               Ingresar manualmente
@@ -729,7 +729,7 @@ export default function NuevaProductoPage() {
           {photoPreview && (
             <div
               style={{
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 background: '#f4f4f4',
                 width: 180,
                 height: 200,
@@ -752,7 +752,7 @@ export default function NuevaProductoPage() {
 
           <div
             style={{
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               padding: 24,
               background: '#fff',
               display: 'flex',
@@ -764,13 +764,13 @@ export default function NuevaProductoPage() {
               <div
                 style={{
                   padding: 10,
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   background: '#C0DD97',
                   fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.05em',
                   textTransform: 'uppercase',
-                  color: '#111',
+                  color: 'var(--fg-0)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
@@ -820,15 +820,15 @@ export default function NuevaProductoPage() {
                         style={{
                           padding: '12px 6px',
                           marginLeft: i === 0 ? 0 : -3,
-                          border: '3px solid #111',
-                          background: active ? '#111' : CATEGORY_COLORS[value],
-                          color: active ? '#fff' : '#111',
+                          border: '1px solid var(--hairline)',
+                          background: active ? 'var(--fg-0)' : CATEGORY_COLORS[value],
+                          color: active ? '#fff' : 'var(--fg-0)',
                           fontSize: 11,
                           fontWeight: 800,
                           letterSpacing: '.06em',
                           textTransform: 'uppercase',
                           cursor: 'pointer',
-                          fontFamily: font,
+                          fontFamily: 'var(--font-display)',
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
@@ -907,7 +907,7 @@ export default function NuevaProductoPage() {
                 <div
                   style={{
                     ...inputStyle,
-                    background: '#111',
+                    background: 'var(--fg-0)',
                     color: '#fff',
                     fontWeight: 800,
                     fontSize: 16,
@@ -938,10 +938,10 @@ export default function NuevaProductoPage() {
                 marginTop: 8,
                 padding: 12,
                 background: '#fafafa',
-                border: '3px solid #111',
+                border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#111',
+                color: 'var(--fg-0)',
                 letterSpacing: '.04em',
               }}
             >
@@ -967,15 +967,15 @@ export default function NuevaProductoPage() {
                 disabled={saving}
                 style={{
                   padding: '14px 18px',
-                  border: '3px solid #111',
+                  border: '1px solid var(--hairline)',
                   background: '#fff',
-                  color: '#111',
+                  color: 'var(--fg-0)',
                   fontSize: 11,
                   fontWeight: 800,
                   letterSpacing: '.08em',
                   textTransform: 'uppercase',
                   cursor: saving ? 'not-allowed' : 'pointer',
-                  fontFamily: font,
+                  fontFamily: 'var(--font-display)',
                 }}
               >
                 ← Atrás
@@ -987,8 +987,8 @@ export default function NuevaProductoPage() {
                 style={{
                   flex: 1,
                   padding: '14px 18px',
-                  border: '3px solid #111',
-                  background: '#111',
+                  border: '1px solid var(--hairline)',
+                  background: 'var(--fg-0)',
                   color: '#fff',
                   fontSize: 12,
                   fontWeight: 800,
@@ -996,7 +996,7 @@ export default function NuevaProductoPage() {
                   textTransform: 'uppercase',
                   cursor: saving ? 'wait' : 'pointer',
                   opacity: saving ? 0.5 : 1,
-                  fontFamily: font,
+                  fontFamily: 'var(--font-display)',
                 }}
               >
                 {saving ? 'Guardando...' : 'Confirmar y guardar'}
@@ -1029,13 +1029,13 @@ function FormField({
               alignItems: 'center',
               gap: 4,
               padding: '3px 6px',
-              border: '3px solid #111',
+              border: '1px solid var(--hairline)',
               background: '#C0DD97',
               fontSize: 8,
               fontWeight: 800,
               letterSpacing: '.1em',
               textTransform: 'uppercase',
-              color: '#111',
+              color: 'var(--fg-0)',
             }}
           >
             <svg

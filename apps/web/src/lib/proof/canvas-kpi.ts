@@ -161,9 +161,9 @@ export function distributorMetricTone(metric: KpiMetric, sku: SkuRow): string {
     case 'stock_total':
       if (sku.estado === 'sobrevendido' || sku.estado === 'quiebre') return '#E24B4A'
       if (sku.estado === 'bajo' || sku.estado === 'muerto') return '#EF9F27'
-      return '#1A1A1A'
+      return 'var(--fg-0)'
     case 'stock_reservado':
-      return sku.stock_reservado > 0 ? '#378ADD' : '#1A1A1A'
+      return sku.stock_reservado > 0 ? '#378ADD' : 'var(--fg-0)'
     case 'margen': {
       const n = Number(sku.margen_porcentaje)
       if (n < 15) return '#E24B4A'
@@ -174,7 +174,7 @@ export function distributorMetricTone(metric: KpiMetric, sku: SkuRow): string {
       const d = sku.dias_sin_movimiento
       if (d >= 60) return '#E24B4A'
       if (d >= 30) return '#EF9F27'
-      return '#1A1A1A'
+      return 'var(--fg-0)'
     }
     case 'costo_unidad':
     case 'precio_venta':
@@ -183,7 +183,7 @@ export function distributorMetricTone(metric: KpiMetric, sku: SkuRow): string {
     case 'por_cobrar':
     case 'unidades_vendidas_mes':
     default:
-      return '#1A1A1A'
+      return 'var(--fg-0)'
   }
 }
 

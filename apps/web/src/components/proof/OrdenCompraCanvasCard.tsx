@@ -9,7 +9,7 @@ import type {
 } from '@/lib/supabase/distribuidor'
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-const FG = '#1A1A1A'
+const FG = 'var(--fg-0)'
 
 type OrdenInput = OrdenCompraDistribuidorWithItems | OrdenCompraConCxP
 type CardEstado = 'en_transito' | 'recibida' | 'problema'
@@ -141,7 +141,7 @@ export function OrdenCompraCanvasCard({
       style={{
         width: '100%',
         textAlign: 'left',
-        background: selected ? '#FAFAF8' : '#fff',
+        background: selected ? 'var(--panel-2)' : '#fff',
         border: selected ? `1.5px solid ${FG}` : `0.5px solid ${borderColor}`,
         borderRadius: 12,
         padding: 0,
@@ -184,7 +184,7 @@ export function OrdenCompraCanvasCard({
       <div
         style={{
           padding: '10px 14px 15px',
-          borderTop: '0.5px solid #F4F2EE',
+          borderTop: '0.5px solid var(--panel-2)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>

@@ -36,8 +36,8 @@ export function KpiConfigDrawer({
       aria-label="Configurar KPI"
       style={{
         marginTop: 8,
-        background: '#FAFAF8',
-        border: '0.5px solid #E8E6E0',
+        background: 'var(--panel-2)',
+        border: '0.5px solid var(--hairline)',
         borderRadius: 8,
         padding: '12px 14px',
       }}
@@ -67,8 +67,8 @@ export function KpiConfigDrawer({
                 fontSize: 11,
                 borderRadius: 16,
                 padding: '4px 12px',
-                border: selected ? '0.5px solid #1A1A1A' : '0.5px solid #E0DDD6',
-                background: selected ? '#1A1A1A' : '#fff',
+                border: selected ? '0.5px solid var(--fg-0)' : '0.5px solid var(--line)',
+                background: selected ? 'var(--fg-0)' : '#fff',
                 color: selected ? '#fff' : '#888',
                 cursor: 'pointer',
                 transition: 'border-color 0.12s ease, color 0.12s ease, background 0.12s ease',
@@ -80,7 +80,7 @@ export function KpiConfigDrawer({
               }}
               onMouseLeave={e => {
                 if (selected) return
-                e.currentTarget.style.borderColor = '#E0DDD6'
+                e.currentTarget.style.borderColor = 'var(--line)'
                 e.currentTarget.style.color = '#888'
               }}
             >
@@ -118,7 +118,7 @@ export function KpiConfigDrawer({
                   fontSize: 11,
                   borderRadius: 16,
                   padding: '4px 12px',
-                  border: active ? `0.5px solid ${accent}44` : '0.5px solid #E0DDD6',
+                  border: active ? `0.5px solid ${accent}44` : '0.5px solid var(--line)',
                   background: active ? `${accent}18` : '#fff',
                   color: active ? accent : '#888',
                   cursor: 'pointer',

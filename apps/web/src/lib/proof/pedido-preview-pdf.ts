@@ -17,7 +17,7 @@ export type PedidoPreviewPdfInput = {
   total: number
 }
 
-const TEXT = '#1A1A1A'
+const TEXT = 'var(--fg-0)'
 const ACCENT = '#C2410C'
 const MARGIN_MM = 14
 

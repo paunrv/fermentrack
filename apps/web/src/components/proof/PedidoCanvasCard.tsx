@@ -10,7 +10,7 @@ import {
 
 const CLIENTE_ACCENT = '#2D6A4F'
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-const FG = '#1A1A1A'
+const FG = 'var(--fg-0)'
 
 type CxcBadge = {
   id: string
@@ -72,7 +72,7 @@ export function PedidoCanvasCard({
         padding: 14,
         borderRadius: 12,
         border: selected ? `1.5px solid ${FG}` : `0.5px solid ${accent}22`,
-        background: selected ? '#FAFAF8' : '#fff',
+        background: selected ? 'var(--panel-2)' : '#fff',
         cursor: 'pointer',
         minHeight: 140,
         display: 'flex',

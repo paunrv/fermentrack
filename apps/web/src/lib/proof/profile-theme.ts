@@ -15,38 +15,41 @@ export type ProfileTheme = {
   label: string
 }
 
+/** Notion-like sidebar: flat gray rail, accent only on active/hover */
+const NOTION_NAV = {
+  navGradient: 'var(--canvas)',
+  navText: ['#787774', '#787774', '#787774', '#787774'] as const,
+}
+
 export const PROFILES: Record<ExtraProfile, ProfileTheme> = {
   distiller: {
-    accent: '#2D6A4F',
-    navGradient: 'linear-gradient(180deg, #1B4332 0%, #2D6A4F 100%)',
-    badge: { bg: '#2D6A4F18', color: '#2D6A4F', border: '#2D6A4F33' },
-    navText: ['#95D5B2', '#74C69D', '#52B788', '#40916C'],
+    accent: '#0F7B6C',
+    ...NOTION_NAV,
+    badge: { bg: 'rgba(15, 123, 108, 0.1)', color: '#0F7B6C', border: 'rgba(15, 123, 108, 0.2)' },
     label: 'Destilador',
   },
   distributor: {
-    accent: '#C2410C',
-    navGradient: 'linear-gradient(180deg, #7C2D12 0%, #C2410C 100%)',
-    badge: { bg: '#C1440E18', color: '#C1440E', border: '#C1440E33' },
-    navText: ['#FDBA74', '#FB923C', '#F97316', '#EA580C'],
+    accent: '#D9730D',
+    ...NOTION_NAV,
+    badge: { bg: 'rgba(217, 115, 13, 0.1)', color: '#D9730D', border: 'rgba(217, 115, 13, 0.2)' },
     label: 'Distribuidor',
   },
   winemaker: {
-    accent: '#6D28D9',
-    navGradient: 'linear-gradient(180deg, #2E1065 0%, #6D28D9 100%)',
-    badge: { bg: '#6D28D918', color: '#6D28D9', border: '#6D28D933' },
-    navText: ['#C4B5FD', '#A78BFA', '#8B5CF6', '#7C3AED'],
+    accent: '#6940A5',
+    ...NOTION_NAV,
+    badge: { bg: 'rgba(105, 64, 165, 0.1)', color: '#6940A5', border: 'rgba(105, 64, 165, 0.2)' },
     label: 'Winemaker',
   },
   brewer: {
-    accent: '#B45309',
-    navGradient: 'linear-gradient(180deg, #451A03 0%, #B45309 100%)',
-    badge: { bg: '#B4530918', color: '#B45309', border: '#B4530933' },
-    navText: ['#FDE68A', '#FCD34D', '#FBBF24', '#F59E0B'],
+    accent: '#CB912F',
+    ...NOTION_NAV,
+    badge: { bg: 'rgba(203, 145, 47, 0.1)', color: '#CB912F', border: 'rgba(203, 145, 47, 0.2)' },
     label: 'Brewer',
   },
 }
 
-export const CANVAS_BG = '#F8F8F6'
+/** Page background — pure white (same as --ink) */
+export const CANVAS_BG = '#FFFFFF'
 
 export function getProfileTheme(profileType: ExtraProfile | undefined | null): ProfileTheme {
   if (profileType && profileType in PROFILES) {
@@ -59,7 +62,7 @@ export function proofAccentCssVars(theme: ProfileTheme): CSSProperties {
   return {
     ['--proof-accent' as string]: theme.accent,
     ['--gold' as string]: theme.accent,
-    ['--gold-soft' as string]: `${theme.accent}59`,
+    ['--gold-soft' as string]: `${theme.accent}2E`,
     ['--copper' as string]: theme.accent,
     ['--copper-soft' as string]: theme.accent,
     ['--copper-glow' as string]: theme.badge.bg,

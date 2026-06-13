@@ -71,9 +71,9 @@ export function RemisionPedidoActions({
     fontSize: 12,
     padding: '10px 16px',
     borderRadius: 8,
-    border: '0.5px solid #E8E6E0',
+    border: '0.5px solid var(--hairline)',
     background: '#fff',
-    color: '#1A1A1A',
+    color: 'var(--fg-0)',
     cursor: loading ? 'wait' : 'pointer',
     fontWeight: 500,
   }

@@ -7,16 +7,14 @@ import { useRouter } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
 import type { ExtraProfile } from '@/lib/supabase'
 
-const font = "'Space Grotesk', sans-serif"
-
 const PROFILE_META: Record<
   ExtraProfile,
   { emoji: string; label: string; color: string }
 > = {
-  brewer: { emoji: '🍺', label: 'Brewer', color: '#FAC775' },
-  winemaker: { emoji: '🍷', label: 'Winemaker', color: '#9FE1CB' },
-  distiller: { emoji: '🥃', label: 'Distiller', color: '#F5C4B3' },
-  distributor: { emoji: '📦', label: 'Distribuidor', color: '#B5D4F4' },
+  brewer: { emoji: '🍺', label: 'Brewer', color: 'rgba(250, 199, 117, 0.35)' },
+  winemaker: { emoji: '🍷', label: 'Winemaker', color: 'rgba(159, 225, 203, 0.35)' },
+  distiller: { emoji: '🥃', label: 'Distiller', color: 'rgba(245, 196, 179, 0.35)' },
+  distributor: { emoji: '📦', label: 'Distribuidor', color: 'rgba(181, 212, 244, 0.35)' },
 }
 
 export default function ProfileSelectPage() {
@@ -43,20 +41,16 @@ export default function ProfileSelectPage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#111',
-          color: '#fff',
-          fontFamily: font,
+          background: 'var(--ink)',
+          color: 'var(--fg-3)',
+          fontFamily: 'var(--font-display)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 13,
-          fontWeight: 700,
-          letterSpacing: '.1em',
-          textTransform: 'uppercase',
-          opacity: 0.6,
+          fontSize: 14,
         }}
       >
-        Cargando perfiles...
+        Cargando perfiles…
       </div>
     )
   }
@@ -65,9 +59,9 @@ export default function ProfileSelectPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#111',
-        color: '#fff',
-        fontFamily: font,
+        background: 'var(--ink)',
+        color: 'var(--fg-0)',
+        fontFamily: 'var(--font-display)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -75,37 +69,34 @@ export default function ProfileSelectPage() {
         padding: 32,
       }}
     >
-      <div
+      <h1
         style={{
-          fontSize: 36,
-          fontWeight: 800,
-          letterSpacing: '-.04em',
-          color: '#fff',
-          textTransform: 'uppercase',
-          marginBottom: 12,
+          margin: '0 0 8px',
+          fontSize: 24,
+          fontWeight: 600,
+          letterSpacing: '-0.02em',
         }}
       >
-        PR<span style={{ color: '#E24B4A' }}>O</span>OF
-      </div>
-      <div
+        PROOF
+      </h1>
+      <p
         style={{
-          fontSize: 18,
-          fontWeight: 500,
-          color: '#888',
-          marginBottom: 48,
+          margin: '0 0 40px',
+          fontSize: 15,
+          color: 'var(--fg-2)',
           textAlign: 'center',
         }}
       >
-        ¿Quién está produciendo hoy?
-      </div>
+        ¿Qué perfil quieres usar hoy?
+      </p>
 
       <div
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 20,
+          gap: 12,
           justifyContent: 'center',
-          maxWidth: 900,
+          maxWidth: 720,
         }}
       >
         {allProfiles.map(p => {
@@ -119,35 +110,31 @@ export default function ProfileSelectPage() {
               onMouseEnter={() => setHoveredKey(p.profile_type_v2)}
               onMouseLeave={() => setHoveredKey(null)}
               style={{
-                width: 140,
-                height: 160,
-                background: meta.color,
-                border: `3px solid ${hovered ? '#fff' : '#111'}`,
-                outline: hovered ? '3px solid #fff' : 'none',
-                outlineOffset: hovered ? '-3px' : 0,
-                color: '#111',
-                fontFamily: font,
+                width: 148,
+                minHeight: 140,
+                background: hovered ? meta.color : 'var(--ink)',
+                border: `1px solid ${hovered ? 'var(--line)' : 'var(--hairline)'}`,
+                borderRadius: 'var(--radius-md)',
+                boxShadow: hovered ? 'var(--shadow-sm)' : 'none',
+                color: 'var(--fg-0)',
+                fontFamily: 'inherit',
                 cursor: 'pointer',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                padding: 12,
-                transition: 'transform .15s ease, outline-color .15s ease',
-                transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
+                padding: 16,
+                transition: 'background 150ms ease, border-color 150ms ease, box-shadow 150ms ease',
               }}
             >
-              <div style={{ fontSize: 48, lineHeight: 1 }}>{meta.emoji}</div>
+              <div style={{ fontSize: 36, lineHeight: 1 }}>{meta.emoji}</div>
               <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: 800,
-                  letterSpacing: '.05em',
-                  textTransform: 'uppercase',
-                  color: '#111',
+                  fontSize: 14,
+                  fontWeight: 600,
                   textAlign: 'center',
-                  lineHeight: 1.1,
+                  lineHeight: 1.2,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   display: '-webkit-box',
@@ -158,18 +145,7 @@ export default function ProfileSelectPage() {
               >
                 {p.username || meta.label}
               </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '.08em',
-                  textTransform: 'uppercase',
-                  color: '#111',
-                  opacity: 0.6,
-                }}
-              >
-                {meta.label}
-              </div>
+              <div style={{ fontSize: 12, color: 'var(--fg-3)' }}>{meta.label}</div>
             </button>
           )
         })}
@@ -181,34 +157,25 @@ export default function ProfileSelectPage() {
             onMouseEnter={() => setHoveredKey('__add__')}
             onMouseLeave={() => setHoveredKey(null)}
             style={{
-              width: 140,
-              height: 160,
-              background: 'transparent',
-              border: `3px solid ${hoveredKey === '__add__' ? '#fff' : '#444'}`,
-              color: hoveredKey === '__add__' ? '#fff' : '#888',
-              fontFamily: font,
+              width: 148,
+              minHeight: 140,
+              background: hoveredKey === '__add__' ? 'var(--panel-2)' : 'var(--ink)',
+              border: `1px dashed ${hoveredKey === '__add__' ? 'var(--line)' : 'var(--hairline)'}`,
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--fg-2)',
+              fontFamily: 'inherit',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 10,
-              padding: 12,
-              transition: 'all .15s ease',
-              transform: hoveredKey === '__add__' ? 'translateY(-4px)' : 'translateY(0)',
+              gap: 8,
+              padding: 16,
+              transition: 'background 150ms ease, border-color 150ms ease',
             }}
           >
-            <div style={{ fontSize: 56, fontWeight: 300, lineHeight: 1 }}>+</div>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: '.1em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Agregar perfil
-            </div>
+            <div style={{ fontSize: 28, fontWeight: 300, lineHeight: 1 }}>+</div>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>Agregar perfil</div>
           </button>
         )}
       </div>
