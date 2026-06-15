@@ -1,11 +1,20 @@
-import { looksLikeEditarSkuQuery } from '@/lib/proof/categoria-liquido'
+import {
+  categoriaLiquidoLabel,
+  extractSkuNameFromCategoryEditQuery,
+  looksLikeEditarSkuQuery,
+  parseCategoriaLiquidoFromQuery,
+  filterSkusByCategoriaQuery,
+} from '@/lib/proof/categoria-liquido'
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
 import { isSkuStockCritico } from '@/lib/proof/distributor-agent-context'
-import { looksLikeDistributorMutation } from '@/lib/proof/distributor-agent-actions'
+import { looksLikeDistributorMutation, looksLikeCompraLlegadaQuery, looksLikeEntregaVentaQuery, looksLikeVentaPedidoQuery, needsOrdenCompraDetails } from '@/lib/proof/distributor-agent-actions'
+import { filterSkusByBodegaQuery } from '@/lib/proof/bodega-filter'
 import { formatLineaToma, parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import {
+  extractPartialTomaPedidoDraft,
   extractTomaPedidoDraft,
   isConfirmationReply,
+  looksLikeTomaPedidoQuery,
   resolveSkuFromQuery,
   resolveTomaPedidoDraft,
   type AgentConversationTurn,
@@ -66,6 +75,31 @@ function resolveClienteDeudaEnQuery(
   return best
 }
 
+function formatSkuStockLine(
+  s: DistributorAgentContext['skus'][number],
+  opts?: { short?: boolean; bodegaLabel?: string | null }
+): string {
+  const fisico = s.stock_total.toLocaleString('es-MX')
+  const disponible = s.stock_disponible.toLocaleString('es-MX')
+  const bodegaSuffix =
+    opts?.bodegaLabel && opts.bodegaLabel !== 'Principal'
+      ? ` (${opts.bodegaLabel})`
+      : s.bodega && s.bodega !== 'Principal' && !opts?.short
+        ? ` — bodega ${s.bodega}`
+        : ''
+  if (s.stock_reservado > 0) {
+    const reservado = s.stock_reservado.toLocaleString('es-MX')
+    if (opts?.short) {
+      return `${s.nombre}: ${fisico} fís. · ${reservado} res. · ${disponible} disp.${bodegaSuffix}`
+    }
+    return `${s.nombre} (${s.codigo}): ${fisico} en bodega, ${reservado} reservadas, ${disponible} disponibles${bodegaSuffix}.`
+  }
+  if (opts?.short) {
+    return `${s.nombre}: ${disponible} disp.${bodegaSuffix}`
+  }
+  return `Tienes ${disponible} disponibles de ${s.nombre} (${s.codigo}) — ${fisico} en bodega${bodegaSuffix}.`
+}
+
 /** Respuesta determinística (sin LLM). */
 export function tryDistributorQuickAnswer(
   query: string,
@@ -75,7 +109,33 @@ export function tryDistributorQuickAnswer(
   if (ctx.perfil !== 'distribuidor' || !ctx.resumen) return null
 
   const q = norm(query)
-  if (looksLikeEditarSkuQuery(query)) return null
+  if (looksLikeEditarSkuQuery(query)) {
+    const categoria = parseCategoriaLiquidoFromQuery(query)
+    if (!categoria) {
+      return {
+        mensaje:
+          'No entendí la categoría. Usa: vino, cerveza, mezcal, gin, destilado u otro.',
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    const sku = resolveSkuFromQuery(query, ctx)
+    if (!sku) {
+      const frag = extractSkuNameFromCategoryEditQuery(query)
+      const nombres = ctx.skus
+        .slice(0, 5)
+        .map(s => s.nombre)
+        .join(', ')
+      return {
+        mensaje: frag
+          ? `No encontré "${frag}" en inventario.${nombres ? ` Tienes: ${nombres}.` : ''}`
+          : `No encontré ese SKU.${nombres ? ` Tienes: ${nombres}.` : ''}`,
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    return null
+  }
 
   const conversation = Array.isArray(
     (datos as { conversation?: AgentConversationTurn[] }).conversation
@@ -84,7 +144,50 @@ export function tryDistributorQuickAnswer(
     : []
 
   const tomaDraft = extractTomaPedidoDraft(query, ctx)
-  if (isConfirmationReply(q) && !tomaDraft) {
+  const partialVenta = extractPartialTomaPedidoDraft(query, ctx)
+
+  if (
+    partialVenta &&
+    !partialVenta.cliente &&
+    !isConfirmationReply(q) &&
+    (looksLikeTomaPedidoQuery(q) || looksLikeVentaPedidoQuery(q))
+  ) {
+    const unidadLabel =
+      partialVenta.unidad === 'latas'
+        ? 'latas'
+        : partialVenta.unidad === 'cajas'
+          ? 'cajas'
+          : 'botellas'
+    const producto = partialVenta.sku_nombre ?? partialVenta.etiqueta
+    const stock =
+      partialVenta.stock_disponible != null
+        ? partialVenta.stock_disponible.toLocaleString('es-MX')
+        : '—'
+    if (
+      partialVenta.stock_disponible != null &&
+      partialVenta.cantidad > partialVenta.stock_disponible
+    ) {
+      return {
+        mensaje: `Solo tienes ${stock} ${unidadLabel} de ${producto} disponibles. No alcanza para ${partialVenta.cantidad}.`,
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    if (partialVenta.anticipo && partialVenta.anticipo_monto == null) {
+      return {
+        mensaje: `Pedido de ${partialVenta.cantidad} ${unidadLabel} de ${producto} con anticipo. ¿Para qué cliente y cuánto de anticipo? (ej. "Bar La Cueva con anticipo de $500")`,
+        accionLabel: 'Ver pedidos',
+        accionHref: '/dashboard/pedidos',
+      }
+    }
+    return {
+      mensaje: `Tienes ${stock} ${unidadLabel} de ${producto} disponibles. ¿Para qué cliente van las ${partialVenta.cantidad}? Responde con el nombre del cliente.`,
+      accionLabel: 'Ver pedidos',
+      accionHref: '/dashboard/pedidos',
+    }
+  }
+
+  if (isConfirmationReply(q) && !tomaDraft && !looksLikeEntregaVentaQuery(q) && !looksLikeCompraLlegadaQuery(q)) {
     const prior = resolveTomaPedidoDraft(query, conversation, ctx)
     if (!prior) {
       return {
@@ -118,14 +221,113 @@ export function tryDistributorQuickAnswer(
         accionHref: '/dashboard/inventario',
       }
     }
+    if (tomaDraft.anticipo && tomaDraft.anticipo_monto == null) {
+      return {
+        mensaje: `Pedido de ${tomaDraft.cantidad} ${unidadLabel} a ${tomaDraft.cliente} con anticipo. ¿Cuánto de anticipo? (ej. "$500 de anticipo")`,
+        accionLabel: 'Ver pedidos',
+        accionHref: '/dashboard/pedidos',
+      }
+    }
+    const anticipoHint =
+      tomaDraft.anticipo && tomaDraft.anticipo_monto != null
+        ? ` con anticipo de $${tomaDraft.anticipo_monto.toLocaleString('es-MX')}`
+        : ''
     return {
-      mensaje: `Tienes ${stock} ${unidadLabel} ${producto} disponibles. ¿Confirmo pedido de ${tomaDraft.cantidad} a ${tomaDraft.cliente}? Responde "sí, prepara ticket".`,
+      mensaje: `Tienes ${stock} ${unidadLabel} ${producto} disponibles. ¿Confirmo pedido de ${tomaDraft.cantidad} a ${tomaDraft.cliente}${anticipoHint}? Responde "sí, prepara ticket".`,
       accionLabel: 'Ver pedidos',
       accionHref: '/dashboard/pedidos',
     }
   }
 
-  if (looksLikeDistributorMutation(q) && !tomaDraft) return null
+  if (
+    q.includes('ordenes de compra') ||
+    q.includes('órdenes de compra') ||
+    q.includes('oc pendiente') ||
+    (q.includes('orden') && q.includes('pendiente') && q.includes('compra')) ||
+    (q.includes('compra') && q.includes('pendiente') && !q.includes('cliente'))
+  ) {
+    const ordenes = ctx.ordenes_compra_pendientes ?? []
+    if (ordenes.length === 0) {
+      return {
+        mensaje: 'No tienes órdenes de compra pendientes de llegada.',
+        accionLabel: 'Nueva OC',
+        accionHref: '/dashboard/distribuidor/compras/nuevo',
+      }
+    }
+    const lista = ordenes
+      .slice(0, 5)
+      .map(o => {
+        const det = o.items
+          .map(
+            it =>
+              `${it.producto_nombre} (${it.cantidad_recibida ?? 0}/${it.cantidad_ordenada})`
+          )
+          .join(', ')
+        return `${o.numero_orden} · ${o.proveedor_nombre}: ${det}`
+      })
+      .join('; ')
+    return {
+      mensaje: `${ordenes.length} OC pendiente${ordenes.length === 1 ? '' : 's'}: ${lista}${ordenes.length > 5 ? '…' : ''}.`,
+      accionLabel: 'Nueva OC',
+      accionHref: '/dashboard/distribuidor/compras/nuevo',
+    }
+  }
+
+  if (
+    q.includes('cuentas por pagar') ||
+    q.includes('cuenta por pagar') ||
+    (q.includes('por pagar') && (q.includes('proveedor') || q.includes('cxp')))
+  ) {
+    const cuentas = ctx.cxp?.cuentas ?? []
+    if (cuentas.length === 0) {
+      return {
+        mensaje: 'No tienes cuentas por pagar pendientes con proveedores.',
+        accionLabel: 'Ver inicio',
+        accionHref: '/dashboard',
+      }
+    }
+    const lista = cuentas
+      .slice(0, 4)
+      .map(c => `${c.proveedor_nombre} ($${c.saldo_pendiente.toLocaleString('es-MX')})`)
+      .join('; ')
+    return {
+      mensaje: `Cuentas por pagar: ${lista}${cuentas.length > 4 ? '…' : ''}. Total: $${(ctx.cxp?.total_por_pagar ?? 0).toLocaleString('es-MX')}.`,
+      accionLabel: 'Ver inicio',
+      accionHref: '/dashboard',
+    }
+  }
+
+  if (q.includes('reservad') || (q.includes('comprometid') && q.includes('stock'))) {
+    const conReserva = ctx.skus.filter(s => s.stock_reservado > 0)
+    if (conReserva.length === 0) {
+      return {
+        mensaje: 'No hay stock reservado para pedidos ahora mismo.',
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    const lista = conReserva
+      .slice(0, 6)
+      .map(s => formatSkuStockLine(s, { short: true }))
+      .join('; ')
+    return {
+      mensaje: `Stock reservado: ${lista}${conReserva.length > 6 ? '…' : ''}.`,
+      accionLabel: 'Ver pedidos',
+      accionHref: '/dashboard/pedidos',
+    }
+  }
+
+  if (looksLikeDistributorMutation(q) && !tomaDraft && !partialVenta) {
+    if (needsOrdenCompraDetails(query)) {
+      return {
+        mensaje:
+          'Para crear una orden de compra dime cantidad, producto y proveedor. Ejemplo: "comprar 50 cajas de IPA a Cervecería Norte".',
+        accionLabel: 'Nueva OC',
+        accionHref: '/dashboard/distribuidor/compras/nuevo',
+      }
+    }
+    return null
+  }
 
   if (
     (q.includes('debe') || q.includes('deben') || q.includes('debo')) &&
@@ -183,11 +385,77 @@ export function tryDistributorQuickAnswer(
     }
   }
 
+  const { bodega: bodegaFilter, transito, items: skusEnBodega } = filterSkusByBodegaQuery(
+    ctx.skus,
+    query
+  )
+  const skusScope = bodegaFilter || transito ? skusEnBodega : ctx.skus
+  const bodegaLabel = bodegaFilter ?? (transito ? 'Tránsito' : null)
+
+  const { categoria: catFilter, items: skusPorCategoria } = filterSkusByCategoriaQuery(
+    skusScope,
+    query
+  )
+  if (
+    catFilter &&
+    (wantsStock ||
+      q.includes('muéstrame') ||
+      q.includes('muestrame') ||
+      q.includes('mostrar') ||
+      q.includes('que hay'))
+  ) {
+    const label = categoriaLiquidoLabel(catFilter)
+    if (skusPorCategoria.length === 0) {
+      return {
+        mensaje: `No tienes ${label.toLowerCase()}${bodegaLabel ? ` en ${bodegaLabel}` : ' en bodega'} ahora mismo.`,
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    const lista = skusPorCategoria
+      .slice(0, 6)
+      .map(s => {
+        const precio =
+          s.precio_venta > 0
+            ? ` ($${s.precio_venta.toLocaleString('es-MX')}/u)`
+            : ' (sin precio)'
+        const stock = formatSkuStockLine(s, { short: true, bodegaLabel })
+        const alerta =
+          s.estado === 'quiebre' || s.estado === 'bajo' ? `, ${s.estado}` : ''
+        return `${stock}${precio}${alerta}`
+      })
+      .join('; ')
+    return {
+      mensaje: `${label}s${bodegaLabel ? ` en ${bodegaLabel}` : ' en bodega'}: ${lista}${skusPorCategoria.length > 6 ? '…' : ''}.`,
+      accionLabel: 'Ver inventario',
+      accionHref: '/dashboard/inventario',
+    }
+  }
+
+  if ((bodegaLabel || transito) && wantsStock) {
+    if (skusScope.length === 0) {
+      return {
+        mensaje: `No hay SKUs${bodegaLabel ? ` en ${bodegaLabel}` : ' en tránsito'} ahora mismo.`,
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    const lista = skusScope
+      .slice(0, 6)
+      .map(s => formatSkuStockLine(s, { short: true, bodegaLabel }))
+      .join('; ')
+    return {
+      mensaje: `Inventario${bodegaLabel ? ` en ${bodegaLabel}` : ''}: ${lista}${skusScope.length > 6 ? '…' : ''}.`,
+      accionLabel: 'Ver inventario',
+      accionHref: '/dashboard/inventario',
+    }
+  }
+
   if (wantsStock) {
-    const sku = resolveSkuFromQuery(query, ctx)
+    const sku = resolveSkuFromQuery(query, { ...ctx, skus: skusScope })
     if (sku) {
       return {
-        mensaje: `Tienes ${sku.stock_disponible.toLocaleString('es-MX')} unidades disponibles de ${sku.nombre} (${sku.codigo}).`,
+        mensaje: formatSkuStockLine(sku, { bodegaLabel }),
         accionLabel: 'Ver inventario',
         accionHref: '/dashboard/inventario',
       }
@@ -298,22 +566,24 @@ export function tryDistributorQuickAnswer(
     q.includes('por entregar') ||
     q.includes('que hay por entregar') ||
     (q.includes('pendiente') && q.includes('entrega')) ||
-    (q.includes('confirmado') && q.includes('entrega'))
+    (q.includes('confirmado') && q.includes('entrega')) ||
+    (q.includes('esperando') && q.includes('pedido')) ||
+    (q.includes('cliente') && q.includes('esperando'))
   ) {
     const n = ctx.pedidos_pendientes_entrega.length
     if (n === 0) {
       return {
-        mensaje: 'No hay pedidos confirmados pendientes de entrega.',
+        mensaje: 'No hay pedidos pendientes de entrega (confirmados, preparando o en ruta).',
         accionLabel: 'Ver pedidos',
         accionHref: '/dashboard/pedidos',
       }
     }
     const nums = ctx.pedidos_pendientes_entrega
       .slice(0, 3)
-      .map(p => p.numero)
+      .map(p => `${p.numero} (${p.estado})`)
       .join(', ')
     return {
-      mensaje: `${n} pedido${n === 1 ? '' : 's'} confirmado${n === 1 ? '' : 's'} pendiente${n === 1 ? '' : 's'} de entrega${n <= 3 ? `: ${nums}` : ''}.`,
+      mensaje: `${n} pedido${n === 1 ? '' : 's'} por entregar${n <= 3 ? `: ${nums}` : ''}.`,
       accionLabel: 'Ver pedidos',
       accionHref: '/dashboard/pedidos',
     }

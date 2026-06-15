@@ -33,6 +33,7 @@ export async function createRecepcionFromAnalysisAction(input: {
   productor: string
   bodega_destino?: string
   orden_compra_id?: string | null
+  orden_compra_distribuidor_id?: string | null
   costo_total?: number
   deuda_registrada?: number
   foto_urls?: string[]
@@ -52,6 +53,7 @@ export async function createRecepcionFromAnalysisAction(input: {
     rec = await updateRecepcionDraft(sb, input.recepcion_id, {
       productor: input.productor,
       orden_compra_id: input.orden_compra_id,
+      orden_compra_distribuidor_id: input.orden_compra_distribuidor_id,
       costo_total: input.costo_total,
       deuda_registrada: input.deuda_registrada,
       ...(input.foto_urls?.length ? { foto_urls: input.foto_urls } : {}),
@@ -64,6 +66,7 @@ export async function createRecepcionFromAnalysisAction(input: {
       productor: input.productor,
       bodega_destino: input.bodega_destino,
       orden_compra_id: input.orden_compra_id,
+      orden_compra_distribuidor_id: input.orden_compra_distribuidor_id,
       costo_total: input.costo_total,
       deuda_registrada: input.deuda_registrada,
       foto_urls: input.foto_urls,

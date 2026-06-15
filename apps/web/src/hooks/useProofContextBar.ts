@@ -1,13 +1,24 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import type { DisplayCards } from '@/lib/proof/agent-response-types'
 import type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-context-types'
+
+const SKELETON_MIN_MS = 300
+
+function sleep(ms: number) {
+  return new Promise<void>(resolve => {
+    setTimeout(resolve, ms)
+  })
+}
 
 function parseSseChunk(
   part: string,
   onDelta: (text: string) => void,
   onDone: (payload: {
+    chatResponse?: string
     mensaje?: string
+    displayCards?: DisplayCards | null
     accionLabel?: string
     accionHref?: string
     refreshLoteId?: string | null
@@ -28,8 +39,10 @@ function parseSseChunk(
   if (!line) return false
   let payload: {
     text?: string
+    chatResponse?: string
     mensaje?: string
     message?: string
+    displayCards?: DisplayCards | null
     accionLabel?: string
     accionHref?: string
     refreshLoteId?: string | null
@@ -42,11 +55,11 @@ function parseSseChunk(
     return false
   }
   if (payload.message) {
-    onDone({ mensaje: payload.message })
+    onDone({ chatResponse: payload.message, mensaje: payload.message })
     return true
   }
   if (payload.text) onDelta(payload.text)
-  if (payload.mensaje) {
+  if (payload.mensaje || payload.chatResponse) {
     onDone(payload)
     return true
   }
@@ -64,32 +77,35 @@ export function useProofContextBar(options: {
   requestId?: number
   fallback?: { mensaje: string; accionLabel?: string; accionHref?: string }
 }) {
-  const [mensaje, setMensaje] = useState(options.fallback?.mensaje ?? '…')
+  const [chatResponse, setChatResponse] = useState(options.fallback?.mensaje ?? '…')
+  const [displayCards, setDisplayCards] = useState<DisplayCards | null>(null)
   const [accionLabel, setAccionLabel] = useState(options.fallback?.accionLabel ?? 'Ver más')
   const [accionHref, setAccionHref] = useState(options.fallback?.accionHref ?? '/dashboard/agente')
   const [refreshLoteId, setRefreshLoteId] = useState<string | null>(null)
   const [refreshPedidoId, setRefreshPedidoId] = useState<string | null>(null)
   const [openSkuImagePicker, setOpenSkuImagePicker] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const fallbackRef = useRef(options.fallback)
   fallbackRef.current = options.fallback
   const hintsRef = useRef(options.hints)
   hintsRef.current = options.hints
   const lastProfileRef = useRef(options.profileType)
-  /** Evita pisar la respuesta del agente cuando hints.query se limpia tras contestar */
   const hasAgentReplyRef = useRef(false)
+  const loadingStartedAtRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (lastProfileRef.current !== options.profileType) {
       lastProfileRef.current = options.profileType
       hasAgentReplyRef.current = false
-      if (fallbackRef.current?.mensaje) setMensaje(fallbackRef.current.mensaje)
+      if (fallbackRef.current?.mensaje) setChatResponse(fallbackRef.current.mensaje)
+      setDisplayCards(null)
     }
   }, [options.profileType])
 
   useEffect(() => {
     if (!options.hints?.query?.trim() && fallbackRef.current?.mensaje && !hasAgentReplyRef.current) {
-      setMensaje(fallbackRef.current.mensaje)
+      setChatResponse(fallbackRef.current.mensaje)
     }
   }, [options.fallback?.mensaje, options.hints?.query])
 
@@ -106,19 +122,23 @@ export function useProofContextBar(options: {
     if (!query) {
       const fb = fallbackRef.current
       if (fb && !hasAgentReplyRef.current) {
-        setMensaje(fb.mensaje)
+        setChatResponse(fb.mensaje)
         setAccionLabel(fb.accionLabel ?? 'Ver más')
         setAccionHref(fb.accionHref ?? '/dashboard/agente')
       }
       setLoading(false)
+      setError(null)
       return
     }
 
     hasAgentReplyRef.current = false
     let cancelled = false
+    loadingStartedAtRef.current = Date.now()
     setLoading(true)
+    setError(null)
+    setDisplayCards(null)
     setOpenSkuImagePicker(null)
-    setMensaje('PROOF analizando…')
+    setChatResponse('PROOF analizando…')
 
     console.log('[useProofContextBar] fetch', {
       profileType,
@@ -152,23 +172,32 @@ export function useProofContextBar(options: {
         let buffer = ''
         let streamed = ''
         let gotDone = false
-
-        const handleDone = (payload: {
+        let pendingDone: {
+          chatResponse?: string
           mensaje?: string
+          displayCards?: DisplayCards | null
           accionLabel?: string
           accionHref?: string
           refreshLoteId?: string | null
           refreshPedidoId?: string | null
           openSkuImagePicker?: string | null
-        }) => {
-          gotDone = true
+        } | null = null
+
+        const applyDone = (payload: NonNullable<typeof pendingDone>) => {
           hasAgentReplyRef.current = true
-          if (payload.mensaje) setMensaje(payload.mensaje.replace(/\*\*/g, ''))
+          const text = (payload.chatResponse ?? payload.mensaje ?? '').replace(/\*\*/g, '')
+          if (text) setChatResponse(text)
+          if (payload.displayCards !== undefined) setDisplayCards(payload.displayCards)
           if (payload.accionLabel) setAccionLabel(payload.accionLabel)
           if (payload.accionHref) setAccionHref(payload.accionHref)
           if (payload.refreshLoteId) setRefreshLoteId(payload.refreshLoteId)
           if (payload.refreshPedidoId) setRefreshPedidoId(payload.refreshPedidoId)
           if (payload.openSkuImagePicker) setOpenSkuImagePicker(payload.openSkuImagePicker)
+        }
+
+        const handleDone = (payload: NonNullable<typeof pendingDone>) => {
+          pendingDone = payload
+          gotDone = true
         }
 
         const processBuffer = () => {
@@ -180,7 +209,7 @@ export function useProofContextBar(options: {
               part,
               text => {
                 streamed += text
-                setMensaje(
+                setChatResponse(
                   streamed
                     .replace(/^\s*\{[^}]*"mensaje"\s*:\s*"?/, '')
                     .replace(/"?\s*,?\s*"accionLabel[\s\S]*$/, '')
@@ -208,12 +237,20 @@ export function useProofContextBar(options: {
           processBuffer()
         }
 
+        if (pendingDone) {
+          const elapsed = Date.now() - (loadingStartedAtRef.current ?? Date.now())
+          if (elapsed < SKELETON_MIN_MS) {
+            await sleep(SKELETON_MIN_MS - elapsed)
+          }
+          if (!cancelled) applyDone(pendingDone)
+        }
+
         if (!gotDone) {
           const fb = fallbackRef.current
           if (fb) {
-            setMensaje(
+            setChatResponse(
               query
-                ? 'PROOF no respondió. Intenta de nuevo o usa el menú Compras.'
+                ? 'PROOF no respondió. Intenta de nuevo o usa los accesos rápidos.'
                 : fb.mensaje
             )
           }
@@ -227,19 +264,15 @@ export function useProofContextBar(options: {
           query: options.hints?.query ?? null,
           err,
         })
+        setError('PROOF no pudo procesar tu solicitud. Intenta de nuevo.')
         const fb = fallbackRef.current
-        const detail = err instanceof Error ? err.message : 'Error desconocido'
-        if (fb) {
-          setMensaje(
-            query
-              ? `No pude conectar con PROOF: ${detail}`
-              : fb.mensaje
-          )
+        if (fb && !query) {
+          setChatResponse(fb.mensaje)
           setAccionLabel(fb.accionLabel ?? 'Ver más')
           setAccionHref(fb.accionHref ?? '/dashboard/agente')
         }
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     })()
 
@@ -257,10 +290,13 @@ export function useProofContextBar(options: {
   ])
 
   return {
-    mensaje,
+    chatResponse,
+    mensaje: chatResponse,
+    displayCards,
     accionLabel,
     accionHref,
     loading,
+    error,
     refreshLoteId,
     refreshPedidoId,
     openSkuImagePicker,

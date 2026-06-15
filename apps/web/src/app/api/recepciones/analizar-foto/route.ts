@@ -6,11 +6,17 @@ import {
   enrichDetectedItems,
   type ExpectedOcItem,
 } from '@/lib/proof/recepcion-analysis'
+import {
+  itemsOrdenDistribuidorToExpected,
+  parseOcRecepcionValue,
+  type OcRecepcionSource,
+} from '@/lib/proof/recepcion-oc'
 import { appendRecepcionFotoUrl, uploadRecepcionFoto } from '@/lib/proof/storage-recepciones'
 import { createSseStream } from '@/lib/proof/sse'
 import { createServiceSupabase } from '@/utils/supabase/service'
 import {
   createRecepcionDraft,
+  fetchOrdenCompraDistribuidorWithItems,
   fetchOrdenCompraWithItems,
   fetchSkus,
   itemsOrdenToExpected,
@@ -26,6 +32,8 @@ type Body = {
   imagenBase64: string
   mediaType?: string
   ordenCompraId?: string
+  /** `distribuidor` (OC PROOF) o `legacy` (ordenes_compra antiguas) */
+  ordenCompraSource?: OcRecepcionSource
   productorId?: string
   recepcionId?: string
   profile_type_v2?: string
@@ -55,12 +63,33 @@ export async function POST(req: NextRequest) {
 
   let expectedItems: ExpectedOcItem[] | undefined
   let productorNombre = body.productorId?.trim() || 'Pendiente'
+  let ordenCompraLegacyId: string | null = null
+  let ordenCompraDistribuidorId: string | null = null
 
   if (body.ordenCompraId) {
-    const oc = await fetchOrdenCompraWithItems(sb, body.ordenCompraId)
-    if (oc) {
-      expectedItems = itemsOrdenToExpected(oc.items_orden_compra || [])
-      if (oc.productor_id) productorNombre = oc.productor_id
+    const source =
+      body.ordenCompraSource ??
+      parseOcRecepcionValue(body.ordenCompraId)?.source ??
+      'legacy'
+    const ordenId =
+      parseOcRecepcionValue(body.ordenCompraId)?.id ?? body.ordenCompraId
+
+    if (source === 'distribuidor') {
+      ordenCompraDistribuidorId = ordenId
+      const oc = await fetchOrdenCompraDistribuidorWithItems(sb, ordenId)
+      if (oc) {
+        expectedItems = itemsOrdenDistribuidorToExpected(
+          oc.items_orden_compra_distribuidor ?? []
+        )
+        if (oc.proveedor_nombre) productorNombre = oc.proveedor_nombre
+      }
+    } else {
+      ordenCompraLegacyId = ordenId
+      const oc = await fetchOrdenCompraWithItems(sb, ordenId)
+      if (oc) {
+        expectedItems = itemsOrdenToExpected(oc.items_orden_compra || [])
+        if (oc.productor_id) productorNombre = oc.productor_id
+      }
     }
   }
 
@@ -72,7 +101,8 @@ export async function POST(req: NextRequest) {
     const draft = await createRecepcionDraft(sb, {
       codigo,
       productor: productorNombre,
-      orden_compra_id: body.ordenCompraId || null,
+      orden_compra_id: ordenCompraLegacyId,
+      orden_compra_distribuidor_id: ordenCompraDistribuidorId,
       clerk_id: clerkId,
       profile_type_v2: profileType,
     })
@@ -105,7 +135,11 @@ export async function POST(req: NextRequest) {
   if (body.ordenCompraId) {
     await sb
       .from('recepciones')
-      .update({ orden_compra_id: body.ordenCompraId, productor: productorNombre })
+      .update({
+        orden_compra_id: ordenCompraLegacyId,
+        orden_compra_distribuidor_id: ordenCompraDistribuidorId,
+        productor: productorNombre,
+      })
       .eq('id', recepcionId)
   }
 

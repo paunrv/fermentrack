@@ -82,7 +82,9 @@ export function OrdenCompraPendienteDetalle({
             producto_nombre: it.producto_nombre,
             cantidad_ordenada: it.cantidad_ordenada,
             cantidad_recibida:
-              it.cantidad_recibida != null ? it.cantidad_recibida : it.cantidad_ordenada,
+              it.cantidad_recibida != null
+                ? it.cantidad_recibida
+                : it.cantidad_ordenada,
           }))
         )
       })

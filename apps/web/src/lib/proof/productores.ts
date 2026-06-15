@@ -1,10 +1,16 @@
-import type { DeudaProductorRow, OrdenCompraRow, SkuRow } from '@/lib/supabase/distribuidor'
+import type {
+  DeudaProductorRow,
+  OrdenCompraDistribuidorWithItems,
+  OrdenCompraRow,
+  SkuRow,
+} from '@/lib/supabase/distribuidor'
 
 export interface ProductorResumen {
   nombre: string
   skuCount: number
   deudaTotal: number
   proximoVencimiento: string | null
+  ocPendientes: number
 }
 
 function normProductor(name: string | null | undefined): string {
@@ -15,14 +21,21 @@ function normProductor(name: string | null | undefined): string {
 export function buildProductoresResumen(
   skus: SkuRow[],
   deudas: DeudaProductorRow[],
-  ordenesAbiertas: OrdenCompraRow[]
+  ordenesLegacy: OrdenCompraRow[] = [],
+  ordenesDistribuidor: OrdenCompraDistribuidorWithItems[] = []
 ): ProductorResumen[] {
   const byName = new Map<string, ProductorResumen>()
 
   const ensure = (nombre: string) => {
     let row = byName.get(nombre)
     if (!row) {
-      row = { nombre, skuCount: 0, deudaTotal: 0, proximoVencimiento: null }
+      row = {
+        nombre,
+        skuCount: 0,
+        deudaTotal: 0,
+        proximoVencimiento: null,
+        ocPendientes: 0,
+      }
       byName.set(nombre, row)
     }
     return row
@@ -43,8 +56,13 @@ export function buildProductoresResumen(
     }
   }
 
-  for (const o of ordenesAbiertas) {
+  for (const o of ordenesLegacy) {
     ensure(normProductor(o.productor_id))
+  }
+
+  for (const o of ordenesDistribuidor) {
+    const row = ensure(normProductor(o.proveedor_nombre))
+    row.ocPendientes += 1
   }
 
   return [...byName.values()].sort((a, b) => {

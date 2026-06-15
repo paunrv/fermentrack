@@ -246,6 +246,7 @@ export interface RecepcionRow {
   productor: string
   bodega_destino: string
   orden_compra_id: string | null
+  orden_compra_distribuidor_id: string | null
   costo_total: number
   deuda_registrada: number
   estado: EstadoRecepcion
@@ -366,6 +367,19 @@ export async function rpcEntregarPedido(
   const { data, error } = await sb.rpc('entregar_pedido', {
     p_pedido_id: pedidoId,
     p_parcial: parcial,
+  })
+  throwIfError(error)
+  return data as PedidoRow
+}
+
+export async function rpcActualizarEstadoPedido(
+  sb: SupabaseClient,
+  pedidoId: string,
+  estado: Extract<EstadoPedido, 'preparando' | 'en_ruta'>
+): Promise<PedidoRow> {
+  const { data, error } = await sb.rpc('actualizar_estado_pedido', {
+    p_pedido_id: pedidoId,
+    p_estado: estado,
   })
   throwIfError(error)
   return data as PedidoRow
@@ -742,6 +756,7 @@ export async function createRecepcionDraft(
     productor: string
     bodega_destino?: string
     orden_compra_id?: string | null
+    orden_compra_distribuidor_id?: string | null
     costo_total?: number
     deuda_registrada?: number
     foto_urls?: string[]
@@ -756,6 +771,7 @@ export async function createRecepcionDraft(
       productor: input.productor,
       bodega_destino: input.bodega_destino ?? 'Principal',
       orden_compra_id: input.orden_compra_id ?? null,
+      orden_compra_distribuidor_id: input.orden_compra_distribuidor_id ?? null,
       costo_total: input.costo_total ?? 0,
       deuda_registrada: input.deuda_registrada ?? 0,
       foto_urls: input.foto_urls ?? [],
@@ -807,6 +823,7 @@ export async function updateRecepcionDraft(
   patch: {
     productor?: string
     orden_compra_id?: string | null
+    orden_compra_distribuidor_id?: string | null
     costo_total?: number
     deuda_registrada?: number
     foto_urls?: string[]

@@ -5,14 +5,16 @@ import type { PedidoWithItems, RemisionDistribuidorRow } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
 import { formatLineaToma, type TomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import { RemisionPedidoActions } from '@/components/proof/RemisionPedidoActions'
+import { PedidoFulfillmentActions } from '@/components/proof/PedidoFulfillmentActions'
 
 type Props = {
   pedido: PedidoWithItems
   toma: TomaPedidoNotas
   remision?: RemisionDistribuidorRow | null
+  onEntregado?: () => void
 }
 
-export function PedidoTomaDetalle({ pedido, toma, remision }: Props) {
+export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props) {
   const cliente = pedido.clients?.name ?? 'Cliente'
   const confirmado = pedido.estado !== 'borrador'
 
@@ -90,6 +92,15 @@ export function PedidoTomaDetalle({ pedido, toma, remision }: Props) {
         </p>
       )}
 
+      <PedidoFulfillmentActions
+        pedidoId={pedido.id}
+        numero={pedido.numero}
+        estado={pedido.estado}
+        fullWidth
+        onUpdated={onEntregado}
+      />
+
+      <div style={{ marginTop: 12 }}>
       <RemisionPedidoActions
         pedidoId={pedido.id}
         estado={pedido.estado}
@@ -104,7 +115,9 @@ export function PedidoTomaDetalle({ pedido, toma, remision }: Props) {
         }
       />
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 }}>
         <Link
           href="/dashboard/pedidos/nuevo"
           style={{

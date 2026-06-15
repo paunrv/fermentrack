@@ -5,6 +5,7 @@ import type {
   PedidoRow,
   SkuRow,
 } from '@/lib/supabase/distribuidor'
+import { resolveSkuCategoriaLiquido } from '@/lib/proof/categoria-liquido'
 
 const CRITICO_ESTADOS = new Set(['bajo', 'quiebre', 'sobrevendido'])
 
@@ -49,19 +50,26 @@ export type DistributorAgentContext = {
     id: string
     codigo: string
     nombre: string
+    bodega: string
     stock_disponible: number
+    stock_reservado: number
+    stock_total: number
     estado: string
+    categoria_liquido: string
   }[]
   skus: {
     id: string
     codigo: string
     nombre: string
     productor: string
+    bodega: string
     stock_disponible: number
+    stock_reservado: number
     stock_total: number
     estado: string
     precio_venta: number
     notas: string | null
+    categoria_liquido: string
   }[]
   pedidos: {
     id: string
@@ -117,7 +125,9 @@ export function buildDistributorAgentContext(
   const activos = pedidos.filter(p =>
     ['confirmado', 'preparando', 'en_ruta', 'borrador'].includes(p.estado)
   )
-  const pendientesEntrega = pedidos.filter(p => p.estado === 'confirmado')
+  const pendientesEntrega = pedidos.filter(p =>
+    ['confirmado', 'preparando', 'en_ruta', 'parcial'].includes(p.estado)
+  )
   const cuentasConSaldo = cuentasPorCobrar.filter(c => Number(c.saldo_pendiente) > 0)
   const totalPorCobrar = cuentasConSaldo.reduce(
     (s, c) => s + Number(c.saldo_pendiente),
@@ -172,19 +182,34 @@ export function buildDistributorAgentContext(
       id: s.id,
       codigo: s.codigo,
       nombre: s.nombre,
+      bodega: s.bodega || 'Principal',
       stock_disponible: s.stock_disponible,
+      stock_reservado: s.stock_reservado,
+      stock_total: s.stock_total,
       estado: s.estado,
+      categoria_liquido: resolveSkuCategoriaLiquido({
+        nombre: s.nombre,
+        productor: s.productor,
+        categoria_liquido: s.categoria_liquido,
+      }),
     })),
     skus: skus.map(s => ({
       id: s.id,
       codigo: s.codigo,
       nombre: s.nombre,
       productor: s.productor,
+      bodega: s.bodega || 'Principal',
       stock_disponible: s.stock_disponible,
+      stock_reservado: s.stock_reservado,
       stock_total: s.stock_total,
       estado: s.estado,
       precio_venta: Number(s.precio_venta),
       notas: s.notas ?? null,
+      categoria_liquido: resolveSkuCategoriaLiquido({
+        nombre: s.nombre,
+        productor: s.productor,
+        categoria_liquido: s.categoria_liquido,
+      }),
     })),
     pedidos: pedidos.slice(0, 30).map(p => ({
       id: p.id,

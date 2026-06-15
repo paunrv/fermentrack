@@ -24,6 +24,7 @@ import {
   type EstadoPedido,
   type PedidoWithItems,
 } from '@/lib/supabase/distribuidor'
+import { PedidoFulfillmentActions } from '@/components/proof/PedidoFulfillmentActions'
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 const CLIENTE_ACCENT = '#2D6A4F'
@@ -107,6 +108,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
   const [pagoMonto, setPagoMonto] = useState('')
   const [pagoLoading, setPagoLoading] = useState(false)
   const [pagoError, setPagoError] = useState<string | null>(null)
+  const [refreshTick, setRefreshTick] = useState(0)
   const pedidoRef = useRef<PedidoWithItems | null>(null)
   pedidoRef.current = pedido
 
@@ -151,7 +153,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     return () => {
       cancelled = true
     }
-  }, [supabase, pedidoId, refreshKey, scope?.clerk_id])
+  }, [supabase, pedidoId, refreshKey, refreshTick, scope?.clerk_id])
 
   const toma = useMemo(
     () => parseTomaPedidoNotas(pedido?.notas ?? null),
@@ -599,10 +601,19 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         style={{
           padding: '20px 24px 24px',
           display: 'flex',
-          flexWrap: 'wrap',
+          flexDirection: 'column',
           gap: 10,
         }}
       >
+        <PedidoFulfillmentActions
+          pedidoId={pedido.id}
+          numero={pedido.numero}
+          estado={pedido.estado}
+          accent={CLIENTE_ACCENT}
+          fullWidth
+          onUpdated={() => setRefreshTick(n => n + 1)}
+        />
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         <a
           href={pedidoWhatsAppUrl(shareText)}
           target="_blank"
@@ -660,6 +671,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         >
           {pdfLoading ? 'Generando…' : 'PDF'}
         </button>
+        </div>
       </div>
 
       {pdfError && (

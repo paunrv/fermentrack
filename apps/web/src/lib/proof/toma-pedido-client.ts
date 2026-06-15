@@ -181,11 +181,16 @@ export async function finalizarTomaPedido(
     unidad?: string
   }> = []
 
+  const sinSku: string[] = []
+
   for (let i = 0; i < lineas.length; i++) {
     const line = lineas[i]!
     const et = etiquetas[i]!
     const sku = findSkuForLine(input.skus, et.id, et.nombre)
-    if (!sku) continue
+    if (!sku) {
+      sinSku.push(line.etiqueta)
+      continue
+    }
     itemRows.push({
       sku_id: sku.id,
       nombre: `${line.etiqueta} (${line.unidad})`,
@@ -196,9 +201,17 @@ export async function finalizarTomaPedido(
     })
   }
 
-  if (itemRows.length > 0) {
-    await replacePedidoItems(sb, pedido.id, itemRows)
+  if (itemRows.length === 0) {
+    const detalle =
+      sinSku.length > 0
+        ? ` No encontré en inventario: ${sinSku.join(', ')}.`
+        : ''
+    throw new Error(
+      `Agrega al menos un producto con SKU en catálogo antes de confirmar.${detalle}`
+    )
   }
+
+  await replacePedidoItems(sb, pedido.id, itemRows)
 
   const confirmado = await rpcConfirmarPedido(sb, pedido.id)
 

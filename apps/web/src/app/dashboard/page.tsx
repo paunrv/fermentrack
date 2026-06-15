@@ -5,481 +5,59 @@ export const dynamic = 'force-dynamic'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
-import { useSupabase } from '@/hooks/useSupabase'
 import { useProofContextBar } from '@/hooks/useProofContextBar'
-import { AgentBar, type Message as AgentMessage } from '@/components/proof/AgentBar'
-import { BotellaCard, mapLoteEstadoToBotella } from '@/components/proof/BotellaCard'
-import { PedidoCanvasCard } from '@/components/proof/PedidoCanvasCard'
-import { PedidoDetalle } from '@/components/proof/PedidoDetalle'
-import { SkuCard, mapSkuEstadoToCard } from '@/components/proof/SkuCard'
-import { KpiConfigDrawer } from '@/components/proof/KpiConfigDrawer'
-import { LoteDetalle } from '@/components/proof/LoteDetalle'
-import { ViajePendienteDetalle } from '@/components/proof/ViajePendienteDetalle'
 import {
-  distributorMetricTone,
-  profileTypeFromV2,
-  resolveDistributorKpi,
-} from '@/lib/proof/canvas-kpi'
-import { getProfileTheme } from '@/lib/proof/profile-theme'
-import { metricCardLabel, type KpiMetric, type ProfileType } from '@/lib/proof/kpi-metrics'
-import { useKpiConfig } from '@/hooks/useKpiConfig'
-import type {
-  CorridaRow,
-  LoteRow,
-  ProductoViajeRow,
-  ViajeRow,
-} from '@/lib/proof/destilador-types'
+  ProofCanvasShell,
+  type ProofMessage,
+} from '@/components/proof/ProofCanvasShell'
+import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
-import { fetchSkus, fetchPedidos, type PedidoRow, type SkuRow } from '@/lib/supabase'
-import { OrdenCompraCanvasCard } from '@/components/proof/OrdenCompraCanvasCard'
-import { CanvasHorizontalSection } from '@/components/proof/CanvasHorizontalSection'
-import { OrdenCompraPendienteDetalle } from '@/components/proof/OrdenCompraPendienteDetalle'
+import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
+import { getProfileTheme } from '@/lib/proof/profile-theme'
 import {
-  fetchCorridas,
-  fetchLotes,
-  fetchProductosViaje,
-  fetchViajes,
-} from '@/lib/supabase/destilador'
-import {
-  fetchOrdenesCompraDistribuidorPendientes,
-  fetchOrdenesCompraConCxPendiente,
-  fetchPagosProveedorByCuentaIds,
-  fetchPedidosConCxCPendiente,
-  type OrdenCompraConCxP,
-  type OrdenCompraDistribuidorWithItems,
-  type PedidoConCxC,
-} from '@/lib/supabase/distribuidor'
-
-const DISTILLER_QUICK_ACTIONS = [
-  { label: '¿Cuánto stock terminado?', message: '¿Cuánto stock terminado tengo?' },
-  { label: 'Lotes listos para embotellar', message: '¿Qué lotes están listos para embotellar?' },
-  { label: 'Deuda palenqueros', message: '¿Cuánto debo a palenqueros?' },
-  {
-    label: '+ Nuevo viaje',
-    message: 'Quiero registrar un nuevo viaje a Oaxaca',
-    href: '/dashboard/destilador/compras/nuevo',
-  },
-] as const
-
-const DISTRIBUTOR_QUICK_ACTIONS = [
-  { label: 'Stock bajo', message: '¿Qué SKUs tienen stock bajo?' },
-  { label: 'Pedidos pendientes', message: '¿Qué pedidos están pendientes de entrega?' },
-  { label: 'Por cobrar', message: '¿Cuánto tengo por cobrar?' },
-  { label: 'Deuda vencida', message: '¿Quién tiene deuda vencida?' },
-  {
-    label: '+ Orden de compra',
-    message: 'Quiero registrar una orden de compra',
-    href: '/dashboard/distribuidor/compras/nuevo',
-  },
-  {
-    label: '+ Nuevo pedido',
-    message: 'Quiero registrar un nuevo pedido',
-    href: '/dashboard/pedidos/nuevo',
-  },
-] as const
-
-const LOAD_TIMEOUT_MS = 15_000
-
-async function loadWithTimeout<T>(
-  promise: Promise<T>,
-  fallback: T,
-  label: string
-): Promise<T> {
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        setTimeout(() => reject(new Error(`${label} timeout`)), LOAD_TIMEOUT_MS)
-      }),
-    ])
-  } catch (e) {
-    console.error(`[dashboard] ${label}`, e)
-    return fallback
-  }
-}
-
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-const PROVEEDOR_ACCENT = '#1E6FA8'
-const CLIENTE_ACCENT = '#2D6A4F'
-const INVENTARIO_ACCENT = '#C2410C'
-
-function CanvasDivider({ label }: { label: string }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '0 24px',
-        marginBottom: 8,
-      }}
-    >
-      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
-      <span
-        style={{
-          fontSize: 9,
-          color: '#CCC',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          fontFamily: MONO,
-        }}
-      >
-        {label}
-      </span>
-      <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }} />
-    </div>
-  )
-}
+  DISTILLER_QUICK_ACTIONS,
+  DISTRIBUTOR_QUICK_ACTIONS,
+} from '@/lib/proof/proof-canvas-copy'
 
 export default function DashboardPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { scope, activeProfile, loading: profileLoading, profilesResolved } = useProfile()
-  const supabase = useSupabase()
+  const { scope, activeProfile, loading: profileLoading } = useProfile()
 
   const agentProfileType = toAgentProfileType(activeProfile?.profile_type_v2)
   const profileType = profileTypeFromV2(activeProfile?.profile_type_v2)
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const accent = theme.accent
   const clerkId = scope?.clerk_id
-  const scopeProfileType = scope?.profile_type_v2
   const isDistiller = profileType === 'distiller'
+  const isDistributor = profileType === 'distributor'
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [selectedPedidoId, setSelectedPedidoId] = useState<string | null>(null)
-  const [selectedViajeId, setSelectedViajeId] = useState<string | null>(null)
-  const [selectedOrdenId, setSelectedOrdenId] = useState<string | null>(null)
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [urlQuery, setUrlQuery] = useState<string | null>(null)
+  const [ocFromUrl, setOcFromUrl] = useState<string | null>(null)
   const consumedAskRef = useRef<string | null>(null)
-  const [agentConversation, setAgentConversation] = useState<AgentMessage[]>([])
-  const [agentImage, setAgentImage] = useState<string | null>(null)
-  const [lotes, setLotes] = useState<LoteRow[]>([])
-  const [viajes, setViajes] = useState<ViajeRow[]>([])
-  const [productosViaje, setProductosViaje] = useState<ProductoViajeRow[]>([])
-  const [corridasActivas, setCorridasActivas] = useState<CorridaRow[]>([])
-  const [skus, setSkus] = useState<SkuRow[]>([])
-  const [ordenesCompra, setOrdenesCompra] = useState<OrdenCompraDistribuidorWithItems[]>([])
-  const [ordenesConCxP, setOrdenesConCxP] = useState<OrdenCompraConCxP[]>([])
-  const [pedidos, setPedidos] = useState<(PedidoRow & { clients?: { name: string } | null })[]>(
-    []
-  )
-  const [pedidosConCxC, setPedidosConCxC] = useState<PedidoConCxC[]>([])
-  const [loading, setLoading] = useState(false)
-  const [loadError, setLoadError] = useState<string | null>(null)
-  const [dataVersion, setDataVersion] = useState(0)
-  const [silentRefresh, setSilentRefresh] = useState(0)
-  const pendingSilentLoadRef = useRef(false)
+  const consumedOcRef = useRef<string | null>(null)
+  const [agentConversation, setAgentConversation] = useState<ProofMessage[]>([])
   const [agentRequestId, setAgentRequestId] = useState(0)
-  const [uploadingSkuId, setUploadingSkuId] = useState<string | null>(null)
-  const [kpiEditor, setKpiEditor] = useState<{ skuId: string; slot: 0 | 1 | 2 } | null>(null)
-
-  const { config: skuKpiConfig, updateKpi } = useKpiConfig(profileType ?? 'distributor')
-
-  const pendingViajeCards = useMemo(() => {
-    if (!isDistiller) return []
-    const pendientes = viajes.filter(
-      v => v.estado === 'confirmado' || v.estado === 'en_transito'
-    )
-    return pendientes.map(v => {
-      const prods = productosViaje.filter(p => p.viaje_id === v.id)
-      const litros = prods.reduce((s, p) => s + Number(p.litros_acordados), 0)
-      const nombre =
-        prods.length === 0
-          ? 'Viaje'
-          : prods.length === 1
-            ? prods[0]!.tipo_agave
-            : prods.map(p => p.tipo_agave).join(' · ')
-      return {
-        viajeId: v.id,
-        nombre,
-        region: v.region || v.comunidad || '—',
-        litros,
-        estado: v.estado,
-      }
-    })
-  }, [isDistiller, viajes, productosViaje])
-
-  const pendingOrdenCards = useMemo(() => {
-    if (isDistiller) return []
-    return ordenesCompra.filter(o => o.estado === 'pendiente' || o.estado === 'parcial')
-  }, [isDistiller, ordenesCompra])
-
-  const activePedidoCards = useMemo(() => {
-    if (isDistiller) return []
-    return pedidos.filter(p =>
-      ['confirmado', 'preparando', 'en_ruta', 'parcial'].includes(p.estado)
-    )
-  }, [isDistiller, pedidos])
-
-  const proveedorPorSkuId = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const oc of [...ordenesCompra, ...ordenesConCxP]) {
-      const prov = oc.proveedor_nombre?.trim()
-      if (!prov) continue
-      for (const it of oc.items_orden_compra_distribuidor ?? []) {
-        if (it.sku_id) map.set(it.sku_id, prov)
-      }
-    }
-    return map
-  }, [ordenesCompra, ordenesConCxP])
-
-  const resolveProveedorSku = useCallback(
-    (s: SkuRow) => {
-      const direct = s.productor?.trim()
-      if (direct) return direct
-      return proveedorPorSkuId.get(s.id) ?? '—'
-    },
-    [proveedorPorSkuId]
-  )
-
-  const proveedorCount = pendingOrdenCards.length + ordenesConCxP.length
-  const clienteCount = activePedidoCards.length + pedidosConCxC.length
-
-  const bodegaCount = isDistiller
-    ? lotes.length + pendingViajeCards.length
-    : skus.length + proveedorCount + clienteCount
-
-  const handleSkuImageUpload = useCallback(
-    async (skuId: string, file: File) => {
-      setUploadingSkuId(skuId)
-      try {
-        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-        const path = `skus/${skuId}/${Date.now()}.${ext}`
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(path, file, {
-            contentType: file.type || 'image/jpeg',
-            upsert: true,
-          })
-        if (uploadError) {
-          console.error(
-            '[dashboard] storage bucket product-images',
-            uploadError.message,
-            (uploadError as { details?: string }).details,
-            (uploadError as { hint?: string }).hint
-          )
-          throw uploadError
-        }
-
-        const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
-        const { error: updateError } = await supabase
-          .from('skus')
-          .update({ imagen_url: urlData.publicUrl })
-          .eq('id', skuId)
-        if (updateError) {
-          console.error(
-            '[dashboard] table skus (imagen_url)',
-            updateError.message,
-            updateError.details,
-            updateError.hint
-          )
-          throw updateError
-        }
-
-        setSkus(prev =>
-          prev.map(s => (s.id === skuId ? { ...s, imagen_url: urlData.publicUrl } : s))
-        )
-      } catch (e) {
-        const err = e as { message?: string; details?: string; hint?: string }
-        console.error(
-          '[dashboard] sku image upload',
-          err.message,
-          err.details,
-          err.hint
-        )
-        alert(`No se pudo subir la imagen: ${err.message ?? 'error'}`)
-      } finally {
-        setUploadingSkuId(null)
-      }
-    },
-    [supabase]
-  )
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') setDataVersion(v => v + 1)
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [])
-
-  useEffect(() => {
-    if (!profilesResolved || !scope || !profileType) {
-      setLoading(false)
-      return
-    }
-
-    let cancelled = false
-    const isSilent = pendingSilentLoadRef.current
-    pendingSilentLoadRef.current = false
-    if (!isSilent) setLoading(true)
-
-    const load = async () => {
-      setLoadError(null)
-      try {
-        if (profileType === 'distiller' && clerkId) {
-          const errors: string[] = []
-          let loteRows: LoteRow[] = []
-          let viajeRows: ViajeRow[] = []
-          let corridaRows: CorridaRow[] = []
-
-          try {
-            loteRows = await fetchLotes(supabase, clerkId, { limit: 500 })
-          } catch (e) {
-            console.error('[dashboard] fetchLotes', e)
-            errors.push(e instanceof Error ? e.message : 'Error cargando lotes')
-          }
-
-          try {
-            viajeRows = await fetchViajes(supabase, clerkId, { limit: 200 })
-          } catch (e) {
-            console.error('[dashboard] fetchViajes', e)
-            errors.push(e instanceof Error ? e.message : 'Error cargando viajes')
-          }
-
-          try {
-            corridaRows = await fetchCorridas(supabase, clerkId, {
-              estado: 'activa',
-              limit: 50,
-            })
-          } catch (e) {
-            console.error('[dashboard] fetchCorridas', e)
-            errors.push(e instanceof Error ? e.message : 'Error cargando corridas')
-          }
-
-          let productos: ProductoViajeRow[] = []
-          try {
-            const activos = viajeRows.filter(v => v.estado !== 'recibido')
-            productos = await fetchProductosViaje(supabase, activos.map(v => v.id))
-          } catch (e) {
-            console.error('[dashboard] fetchProductosViaje', e)
-            errors.push(e instanceof Error ? e.message : 'Error cargando productos')
-          }
-
-          if (!cancelled) {
-            setLotes(loteRows)
-            setViajes(viajeRows)
-            setProductosViaje(productos)
-            setCorridasActivas(corridaRows)
-            if (errors.length > 0) {
-              setLoadError(errors[0] ?? 'Error cargando bodega')
-            }
-          }
-        } else if (profileType === 'distributor') {
-          const [rows, pedidoRows, ocRows, ocCxPRows, pedCxCRows] = await Promise.all([
-            loadWithTimeout(fetchSkus(supabase, scope), [] as SkuRow[], 'fetchSkus'),
-            loadWithTimeout(fetchPedidos(supabase, scope, { limit: 12 }), [], 'fetchPedidos'),
-            loadWithTimeout(
-              fetchOrdenesCompraDistribuidorPendientes(supabase, scope),
-              [],
-              'fetchOrdenesCompraPendientes'
-            ),
-            loadWithTimeout(
-              fetchOrdenesCompraConCxPendiente(supabase, scope),
-              [],
-              'fetchOrdenesCompraConCxPendiente'
-            ),
-            loadWithTimeout(
-              fetchPedidosConCxCPendiente(supabase, scope),
-              [],
-              'fetchPedidosConCxCPendiente'
-            ),
-          ])
-          const cxpIds = ocCxPRows.map(o => o.cxp.id)
-          const pagosProveedor = await loadWithTimeout(
-            fetchPagosProveedorByCuentaIds(supabase, cxpIds, scope),
-            [],
-            'fetchPagosProveedorByCuentaIds'
-          )
-          const pagosByCxp = new Map<string, typeof pagosProveedor>()
-          for (const p of pagosProveedor) {
-            const list = pagosByCxp.get(p.cuenta_por_pagar_id) ?? []
-            list.push(p)
-            pagosByCxp.set(p.cuenta_por_pagar_id, list)
-          }
-          const ocCxPConPagos = ocCxPRows.map(o => ({
-            ...o,
-            cxp: {
-              ...o.cxp,
-              pagos: pagosByCxp.get(o.cxp.id) ?? [],
-            },
-          }))
-          if (!cancelled) {
-            setSkus(rows)
-            console.log('[dashboard] clerk_id', scope.clerk_id, 'skus', rows.length)
-            setPedidos(pedidoRows as (PedidoRow & { clients?: { name: string } | null })[])
-            setOrdenesCompra(ocRows)
-            setOrdenesConCxP(ocCxPConPagos)
-            setPedidosConCxC(pedCxCRows)
-          }
-        }
-      } catch (e) {
-        console.error('[dashboard] load', e)
-        if (!cancelled) {
-          setLoadError(e instanceof Error ? e.message : 'Error cargando dashboard')
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    void load()
-    return () => {
-      cancelled = true
-    }
-  }, [profilesResolved, scopeProfileType, scope?.clerk_id, profileType, clerkId, supabase, dataVersion, silentRefresh])
-
-  /** Evita re-fetch del agente cuando solo cambia el historial del chat */
-  const agentFetchHints = useMemo(
-    () => ({
-      query: userQuery,
-      selectedId,
-      ...(agentImage ? { image: agentImage } : {}),
-    }),
-    [userQuery, selectedId, agentImage]
-  )
 
   const agentHints = useMemo(
     () => ({
-      ...agentFetchHints,
-      conversation: agentConversation.map(m => ({
-        role: m.role,
-        content: m.content,
-      })),
+      query: userQuery,
+      conversation: agentConversation
+        .filter(m => m.role === 'user' || m.role === 'agent')
+        .map(m => ({
+          role: m.role as 'user' | 'agent',
+          content: m.content,
+        })),
     }),
-    [agentFetchHints, agentConversation]
+    [userQuery, agentConversation]
   )
 
-  const agentFallback = useMemo(() => {
-    if (agentProfileType === 'distiller') {
-      return {
-        mensaje: `${lotes.length} lote${lotes.length === 1 ? '' : 's'} en bodega. Pregúntame por costos, merma o producción.`,
-      }
-    }
-    if (skus.length === 0 && pedidos.length > 0 && pendingOrdenCards.length === 0) {
-      return {
-        mensaje: `${pedidos.length} pedido${pedidos.length === 1 ? '' : 's'} registrado${pedidos.length === 1 ? '' : 's'} (sin catálogo SKU aún). Pregúntame por pedidos o entregas.`,
-      }
-    }
-    if (pendingOrdenCards.length > 0) {
-      return {
-        mensaje: `${skus.length} SKU${skus.length === 1 ? '' : 's'} en bodega · ${pendingOrdenCards.length} orden${pendingOrdenCards.length === 1 ? '' : 'es'} por recibir. Pregúntame por stock o confirmar llegadas.`,
-      }
-    }
-    return {
-      mensaje: `${skus.length} SKU${skus.length === 1 ? '' : 's'} en inventario. Pregúntame por stock, pedidos o cobros.`,
-    }
-  }, [agentProfileType, lotes.length, skus.length, pedidos.length, pendingOrdenCards.length])
-
-  const [imagePickerSkuId, setImagePickerSkuId] = useState<string | null>(null)
-
   const {
-    mensaje,
+    chatResponse,
+    displayCards,
     loading: agentLoading,
-    refreshLoteId,
-    refreshPedidoId,
-    openSkuImagePicker,
+    error: agentError,
   } = useProofContextBar({
     pantalla: 'inicio',
     vista: agentProfileType === 'distiller' ? 'destilador' : 'distribuidor',
@@ -487,7 +65,7 @@ export default function DashboardPage() {
     hints: agentHints,
     requestId: agentRequestId,
     enabled: Boolean(clerkId) && agentProfileType != null,
-    fallback: agentFallback,
+    fallback: { mensaje: '' },
   })
 
   const quickActionsForProfile = isDistiller
@@ -495,90 +73,37 @@ export default function DashboardPage() {
     : [...DISTRIBUTOR_QUICK_ACTIONS]
 
   useEffect(() => {
-    if (!refreshLoteId && !refreshPedidoId) return
-    pendingSilentLoadRef.current = true
-    setSilentRefresh(v => v + 1)
-    if (refreshPedidoId) {
-      setSelectedPedidoId(refreshPedidoId)
-      setSelectedId(null)
-      setSelectedOrdenId(null)
-    } else if (refreshLoteId) {
-      setSelectedId(refreshLoteId)
-      setSelectedPedidoId(null)
-    }
-  }, [refreshLoteId, refreshPedidoId])
-
-  useEffect(() => {
-    if (!openSkuImagePicker) return
-    setSelectedId(openSkuImagePicker)
-    setSelectedPedidoId(null)
-    setImagePickerSkuId(openSkuImagePicker)
-  }, [openSkuImagePicker])
-
-  useEffect(() => {
     const q = searchParams.get('q')?.trim()
     if (!q || consumedAskRef.current === q) return
     consumedAskRef.current = q
-    console.log('[agente] query desde URL', q)
     setUrlQuery(q)
     router.replace('/dashboard', { scroll: false })
   }, [searchParams, router])
 
-  const handleAgentSend = useCallback(
-    (message: string, conversation: AgentMessage[], image?: string | null) => {
-      const q = message.toLowerCase()
-      setAgentConversation(conversation)
-      setAgentImage(image ?? null)
-      if (
-        q.includes('nuevo viaje') ||
-        q.includes('nuevo pedido') ||
-        q.includes('orden de compra') ||
-        (q.includes('registrar') && (q.includes('viaje') || q.includes('compra')))
-      ) {
-        router.push(
-          isDistiller
-            ? '/dashboard/destilador/compras/nuevo'
-            : q.includes('compra') || q.includes('orden')
-              ? '/dashboard/distribuidor/compras/nuevo'
-              : '/dashboard/pedidos/nuevo'
-        )
-        return
-      }
-      setUserQuery(message)
-      setAgentRequestId(n => n + 1)
-    },
-    [router, isDistiller]
-  )
+  useEffect(() => {
+    const oc = searchParams.get('oc')?.trim()
+    if (!oc || consumedOcRef.current === oc) return
+    consumedOcRef.current = oc
+    setOcFromUrl(oc)
+    router.replace('/dashboard', { scroll: false })
+  }, [searchParams, router])
 
-  const dividerLabel = isDistiller
-    ? loading
-      ? 'Bodega — …'
-      : pendingViajeCards.length > 0
-        ? `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'} · ${pendingViajeCards.length} por recibir`
-        : `Bodega — ${lotes.length} lote${lotes.length === 1 ? '' : 's'}`
-    : loading
-      ? 'Inventario — …'
-      : pendingOrdenCards.length > 0 || ordenesConCxP.length > 0
-        ? `Inventario — ${skus.length} SKU${skus.length === 1 ? '' : 's'} · ${pendingOrdenCards.length} por recibir${ordenesConCxP.length > 0 ? ` · ${ordenesConCxP.length} CxP` : ''}`
-        : skus.length > 0
-          ? `Inventario — ${skus.length} SKUs`
-          : pedidos.length > 0
-            ? `Pedidos — ${pedidos.length} registrados`
-            : 'Inventario — 0 SKUs'
+  const handleAgentSend = useCallback((message: string, conversation: ProofMessage[]) => {
+    setAgentConversation(conversation)
+    setUserQuery(message)
+    setAgentRequestId(n => n + 1)
+  }, [])
 
-  const showProfileGate = profileLoading
-  const showSkeleton = profileLoading || loading
-
-  if (showProfileGate) {
+  if (profileLoading) {
     return (
       <div
         style={{
-          minHeight: '100vh',
-          background: 'var(--ink)',
+          height: '100%',
+          background: 'var(--color-background-tertiary)',
           display: 'grid',
           placeItems: 'center',
-          color: '#999',
-          fontSize: 13,
+          color: 'var(--color-text-tertiary)',
+          fontSize: 14,
         }}
       >
         Cargando PROOF…
@@ -590,12 +115,12 @@ export default function DashboardPage() {
     return (
       <div
         style={{
-          background: 'var(--ink)',
-          minHeight: '100vh',
+          height: '100%',
+          background: 'var(--color-background-tertiary)',
           padding: 48,
           textAlign: 'center',
-          color: '#888',
-          fontSize: 13,
+          color: 'var(--color-text-tertiary)',
+          fontSize: 14,
         }}
       >
         Perfil no compatible con el canvas PROOF.
@@ -606,429 +131,33 @@ export default function DashboardPage() {
   return (
     <div
       style={{
-        minHeight: '100vh',
-        background: 'var(--ink)',
-        color: 'var(--fg-0)',
+        height: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--color-background-tertiary)',
+        color: 'var(--color-text-primary)',
       }}
     >
-      <style>{`
-        @keyframes proof-skeleton-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.45; }
-        }
-        .proof-quick-action:hover {
-          border-color: var(--proof-accent) !important;
-          color: var(--fg-0) !important;
-        }
-      `}</style>
-
-      <AgentBar
+      <ProofOrdenCompraPanel
         accent={accent}
-        onSend={handleAgentSend}
-        response={mensaje}
-        isLoading={agentLoading}
-        quickActions={quickActionsForProfile}
-        queryFromUrl={urlQuery}
+        initialOrdenId={isDistributor ? ocFromUrl : null}
+        onDismiss={() => setOcFromUrl(null)}
       />
-
-      {isDistiller && <CanvasDivider label={dividerLabel} />}
-
-      {!loading && loadError && (
-        <div
-          style={{
-            margin: '0 24px 16px',
-            padding: '12px 16px',
-            borderRadius: 10,
-            border: '0.5px solid #E8B4B4',
-            background: '#FFF5F5',
-            fontSize: 12,
-            color: '#8B2E2E',
-            lineHeight: 1.5,
-          }}
-        >
-          No pude cargar la bodega: {loadError}.
-          {loadError.includes('clerk_id') && (
-            <>
-              {' '}
-              La tabla <code style={{ fontSize: 11 }}>skus</code> en Supabase debe ser la PROOF
-              (con <code style={{ fontSize: 11 }}>clerk_id</code>). Aplica la migración{' '}
-              <code style={{ fontSize: 11 }}>20250604100000_skus_proof_replace_legacy.sql</code>{' '}
-              y recarga.
-            </>
-          )}
-          {!loadError.includes('clerk_id') && (
-            <>
-              {' '}
-              Si acabas de aplicar SQL, ejecuta{' '}
-              <code style={{ fontSize: 11 }}>NOTIFY pgrst, &apos;reload schema&apos;;</code> y
-              recarga.
-            </>
-          )}
-        </div>
-      )}
-
-        {selectedViajeId != null && clerkId && (
-          <ViajePendienteDetalle
-            key={`viaje-${selectedViajeId}-${dataVersion}`}
-            viajeId={selectedViajeId}
-            accent={accent}
-            onClose={() => setSelectedViajeId(null)}
-            onRecibido={loteId => {
-              setSelectedViajeId(null)
-              setSelectedId(loteId)
-              setDataVersion(v => v + 1)
-            }}
-          />
-        )}
-
-        {selectedOrdenId != null && !isDistiller && (
-          <OrdenCompraPendienteDetalle
-            key={`oc-${selectedOrdenId}-${dataVersion}`}
-            ordenId={selectedOrdenId}
-            accent={PROVEEDOR_ACCENT}
-            onClose={() => setSelectedOrdenId(null)}
-            onRecibido={() => {
-              setSelectedOrdenId(null)
-              setDataVersion(v => v + 1)
-            }}
-          />
-        )}
-
-        {selectedPedidoId != null && !isDistiller && (
-          <PedidoDetalle
-            key={selectedPedidoId}
-            pedidoId={selectedPedidoId}
-            refreshKey={silentRefresh}
-            accent={accent}
-            onClose={() => setSelectedPedidoId(null)}
-          />
-        )}
-
-        {selectedId != null &&
-          selectedViajeId == null &&
-          selectedOrdenId == null &&
-          selectedPedidoId == null &&
-          profileType && (
-          <LoteDetalle
-            key={`${selectedId}-${dataVersion}`}
-            loteId={selectedId}
-            profileType={profileType}
-            accent={accent}
-            onClose={() => setSelectedId(null)}
-          />
-        )}
-
-      {!isDistiller && (
-        <div className="proof-canvas-stack">
-          <CanvasHorizontalSection
-            accent={PROVEEDOR_ACCENT}
-            title="Proveedores"
-            subtitle={
-              showSkeleton
-                ? 'Cargando…'
-                : `${proveedorCount} orden${proveedorCount !== 1 ? 'es' : ''} activa${proveedorCount !== 1 ? 's' : ''}`
-            }
-            ctaLabel="+ Orden de compra"
-            ctaHref="/dashboard/distribuidor/compras/nuevo"
-            emptyMessage="Sin órdenes de compra activas."
-            loading={showSkeleton}
-            itemWidth={172}
-          >
-            {pendingOrdenCards.map(o => (
-              <OrdenCompraCanvasCard
-                key={o.id}
-                orden={o}
-                selected={selectedOrdenId === o.id}
-                onClick={() => {
-                  setSelectedId(null)
-                  setSelectedPedidoId(null)
-                  setSelectedOrdenId(o.id)
-                }}
-              />
-            ))}
-            {ordenesConCxP.map(o => (
-              <OrdenCompraCanvasCard
-                key={`cxp-${o.id}`}
-                orden={o}
-                selected={selectedOrdenId === o.id}
-                onClick={() => {
-                  setSelectedId(null)
-                  setSelectedPedidoId(null)
-                  setSelectedOrdenId(o.id)
-                }}
-              />
-            ))}
-          </CanvasHorizontalSection>
-
-          <CanvasHorizontalSection
-            accent={CLIENTE_ACCENT}
-            title="Clientes"
-            subtitle={
-              showSkeleton
-                ? 'Cargando…'
-                : `${clienteCount} pedido${clienteCount !== 1 ? 's' : ''} activo${clienteCount !== 1 ? 's' : ''}`
-            }
-            ctaLabel="+ Nuevo pedido"
-            ctaHref="/dashboard/pedidos/nuevo"
-            emptyMessage="Sin pedidos activos."
-            loading={showSkeleton}
-            itemWidth={172}
-          >
-            {activePedidoCards.map(p => (
-              <PedidoCanvasCard
-                key={p.id}
-                pedido={p}
-                accent={CLIENTE_ACCENT}
-                selected={selectedPedidoId === p.id}
-                onClick={() => {
-                  setSelectedPedidoId(p.id)
-                  setSelectedId(null)
-                  setSelectedOrdenId(null)
-                }}
-              />
-            ))}
-            {pedidosConCxC.map(p => (
-              <PedidoCanvasCard
-                key={`cxc-${p.id}`}
-                pedido={p}
-                accent={CLIENTE_ACCENT}
-                cxc={p.cxc}
-                selected={selectedPedidoId === p.id}
-                onClick={() => {
-                  setSelectedPedidoId(p.id)
-                  setSelectedId(null)
-                  setSelectedOrdenId(null)
-                }}
-              />
-            ))}
-          </CanvasHorizontalSection>
-
-          <CanvasHorizontalSection
-            accent={INVENTARIO_ACCENT}
-            title="Inventario"
-            subtitle={
-              showSkeleton
-                ? 'Cargando…'
-                : `${skus.length} SKU${skus.length !== 1 ? 's' : ''}`
-            }
-            emptyMessage="Sin SKUs en inventario."
-            loading={showSkeleton}
-            itemWidth={176}
-            skeletonCount={3}
-          >
-            {skus.map(s => {
-              const dataItems = skuKpiConfig.map(k => {
-                const metric = k.metric as KpiMetric
-                return {
-                  label: metricCardLabel('distributor', metric),
-                  value: resolveDistributorKpi(metric, s, [s]),
-                  tone: distributorMetricTone(metric, s),
-                }
-              })
-              const editorOpen = kpiEditor?.skuId === s.id
-              const editorSlot = kpiEditor?.slot ?? 0
-              return (
-                <SkuCard
-                  key={s.id}
-                  nombre={s.nombre}
-                  categoriaLiquido={s.categoria_liquido ?? 'otro'}
-                  proveedorNombre={resolveProveedorSku(s)}
-                  imagenUrl={s.imagen_url}
-                  estado={mapSkuEstadoToCard(s.estado)}
-                  dataItems={dataItems}
-                  selected={selectedId === s.id && selectedPedidoId == null}
-                  accent={INVENTARIO_ACCENT}
-                  uploading={uploadingSkuId === s.id}
-                  configOpen={editorOpen}
-                  onClick={() => {
-                    setSelectedPedidoId(null)
-                    setSelectedId(s.id)
-                  }}
-                  onConfigClick={() =>
-                    setKpiEditor(prev =>
-                      prev?.skuId === s.id ? null : { skuId: s.id, slot: 0 }
-                    )
-                  }
-                  configPanel={
-                    editorOpen ? (
-                      <>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 4,
-                            marginTop: 8,
-                            marginBottom: 4,
-                          }}
-                        >
-                          {([0, 1, 2] as const).map(slot => (
-                            <button
-                              key={slot}
-                              type="button"
-                              onClick={() => setKpiEditor({ skuId: s.id, slot })}
-                              style={{
-                                flex: 1,
-                                fontSize: 9,
-                                fontFamily:
-                                  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-                                padding: '4px 0',
-                                borderRadius: 4,
-                                border:
-                                  editorSlot === slot
-                                    ? `0.5px solid ${INVENTARIO_ACCENT}`
-                                    : '0.5px solid var(--hairline)',
-                                background: editorSlot === slot ? `${INVENTARIO_ACCENT}12` : '#fff',
-                                color: editorSlot === slot ? INVENTARIO_ACCENT : '#888',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              {slot + 1}
-                            </button>
-                          ))}
-                        </div>
-                        <KpiConfigDrawer
-                          slot={editorSlot}
-                          profileType="distributor"
-                          currentMetric={skuKpiConfig[editorSlot]?.metric ?? 'stock_disponible'}
-                          currentScope={skuKpiConfig[editorSlot]?.scope ?? 'all'}
-                          accent={INVENTARIO_ACCENT}
-                          onSelect={(metric, scope) => {
-                            void updateKpi(editorSlot, metric, scope)
-                          }}
-                          onClose={() => setKpiEditor(null)}
-                        />
-                      </>
-                    ) : undefined
-                  }
-                  openImagePicker={imagePickerSkuId === s.id}
-                  onImagePickerOpened={() => setImagePickerSkuId(null)}
-                  onImageSelect={file => {
-                    void handleSkuImageUpload(s.id, file)
-                  }}
-                />
-              )
-            })}
-          </CanvasHorizontalSection>
-
-          {!showSkeleton && bodegaCount === 0 && (
-            <div style={{ textAlign: 'center', padding: '24px 16px 8px' }}>
-              <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
-                Registra tu primera orden de compra o entrada de inventario
-              </p>
-              <button
-                type="button"
-                onClick={() => router.push('/dashboard/distribuidor/compras/nuevo')}
-                className="proof-quick-action"
-                style={{
-                  fontSize: 13,
-                  padding: '10px 18px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--hairline)',
-                  background: 'transparent',
-                  color: 'var(--fg-2)',
-                  cursor: 'pointer',
-                }}
-              >
-                Nueva orden de compra
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {isDistiller && (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))',
-          gap: 12,
-          padding: '0 24px 32px',
-        }}
-      >
-        {showSkeleton && isDistiller &&
-          Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              aria-hidden
-              style={{
-                height: 200,
-                borderRadius: 12,
-                background: 'var(--panel-2)',
-                animation: 'proof-skeleton-pulse 1.5s ease-in-out infinite',
-              }}
-            />
-          ))}
-
-        {!showSkeleton &&
-          isDistiller &&
-          lotes.map(l => (
-            <BotellaCard
-              key={l.id}
-              id={l.numero_lote}
-              nombre={l.tipo_agave}
-              maestro={l.maestro ?? '—'}
-              estado={mapLoteEstadoToBotella(l.estado)}
-              litrosDisponibles={l.litros_disponibles_granel}
-              fechaEmbotelladoProgramada={l.fecha_embotellado_programada}
-              selected={selectedId === l.id && selectedViajeId == null}
-              accent={accent}
-              onClick={() => {
-                setSelectedViajeId(null)
-                setSelectedId(l.id)
-              }}
-            />
-          ))}
-
-        {!showSkeleton &&
-          isDistiller &&
-          pendingViajeCards.map(v => (
-            <BotellaCard
-              key={`viaje-${v.viajeId}`}
-              id={v.estado === 'en_transito' ? 'En tránsito' : 'Por recibir'}
-              nombre={v.nombre}
-              maestro={v.region}
-              estado="pendiente"
-              litrosDisponibles={v.litros > 0 ? v.litros : undefined}
-              selected={selectedViajeId === v.viajeId}
-              dashed
-              accent={accent}
-              onClick={() => {
-                setSelectedId(null)
-                setSelectedViajeId(v.viajeId)
-              }}
-            />
-          ))}
-
-        {!showSkeleton && isDistiller && bodegaCount === 0 && (
-          <div
-            style={{
-              gridColumn: '1 / -1',
-              textAlign: 'center',
-              padding: '56px 24px',
-            }}
-          >
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
-              Registra tu primer viaje a Oaxaca
-            </p>
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard/destilador/compras/nuevo')}
-              className="proof-quick-action"
-              style={{
-                fontSize: 12,
-                padding: '10px 18px',
-                borderRadius: 8,
-                border: '1px solid var(--hairline)',
-                background: 'transparent',
-                color: 'var(--fg-2)',
-                cursor: 'pointer',
-              }}
-            >
-              Nuevo viaje
-            </button>
-          </div>
-        )}
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <ProofCanvasShell
+          accent={accent}
+          profileType={profileType}
+          chatResponse={userQuery ? chatResponse : undefined}
+          displayCards={displayCards}
+          loading={agentLoading}
+          error={agentError}
+          onSend={handleAgentSend}
+          quickActions={quickActionsForProfile}
+          queryFromUrl={urlQuery}
+        />
       </div>
-      )}
     </div>
   )
 }

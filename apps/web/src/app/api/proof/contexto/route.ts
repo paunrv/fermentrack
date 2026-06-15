@@ -6,6 +6,7 @@ import {
   quickAnswer,
   type DistillerIntentContext,
 } from '@/lib/proof/agent-intent-parser'
+import type { DisplayCards } from '@/lib/proof/agent-response-types'
 import {
   type AgentContextHints,
   type AgentProfileType,
@@ -14,6 +15,8 @@ import {
   loadIsolatedAgentContext,
 } from '@/lib/proof/agent-context-server'
 import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
+import { buildDistributorDisplayCards } from '@/lib/proof/distributor-display-cards'
+import { buildDistillerDisplayCards } from '@/lib/proof/distiller-display-cards'
 import { narrowDistributorContextForQuery } from '@/lib/proof/toma-pedido-intent'
 import { proofErrorMessage } from '@/lib/proof/proof-error'
 import {
@@ -43,20 +46,54 @@ function parseProfileType(raw: unknown): AgentProfileType | null {
   return null
 }
 
-function sendQuickDone(
+const EMPTY_RESULTS_MSG = 'No encontré resultados para esa búsqueda.'
+
+function buildDisplayCardsForQuery(
+  query: string,
+  profileType: AgentProfileType,
+  datos: Record<string, unknown>
+): { displayCards: DisplayCards | null; emptyResults: boolean } {
+  if (profileType === 'distributor') {
+    return buildDistributorDisplayCards(query, datos)
+  }
+  return buildDistillerDisplayCards(query, datos)
+}
+
+function sendAgentDone(
   send: (event: string, data: unknown) => void,
-  quick: { mensaje: string; accionLabel: string; accionHref: string },
-  refresh: {
+  opts: {
+    queryText: string
+    profileType: AgentProfileType
+    datos: Record<string, unknown>
+    mensaje: string
+    accionLabel?: string
+    accionHref?: string
     refreshLoteId?: string | null
     refreshPedidoId?: string | null
+    openSkuImagePicker?: string | null
+    skipDisplayCards?: boolean
   }
 ) {
+  let chatResponse = opts.mensaje.replace(/\*\*/g, '')
+  let displayCards: DisplayCards | null = null
+
+  if (opts.queryText && !opts.skipDisplayCards) {
+    const built = buildDisplayCardsForQuery(opts.queryText, opts.profileType, opts.datos)
+    displayCards = built.displayCards
+    if (built.emptyResults && !displayCards) {
+      chatResponse = EMPTY_RESULTS_MSG
+    }
+  }
+
   send('done', {
-    mensaje: quick.mensaje.replace(/\*\*/g, ''),
-    accionLabel: quick.accionLabel,
-    accionHref: quick.accionHref,
-    refreshLoteId: refresh.refreshLoteId ?? null,
-    refreshPedidoId: refresh.refreshPedidoId ?? null,
+    chatResponse,
+    mensaje: chatResponse,
+    displayCards,
+    accionLabel: opts.accionLabel ?? 'Ver más',
+    accionHref: opts.accionHref ?? '/dashboard',
+    refreshLoteId: opts.refreshLoteId ?? null,
+    refreshPedidoId: opts.refreshPedidoId ?? null,
+    openSkuImagePicker: opts.openSkuImagePicker ?? null,
   })
 }
 
@@ -155,7 +192,15 @@ export async function POST(req: NextRequest) {
             const quick = quickAnswer(queryText, profileType, quickCtx)
             if (quick) {
               console.log('[proof/contexto] quick answer', { query: queryText })
-              sendQuickDone(send, quick, { refreshLoteId: refreshEntityId })
+              sendAgentDone(send, {
+                queryText,
+                profileType,
+                datos: quickCtx as unknown as Record<string, unknown>,
+                mensaje: quick.mensaje,
+                accionLabel: quick.accionLabel,
+                accionHref: quick.accionHref,
+                refreshLoteId: refreshEntityId,
+              })
               return
             }
           }
@@ -217,7 +262,14 @@ export async function POST(req: NextRequest) {
               console.log('[proof/contexto] quick answer distribuidor', {
                 query: queryText,
               })
-              sendQuickDone(send, quick, {})
+              sendAgentDone(send, {
+                queryText,
+                profileType,
+                datos: { ...distCtx, conversation } as unknown as Record<string, unknown>,
+                mensaje: quick.mensaje,
+                accionLabel: quick.accionLabel,
+                accionHref: quick.accionHref,
+              })
               return
             }
           }
@@ -233,7 +285,10 @@ export async function POST(req: NextRequest) {
 
       if (actionMessage) {
         const isDestilador = profileType === 'distiller'
-        send('done', {
+        sendAgentDone(send, {
+          queryText,
+          profileType,
+          datos,
           mensaje: actionMessage,
           accionLabel: refreshPedidoId ? 'Ver pedido' : isDestilador ? 'Ver bodega' : 'Ver inventario',
           accionHref: refreshPedidoId
@@ -244,6 +299,7 @@ export async function POST(req: NextRequest) {
           refreshLoteId: refreshSkuId ?? (refreshPedidoId ? null : refreshEntityId),
           refreshPedidoId,
           openSkuImagePicker,
+          skipDisplayCards: true,
         })
         return
       }
@@ -256,7 +312,14 @@ export async function POST(req: NextRequest) {
         const quick = quickAnswer(queryText, profileType, datos)
         if (quick) {
           console.log('[proof/contexto] quick answer (full ctx)', { query: queryText })
-          sendQuickDone(send, quick, {})
+          sendAgentDone(send, {
+            queryText,
+            profileType,
+            datos,
+            mensaje: quick.mensaje,
+            accionLabel: quick.accionLabel,
+            accionHref: quick.accionHref,
+          })
           return
         }
       }
@@ -358,7 +421,10 @@ Responde SOLO JSON válido:
         /* usar texto crudo */
       }
 
-      send('done', {
+      sendAgentDone(send, {
+        queryText,
+        profileType,
+        datos,
         mensaje,
         accionLabel,
         accionHref,
@@ -368,12 +434,14 @@ Responde SOLO JSON válido:
       })
     } catch (e) {
       console.error('[proof/contexto] error', e)
-      send('done', {
+      sendAgentDone(send, {
+        queryText: body.hints?.query?.trim() ?? '',
+        profileType: profileType ?? 'distributor',
+        datos: {},
         mensaje: proofErrorMessage(e),
         accionLabel: 'Ver inicio',
         accionHref: '/dashboard',
-        refreshLoteId: null,
-        refreshPedidoId: null,
+        skipDisplayCards: true,
       })
     } finally {
       close()

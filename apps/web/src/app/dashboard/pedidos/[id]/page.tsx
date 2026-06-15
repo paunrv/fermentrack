@@ -22,6 +22,7 @@ import {
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import { PedidoTomaDetalle } from '@/components/proof/PedidoTomaDetalle'
 import { RemisionPedidoActions } from '@/components/proof/RemisionPedidoActions'
+import { PedidoFulfillmentActions } from '@/components/proof/PedidoFulfillmentActions'
 import { parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 
@@ -226,7 +227,14 @@ export default function PedidoComposerPage() {
 
   const tomaNotas = parseTomaPedidoNotas(pedido.notas)
   if (tomaNotas) {
-    return <PedidoTomaDetalle pedido={pedido} toma={tomaNotas} remision={remision} />
+    return (
+      <PedidoTomaDetalle
+        pedido={pedido}
+        toma={tomaNotas}
+        remision={remision}
+        onEntregado={() => void load()}
+      />
+    )
   }
 
   return (
@@ -378,6 +386,17 @@ export default function PedidoComposerPage() {
       {error && (
         <p style={{ color: 'var(--crit)', fontSize: 13, marginBottom: 12 }}>{error}</p>
       )}
+
+      <div style={{ marginBottom: 16 }}>
+        <PedidoFulfillmentActions
+          pedidoId={pedidoId}
+          numero={pedido.numero}
+          estado={pedido.estado}
+          accent="var(--gold)"
+          fullWidth
+          onUpdated={() => void load()}
+        />
+      </div>
 
       <RemisionPedidoActions
         pedidoId={pedidoId}

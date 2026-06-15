@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
@@ -11,10 +12,16 @@ import {
   type ItemDetectadoRecepcion,
   buildDiscrepanciasFromItems,
 } from '@/lib/proof/recepcion-analysis'
+import {
+  encodeOcRecepcionValue,
+  parseOcRecepcionValue,
+} from '@/lib/proof/recepcion-oc'
 import { createRecepcionFromAnalysisAction } from '@/app/actions/recepciones'
 import {
   fetchOrdenesCompraAbiertas,
+  fetchOrdenesCompraDistribuidorPendientes,
   rpcConfirmarRecepcion,
+  type OrdenCompraDistribuidorWithItems,
   type OrdenCompraRow,
 } from '@/lib/supabase'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
@@ -31,8 +38,11 @@ export default function RecepcionPage() {
   const [progress, setProgress] = useState<string[]>([])
   const [items, setItems] = useState<ItemDetectadoRecepcion[]>([])
   const [productor, setProductor] = useState('')
-  const [ordenCompraId, setOrdenCompraId] = useState('')
-  const [ordenesAbiertas, setOrdenesAbiertas] = useState<OrdenCompraRow[]>([])
+  const [ocVinculoValue, setOcVinculoValue] = useState('')
+  const [ordenesDistribuidor, setOrdenesDistribuidor] = useState<
+    OrdenCompraDistribuidorWithItems[]
+  >([])
+  const [ordenesLegacy, setOrdenesLegacy] = useState<OrdenCompraRow[]>([])
   const [deudaRegistrada, setDeudaRegistrada] = useState(0)
   const [fotoPreview, setFotoPreview] = useState<string | null>(null)
   const [fotoUrls, setFotoUrls] = useState<string[]>([])
@@ -44,15 +54,32 @@ export default function RecepcionPage() {
 
   useEffect(() => {
     if (!scope) return
-    fetchOrdenesCompraAbiertas(supabase, scope)
-      .then(setOrdenesAbiertas)
-      .catch(() => setOrdenesAbiertas([]))
+    Promise.all([
+      fetchOrdenesCompraDistribuidorPendientes(supabase, scope),
+      fetchOrdenesCompraAbiertas(supabase, scope),
+    ])
+      .then(([distribuidor, legacy]) => {
+        setOrdenesDistribuidor(distribuidor)
+        setOrdenesLegacy(legacy)
+      })
+      .catch(() => {
+        setOrdenesDistribuidor([])
+        setOrdenesLegacy([])
+      })
   }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
 
+  const ocVinculo = parseOcRecepcionValue(ocVinculoValue)
+
   useEffect(() => {
-    const oc = ordenesAbiertas.find(o => o.id === ordenCompraId)
-    if (oc?.productor_id && !productor) setProductor(oc.productor_id)
-  }, [ordenCompraId, ordenesAbiertas, productor])
+    if (!ocVinculo) return
+    if (ocVinculo.source === 'distribuidor') {
+      const oc = ordenesDistribuidor.find(o => o.id === ocVinculo.id)
+      if (oc?.proveedor_nombre && !productor) setProductor(oc.proveedor_nombre)
+    } else {
+      const oc = ordenesLegacy.find(o => o.id === ocVinculo.id)
+      if (oc?.productor_id && !productor) setProductor(oc.productor_id)
+    }
+  }, [ocVinculo, ordenesDistribuidor, ordenesLegacy, productor])
 
   async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -82,7 +109,8 @@ export default function RecepcionPage() {
         body: JSON.stringify({
           imagenBase64: b64,
           mediaType: file.type || 'image/jpeg',
-          ordenCompraId: ordenCompraId || undefined,
+          ordenCompraId: ocVinculo?.id,
+          ordenCompraSource: ocVinculo?.source,
           productorId: productor || undefined,
           recepcionId: recepcionId || undefined,
           profile_type_v2: activeProfile?.profile_type_v2 || 'distributor',
@@ -158,8 +186,10 @@ export default function RecepcionPage() {
       const rec = await createRecepcionFromAnalysisAction({
         recepcion_id: recepcionId,
         productor: productor || 'Productor',
-        orden_compra_id: ordenCompraId || null,
-        deuda_registrada: deudaRegistrada,
+        orden_compra_id: ocVinculo?.source === 'legacy' ? ocVinculo.id : null,
+        orden_compra_distribuidor_id:
+          ocVinculo?.source === 'distribuidor' ? ocVinculo.id : null,
+        deuda_registrada: ocVinculo?.source === 'distribuidor' ? 0 : deudaRegistrada,
         foto_urls: fotoUrls.length ? fotoUrls : undefined,
         items: items.map(it => ({
           sku_id: it.skuId,
@@ -185,7 +215,11 @@ export default function RecepcionPage() {
     setSaving(true)
     setError(null)
     try {
-      const rec = await rpcConfirmarRecepcion(supabase, recepcionId, deudaRegistrada > 0)
+      const rec = await rpcConfirmarRecepcion(
+        supabase,
+        recepcionId,
+        !vinculoOcDistribuidor && deudaRegistrada > 0
+      )
       setCodigoConfirmado(rec.codigo)
       setStep(4)
     } catch (e) {
@@ -197,7 +231,13 @@ export default function RecepcionPage() {
 
   const totalBotellas = items.reduce((a, i) => a + i.cantidadRecibida, 0)
   const discrepancias = buildDiscrepanciasFromItems(items)
-  const ocSeleccionada = ordenesAbiertas.find(o => o.id === ordenCompraId)
+  const ocSeleccionadaDistribuidor =
+    ocVinculo?.source === 'distribuidor'
+      ? ordenesDistribuidor.find(o => o.id === ocVinculo.id)
+      : null
+  const ocSeleccionadaLegacy =
+    ocVinculo?.source === 'legacy' ? ordenesLegacy.find(o => o.id === ocVinculo.id) : null
+  const vinculoOcDistribuidor = ocVinculo?.source === 'distribuidor'
 
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 720, margin: '0 auto' }}>
@@ -240,24 +280,54 @@ export default function RecepcionPage() {
           <label style={{ fontSize: 12, color: 'var(--fg-2)' }}>
             ¿Viene de una OC?
             <select
-              value={ordenCompraId}
-              onChange={e => setOrdenCompraId(e.target.value)}
+              value={ocVinculoValue}
+              onChange={e => setOcVinculoValue(e.target.value)}
               style={{ ...fieldStyle, marginTop: 6 }}
             >
               <option value="">Sin orden de compra</option>
-              {ordenesAbiertas.map(oc => (
-                <option key={oc.id} value={oc.id}>
-                  {oc.productor_id || 'OC'} · {oc.estado}
-                  {oc.fecha_esperada ? ` · ${oc.fecha_esperada}` : ''}
-                </option>
-              ))}
+              {ordenesDistribuidor.length > 0 && (
+                <optgroup label="OC PROOF (pendientes)">
+                  {ordenesDistribuidor.map(oc => (
+                    <option
+                      key={oc.id}
+                      value={encodeOcRecepcionValue('distribuidor', oc.id)}
+                    >
+                      {oc.numero_orden} · {oc.proveedor_nombre} · {oc.estado}
+                      {oc.fecha_estimada ? ` · ${oc.fecha_estimada}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {ordenesLegacy.length > 0 && (
+                <optgroup label="OC anteriores">
+                  {ordenesLegacy.map(oc => (
+                    <option key={oc.id} value={encodeOcRecepcionValue('legacy', oc.id)}>
+                      {oc.productor_id || 'OC'} · {oc.estado}
+                      {oc.fecha_esperada ? ` · ${oc.fecha_esperada}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
-          {ocSeleccionada && (
+          {(ocSeleccionadaDistribuidor || ocSeleccionadaLegacy) && (
             <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
-              Al analizar, PROOF cruzará cantidades vs ítems de esta OC.
+              Al analizar, PROOF cruzará cantidades vs ítems de esta OC
+              {ocSeleccionadaDistribuidor
+                ? ` (${ocSeleccionadaDistribuidor.numero_orden}). Al confirmar, actualiza stock y CxP.`
+                : '.'}
             </p>
           )}
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.5 }}>
+            Las OC nuevas del distribuidor viven en PROOF.{' '}
+            <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
+              Crear orden de compra
+            </Link>
+            {' · '}
+            <Link href="/dashboard" style={{ color: 'var(--gold)' }}>
+              Confirmar llegada en canvas
+            </Link>
+          </p>
           <div
             style={{
               border: '1px dashed var(--line)',
@@ -302,7 +372,7 @@ export default function RecepcionPage() {
 
       {step === 2 && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {ordenCompraId && (
+          {ocVinculo && (
             <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
               OC vinculada · diferencias en rojo
             </p>
@@ -373,6 +443,7 @@ export default function RecepcionPage() {
               {fotoUrls.length === 1 ? '' : 's'} en Storage
             </p>
           )}
+          {!vinculoOcDistribuidor && (
           <label style={{ fontSize: 12, color: 'var(--fg-2)' }}>
             Deuda a registrar (opcional)
             <input
@@ -384,6 +455,12 @@ export default function RecepcionPage() {
               className="mono"
             />
           </label>
+          )}
+          {vinculoOcDistribuidor && (
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
+              Con OC PROOF, la cuenta por pagar se genera al confirmar según costos de la orden.
+            </p>
+          )}
           <button
             type="button"
             disabled={saving}
@@ -443,8 +520,8 @@ export default function RecepcionPage() {
           </div>
           <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--fg-1)', lineHeight: 1.6 }}>
             {productor} · {fmtBottles(totalBotellas)} botellas recibidas
-            {deudaRegistrada > 0 ? ` · Deuda ${fmtMoney(deudaRegistrada)}` : ''}
-            {ordenCompraId ? ' · OC actualizada' : ''}
+            {deudaRegistrada > 0 && !vinculoOcDistribuidor ? ` · Deuda ${fmtMoney(deudaRegistrada)}` : ''}
+            {ocVinculo ? ' · OC actualizada' : ''}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={() => window.location.reload()} style={ctaSecondary}>
@@ -467,7 +544,8 @@ export default function RecepcionPage() {
           pantalla: {
             step,
             productor,
-            ordenCompraId: ordenCompraId || null,
+            ordenCompraId: ocVinculo?.id ?? null,
+            ordenCompraSource: ocVinculo?.source ?? null,
             itemsCount: items.length,
             totalBotellas,
             discrepancias: discrepancias.length,

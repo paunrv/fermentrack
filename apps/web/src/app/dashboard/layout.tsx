@@ -409,7 +409,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               left: 0,
               right: 0,
               zIndex: 30,
-              height: 56,
+              height: 64,
               boxSizing: 'border-box',
               display: 'flex',
               alignItems: 'center',
@@ -558,7 +558,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{
             flex: 1,
             minHeight: 0,
-            paddingTop: isCanvas ? 56 : 0,
+            paddingTop: isCanvas ? 64 : 0,
             paddingBottom: showMobileNav
               ? `calc(${MOBILE_BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
               : 0,

@@ -73,6 +73,17 @@
   /* — Mobile shell — */
   --proof-bottom-nav: 0px;
   --proof-sidebar: 52px;
+
+  /* — PROOF redesign aliases — */
+  --color-background-tertiary: var(--canvas);
+  --color-background-primary: var(--ink);
+  --color-background-info: var(--info-soft);
+  --color-border-tertiary: var(--hairline);
+  --color-text-primary: var(--fg-0);
+  --color-text-tertiary: var(--fg-3);
+  --color-text-success: var(--ok);
+  --color-text-danger: var(--crit);
+  --proof-canvas-header-height: 64px;
 }
 
 * {

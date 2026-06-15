@@ -14,6 +14,7 @@ import {
 } from '@/lib/proof/toma-pedido-intent'
 import {
   categoriaLiquidoLabel,
+  extractSkuNameFromCategoryEditQuery,
   looksLikeEditarSkuQuery,
   parseCategoriaLiquidoFromQuery,
 } from '@/lib/proof/categoria-liquido'
@@ -24,6 +25,7 @@ import {
   createOrdenCompraDistribuidor,
   fetchSkus,
   rpcEntregarPedido,
+  rpcActualizarEstadoPedido,
   rpcRegistrarPagoCliente,
   rpcRegistrarPagoProveedor,
   updateSkuCartera,
@@ -33,6 +35,7 @@ import {
 
 export type DistributorAgentActionType =
   | 'confirmar_entrega'
+  | 'actualizar_estado_pedido'
   | 'crear_toma_pedido'
   | 'registrar_pago'
   | 'actualizar_precio'
@@ -48,12 +51,20 @@ export type DistributorAgentActionType =
 export type DistributorAgentAction =
   | { type: 'confirmar_entrega'; pedido_id: string; sku_id?: string | null }
   | {
+      type: 'actualizar_estado_pedido'
+      pedido_id: string
+      estado: 'preparando' | 'en_ruta'
+      numero: string
+    }
+  | {
       type: 'crear_toma_pedido'
       cantidad: number
       unidad: UnidadPedido
       etiqueta: string
       cliente: string
       sku_id: string | null
+      anticipo: boolean
+      anticipo_monto: number | null
     }
   | {
       type: 'registrar_pago'
@@ -105,13 +116,28 @@ function normQ(s: string): string {
 
 export function looksLikeDistributorMutation(q: string): boolean {
   const n = normQ(q)
-  if (looksLikeTomaPedidoQuery(n) || isConfirmationReply(n)) return true
   if (
-    (n.includes('entregar') || n.includes('entregado') || n.includes('marcar')) &&
-    (n.includes('pedido') || n.includes('entrega'))
+    n.includes('ordenes de compra') ||
+    n.includes('órdenes de compra') ||
+    n.includes('cuentas por pagar') ||
+    n.includes('cuenta por pagar') ||
+    (n.includes('orden') && n.includes('pendiente') && n.includes('compra')) ||
+    (n.includes('compra') && n.includes('pendiente') && !n.includes('cliente')) ||
+    n.includes('reservad')
   ) {
-    return true
+    return false
   }
+  if (looksLikeTomaPedidoQuery(n) || isConfirmationReply(n)) {
+    if (looksLikeEntregaVentaQuery(n) || looksLikeCompraLlegadaQuery(n)) {
+      /* no es confirmación de toma pedido */
+    } else {
+      return true
+    }
+  }
+  if (looksLikeEntregaVentaQuery(n)) return true
+  if (looksLikeActualizarEstadoPedidoQuery(n)) return true
+  if (looksLikeCrearOrdenCompraQuery(n) && !needsOrdenCompraDetails(n)) return true
+  if (looksLikeCompraLlegadaQuery(n)) return true
   if (/\bpag[oó]\b/.test(n) || n.includes('registrar pago')) return true
   if (
     n.includes('precio') &&
@@ -121,10 +147,8 @@ export function looksLikeDistributorMutation(q: string): boolean {
   }
   if (
     (n.includes('categor') || n.includes('categoria')) &&
-    (n.includes('cambiar') ||
-      n.includes('editar') ||
-      n.includes('actualizar') ||
-      n.includes('poner'))
+    (/\b(cambi|edit|actualiz|pon)\w*\b/.test(n) ||
+      /\bcategor\w*\s+de\s+.+\s+a\s+(vino|cerveza|mezcal|gin|destilado|otro)\b/.test(n))
   ) {
     return true
   }
@@ -140,14 +164,9 @@ export function looksLikeDistributorMutation(q: string): boolean {
   }
   if (
     n.includes('orden') &&
-    (n.includes('compr') || n.includes('pedido') || n.includes('ordenar'))
+    (n.includes('compr') || n.includes('ordenar'))
   ) {
-    return true
-  }
-  if (
-    (n.includes('llego') || n.includes('llegó') || n.includes('recib') || n.includes('llegada')) &&
-    (n.includes('pedido') || n.includes('orden') || n.includes('oc-') || n.includes('mercanc'))
-  ) {
+    if (needsOrdenCompraDetails(n)) return false
     return true
   }
   if (
@@ -160,6 +179,113 @@ export function looksLikeDistributorMutation(q: string): boolean {
   ) {
     return true
   }
+  return false
+}
+
+/** Compra a proveedor (OC) — sin cantidad/producto suficientes para crear. */
+export function looksLikeCrearOrdenCompraQuery(q: string): boolean {
+  const n = normQ(q)
+  if (looksLikeEditarSkuQuery(q)) return false
+  if (looksLikeVentaPedidoQuery(n)) return false
+  if (looksLikeCompraLlegadaQuery(n)) return false
+  return (
+    n.includes('orden de compra') ||
+    n.includes('crear orden') ||
+    (n.includes('comprar') && !n.includes('cliente')) ||
+    n.includes('ordenar') ||
+    (n.includes('quiero') && n.includes('compra') && !n.includes('pedido para'))
+  )
+}
+
+export function needsOrdenCompraDetails(q: string): boolean {
+  if (!looksLikeCrearOrdenCompraQuery(q)) return false
+  return parseCantidadFromQuery(normQ(q)) == null || parseProductoFromQuery(normQ(q)) == null
+}
+
+/** Llegada de mercancía de proveedor (no entrega a cliente). */
+export function looksLikeCompraLlegadaQuery(q: string): boolean {
+  const n = normQ(q)
+  if (
+    n.includes('entrega') &&
+    !n.includes('mercanc') &&
+    !n.includes('proveedor') &&
+    !n.includes('productor') &&
+    !n.includes('compra') &&
+    !/\boc[-\s]?\d+/i.test(n)
+  ) {
+    return false
+  }
+
+  const hasArrival =
+    n.includes('llego') ||
+    n.includes('llegó') ||
+    n.includes('recib') ||
+    n.includes('llegada') ||
+    (n.includes('confirmar') &&
+      (n.includes('lleg') || n.includes('recib') || n.includes('orden') || n.includes('oc')))
+
+  if (!hasArrival) return false
+
+  if (/\boc[-\s]?\d+/i.test(n)) return true
+  if (n.includes('orden de compra')) return true
+  if (n.includes('proveedor') || n.includes('productor')) return true
+  if (n.includes('mercanc')) return true
+  if (n.includes('compra')) return true
+  if (n.includes('pedido de') && !looksLikeVentaPedidoQuery(n) && !/\bpedido\s+para\b/.test(n)) {
+    return true
+  }
+  return false
+}
+
+/** Salida de bodega / pedido de venta ya confirmado. */
+export function looksLikeEntregaVentaQuery(q: string): boolean {
+  const n = normQ(q)
+  if (looksLikeCompraLlegadaQuery(n)) return false
+  if (looksLikeActualizarEstadoPedidoQuery(n)) return false
+  if (/\b(entregar|vender)\s+\d/.test(n)) return false
+
+  if (n.includes('marcar') && (n.includes('entregad') || n.includes('enviad'))) return true
+  if (n.includes('enviad') && n.includes('pedido')) return true
+  if (n.includes('confirmar') && n.includes('entrega') && n.includes('pedido')) return true
+
+  if (
+    (n.includes('entregar') || n.includes('entregado') || n.includes('marcar')) &&
+    (n.includes('pedido') || n.includes('entrega'))
+  ) {
+    return true
+  }
+  return false
+}
+
+/** Avance operativo: preparando / en ruta (sin cerrar venta). */
+export function looksLikeActualizarEstadoPedidoQuery(q: string): boolean {
+  const n = normQ(q)
+  if (looksLikeCompraLlegadaQuery(n)) return false
+  if (/\b(entregar|vender)\s+\d/.test(n)) return false
+  if (looksLikeTomaPedidoQuery(n) && !n.includes('marcar')) return false
+
+  const mentionsPedido =
+    n.includes('pedido') || /\bped[-\s]?\d+/i.test(n) || n.includes('marcar')
+
+  if (
+    mentionsPedido &&
+    (n.includes('en ruta') ||
+      n.includes('en camino') ||
+      n.includes('salio de bodega') ||
+      n.includes('salió de bodega'))
+  ) {
+    return true
+  }
+
+  if (
+    mentionsPedido &&
+    (n.includes('preparando') ||
+      (n.includes('preparad') && n.includes('marcar')) ||
+      (n.includes('prepara') && n.includes('pedido') && n.includes('marcar')))
+  ) {
+    return true
+  }
+
   return false
 }
 
@@ -213,6 +339,26 @@ function parseMontoFromQuery(q: string): number | null {
   return parsePrecioFromQuery(q)
 }
 
+function resolveSkuByFragment(
+  frag: string,
+  ctx: DistributorAgentContext
+): DistributorAgentContext['skus'][number] | null {
+  const p = normQ(frag)
+  if (p.length < 3) return null
+
+  let best: DistributorAgentContext['skus'][number] | null = null
+  let bestLen = 0
+  for (const s of ctx.skus) {
+    const nombre = normQ(s.nombre)
+    if (nombre.length < 3) continue
+    if ((p.includes(nombre) || nombre.includes(p)) && nombre.length > bestLen) {
+      best = s
+      bestLen = nombre.length
+    }
+  }
+  return best
+}
+
 function resolveSku(
   q: string,
   ctx: DistributorAgentContext
@@ -231,6 +377,13 @@ function resolveSku(
     )
     if (byCode) return byCode
   }
+
+  const fromCategoryEdit = extractSkuNameFromCategoryEditQuery(q)
+  if (fromCategoryEdit) {
+    const byName = resolveSkuByFragment(fromCategoryEdit, ctx)
+    if (byName) return byName
+  }
+
   let best: DistributorAgentContext['skus'][number] | null = null
   let bestLen = 0
   for (const s of ctx.skus) {
@@ -241,7 +394,9 @@ function resolveSku(
       bestLen = nombre.length
     }
   }
-  return best
+  if (best) return best
+
+  return resolveSkuByFragment(q, ctx)
 }
 
 function resolvePedido(
@@ -266,8 +421,25 @@ function resolvePedido(
     )
     if (hit) return hit
   }
-  const confirmados = ctx.pedidos.filter(p => p.estado === 'confirmado')
-  if (confirmados.length === 1) return confirmados[0]!
+
+  const fulfillable = ctx.pedidos.filter(p =>
+    ['confirmado', 'preparando', 'en_ruta', 'parcial'].includes(p.estado)
+  )
+  const qn = normQ(q)
+  let best: DistributorAgentContext['pedidos'][number] | null = null
+  let bestLen = 0
+  for (const p of fulfillable) {
+    const name = p.etiqueta_nombre?.trim()
+    if (!name) continue
+    const pn = normQ(name)
+    if (qn.includes(pn) && pn.length > bestLen) {
+      best = p
+      bestLen = pn.length
+    }
+  }
+  if (best) return best
+
+  if (fulfillable.length === 1) return fulfillable[0]!
   return null
 }
 
@@ -297,9 +469,17 @@ function parseCantidadFromQuery(q: string): number | null {
 
 function parseProductoFromQuery(q: string): string | null {
   if (looksLikeEditarSkuQuery(q)) return null
-  const de = q.match(/\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-]{2,40}?)(?:\s+a\s+\$|\s+por\s+\$|\s+cajas?|\s+unidades?|$)/)
-  if (de?.[1]) return de[1].trim()
-  const orden = q.match(/(?:ordenar|comprar|pedir)\s+\d+\s+(?:cajas?\s+)?de\s+([a-záéíóúñ0-9][^,$]+)/)
+  const deCantidad = q.match(
+    /\bde\s+\d[\d,]*\s+(?:cajas?|latas?|botellas?|unidades?)\s+de\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,50})/i
+  )
+  if (deCantidad?.[1]) return deCantidad[1].trim()
+  const de = q.match(
+    /\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,40}?)(?:\s+a\s+\$|\s+por\s+\$|\s+cajas?|\s+unidades?|$)/
+  )
+  if (de?.[1] && !/^\d/.test(de[1])) return de[1].trim()
+  const orden = q.match(
+    /(?:ordenar|comprar|pedir)\s+\d+\s+(?:cajas?\s+)?de\s+([a-záéíóúñ0-9][^,$]+)/
+  )
   if (orden?.[1]) return orden[1].trim()
   return null
 }
@@ -358,7 +538,12 @@ function parseCrearOrdenCompraIntent(
     q.includes('hacer pedido de compra') ||
     q.includes('orden de compra') ||
     q.includes('comprar') ||
-    (q.includes('pedido de') && !q.includes('pedido para') && !q.includes('llego') && !q.includes('llegó'))
+    (q.includes('crear') && q.includes('orden')) ||
+    (q.includes('pedido de') &&
+      !looksLikeVentaPedidoQuery(q) &&
+      !q.includes('pedido para') &&
+      !q.includes('llego') &&
+      !q.includes('llegó'))
 
   if (!wantsOrder) return null
 
@@ -383,20 +568,7 @@ function parseConfirmarLlegadaOcIntent(
   ctx: DistributorAgentContext
 ): Extract<DistributorAgentAction, { type: 'confirmar_llegada_distribuidor' }> | null {
   if (looksLikeEditarSkuQuery(q)) return null
-
-  const wantsConfirm =
-    (q.includes('llego') ||
-      q.includes('llegó') ||
-      q.includes('recib') ||
-      q.includes('llegada') ||
-      q.includes('confirmar')) &&
-    (q.includes('pedido') ||
-      q.includes('orden') ||
-      q.includes('oc-') ||
-      q.includes('mercanc') ||
-      q.includes('caja'))
-
-  if (!wantsConfirm) return null
+  if (!looksLikeCompraLlegadaQuery(q)) return null
 
   const orden = resolveOrdenCompra(q, ctx)
   if (!orden) return null
@@ -414,20 +586,30 @@ function parseConfirmarLlegadaOcIntent(
       q.includes('toda') ||
       cantidadExplicita == null)
 
+  // cantidad_recibida en RPC = total acumulado por ítem (no incremento de esta entrega)
   const lineas: ConfirmarLlegadaOcLinea[] = orden.items.map(it => {
-    let recibida = it.cantidad_ordenada
-    if (!esCompleto && cantidadExplicita != null && orden.items.length === 1) {
-      recibida = cantidadExplicita
-    } else if (esParcial && cantidadExplicita != null && orden.items.length === 1) {
-      recibida = cantidadExplicita
-    } else if (it.cantidad_recibida != null) {
-      recibida = Math.max(it.cantidad_ordenada - it.cantidad_recibida, 0)
-      if (esCompleto) recibida = it.cantidad_ordenada - (it.cantidad_recibida ?? 0)
+    const prev = it.cantidad_recibida ?? 0
+    let acumulado = it.cantidad_ordenada
+
+    if (cantidadExplicita != null && orden.items.length === 1) {
+      acumulado = Math.min(prev + cantidadExplicita, it.cantidad_ordenada)
+    } else if (esCompleto) {
+      acumulado = it.cantidad_ordenada
+    } else if (prev > 0) {
+      acumulado = prev
     }
-    return { item_id: it.id, cantidad_recibida: recibida }
+
+    return { item_id: it.id, cantidad_recibida: acumulado }
   })
 
-  const totalRecibido = lineas.reduce((s, l) => s + l.cantidad_recibida, 0)
+  const totalRecibido = lineas.reduce(
+    (s, l) => {
+      const it = orden.items.find(i => i.id === l.item_id)
+      const prev = it?.cantidad_recibida ?? 0
+      return s + Math.max(0, l.cantidad_recibida - prev)
+    },
+    0
+  )
   if (totalRecibido <= 0) return null
 
   const productoResumen =
@@ -475,17 +657,30 @@ function parsePagoProveedorIntent(
 
   if (!wantsPay || ctx.cxp.cuentas.length === 0) return null
 
-  const cuenta = resolveCuentaPorProveedor(q, ctx)
-  if (!cuenta) return null
+  const mentionsProveedor =
+    q.includes('proveedor') || q.includes('productor') || q.includes('cxp')
+  const clienteMatch = resolveCuentaPorCliente(q, ctx)
+  if (clienteMatch && !mentionsProveedor) return null
 
-  const monto = parseMontoFromQuery(q) ?? cuenta.saldo_pendiente
+  const cuenta = resolveCuentaPorProveedor(q, ctx)
+  let resolved = cuenta
+  if (!resolved) {
+    if (mentionsProveedor) return null
+    if (ctx.cxp.cuentas.length === 1 && !clienteMatch) {
+      resolved = ctx.cxp.cuentas[0]!
+    } else {
+      return null
+    }
+  }
+
+  const monto = parseMontoFromQuery(q) ?? resolved.saldo_pendiente
   if (monto <= 0) return null
 
   return {
     type: 'registrar_pago_proveedor',
-    cuenta_id: cuenta.id,
-    monto: Math.min(monto, cuenta.saldo_pendiente),
-    proveedor_nombre: cuenta.proveedor_nombre,
+    cuenta_id: resolved.id,
+    monto: Math.min(monto, resolved.saldo_pendiente),
+    proveedor_nombre: resolved.proveedor_nombre,
   }
 }
 
@@ -529,11 +724,21 @@ function resolveCuentaPorCliente(
   return best
 }
 
-function looksLikeVentaPedidoQuery(q: string): boolean {
+export function looksLikeVentaPedidoQuery(q: string): boolean {
   if (/\bpedido\s+para\b/.test(q)) return true
   if (/\bprepar(a|ame|ar)\s+(un\s+)?pedido\b/.test(q)) return true
   if (/\b(entregar|vender)\s+\d/.test(q)) return true
   if (/\bticket\b/.test(q) && !q.includes('compra')) return true
+  if (/\b(hacer|hagamos|vamos\s+a\s+hacer)\s+(un\s+)?pedido\b/.test(q)) return true
+  if (
+    /\b(registrar|registremos)\s+(un\s+)?(nuevo\s+)?pedido\b/.test(q) &&
+    !q.includes('compra')
+  ) {
+    return true
+  }
+  if (/\bnuevo\s+pedido\b/.test(q) && !q.includes('compra') && !q.includes('orden')) {
+    return true
+  }
   return false
 }
 
@@ -566,6 +771,8 @@ function parseCrearTomaPedidoDirectIntent(
     etiqueta: draft.etiqueta,
     cliente: draft.cliente,
     sku_id: draft.sku_id,
+    anticipo: draft.anticipo,
+    anticipo_monto: draft.anticipo_monto,
   }
 }
 
@@ -590,7 +797,64 @@ function parseCrearTomaPedidoIntent(
     etiqueta: draft.etiqueta,
     cliente: draft.cliente,
     sku_id: draft.sku_id,
+    anticipo: draft.anticipo,
+    anticipo_monto: draft.anticipo_monto,
   }
+}
+
+function parseActualizarEstadoPedidoIntent(
+  q: string,
+  ctx: DistributorAgentContext
+): Extract<DistributorAgentAction, { type: 'actualizar_estado_pedido' }> | null {
+  if (!looksLikeActualizarEstadoPedidoQuery(q)) return null
+
+  const pedido = resolvePedido(q, ctx)
+  if (!pedido) return null
+
+  const n = normQ(q)
+  let estado: 'preparando' | 'en_ruta' | null = null
+  if (
+    n.includes('en ruta') ||
+    n.includes('en camino') ||
+    n.includes('salio de bodega') ||
+    n.includes('salió de bodega')
+  ) {
+    estado = 'en_ruta'
+  } else if (n.includes('preparando') || n.includes('preparad')) {
+    estado = 'preparando'
+  }
+  if (!estado) return null
+
+  if (estado === 'preparando' && !['confirmado', 'parcial'].includes(pedido.estado)) {
+    return null
+  }
+  if (
+    estado === 'en_ruta' &&
+    !['confirmado', 'preparando', 'parcial'].includes(pedido.estado)
+  ) {
+    return null
+  }
+
+  return {
+    type: 'actualizar_estado_pedido',
+    pedido_id: pedido.id,
+    estado,
+    numero: pedido.numero,
+  }
+}
+
+function parseConfirmarEntregaIntent(
+  q: string,
+  ctx: DistributorAgentContext
+): Extract<DistributorAgentAction, { type: 'confirmar_entrega' }> | null {
+  if (!looksLikeEntregaVentaQuery(q)) return null
+
+  const pedido = resolvePedido(q, ctx)
+  if (!pedido) return null
+  if (!['confirmado', 'preparando', 'en_ruta', 'parcial'].includes(pedido.estado)) {
+    return null
+  }
+  return { type: 'confirmar_entrega', pedido_id: pedido.id }
 }
 
 export function parseDistributorActionIntent(
@@ -609,6 +873,12 @@ export function parseDistributorActionIntent(
   const toma = parseCrearTomaPedidoIntent(query, ctx, conversation)
   if (toma) return toma
 
+  const avance = parseActualizarEstadoPedidoIntent(q, ctx)
+  if (avance) return avance
+
+  const entrega = parseConfirmarEntregaIntent(q, ctx)
+  if (entrega) return entrega
+
   const llegada = parseConfirmarLlegadaOcIntent(q, ctx)
   if (llegada) return llegada
 
@@ -623,18 +893,6 @@ export function parseDistributorActionIntent(
     if (!pedido) return null
     if (pedido.estado !== 'entregado') return null
     return { type: 'generar_remision', pedido_id: pedido.id, numero: pedido.numero }
-  }
-
-  if (
-    (q.includes('entregar') || q.includes('entregado') || q.includes('marcar')) &&
-    (q.includes('pedido') || q.includes('entrega'))
-  ) {
-    const pedido = resolvePedido(q, ctx)
-    if (!pedido) return null
-    if (!['confirmado', 'preparando', 'en_ruta', 'parcial'].includes(pedido.estado)) {
-      return null
-    }
-    return { type: 'confirmar_entrega', pedido_id: pedido.id }
   }
 
   if (
@@ -751,6 +1009,9 @@ export async function executeDistributorAgentAction(
 }> {
   switch (action.type) {
     case 'crear_toma_pedido': {
+      if (action.anticipo && (action.anticipo_monto == null || action.anticipo_monto <= 0)) {
+        throw new Error('Escribe el monto del anticipo (ej. "con anticipo de $500")')
+      }
       const skus = await fetchSkus(sb, scope)
       const result = await finalizarTomaPedido(sb, scope, {
         clienteName: action.cliente,
@@ -762,7 +1023,8 @@ export async function executeDistributorAgentAction(
           },
         ],
         fechaEntrega: todayIsoDate(),
-        anticipo: false,
+        anticipo: action.anticipo,
+        anticipoMonto: action.anticipo_monto,
         skus,
       })
       const unidadLabel =
@@ -771,12 +1033,26 @@ export async function executeDistributorAgentAction(
           : action.unidad === 'cajas'
             ? 'cajas'
             : 'botellas'
+      const anticipoLine =
+        action.anticipo && action.anticipo_monto != null
+          ? ` Anticipo $${action.anticipo_monto.toLocaleString('es-MX')}.`
+          : ''
       return {
         ok: true,
         entityId: result.pedido.id,
         entityKind: 'pedido',
         refreshSkuId: action.sku_id,
-        message: `Pedido ${result.pedido.numero} confirmado ✓ ${action.cantidad} ${unidadLabel} ${action.etiqueta} → ${action.cliente}. Stock reservado.`,
+        message: `Pedido ${result.pedido.numero} confirmado ✓ ${action.cantidad} ${unidadLabel} ${action.etiqueta} → ${action.cliente}.${anticipoLine} Stock reservado.`,
+      }
+    }
+    case 'actualizar_estado_pedido': {
+      const updated = await rpcActualizarEstadoPedido(sb, action.pedido_id, action.estado)
+      const label = action.estado === 'preparando' ? 'preparando' : 'en ruta'
+      return {
+        ok: true,
+        entityId: updated.id,
+        entityKind: 'pedido',
+        message: `Pedido ${action.numero} marcado como ${label} ✓`,
       }
     }
     case 'confirmar_entrega': {
@@ -943,7 +1219,6 @@ export async function executeDistributorAgentAction(
       return {
         ok: true,
         entityId: action.cuenta_id,
-        entityKind: 'sku',
         message: `Pago de $${action.monto.toLocaleString('es-MX')} registrado ✓ Saldo pendiente con ${action.proveedor_nombre}: $${saldo.toLocaleString('es-MX')}`,
       }
     }

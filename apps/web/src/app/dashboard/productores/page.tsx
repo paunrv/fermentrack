@@ -16,6 +16,7 @@ import { fmtMoney } from '@/lib/proof/format'
 import {
   fetchDeudasProductores,
   fetchOrdenesCompraAbiertas,
+  fetchOrdenesCompraDistribuidorPendientes,
   fetchSkus,
 } from '@/lib/supabase'
 
@@ -42,10 +43,11 @@ export default function ProductoresPage() {
       fetchSkus(supabase, scope),
       fetchDeudasProductores(supabase, scope),
       fetchOrdenesCompraAbiertas(supabase, scope),
+      fetchOrdenesCompraDistribuidorPendientes(supabase, scope),
     ])
-      .then(([skus, deudas, ordenes]) => {
+      .then(([skus, deudas, ordenesLegacy, ordenesDistribuidor]) => {
         if (cancelled) return
-        setRows(buildProductoresResumen(skus, deudas, ordenes))
+        setRows(buildProductoresResumen(skus, deudas, ordenesLegacy, ordenesDistribuidor))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -104,6 +106,9 @@ export default function ProductoresPage() {
                 <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{p.nombre}</div>
                 <div className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4 }}>
                   {p.skuCount} SKU{p.skuCount === 1 ? '' : 's'} activos
+                  {p.ocPendientes > 0
+                    ? ` · ${p.ocPendientes} OC pendiente${p.ocPendientes === 1 ? '' : 's'}`
+                    : ''}
                   {p.proximoVencimiento ? ` · vence ${fmtDate(p.proximoVencimiento)}` : ''}
                 </div>
               </div>
@@ -122,8 +127,16 @@ export default function ProductoresPage() {
         </div>
       )}
 
-      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)' }}>
-        Detalle de pagos en{' '}
+      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
+        Nuevas órdenes de compra en{' '}
+        <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
+          Crear OC
+        </Link>
+        {' · '}
+        <Link href="/dashboard" style={{ color: 'var(--gold)' }}>
+          Pendientes en canvas
+        </Link>
+        . Pagos en{' '}
         <Link href="/dashboard/credito" style={{ color: 'var(--gold)' }}>
           Crédito → Les debo
         </Link>
