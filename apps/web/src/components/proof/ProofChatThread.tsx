@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import { PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
+import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
+import { ProofModeSelector } from '@/components/proof/ProofModeSelector'
 
 export interface ProofMessage {
   id: string
@@ -43,12 +46,36 @@ export function ProofChatThread({
   messages,
   isTyping,
   showWelcome,
+  modeActions,
+  compraLensActions,
+  ventaLensActions,
+  bodegaLensActions,
+  activeSubHub,
+  onModeAction,
+  onHubLensAction,
+  onCompraHubOpen,
+  onVentaHubOpen,
+  onBodegaHubOpen,
+  onSubHubClose,
+  modeActionsDisabled,
 }: {
   accent: string
   profileType: ProfileType
   messages: ProofMessage[]
   isTyping: boolean
   showWelcome: boolean
+  modeActions?: ProofModeAction[]
+  compraLensActions?: ProofHubLensAction[]
+  ventaLensActions?: ProofHubLensAction[]
+  bodegaLensActions?: ProofHubLensAction[]
+  activeSubHub?: ProofSubHub | null
+  onModeAction?: (action: ProofModeAction) => void
+  onHubLensAction?: (message: string, hub: ProofSubHub) => void
+  onCompraHubOpen?: () => void
+  onVentaHubOpen?: () => void
+  onBodegaHubOpen?: () => void
+  onSubHubClose?: () => void
+  modeActionsDisabled?: boolean
 }) {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -65,6 +92,22 @@ export function ProofChatThread({
 
   const welcomeKey = profileType === 'distiller' ? 'distiller' : 'distributor'
   const welcomeText = PROOF_COPIES.welcome[welcomeKey]
+  const emptyState = showWelcome && messages.length === 0 && !isTyping
+  const showModeSelector =
+    emptyState && !activeSubHub && (modeActions?.length ?? 0) > 0 && Boolean(onModeAction)
+  const hubActions =
+    activeSubHub === 'compra'
+      ? compraLensActions
+      : activeSubHub === 'venta'
+        ? ventaLensActions
+        : activeSubHub === 'bodega'
+          ? bodegaLensActions
+          : undefined
+  const showSubHub =
+    emptyState &&
+    activeSubHub != null &&
+    (hubActions?.length ?? 0) > 0 &&
+    Boolean(onHubLensAction)
 
   return (
     <div
@@ -77,10 +120,9 @@ export function ProofChatThread({
         minHeight: 0,
         overflowY: 'auto',
         overflowX: 'hidden',
-        padding: '16px 20px 8px',
+        padding: '12px 20px 8px',
         display: 'flex',
         flexDirection: 'column',
-        gap: 12,
         background: 'var(--color-background-tertiary)',
       }}
     >
@@ -96,75 +138,125 @@ export function ProofChatThread({
         }
       `}</style>
 
-      {showWelcome && messages.length === 0 && !isTyping ? (
-        <p
-          style={{
-            margin: 0,
-            fontSize: 15,
-            lineHeight: 1.6,
-            fontWeight: 400,
-            color: 'var(--color-text-primary)',
-            fontFamily: 'var(--font-display)',
-            maxWidth: '85%',
-          }}
-        >
-          {welcomeText}
-        </p>
-      ) : null}
-
-      {messages.map(msg => {
-        if (msg.role === 'user') {
-          return (
-            <div
-              key={msg.id}
+      <div
+        className="proof-chat-column"
+        style={{
+          maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
+          margin: '0 auto',
+          width: '100%',
+          flex: emptyState ? 1 : undefined,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: showModeSelector || showSubHub ? 20 : 8,
+          justifyContent: emptyState ? 'flex-end' : 'flex-start',
+        }}
+      >
+        {emptyState ? (
+          <>
+            <p
+              className="proof-chat-welcome"
               style={{
-                alignSelf: 'flex-end',
-                maxWidth: '75%',
-                padding: '10px 14px',
-                borderRadius: 10,
-                background: `color-mix(in srgb, ${accent} 10%, var(--color-background-info))`,
-                fontSize: 14,
+                margin: 0,
+                fontSize: 15,
                 lineHeight: 1.6,
                 fontWeight: 400,
                 color: 'var(--color-text-primary)',
+                fontFamily: 'var(--font-display)',
+                textAlign: 'center',
+              }}
+            >
+              {welcomeText}
+            </p>
+            {showModeSelector ? (
+              <ProofModeSelector
+                accent={accent}
+                actions={modeActions!}
+                disabled={modeActionsDisabled}
+                activeSubHub={activeSubHub}
+                onSelect={action => {
+                  if (action.compraHub) {
+                    onCompraHubOpen?.()
+                    return
+                  }
+                  if (action.ventaHub) {
+                    onVentaHubOpen?.()
+                    return
+                  }
+                  if (action.bodegaHub) {
+                    onBodegaHubOpen?.()
+                    return
+                  }
+                  onModeAction?.(action)
+                }}
+              />
+            ) : null}
+            {showSubHub && activeSubHub ? (
+              <ProofHubLensSelector
+                accent={accent}
+                hub={activeSubHub}
+                actions={hubActions!}
+                disabled={modeActionsDisabled}
+                onSelect={msg => onHubLensAction?.(msg, activeSubHub)}
+                onBack={onSubHubClose}
+              />
+            ) : null}
+          </>
+        ) : null}
+
+        {messages.map(msg => {
+          if (msg.role === 'user') {
+            return (
+              <div
+                key={msg.id}
+                style={{
+                  alignSelf: 'flex-end',
+                  maxWidth: '80%',
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  background: `color-mix(in srgb, ${accent} 10%, var(--color-background-info))`,
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  fontWeight: 400,
+                  color: 'var(--color-text-primary)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {msg.content}
+              </div>
+            )
+          }
+
+          const isSystem = msg.role === 'system'
+          return (
+            <p
+              key={msg.id}
+              style={{
+                margin: 0,
+                alignSelf: 'flex-start',
+                maxWidth: '100%',
+                fontSize: isSystem ? 14 : 15,
+                lineHeight: 1.6,
+                fontWeight: 400,
+                color: isSystem ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
+                fontFamily: 'var(--font-display)',
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
               }}
             >
               {msg.content}
-            </div>
+            </p>
           )
-        }
+        })}
 
-        const isSystem = msg.role === 'system'
-        return (
-          <p
-            key={msg.id}
-            style={{
-              margin: 0,
-              alignSelf: 'flex-start',
-              maxWidth: '85%',
-              fontSize: isSystem ? 14 : 15,
-              lineHeight: 1.6,
-              fontWeight: 400,
-              color: isSystem ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
-              fontFamily: 'var(--font-display)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          >
-            {msg.content}
-          </p>
-        )
-      })}
+        {isTyping ? (
+          <div style={{ alignSelf: 'flex-start' }}>
+            <TypingDots accent={accent} />
+          </div>
+        ) : null}
 
-      {isTyping ? (
-        <div style={{ alignSelf: 'flex-start' }}>
-          <TypingDots accent={accent} />
-        </div>
-      ) : null}
-
-      <div ref={chatEndRef} style={{ height: 0 }} aria-hidden />
+        <div ref={chatEndRef} style={{ height: 0 }} aria-hidden />
+      </div>
     </div>
   )
 }

@@ -139,6 +139,10 @@ export interface Profile {
   is_super_user: boolean
   extra_profiles: ExtraProfile[]
   email: string | null
+  cuenta_deposito?: string | null
+  banco_deposito?: string | null
+  titular_cuenta?: string | null
+  constancia_fiscal_path?: string | null
   created_at?: string
   updated_at?: string
 }

@@ -13,13 +13,24 @@ import {
   type AgentConversationTurn,
 } from '@/lib/proof/toma-pedido-intent'
 import {
+  isOrdenCompraConfirmationReply,
+  isOrdenCompraFlowActive,
+  resolveOrdenCompraDraft,
+  extractPartialOrdenCompraDraft,
+} from '@/lib/proof/toma-oc-intent'
+import {
   categoriaLiquidoLabel,
   extractSkuNameFromCategoryEditQuery,
   looksLikeEditarSkuQuery,
   parseCategoriaLiquidoFromQuery,
 } from '@/lib/proof/categoria-liquido'
+import {
+  looksLikeActualizarMiInformacionQuery,
+  parseActualizarMiInformacionIntent,
+} from '@/lib/proof/mi-informacion-intent'
 import { uploadSkuImagen } from '@/lib/proof/storage-skus'
 import type { ProfileScope } from '@/lib/supabase'
+import { upsertProfile } from '@/lib/supabase'
 import {
   confirmarLlegadaOrdenCompraDistribuidor,
   createOrdenCompraDistribuidor,
@@ -47,6 +58,7 @@ export type DistributorAgentActionType =
   | 'generar_remision'
   | 'set_sku_image'
   | 'abrir_imagen_sku'
+  | 'actualizar_mi_informacion'
 
 export type DistributorAgentAction =
   | { type: 'confirmar_entrega'; pedido_id: string; sku_id?: string | null }
@@ -105,6 +117,12 @@ export type DistributorAgentAction =
   | { type: 'generar_remision'; pedido_id: string; numero: string }
   | { type: 'set_sku_image'; sku_id: string; nombre: string; image: string }
   | { type: 'abrir_imagen_sku'; sku_id: string; nombre: string }
+  | {
+      type: 'actualizar_mi_informacion'
+      cuenta_deposito?: string
+      banco_deposito?: string
+      titular_cuenta?: string
+    }
 
 function normQ(s: string): string {
   return s
@@ -156,6 +174,7 @@ export function looksLikeDistributorMutation(q: string): boolean {
     return true
   }
   if (n.includes('nota') || n.includes('anotar') || n.includes('comentario')) return true
+  if (looksLikeActualizarMiInformacionQuery(n)) return true
   if (
     (n.includes('remision') || n.includes('remisión')) &&
     (n.includes('generar') || n.includes('crear') || n.includes('pedido'))
@@ -197,9 +216,24 @@ export function looksLikeCrearOrdenCompraQuery(q: string): boolean {
   )
 }
 
+const PLACEHOLDER_PROVEEDOR_RE =
+  /^(mi\s+)?proveedor$|^por\s+registrar$|^a\s+definir$|^sin\s+proveedor$|^proveedor\s+generico$/i
+
+export function isValidProveedorNombre(name: string | null | undefined): boolean {
+  if (!name?.trim()) return false
+  return !PLACEHOLDER_PROVEEDOR_RE.test(normQ(name))
+}
+
 export function needsOrdenCompraDetails(q: string): boolean {
   if (!looksLikeCrearOrdenCompraQuery(q)) return false
-  return parseCantidadFromQuery(normQ(q)) == null || parseProductoFromQuery(normQ(q)) == null
+  const draft = extractPartialOrdenCompraDraft(q)
+  if (draft?.proveedor && isValidProveedorNombre(draft.proveedor)) return false
+  if (draft && (!draft.proveedor || !isValidProveedorNombre(draft.proveedor))) return true
+  const n = normQ(q)
+  const cantidad = parseCantidadFromQuery(n)
+  const producto = parseProductoFromCompraQuery(q)
+  const proveedor = parseProveedorFromCompraQuery(q)
+  return cantidad == null || producto == null || !isValidProveedorNombre(proveedor)
 }
 
 /** Llegada de mercancía de proveedor (no entrega a cliente). */
@@ -219,10 +253,20 @@ export function looksLikeCompraLlegadaQuery(q: string): boolean {
   const hasArrival =
     n.includes('llego') ||
     n.includes('llegó') ||
+    n.includes('entro') ||
+    n.includes('entró') ||
     n.includes('recib') ||
     n.includes('llegada') ||
+    n.includes('ingreso') ||
+    n.includes('ingresó') ||
     (n.includes('confirmar') &&
-      (n.includes('lleg') || n.includes('recib') || n.includes('orden') || n.includes('oc')))
+      (n.includes('lleg') ||
+        n.includes('recib') ||
+        n.includes('orden') ||
+        n.includes('oc') ||
+        n.includes('bodega') ||
+        n.includes('entro') ||
+        n.includes('entró')))
 
   if (!hasArrival) return false
 
@@ -231,6 +275,9 @@ export function looksLikeCompraLlegadaQuery(q: string): boolean {
   if (n.includes('proveedor') || n.includes('productor')) return true
   if (n.includes('mercanc')) return true
   if (n.includes('compra')) return true
+  if (n.includes('bodega') && (n.includes('entro') || n.includes('entró') || n.includes('ingreso'))) {
+    return true
+  }
   if (n.includes('pedido de') && !looksLikeVentaPedidoQuery(n) && !/\bpedido\s+para\b/.test(n)) {
     return true
   }
@@ -474,11 +521,11 @@ function parseProductoFromQuery(q: string): string | null {
   )
   if (deCantidad?.[1]) return deCantidad[1].trim()
   const de = q.match(
-    /\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,40}?)(?:\s+a\s+\$|\s+por\s+\$|\s+cajas?|\s+unidades?|$)/
+    /\bde\s+([a-záéíóúñ0-9][a-záéíóúñ0-9\s\-'&.]{2,40}?)(?:\s+a\s+\$|\s+por\s+\$|\s+cajas?|\s+unidades?|$)/i
   )
   if (de?.[1] && !/^\d/.test(de[1])) return de[1].trim()
   const orden = q.match(
-    /(?:ordenar|comprar|pedir)\s+\d+\s+(?:cajas?\s+)?de\s+([a-záéíóúñ0-9][^,$]+)/
+    /(?:ordenar|comprar|pedir)\s+\d+\s+(?:cajas?\s+)?de\s+([a-záéíóúñ0-9][^,$]+)/i
   )
   if (orden?.[1]) return orden[1].trim()
   return null
@@ -490,6 +537,35 @@ function parseProveedorFromQuery(q: string): string | null {
   const llego = q.match(/lleg[oó]\s+(?:el\s+)?pedido\s+de\s+([a-záéíóúñ][a-záéíóúñ\s]{2,40}?)(?:\s|$|\.|,)/)
   if (llego?.[1]) return llego[1].trim()
   return null
+}
+
+function parseProveedorFromCompraQuery(q: string): string | null {
+  const alProv = q.match(
+    /\sal\s+pro?v?eedor\s+([a-záéíóúñ][a-záéíóúñ0-9\s\-'&.]{2,48})\s*$/i
+  )
+  if (alProv?.[1]) return alProv[1].trim()
+  const aFinal = q.match(/\s+a\s+([a-záéíóúñ][a-záéíóúñ0-9\s\-'&.]{2,48})\s*$/i)
+  if (aFinal?.[1]) return aFinal[1].trim()
+  return parseProveedorFromQuery(q)
+}
+
+function parseProductoFromCompraQuery(q: string): string | null {
+  const raw = parseProductoFromQuery(q)
+  if (!raw) return null
+  const proveedor = parseProveedorFromCompraQuery(q)
+  if (!proveedor) return raw
+  const suffix = ` a ${proveedor}`
+  if (raw.toLowerCase().endsWith(suffix.toLowerCase())) {
+    return raw.slice(0, -suffix.length).trim()
+  }
+  const aIdx = raw.toLowerCase().lastIndexOf(' a ')
+  if (aIdx > 0) {
+    const maybeProv = raw.slice(aIdx + 3).trim()
+    if (normQ(maybeProv) === normQ(proveedor)) {
+      return raw.slice(0, aIdx).trim()
+    }
+  }
+  return raw
 }
 
 function resolveOrdenCompra(
@@ -527,12 +603,31 @@ function resolveOrdenCompra(
   return null
 }
 
-function parseCrearOrdenCompraIntent(
-  q: string
+function parseCrearOrdenCompraConfirmIntent(
+  query: string,
+  conversation?: AgentConversationTurn[]
 ): Extract<DistributorAgentAction, { type: 'crear_orden_compra' }> | null {
-  if (looksLikeEditarSkuQuery(q)) return null
-  if (looksLikeVentaPedidoQuery(q)) return null
+  if (!isOrdenCompraFlowActive(conversation)) return null
+  if (!isOrdenCompraConfirmationReply(query)) return null
 
+  const draft = resolveOrdenCompraDraft(query, conversation)
+  if (!draft) return null
+
+  return {
+    type: 'crear_orden_compra',
+    proveedor: draft.proveedor,
+    producto: draft.producto,
+    cantidad: draft.cantidad,
+  }
+}
+
+function parseCrearOrdenCompraIntent(
+  raw: string
+): Extract<DistributorAgentAction, { type: 'crear_orden_compra' }> | null {
+  if (looksLikeEditarSkuQuery(raw)) return null
+  if (looksLikeVentaPedidoQuery(normQ(raw))) return null
+
+  const q = normQ(raw)
   const wantsOrder =
     q.includes('ordenar') ||
     q.includes('hacer pedido de compra') ||
@@ -548,15 +643,15 @@ function parseCrearOrdenCompraIntent(
   if (!wantsOrder) return null
 
   const cantidad = parseCantidadFromQuery(q)
-  const producto = parseProductoFromQuery(q)
-  const proveedor = parseProveedorFromQuery(q) ?? producto
+  const producto = parseProductoFromCompraQuery(raw)
+  const proveedor = parseProveedorFromCompraQuery(raw)
   const costo = parsePrecioFromQuery(q) ?? undefined
 
-  if (!cantidad || !producto) return null
+  if (!cantidad || !producto || !isValidProveedorNombre(proveedor)) return null
 
   return {
     type: 'crear_orden_compra',
-    proveedor: proveedor || 'Por registrar',
+    proveedor: proveedor!.trim(),
     producto,
     cantidad,
     costo,
@@ -870,6 +965,17 @@ export function parseDistributorActionIntent(
     return editarSkuAction
   }
 
+  const miInfo = parseActualizarMiInformacionIntent(query)
+  if (miInfo) {
+    return {
+      type: 'actualizar_mi_informacion',
+      ...miInfo,
+    }
+  }
+
+  const ocConfirm = parseCrearOrdenCompraConfirmIntent(query, conversation)
+  if (ocConfirm) return ocConfirm
+
   const toma = parseCrearTomaPedidoIntent(query, ctx, conversation)
   if (toma) return toma
 
@@ -881,9 +987,6 @@ export function parseDistributorActionIntent(
 
   const llegada = parseConfirmarLlegadaOcIntent(q, ctx)
   if (llegada) return llegada
-
-  const crearOc = parseCrearOrdenCompraIntent(q)
-  if (crearOc) return crearOc
 
   if (
     (q.includes('remision') || q.includes('remisión')) &&
@@ -1006,6 +1109,7 @@ export async function executeDistributorAgentAction(
   entityKind?: 'sku' | 'pedido' | 'orden'
   refreshSkuId?: string | null
   openImagePicker?: boolean
+  refreshProfile?: boolean
 }> {
   switch (action.type) {
     case 'crear_toma_pedido': {
@@ -1033,9 +1137,12 @@ export async function executeDistributorAgentAction(
           : action.unidad === 'cajas'
             ? 'cajas'
             : 'botellas'
+      const total = Number(result.pedido.total) || 0
       const anticipoLine =
         action.anticipo && action.anticipo_monto != null
-          ? ` Anticipo $${action.anticipo_monto.toLocaleString('es-MX')}.`
+          ? total > action.anticipo_monto
+            ? ` Anticipo $${action.anticipo_monto.toLocaleString('es-MX')} registrado en CxC. Saldo pendiente: $${(total - action.anticipo_monto).toLocaleString('es-MX')}.`
+            : ` Anticipo $${action.anticipo_monto.toLocaleString('es-MX')} registrado en CxC.`
           : ''
       return {
         ok: true,
@@ -1060,7 +1167,8 @@ export async function executeDistributorAgentAction(
         .from('pedidos')
         .select('id, numero, estado')
         .eq('id', action.pedido_id)
-        .eq('clerk_id', clerkId)
+        .eq('clerk_id', scope.clerk_id)
+        .eq('profile_type_v2', scope.profile_type_v2)
         .maybeSingle()
       if (pedErr) throw pedErr
       if (!pedido) throw new Error('Pedido no encontrado')
@@ -1168,7 +1276,7 @@ export async function executeDistributorAgentAction(
           updated_at: new Date().toISOString(),
         })
         .eq('id', action.sku_id)
-        .eq('clerk_id', clerkId)
+        .eq('clerk_id', scope.clerk_id)
         .eq('profile_type_v2', scope.profile_type_v2)
       if (upErr) {
         const msg = upErr.message ?? ''
@@ -1201,7 +1309,7 @@ export async function executeDistributorAgentAction(
         ok: true,
         entityId: orden.id,
         entityKind: 'orden',
-        message: `Orden ${orden.numero_orden} creada ✓ ${action.cantidad} unidades de ${action.producto} pendientes de llegada`,
+        message: `Orden ${orden.numero_orden} creada ✓ ${action.cantidad} uds de ${action.producto} a ${action.proveedor}. Revisa el detalle arriba para exportar o confirmar llegada.`,
       }
     }
     case 'confirmar_llegada_distribuidor': {
@@ -1240,6 +1348,73 @@ export async function executeDistributorAgentAction(
         refreshSkuId: action.sku_id,
         openImagePicker: true,
         message: `Selecciona la imagen para ${action.nombre}`,
+      }
+    }
+    case 'actualizar_mi_informacion': {
+      const { data: profile, error: profileErr } = await sb
+        .from('profiles')
+        .select(
+          'clerk_id, profile_type_v2, profile_type, username, onboarding_complete, is_super_user, extra_profiles, email, cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path'
+        )
+        .eq('clerk_id', scope.clerk_id)
+        .eq('profile_type_v2', 'distributor')
+        .maybeSingle()
+      if (profileErr) throw profileErr
+      if (!profile) throw new Error('Perfil de distribuidor no encontrado')
+
+      const cuenta =
+        action.cuenta_deposito?.trim() ||
+        profile.cuenta_deposito?.trim() ||
+        null
+      const banco =
+        action.banco_deposito?.trim() ||
+        profile.banco_deposito?.trim() ||
+        null
+      const titular =
+        action.titular_cuenta?.trim() ||
+        profile.titular_cuenta?.trim() ||
+        null
+
+      await upsertProfile(sb, {
+        clerk_id: profile.clerk_id,
+        profile_type_v2: profile.profile_type_v2,
+        profile_type: profile.profile_type,
+        username: profile.username,
+        onboarding_complete: profile.onboarding_complete,
+        is_super_user: profile.is_super_user,
+        extra_profiles: profile.extra_profiles,
+        email: profile.email,
+        cuenta_deposito: cuenta,
+        banco_deposito: banco,
+        titular_cuenta: titular,
+        constancia_fiscal_path: profile.constancia_fiscal_path ?? null,
+      })
+
+      let message: string
+      if (action.banco_deposito && !action.cuenta_deposito && !action.titular_cuenta) {
+        message = `Banco actualizado ✓ ${banco}`
+      } else if (action.titular_cuenta && !action.cuenta_deposito && !action.banco_deposito) {
+        message = `Titular actualizado ✓ ${titular}`
+      } else if (action.titular_cuenta && !action.cuenta_deposito) {
+        message = `Titular actualizado ✓ ${titular}`
+      } else if (action.cuenta_deposito) {
+        const bancoLine = banco ? `${banco} — ` : ''
+        message = `Cuenta de depósito guardada ✓ ${bancoLine}${cuenta}`
+        if (action.titular_cuenta) {
+          message += `. Titular: ${titular}`
+        }
+        if (action.banco_deposito && !bancoLine) {
+          message += `. Banco: ${banco}`
+        }
+      } else {
+        message = `Mi información actualizada ✓`
+      }
+
+      return {
+        ok: true,
+        entityId: profile.clerk_id,
+        refreshProfile: true,
+        message,
       }
     }
     default: {

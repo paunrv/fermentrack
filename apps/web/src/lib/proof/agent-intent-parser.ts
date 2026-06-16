@@ -36,6 +36,7 @@ export type AgentActionResult = {
   entityKind?: 'sku' | 'pedido' | 'orden'
   refreshSkuId?: string | null
   openImagePicker?: boolean
+  refreshProfile?: boolean
 }
 
 export function parseIntent(
@@ -115,6 +116,7 @@ export async function executeIntent(
         entityKind: result.entityKind,
         refreshSkuId: result.refreshSkuId,
         openImagePicker: result.openImagePicker,
+        refreshProfile: result.refreshProfile,
       }
     } catch (e) {
       console.error('[agente] executeDistributorAgentAction', resolvedAction.type, e)

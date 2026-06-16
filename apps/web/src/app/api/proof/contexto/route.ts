@@ -18,6 +18,10 @@ import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
 import { buildDistributorDisplayCards } from '@/lib/proof/distributor-display-cards'
 import { buildDistillerDisplayCards } from '@/lib/proof/distiller-display-cards'
 import { narrowDistributorContextForQuery } from '@/lib/proof/toma-pedido-intent'
+import {
+  isDistributorGuidedFlowQuery,
+  minimalDistributorQuickContext,
+} from '@/lib/proof/distributor-guided-flow'
 import { proofErrorMessage } from '@/lib/proof/proof-error'
 import {
   PROOF_AI_DESTILADOR,
@@ -70,7 +74,9 @@ function sendAgentDone(
     accionHref?: string
     refreshLoteId?: string | null
     refreshPedidoId?: string | null
+    refreshOcId?: string | null
     openSkuImagePicker?: string | null
+    refreshProfile?: boolean
     skipDisplayCards?: boolean
   }
 ) {
@@ -93,7 +99,9 @@ function sendAgentDone(
     accionHref: opts.accionHref ?? '/dashboard',
     refreshLoteId: opts.refreshLoteId ?? null,
     refreshPedidoId: opts.refreshPedidoId ?? null,
+    refreshOcId: opts.refreshOcId ?? null,
     openSkuImagePicker: opts.openSkuImagePicker ?? null,
+    refreshProfile: opts.refreshProfile ?? false,
   })
 }
 
@@ -139,10 +147,36 @@ export async function POST(req: NextRequest) {
       let datos: Record<string, unknown>
       let refreshEntityId: string | null = null
       let refreshPedidoId: string | null = null
+      let refreshOcId: string | null = null
       let refreshSkuId: string | null = null
       let openSkuImagePicker: string | null = null
+      let refreshProfile = false
       let actionMessage: string | null = null
       const conversation = body.hints?.conversation ?? []
+
+      if (profileType === 'distributor' && queryText) {
+        const earlyQuick = quickAnswer(
+          queryText,
+          profileType,
+          minimalDistributorQuickContext(conversation) as unknown as Record<string, unknown>
+        )
+        if (earlyQuick) {
+          console.log('[proof/contexto] early quick answer (sin DB)', { query: queryText })
+          sendAgentDone(send, {
+            queryText,
+            profileType,
+            datos: minimalDistributorQuickContext(conversation) as unknown as Record<
+              string,
+              unknown
+            >,
+            mensaje: earlyQuick.mensaje,
+            accionLabel: earlyQuick.accionLabel,
+            accionHref: earlyQuick.accionHref,
+            skipDisplayCards: true,
+          })
+          return
+        }
+      }
 
       const distributorScope =
         profileType === 'distributor'
@@ -237,6 +271,9 @@ export async function POST(req: NextRequest) {
               if (result.entityKind === 'pedido') {
                 refreshPedidoId = result.entityId
               }
+              if (result.entityKind === 'orden') {
+                refreshOcId = result.entityId
+              }
               if (result.refreshSkuId) {
                 refreshSkuId = result.refreshSkuId
               } else if (result.entityKind === 'sku') {
@@ -244,6 +281,9 @@ export async function POST(req: NextRequest) {
               }
               if (result.openImagePicker && refreshSkuId) {
                 openSkuImagePicker = refreshSkuId
+              }
+              if (result.refreshProfile) {
+                refreshProfile = true
               }
             } catch (e) {
               console.error('[proof/contexto] acción distribuidor falló', action.type, e)
@@ -285,20 +325,35 @@ export async function POST(req: NextRequest) {
 
       if (actionMessage) {
         const isDestilador = profileType === 'distiller'
+        const miInfoUpdated = refreshProfile && profileType === 'distributor'
         sendAgentDone(send, {
           queryText,
           profileType,
           datos,
           mensaje: actionMessage,
-          accionLabel: refreshPedidoId ? 'Ver pedido' : isDestilador ? 'Ver bodega' : 'Ver inventario',
-          accionHref: refreshPedidoId
-            ? `/dashboard/pedidos/${refreshPedidoId}`
-            : isDestilador
-              ? '/dashboard'
-              : '/dashboard/inventario',
-          refreshLoteId: refreshSkuId ?? (refreshPedidoId ? null : refreshEntityId),
+          accionLabel: miInfoUpdated
+            ? 'Mi información'
+            : refreshOcId
+            ? 'Ver OC'
+            : refreshPedidoId
+              ? 'Ver pedido'
+              : isDestilador
+                ? 'Ver bodega'
+                : 'Ver inventario',
+          accionHref: miInfoUpdated
+            ? '/dashboard'
+            : refreshOcId
+            ? `/dashboard?oc=${refreshOcId}`
+            : refreshPedidoId
+              ? `/dashboard/pedidos/${refreshPedidoId}`
+              : isDestilador
+                ? '/dashboard'
+                : '/dashboard/inventario',
+          refreshLoteId: refreshSkuId ?? (refreshPedidoId || refreshOcId ? null : refreshEntityId),
           refreshPedidoId,
+          refreshOcId,
           openSkuImagePicker,
+          refreshProfile,
           skipDisplayCards: true,
         })
         return
@@ -322,6 +377,24 @@ export async function POST(req: NextRequest) {
           })
           return
         }
+
+        if (
+          profileType === 'distributor' &&
+          isDistributorGuidedFlowQuery(queryText, conversation)
+        ) {
+          console.log('[proof/contexto] guided flow fallback (sin LLM)', { query: queryText })
+          sendAgentDone(send, {
+            queryText,
+            profileType,
+            datos,
+            mensaje:
+              'No pude procesar eso. Para compra a proveedor: cantidad, producto y proveedor. Para venta: cantidad, producto y cliente.',
+            accionLabel: 'Ver inicio',
+            accionHref: '/dashboard',
+            skipDisplayCards: true,
+          })
+          return
+        }
       }
 
       if (profileType === 'distributor' && queryText) {
@@ -336,7 +409,11 @@ export async function POST(req: NextRequest) {
           pantalla: body.pantalla,
           vista: body.vista ?? (isDestilador ? 'destilador' : 'distribuidor'),
           profileType,
-          clerk_id: clerkId,
+          clerk_id:
+            profileType === 'distributor' && typeof datos.clerk_id === 'string'
+              ? datos.clerk_id
+              : clerkId,
+          clerk_user_id: clerkId,
           datos,
         },
         null,
@@ -430,6 +507,7 @@ Responde SOLO JSON válido:
         accionHref,
         refreshLoteId: refreshSkuId ?? refreshEntityId,
         refreshPedidoId,
+        refreshOcId,
         openSkuImagePicker,
       })
     } catch (e) {

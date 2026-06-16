@@ -1,11 +1,14 @@
 'use client'
 
 import { fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
-import type {
-  ItemOrdenCompraDistribuidorRow,
-  OrdenCompraConCxP,
-  OrdenCompraDistribuidorWithItems,
-  PagoProveedorRow,
+import { uniqueCategoriasOrdenCompraItems } from '@/lib/proof/categoria-liquido'
+import { CategoriaLiquidoBadge } from '@/components/proof/CategoriaLiquidoBadge'
+import {
+  pendienteIngresoUnidades,
+  type ItemOrdenCompraDistribuidorRow,
+  type OrdenCompraConCxP,
+  type OrdenCompraDistribuidorWithItems,
+  type PagoProveedorRow,
 } from '@/lib/supabase/distribuidor'
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
@@ -98,15 +101,21 @@ export function OrdenCompraCanvasCard({
   orden,
   selected = false,
   onClick,
+  onConfirmIngreso,
+  confirmingIngreso = false,
+  accent = 'var(--fg-0)',
 }: {
   orden: OrdenInput
   accent?: string
   selected?: boolean
   onClick: () => void
+  onConfirmIngreso?: (ordenId: string) => void
+  confirmingIngreso?: boolean
 }) {
   const cardEstado = resolveCardEstado(orden)
   const style = ESTADO_STYLE[cardEstado]
   const items = orden.items_orden_compra_distribuidor ?? []
+  const categorias = uniqueCategoriasOrdenCompraItems(items)
   const concepto = buildConcepto(items)
   const cxp = isConCxP(orden) ? orden.cxp : null
   const pagos: PagoProveedorRow[] = cxp?.pagos ?? []
@@ -132,12 +141,14 @@ export function OrdenCompraCanvasCard({
         : Number(cxp.saldo_pendiente)
 
   const borderColor = selected ? FG : style.border
+  const pendienteIngreso = pendienteIngresoUnidades(items)
+  const puedeConfirmarIngreso =
+    ['pendiente', 'parcial'].includes(orden.estado) &&
+    pendienteIngreso > 0 &&
+    onConfirmIngreso != null
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Orden ${orden.numero_orden}${selected ? ', seleccionado' : ''}`}
+    <div
       style={{
         width: '100%',
         textAlign: 'left',
@@ -145,7 +156,6 @@ export function OrdenCompraCanvasCard({
         border: selected ? `1.5px solid ${FG}` : `0.5px solid ${borderColor}`,
         borderRadius: 12,
         padding: 0,
-        cursor: 'pointer',
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',
@@ -153,6 +163,21 @@ export function OrdenCompraCanvasCard({
         transition: 'border-color 0.15s ease',
       }}
     >
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`Orden ${orden.numero_orden}${selected ? ', seleccionado' : ''}`}
+        style={{
+          width: '100%',
+          textAlign: 'left',
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
       <div style={{ padding: '14px 14px 10px' }}>
         <div
           style={{
@@ -176,6 +201,13 @@ export function OrdenCompraCanvasCard({
         >
           {concepto}
         </div>
+        {categorias.length > 0 ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+            {categorias.map(cat => (
+              <CategoriaLiquidoBadge key={cat} categoria={cat} size="xs" />
+            ))}
+          </div>
+        ) : null}
         <div style={{ fontSize: 10, fontFamily: MONO, color: '#CCC' }}>
           {fmtApertura(orden.created_at)}
         </div>
@@ -256,6 +288,37 @@ export function OrdenCompraCanvasCard({
           </div>
         )}
       </div>
+      </button>
+
+      {puedeConfirmarIngreso ? (
+        <div style={{ padding: '0 14px 14px' }}>
+          <button
+            type="button"
+            disabled={confirmingIngreso}
+            onClick={e => {
+              e.stopPropagation()
+              onConfirmIngreso(orden.id)
+            }}
+            style={{
+              width: '100%',
+              padding: '9px 12px',
+              borderRadius: 8,
+              border: 'none',
+              background: accent,
+              color: '#fff',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: confirmingIngreso ? 'wait' : 'pointer',
+              opacity: confirmingIngreso ? 0.7 : 1,
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            {confirmingIngreso
+              ? 'Ingresando…'
+              : `Confirmar ingreso (${pendienteIngreso.toLocaleString('es-MX')} u.)`}
+          </button>
+        </div>
+      ) : null}
 
       <span
         aria-hidden
@@ -278,6 +341,6 @@ export function OrdenCompraCanvasCard({
           animation: oc-dot-pulse 1.4s ease-in-out infinite;
         }
       `}</style>
-    </button>
+    </div>
   )
 }

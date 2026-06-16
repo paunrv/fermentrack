@@ -2,7 +2,9 @@
 
 import { useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import { PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import type { ProofHubLensAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
+import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
 
 export type ProofQuickAction = {
   label: string
@@ -40,6 +42,11 @@ export function ProofComposer({
   onSubmit,
   onQuickAction,
   quickActions,
+  compraLensActions,
+  ventaLensActions,
+  bodegaLensActions,
+  activeSubHub,
+  onHubLensAction,
   disabled,
   showHint,
 }: {
@@ -50,11 +57,24 @@ export function ProofComposer({
   onSubmit: (e: React.FormEvent) => void
   onQuickAction: (message: string) => void
   quickActions: ProofQuickAction[]
+  compraLensActions?: ProofHubLensAction[]
+  ventaLensActions?: ProofHubLensAction[]
+  bodegaLensActions?: ProofHubLensAction[]
+  activeSubHub?: ProofSubHub | null
+  onHubLensAction?: (message: string, hub: ProofSubHub) => void
   disabled: boolean
   showHint: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const hintKey = profileType === 'distiller' ? 'distiller' : 'distributor'
+  const hubLensActions =
+    activeSubHub === 'compra'
+      ? compraLensActions
+      : activeSubHub === 'venta'
+        ? ventaLensActions
+        : activeSubHub === 'bodega'
+          ? bodegaLensActions
+          : undefined
 
   return (
     <div
@@ -65,7 +85,37 @@ export function ProofComposer({
         borderTop: '0.5px solid var(--color-border-tertiary)',
       }}
     >
+      {showHint ? (
+        <p
+          style={{
+            margin: '0 auto 10px',
+            maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
+            fontSize: 12,
+            lineHeight: 1.6,
+            color: 'var(--color-text-tertiary)',
+            textAlign: 'center',
+            fontFamily: 'var(--font-display)',
+          }}
+        >
+          {PROOF_COPIES.hint[hintKey]}
+        </p>
+      ) : null}
+
+      {!showHint && activeSubHub && (hubLensActions?.length ?? 0) > 0 && onHubLensAction ? (
+        <div style={{ maxWidth: PROOF_CANVAS_CONTENT_WIDTH, margin: '0 auto 10px' }}>
+          <ProofHubLensSelector
+            accent={accent}
+            hub={activeSubHub}
+            actions={hubLensActions!}
+            disabled={disabled}
+            compact
+            onSelect={msg => onHubLensAction(msg, activeSubHub)}
+          />
+        </div>
+      ) : null}
+
       <form
+        className="proof-space-search"
         onSubmit={e => {
           onSubmit(e)
           requestAnimationFrame(() => inputRef.current?.focus())
@@ -74,7 +124,7 @@ export function ProofComposer({
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          maxWidth: 720,
+          maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
           margin: '0 auto',
           background: 'var(--color-background-primary)',
           border: '0.5px solid var(--color-border-tertiary)',
@@ -140,22 +190,6 @@ export function ProofComposer({
         </button>
       </form>
 
-      {showHint ? (
-        <p
-          style={{
-            margin: '8px auto 0',
-            maxWidth: 720,
-            fontSize: 12,
-            lineHeight: 1.6,
-            color: 'var(--color-text-tertiary)',
-            textAlign: 'center',
-            fontFamily: 'var(--font-display)',
-          }}
-        >
-          {PROOF_COPIES.hint[hintKey]}
-        </p>
-      ) : null}
-
       {quickActions.length > 0 ? (
         <div
           className="proof-quick-actions"
@@ -163,23 +197,16 @@ export function ProofComposer({
             display: 'flex',
             gap: 8,
             marginTop: 10,
-            maxWidth: 720,
+            maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
             marginLeft: 'auto',
             marginRight: 'auto',
             overflowX: 'auto',
-            flexWrap: 'nowrap',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
             paddingBottom: 2,
             WebkitOverflowScrolling: 'touch',
           }}
         >
-          <style>{`
-            @media (min-width: 480px) {
-              .proof-quick-actions {
-                flex-wrap: wrap;
-                justify-content: center;
-              }
-            }
-          `}</style>
           {quickActions.map(action => (
             <button
               key={action.label}

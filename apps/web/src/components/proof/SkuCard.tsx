@@ -1,11 +1,8 @@
 'use client'
 
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import {
-  CATEGORIA_LIQUIDO_BADGE,
-  categoriaLiquidoLabel,
-  normalizeCategoriaLiquido,
-} from '@/lib/proof/categoria-liquido'
+import { normalizeCategoriaLiquido } from '@/lib/proof/categoria-liquido'
+import { CategoriaLiquidoBadge } from '@/components/proof/CategoriaLiquidoBadge'
 import type { CategoriaLiquido, EstadoSku } from '@/lib/supabase/distribuidor'
 
 export type SkuCardEstado = 'ok' | 'bajo' | 'sin_stock' | 'sobrevendido'
@@ -109,26 +106,7 @@ function IconAdjustments() {
 }
 
 function CategoriaBadge({ categoria }: { categoria: CategoriaLiquido }) {
-  const tone = CATEGORIA_LIQUIDO_BADGE[categoria]
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        marginTop: 4,
-        padding: '2px 6px',
-        borderRadius: 4,
-        fontSize: 8,
-        fontWeight: 600,
-        letterSpacing: '0.06em',
-        textTransform: 'uppercase',
-        background: tone.bg,
-        color: tone.color,
-        lineHeight: 1.2,
-      }}
-    >
-      {categoriaLiquidoLabel(categoria)}
-    </span>
-  )
+  return <CategoriaLiquidoBadge categoria={categoria} />
 }
 
 export function SkuCard({

@@ -16,6 +16,7 @@ import {
   fetchOrdenesCompraDistribuidorPendientes,
   fetchPedidos,
   fetchSkus,
+  fetchUltimaOrdenCompraIngresada,
   resolveDistribuidorScopeClerkId,
 } from '@/lib/supabase/distribuidor'
 import type { ProfileScope } from '@/lib/supabase'
@@ -106,17 +107,53 @@ export async function loadDistributorAgentContext(
     clerk_id: scopeClerkId,
     profile_type_v2: 'distributor',
   }
-  const [skus, pedidos, cuentasPorCobrar, ordenesCompra, cuentasPorPagar] = await Promise.all([
-    fetchSkus(sb, scope),
-    fetchPedidos(sb, scope, { limit: 50 }),
-    fetchCuentasPorCobrarActivas(sb, scope).catch(() => []),
-    fetchOrdenesCompraDistribuidorPendientes(sb, scope).catch(() => []),
-    fetchCuentasPorPagarActivas(sb, scope).catch(() => []),
+
+  const { data: profileRow } = await sb
+    .from('profiles')
+    .select('cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path, username')
+    .eq('clerk_id', scopeClerkId)
+    .eq('profile_type_v2', 'distributor')
+    .maybeSingle()
+
+  const contextLoadWarnings: string[] = []
+
+  async function loadSlice<T>(label: string, fn: () => Promise<T>, fallback: T): Promise<T> {
+    try {
+      return await fn()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error(`[agente] loadDistributorAgentContext ${label} failed`, {
+        scopeClerkId,
+        clerkUserId: clerkId,
+        error: msg,
+      })
+      contextLoadWarnings.push(label)
+      return fallback
+    }
+  }
+
+  const [skus, pedidos, cuentasPorCobrar, ordenesCompra, cuentasPorPagar, ultimaOrdenIngresada] =
+    await Promise.all([
+    loadSlice('skus', () => fetchSkus(sb, scope), []),
+    loadSlice('pedidos', () => fetchPedidos(sb, scope, { limit: 50 }), []),
+    loadSlice('cuentas_por_cobrar', () => fetchCuentasPorCobrarActivas(sb, scope), []),
+    loadSlice(
+      'ordenes_compra_pendientes',
+      () => fetchOrdenesCompraDistribuidorPendientes(sb, scope),
+      []
+    ),
+    loadSlice('cuentas_por_pagar', () => fetchCuentasPorPagarActivas(sb, scope), []),
+    loadSlice(
+      'ultima_orden_ingresada',
+      () => fetchUltimaOrdenCompraIngresada(sb, scope),
+      null
+    ),
   ])
   console.log('[agente] distributor context', {
     clerkUserId: clerkId,
     scopeClerkId,
     skusEnContexto: skus.length,
+    contextLoadWarnings,
   })
   const datos = buildDistributorAgentContext(
     skus,
@@ -127,12 +164,15 @@ export async function loadDistributorAgentContext(
     {
     selectedId: hints?.selectedId ?? null,
     query: hints?.query ?? null,
+    ultimaOrdenIngresada,
+    miInformacion: profileRow ?? undefined,
   })
   return {
     ...datos,
     clerk_id: scopeClerkId,
     clerk_user_id: clerkId,
     profile_type: 'distributor',
+    ...(contextLoadWarnings.length > 0 ? { context_load_warnings: contextLoadWarnings } : {}),
     ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
     ...(hints?.image ? { image: hints.image } : {}),
   }

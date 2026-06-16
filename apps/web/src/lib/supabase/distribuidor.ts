@@ -172,6 +172,7 @@ export interface PedidoRow {
   nota: string | null
   imagen_origen_url: string | null
   anticipo: boolean
+  anticipo_monto: number | null
   clerk_id: string
   profile_type_v2: string
   created_at: string
@@ -648,6 +649,7 @@ export async function createPedidoBorrador(
     fecha_entrega: string
     condicion_pago: string
     anticipo?: boolean
+    anticipo_monto?: number | null
     notas?: string | null
     clerk_id: string
     profile_type_v2: string
@@ -658,6 +660,7 @@ export async function createPedidoBorrador(
     .insert({
       ...input,
       anticipo: input.anticipo ?? false,
+      anticipo_monto: input.anticipo_monto ?? null,
       estado: 'borrador',
       total: 0,
       ticket_exportado: false,
@@ -918,7 +921,16 @@ export interface ItemOrdenCompraDistribuidorRow {
   costo_unitario: number
   subtotal: number
   created_at: string
+  skus?: {
+    id: string
+    nombre: string
+    productor: string | null
+    categoria_liquido: CategoriaLiquido
+  } | null
 }
+
+export const ITEMS_OC_DISTRIBUIDOR_SELECT =
+  'items_orden_compra_distribuidor(*, skus(id, nombre, productor, categoria_liquido))'
 
 export interface OrdenCompraDistribuidorWithItems extends OrdenCompraDistribuidorRow {
   items_orden_compra_distribuidor: ItemOrdenCompraDistribuidorRow[]
@@ -936,13 +948,37 @@ export type ConfirmarLlegadaOcLinea = {
   cantidad_recibida: number
 }
 
+export type OrdenCompraItemCantidad = {
+  id: string
+  cantidad_ordenada: number
+  cantidad_recibida?: number | null
+}
+
+/** Unidades aún no ingresadas a bodega para una OC. */
+export function pendienteIngresoUnidades(items: OrdenCompraItemCantidad[]): number {
+  return items.reduce(
+    (s, it) => s + Math.max(it.cantidad_ordenada - (it.cantidad_recibida ?? 0), 0),
+    0
+  )
+}
+
+/** Marca recepción completa (cantidad acumulada = ordenada) por ítem. */
+export function lineasRecepcionCompleta(
+  items: OrdenCompraItemCantidad[]
+): ConfirmarLlegadaOcLinea[] {
+  return items.map(it => ({
+    item_id: it.id,
+    cantidad_recibida: it.cantidad_ordenada,
+  }))
+}
+
 export async function fetchOrdenesCompraDistribuidorPendientes(
   sb: SupabaseClient,
   scope?: ProfileScope
 ): Promise<OrdenCompraDistribuidorWithItems[]> {
   let q = sb
     .from('ordenes_compra_distribuidor')
-    .select('*, items_orden_compra_distribuidor(*)')
+    .select(`*, ${ITEMS_OC_DISTRIBUIDOR_SELECT}`)
     .in('estado', ['pendiente', 'parcial'])
     .order('fecha_estimada', { ascending: true, nullsFirst: false })
   q = scopeFilter(q, scope)
@@ -951,13 +987,30 @@ export async function fetchOrdenesCompraDistribuidorPendientes(
   return (data || []) as OrdenCompraDistribuidorWithItems[]
 }
 
+export async function fetchUltimaOrdenCompraIngresada(
+  sb: SupabaseClient,
+  scope?: ProfileScope
+): Promise<OrdenCompraDistribuidorWithItems | null> {
+  let q = sb
+    .from('ordenes_compra_distribuidor')
+    .select(`*, ${ITEMS_OC_DISTRIBUIDOR_SELECT}`)
+    .in('estado', ['recibida', 'parcial'])
+    .not('fecha_recepcion', 'is', null)
+    .order('fecha_recepcion', { ascending: false })
+    .limit(1)
+  q = scopeFilter(q, scope)
+  const { data, error } = await q.maybeSingle()
+  throwIfError(error)
+  return data as OrdenCompraDistribuidorWithItems | null
+}
+
 export async function fetchOrdenCompraDistribuidorWithItems(
   sb: SupabaseClient,
   ordenId: string
 ): Promise<OrdenCompraDistribuidorWithItems | null> {
   const { data, error } = await sb
     .from('ordenes_compra_distribuidor')
-    .select('*, items_orden_compra_distribuidor(*)')
+    .select(`*, ${ITEMS_OC_DISTRIBUIDOR_SELECT}`)
     .eq('id', ordenId)
     .maybeSingle()
   throwIfError(error)
@@ -1095,7 +1148,7 @@ export async function fetchOrdenesCompraConCxPendiente(
   let q = sb
     .from('cuentas_por_pagar')
     .select(
-      'id, saldo_pendiente, monto_total, monto_pagado, proveedor_nombre, ordenes_compra_distribuidor(*, items_orden_compra_distribuidor(*))'
+      `id, saldo_pendiente, monto_total, monto_pagado, proveedor_nombre, ordenes_compra_distribuidor(*, ${ITEMS_OC_DISTRIBUIDOR_SELECT})`
     )
     .in('estado', ['pendiente', 'parcial'])
     .order('created_at', { ascending: false })
@@ -1146,6 +1199,22 @@ export async function fetchPagosProveedorByCuentaIds(
   const { data, error } = await q
   throwIfError(error)
   return (data || []) as PagoProveedorRow[]
+}
+
+export async function fetchCuentaPorPagarByOrdenId(
+  sb: SupabaseClient,
+  ordenId: string
+): Promise<{ cuenta: CuentaPorPagarRow; pagos: PagoProveedorRow[] } | null> {
+  const { data, error } = await sb
+    .from('cuentas_por_pagar')
+    .select('*')
+    .eq('orden_compra_id', ordenId)
+    .maybeSingle()
+  throwIfError(error)
+  if (!data) return null
+  const cuenta = data as CuentaPorPagarRow
+  const pagos = await fetchPagosProveedorByCuentaIds(sb, [cuenta.id])
+  return { cuenta, pagos }
 }
 
 export async function rpcRegistrarPagoProveedor(

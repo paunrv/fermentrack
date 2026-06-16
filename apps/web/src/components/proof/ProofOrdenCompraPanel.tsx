@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { OrdenCompraDocumentCard } from '@/components/proof/OrdenCompraDocumentCard'
 import { OrdenCompraCanvasCard } from '@/components/proof/OrdenCompraCanvasCard'
-import { OrdenCompraPendienteDetalle } from '@/components/proof/OrdenCompraPendienteDetalle'
 import {
+  confirmarLlegadaOrdenCompraDistribuidor,
   fetchOrdenesCompraDistribuidorPendientes,
+  lineasRecepcionCompleta,
   type OrdenCompraDistribuidorWithItems,
 } from '@/lib/supabase/distribuidor'
 
@@ -15,10 +17,12 @@ export function ProofOrdenCompraPanel({
   accent,
   initialOrdenId,
   onDismiss,
+  onIngresoConfirmado,
 }: {
   accent: string
   initialOrdenId?: string | null
   onDismiss?: () => void
+  onIngresoConfirmado?: () => void
 }) {
   const supabase = useSupabase()
   const { scope } = useProfile()
@@ -26,6 +30,7 @@ export function ProofOrdenCompraPanel({
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(initialOrdenId ?? null)
   const [collapsed, setCollapsed] = useState(false)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     if (!scope) return
@@ -48,6 +53,28 @@ export function ProofOrdenCompraPanel({
       setCollapsed(false)
     }
   }, [initialOrdenId])
+
+  const handleConfirmIngreso = useCallback(
+    async (ordenId: string) => {
+      const orden = ordenes.find(o => o.id === ordenId)
+      if (!orden) return
+      const items = orden.items_orden_compra_distribuidor ?? []
+      if (items.length === 0) return
+      setConfirmingId(ordenId)
+      try {
+        await confirmarLlegadaOrdenCompraDistribuidor(
+          supabase,
+          ordenId,
+          lineasRecepcionCompleta(items)
+        )
+        await reload()
+        onIngresoConfirmado?.()
+      } finally {
+        setConfirmingId(null)
+      }
+    },
+    [ordenes, supabase, reload, onIngresoConfirmado]
+  )
 
   if (!scope) return null
 
@@ -87,23 +114,22 @@ export function ProofOrdenCompraPanel({
       <div
         style={{
           flexShrink: 0,
-          maxHeight: 'min(52vh, 420px)',
+          maxHeight: 'min(58vh, 480px)',
           overflowY: 'auto',
           borderBottom: '0.5px solid var(--color-border-tertiary)',
           background: 'var(--color-background-primary)',
         }}
       >
-        <OrdenCompraPendienteDetalle
+        <OrdenCompraDocumentCard
           ordenId={selectedId}
           accent={accent}
           onClose={() => {
             setSelectedId(null)
             onDismiss?.()
           }}
-          onRecibido={() => {
+          onUpdated={() => {
             void reload()
-            setSelectedId(null)
-            onDismiss?.()
+            onIngresoConfirmado?.()
           }}
         />
       </div>
@@ -190,6 +216,8 @@ export function ProofOrdenCompraPanel({
             accent={accent}
             selected={selectedId === o.id}
             onClick={() => setSelectedId(o.id)}
+            onConfirmIngreso={ordenId => void handleConfirmIngreso(ordenId)}
+            confirmingIngreso={confirmingId === o.id}
           />
         ))}
       </div>

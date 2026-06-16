@@ -7,18 +7,49 @@ import {
 } from '@/lib/proof/categoria-liquido'
 import type { DistributorAgentContext } from '@/lib/proof/distributor-agent-context'
 import { isSkuStockCritico } from '@/lib/proof/distributor-agent-context'
-import { looksLikeDistributorMutation, looksLikeCompraLlegadaQuery, looksLikeEntregaVentaQuery, looksLikeVentaPedidoQuery, needsOrdenCompraDetails } from '@/lib/proof/distributor-agent-actions'
+import { looksLikeCrearOrdenCompraQuery, looksLikeDistributorMutation, looksLikeCompraLlegadaQuery, looksLikeEntregaVentaQuery, looksLikeVentaPedidoQuery, needsOrdenCompraDetails, isValidProveedorNombre } from '@/lib/proof/distributor-agent-actions'
 import { filterSkusByBodegaQuery } from '@/lib/proof/bodega-filter'
+import {
+  formatBodegaFisica,
+  formatCategoriaBodegaConCompras,
+  formatDetalleCompraProveedor,
+  formatEstadoBodegaResumen,
+  formatPendienteIngreso,
+  formatPorPagarProveedor,
+  looksLikeBodegaFisicaLensQuery,
+  looksLikeDetalleCompraProveedorQuery,
+  looksLikeEstadoBodegaQuery,
+  looksLikePendienteIngresoLensQuery,
+  looksLikePorPagarLensQuery,
+} from '@/lib/proof/bodega-estado-answers'
 import { formatLineaToma, parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import {
   extractPartialTomaPedidoDraft,
   extractTomaPedidoDraft,
   isConfirmationReply,
+  isPedidoVentaFlowActive,
+  isPedidoVentaTurn,
+  looksLikeIniciarPedidoVentaQuery,
   looksLikeTomaPedidoQuery,
   resolveSkuFromQuery,
   resolveTomaPedidoDraft,
   type AgentConversationTurn,
 } from '@/lib/proof/toma-pedido-intent'
+import {
+  extractPartialOrdenCompraDraft,
+  isOrdenCompraConfirmationReply,
+  isOrdenCompraFlowActive,
+  isOrdenCompraTurn,
+  resolveOrdenCompraDraft,
+  formatOrdenCompraProposal,
+  resolvePartialOrdenCompraDraft,
+} from '@/lib/proof/toma-oc-intent'
+import { resolveTitularCuenta } from '@/lib/proof/format-datos-cobro-clipboard'
+import {
+  looksLikeActualizarMiInformacionQuery,
+  looksLikeMiInformacionQuery,
+  parseActualizarMiInformacionIntent,
+} from '@/lib/proof/mi-informacion-intent'
 
 export type DistributorQuickAnswer = {
   mensaje: string
@@ -32,6 +63,71 @@ function norm(s: string): string {
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
     .trim()
+}
+
+function contextWarnPrefix(datos: Record<string, unknown>): string {
+  const warnings = (datos as { context_load_warnings?: string[] }).context_load_warnings
+  if (!warnings?.length) return ''
+  const labels: Record<string, string> = {
+    skus: 'inventario',
+    pedidos: 'pedidos',
+    cuentas_por_cobrar: 'cuentas por cobrar',
+    ordenes_compra_pendientes: 'órdenes de compra',
+    cuentas_por_pagar: 'cuentas por pagar',
+  }
+  const list = warnings.map(w => labels[w] ?? w).join(', ')
+  return `No pude cargar ${list} desde la base de datos; los números pueden estar incompletos. `
+}
+
+function answer(
+  datos: Record<string, unknown>,
+  body: { mensaje: string; accionLabel: string; accionHref: string }
+) {
+  return { ...body, mensaje: contextWarnPrefix(datos) + body.mensaje }
+}
+
+function tryCompoundLlegadaPagoHint(query: string): {
+  mensaje: string
+  accionLabel: string
+  accionHref: string
+} | null {
+  const q = norm(query)
+  if (!looksLikeCompraLlegadaQuery(query)) return null
+  if (!/\bpag[oó]\b/.test(q) && !q.includes('pago')) return null
+  return {
+    mensaje:
+      'Haz un paso a la vez: primero confirma la llegada a bodega (ej. "confirmar llegada OC-001") y después registra el pago al proveedor en otro mensaje.',
+    accionLabel: 'Ver compras',
+    accionHref: '/dashboard/distribuidor/compras/nuevo',
+  }
+}
+
+function tryLlegadaGuidanceAnswer(
+  query: string,
+  ctx: DistributorAgentContext
+): { mensaje: string; accionLabel: string; accionHref: string } | null {
+  if (!looksLikeCompraLlegadaQuery(query)) return null
+  const ordenes = ctx.ordenes_compra_pendientes ?? []
+  if (ordenes.length === 0) {
+    return {
+      mensaje:
+        'No hay órdenes de compra pendientes de recepción. Si ya pagaste al proveedor pero no ves stock, la mercancía aún no se ingresó a bodega.',
+      accionLabel: 'Nueva OC',
+      accionHref: '/dashboard/distribuidor/compras/nuevo',
+    }
+  }
+  if (ordenes.length === 1) return null
+  const q = norm(query)
+  if (/\boc[-\s]?\d+/i.test(q)) return null
+  const lista = ordenes
+    .slice(0, 4)
+    .map(o => `${o.numero_orden} (${o.proveedor_nombre})`)
+    .join(', ')
+  return {
+    mensaje: `Tienes ${ordenes.length} OCs sin ingresar. Indica cuál llegó: ${lista}. Ejemplo: "confirmar llegada ${ordenes[0]!.numero_orden}".`,
+    accionLabel: 'Ver compras',
+    accionHref: '/dashboard/distribuidor/compras/nuevo',
+  }
 }
 
 function resolveClienteDeudaEnQuery(
@@ -137,6 +233,54 @@ export function tryDistributorQuickAnswer(
     return null
   }
 
+  if (
+    looksLikeActualizarMiInformacionQuery(query) &&
+    !parseActualizarMiInformacionIntent(query)
+  ) {
+    return {
+      mensaje:
+        'No capté el dato. Titular: "titular: Nombre Apellido". Banco: "banco: Banregio". Cuenta: "BBVA clabe 012345678901234567".',
+      accionLabel: 'Mi información',
+      accionHref: '/dashboard',
+    }
+  }
+
+  if (looksLikeMiInformacionQuery(query)) {
+    const mi = ctx.mi_informacion
+    const cuenta = mi?.cuenta_deposito?.trim() ?? ''
+    const banco = mi?.banco_deposito?.trim() ?? ''
+    const titular = resolveTitularCuenta(mi?.titular_cuenta, null)
+    const tieneConstancia = mi?.tiene_constancia_fiscal ?? false
+
+    if (!cuenta && !tieneConstancia && !titular) {
+      return {
+        mensaje:
+          'Aún no tienes cuenta ni constancia configuradas. Dime banco y CLABE, ej: "BBVA clabe 012345678901234567". La constancia PDF la subes desde el ícono de información personal en el header.',
+        accionLabel: 'Mi información',
+        accionHref: '/dashboard/settings',
+      }
+    }
+
+    const partes: string[] = []
+    if (titular) partes.push(`Titular: ${titular}`)
+    if (cuenta) {
+      partes.push(`${banco ? `Banco: ${banco}. ` : ''}CLABE/cuenta: ${cuenta}`)
+    } else if (!titular) {
+      partes.push('Cuenta de depósito: pendiente')
+    }
+    partes.push(
+      tieneConstancia
+        ? 'Constancia fiscal: cargada ✓'
+        : 'Constancia fiscal: pendiente (súbela desde el menú de cuenta)'
+    )
+
+    return {
+      mensaje: partes.join('. ') + '.',
+      accionLabel: 'Mi información',
+      accionHref: '/dashboard',
+    }
+  }
+
   const conversation = Array.isArray(
     (datos as { conversation?: AgentConversationTurn[] }).conversation
   )
@@ -145,11 +289,107 @@ export function tryDistributorQuickAnswer(
 
   const tomaDraft = extractTomaPedidoDraft(query, ctx)
   const partialVenta = extractPartialTomaPedidoDraft(query, ctx)
+  const ocFlowActive = isOrdenCompraFlowActive(conversation)
+  const pedidoFlowActive = isPedidoVentaFlowActive(conversation)
+  const partialOc = resolvePartialOrdenCompraDraft(query, conversation)
+  const ocDraft = resolveOrdenCompraDraft(query, conversation)
+
+  if (looksLikeIniciarPedidoVentaQuery(query) && !partialVenta) {
+    return {
+      mensaje:
+        'Vamos a registrar un pedido de venta a tu cliente (bar, restaurante, tienda). Dime cantidad, producto y cliente. Ejemplo: "100 latas de Silvana IPA a Bar La Cueva".',
+      accionLabel: 'Ver pedidos',
+      accionHref: '/dashboard/pedidos',
+    }
+  }
+
+  if (
+    (pedidoFlowActive || isPedidoVentaTurn(query, conversation)) &&
+    !ocFlowActive &&
+    partialVenta &&
+    !isConfirmationReply(q)
+  ) {
+    const unidadLabel =
+      partialVenta.unidad === 'latas'
+        ? 'latas'
+        : partialVenta.unidad === 'cajas'
+          ? 'cajas'
+          : 'botellas'
+    const producto = partialVenta.sku_nombre ?? partialVenta.etiqueta
+    if (!partialVenta.cliente) {
+      return {
+        mensaje: `Venta de ${partialVenta.cantidad} ${unidadLabel} de ${producto}. ¿Para qué cliente va el pedido? (ej. "a Bar La Cueva")`,
+        accionLabel: 'Ver pedidos',
+        accionHref: '/dashboard/pedidos',
+      }
+    }
+    const stock =
+      partialVenta.stock_disponible != null
+        ? partialVenta.stock_disponible.toLocaleString('es-MX')
+        : '—'
+    if (
+      partialVenta.stock_disponible != null &&
+      partialVenta.cantidad > partialVenta.stock_disponible
+    ) {
+      return {
+        mensaje: `Solo tienes ${stock} ${unidadLabel} de ${producto} disponibles. No alcanza para ${partialVenta.cantidad} a ${partialVenta.cliente}.`,
+        accionLabel: 'Ver inventario',
+        accionHref: '/dashboard/inventario',
+      }
+    }
+    if (partialVenta.anticipo && partialVenta.anticipo_monto == null) {
+      return {
+        mensaje: `Pedido de ${partialVenta.cantidad} ${unidadLabel} a ${partialVenta.cliente} con anticipo. ¿Cuánto de anticipo? (ej. "$500 de anticipo")`,
+        accionLabel: 'Ver pedidos',
+        accionHref: '/dashboard/pedidos',
+      }
+    }
+    const anticipoHint =
+      partialVenta.anticipo && partialVenta.anticipo_monto != null
+        ? ` con anticipo de $${partialVenta.anticipo_monto.toLocaleString('es-MX')}`
+        : ''
+    return {
+      mensaje: `Pedido de venta propuesto: ${partialVenta.cantidad} ${unidadLabel} de ${producto} a ${partialVenta.cliente}${anticipoHint}. ¿Confirmo? Responde "sí, prepara ticket".`,
+      accionLabel: 'Ver pedidos',
+      accionHref: '/dashboard/pedidos',
+    }
+  }
+
+  if (partialOc && !isOrdenCompraConfirmationReply(q) && !pedidoFlowActive) {
+    if (ocFlowActive || looksLikeCrearOrdenCompraQuery(query)) {
+      return {
+        mensaje: formatOrdenCompraProposal(partialOc),
+        accionLabel: 'Nueva OC',
+        accionHref: '/dashboard/distribuidor/compras/nuevo',
+      }
+    }
+  }
+
+  if ((ocFlowActive || isOrdenCompraTurn(query, conversation)) && !pedidoFlowActive) {
+    if (isOrdenCompraConfirmationReply(q) && !ocDraft) {
+      return {
+        mensaje:
+          'No tengo los datos de la orden anterior. Escribe de nuevo: "100 cajas de [producto] de [proveedor]" y confirma.',
+        accionLabel: 'Nueva OC',
+        accionHref: '/dashboard/distribuidor/compras/nuevo',
+      }
+    }
+
+    if (partialOc && !isOrdenCompraConfirmationReply(q)) {
+      return {
+        mensaje: formatOrdenCompraProposal(partialOc),
+        accionLabel: 'Nueva OC',
+        accionHref: '/dashboard/distribuidor/compras/nuevo',
+      }
+    }
+  }
 
   if (
     partialVenta &&
     !partialVenta.cliente &&
     !isConfirmationReply(q) &&
+    !ocFlowActive &&
+    !pedidoFlowActive &&
     (looksLikeTomaPedidoQuery(q) || looksLikeVentaPedidoQuery(q))
   ) {
     const unidadLabel =
@@ -187,7 +427,7 @@ export function tryDistributorQuickAnswer(
     }
   }
 
-  if (isConfirmationReply(q) && !tomaDraft && !looksLikeEntregaVentaQuery(q) && !looksLikeCompraLlegadaQuery(q)) {
+  if (isConfirmationReply(q) && !tomaDraft && !ocDraft && !looksLikeEntregaVentaQuery(q) && !looksLikeCompraLlegadaQuery(q)) {
     const prior = resolveTomaPedidoDraft(query, conversation, ctx)
     if (!prior) {
       return {
@@ -239,6 +479,64 @@ export function tryDistributorQuickAnswer(
     }
   }
 
+  if (looksLikeBodegaFisicaLensQuery(query)) {
+    return answer(datos, {
+      mensaje: formatBodegaFisica(ctx),
+      accionLabel: 'Ver inventario',
+      accionHref: '/dashboard/inventario',
+    })
+  }
+
+  if (looksLikePendienteIngresoLensQuery(query)) {
+    return answer(datos, {
+      mensaje: formatPendienteIngreso(ctx),
+      accionLabel: 'Ver compras',
+      accionHref: '/dashboard/distribuidor/compras/nuevo',
+    })
+  }
+
+  if (looksLikePorPagarLensQuery(query)) {
+    return answer(datos, {
+      mensaje: formatPorPagarProveedor(ctx),
+      accionLabel: 'Ver inicio',
+      accionHref: '/dashboard',
+    })
+  }
+
+  if (
+    (q.includes('ultima') || q.includes('última')) &&
+    (q.includes('ingres') || q.includes('recib')) &&
+    q.includes('orden') &&
+    q.includes('compra')
+  ) {
+    const ultima = ctx.ultima_orden_ingresada
+    if (!ultima) {
+      return {
+        mensaje: 'Aún no hay órdenes de compra ingresadas a bodega.',
+        accionLabel: 'Nueva OC',
+        accionHref: '/dashboard/distribuidor/compras/nuevo',
+      }
+    }
+    const items = ultima.items
+      .map(it => {
+        const rec = it.cantidad_recibida ?? 0
+        return `${it.producto_nombre} (${rec}/${it.cantidad_ordenada} u.)`
+      })
+      .join(', ')
+    const fecha = ultima.fecha_recepcion
+      ? new Date(`${ultima.fecha_recepcion}T12:00:00`).toLocaleDateString('es-MX', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : '—'
+    return {
+      mensaje: `Última ingresada: ${ultima.numero_orden} · ${ultima.proveedor_nombre} (${fecha}). ${items}.`,
+      accionLabel: 'Ver compras',
+      accionHref: '/dashboard',
+    }
+  }
+
   if (
     q.includes('ordenes de compra') ||
     q.includes('órdenes de compra') ||
@@ -276,24 +574,50 @@ export function tryDistributorQuickAnswer(
   if (
     q.includes('cuentas por pagar') ||
     q.includes('cuenta por pagar') ||
-    (q.includes('por pagar') && (q.includes('proveedor') || q.includes('cxp')))
+    (q.includes('por pagar') && (q.includes('proveedor') || q.includes('cxp'))) ||
+    ((q.includes('pendiente') || q.includes('pendientes')) &&
+      (q.includes('proveedor') || q.includes('productor') || q.includes('proovedor')))
   ) {
     const cuentas = ctx.cxp?.cuentas ?? []
-    if (cuentas.length === 0) {
+    const ordenes = ctx.ordenes_compra_pendientes ?? []
+    if (cuentas.length === 0 && ordenes.length === 0) {
       return {
-        mensaje: 'No tienes cuentas por pagar pendientes con proveedores.',
+        mensaje:
+          'No tienes cuentas por pagar ni órdenes de compra pendientes de ingreso con proveedores.',
         accionLabel: 'Ver inicio',
         accionHref: '/dashboard',
       }
     }
-    const lista = cuentas
-      .slice(0, 4)
-      .map(c => `${c.proveedor_nombre} ($${c.saldo_pendiente.toLocaleString('es-MX')})`)
-      .join('; ')
+    const partes: string[] = []
+    if (ordenes.length > 0) {
+      const ocLista = ordenes
+        .slice(0, 3)
+        .map(o => {
+          const pend = o.items.reduce(
+            (s, it) => s + Math.max(it.cantidad_ordenada - (it.cantidad_recibida ?? 0), 0),
+            0
+          )
+          return `${o.numero_orden} · ${o.proveedor_nombre} (${pend} u. sin ingresar)`
+        })
+        .join('; ')
+      partes.push(
+        `Compras sin ingresar a bodega: ${ocLista}. Confirma recepción para sumar stock.`
+      )
+    }
+    if (cuentas.length > 0) {
+      const lista = cuentas
+        .slice(0, 4)
+        .map(c => `${c.proveedor_nombre} ($${c.saldo_pendiente.toLocaleString('es-MX')})`)
+        .join('; ')
+      partes.push(
+        `Por pagar a proveedor: ${lista}${cuentas.length > 4 ? '…' : ''}. Total: $${(ctx.cxp?.total_por_pagar ?? 0).toLocaleString('es-MX')}.`
+      )
+    }
     return {
-      mensaje: `Cuentas por pagar: ${lista}${cuentas.length > 4 ? '…' : ''}. Total: $${(ctx.cxp?.total_por_pagar ?? 0).toLocaleString('es-MX')}.`,
-      accionLabel: 'Ver inicio',
-      accionHref: '/dashboard',
+      mensaje: partes.join(' '),
+      accionLabel: ordenes.length > 0 ? 'Nueva OC' : 'Ver inicio',
+      accionHref:
+        ordenes.length > 0 ? '/dashboard/distribuidor/compras/nuevo' : '/dashboard',
     }
   }
 
@@ -317,16 +641,46 @@ export function tryDistributorQuickAnswer(
     }
   }
 
+  if (
+    looksLikeCrearOrdenCompraQuery(query) &&
+    needsOrdenCompraDetails(query) &&
+    !pedidoFlowActive &&
+    !tomaDraft &&
+    !partialVenta
+  ) {
+    return {
+      mensaje:
+        'Vamos a crear tu orden de compra al proveedor. Dime cantidad, producto y proveedor. Ejemplo: "comprar 50 cajas de IPA a Cervecería Norte".',
+      accionLabel: 'Nueva OC',
+      accionHref: '/dashboard/distribuidor/compras/nuevo',
+    }
+  }
+
   if (looksLikeDistributorMutation(q) && !tomaDraft && !partialVenta) {
-    if (needsOrdenCompraDetails(query)) {
+    const compound = tryCompoundLlegadaPagoHint(query)
+    if (compound) return answer(datos, compound)
+    const llegadaGuide = tryLlegadaGuidanceAnswer(query, ctx)
+    if (llegadaGuide) return answer(datos, llegadaGuide)
+    return null
+  }
+
+  if (looksLikeEstadoBodegaQuery(query)) {
+    return answer(datos, {
+      mensaje: formatEstadoBodegaResumen(ctx),
+      accionLabel: 'Ver inventario',
+      accionHref: '/dashboard/inventario',
+    })
+  }
+
+  if (looksLikeDetalleCompraProveedorQuery(query)) {
+    const detalle = formatDetalleCompraProveedor(query, ctx)
+    if (detalle) {
       return {
-        mensaje:
-          'Para crear una orden de compra dime cantidad, producto y proveedor. Ejemplo: "comprar 50 cajas de IPA a Cervecería Norte".',
-        accionLabel: 'Nueva OC',
+        mensaje: detalle,
+        accionLabel: 'Ver compras',
         accionHref: '/dashboard/distribuidor/compras/nuevo',
       }
     }
-    return null
   }
 
   if (
@@ -359,17 +713,27 @@ export function tryDistributorQuickAnswer(
   }
 
   const wantsStock =
-    q.includes('stock') ||
-    q.includes('cuanto') ||
-    q.includes('cuanta') ||
-    q.includes('tengo') ||
-    q.includes('disponible') ||
-    q.includes('unidades') ||
-    q.includes('botellas') ||
-    q.includes('bodega') ||
-    (q.includes('inventario') && (q.includes('tenemos') || q.includes('que hay')))
+    !ocFlowActive &&
+    !pedidoFlowActive &&
+    !isOrdenCompraTurn(query, conversation) &&
+    !isPedidoVentaTurn(query, conversation) &&
+    (q.includes('stock') ||
+      q.includes('cuanto') ||
+      q.includes('cuanta') ||
+      q.includes('tengo') ||
+      q.includes('disponible') ||
+      q.includes('unidades') ||
+      q.includes('botellas') ||
+      q.includes('bodega') ||
+      (q.includes('inventario') && (q.includes('tenemos') || q.includes('que hay'))))
 
-  if (wantsStock && ctx.skus.length === 0 && ctx.pedidos.length > 0) {
+  if (
+    wantsStock &&
+    ctx.skus.length === 0 &&
+    ctx.pedidos.length > 0 &&
+    (ctx.ordenes_compra_pendientes ?? []).length === 0 &&
+    !parseCategoriaLiquidoFromQuery(query)
+  ) {
     const ultimo = ctx.pedidos[0]
     const notas = (ultimo as { notas?: string | null }).notas
     const toma = parseTomaPedidoNotas(notas ?? null)
@@ -404,29 +768,14 @@ export function tryDistributorQuickAnswer(
       q.includes('mostrar') ||
       q.includes('que hay'))
   ) {
-    const label = categoriaLiquidoLabel(catFilter)
-    if (skusPorCategoria.length === 0) {
-      return {
-        mensaje: `No tienes ${label.toLowerCase()}${bodegaLabel ? ` en ${bodegaLabel}` : ' en bodega'} ahora mismo.`,
-        accionLabel: 'Ver inventario',
-        accionHref: '/dashboard/inventario',
-      }
-    }
-    const lista = skusPorCategoria
-      .slice(0, 6)
-      .map(s => {
-        const precio =
-          s.precio_venta > 0
-            ? ` ($${s.precio_venta.toLocaleString('es-MX')}/u)`
-            : ' (sin precio)'
-        const stock = formatSkuStockLine(s, { short: true, bodegaLabel })
-        const alerta =
-          s.estado === 'quiebre' || s.estado === 'bajo' ? `, ${s.estado}` : ''
-        return `${stock}${precio}${alerta}`
-      })
-      .join('; ')
+    const categoriaAnswer = formatCategoriaBodegaConCompras(
+      ctx,
+      catFilter,
+      bodegaLabel,
+      skusScope
+    )
     return {
-      mensaje: `${label}s${bodegaLabel ? ` en ${bodegaLabel}` : ' en bodega'}: ${lista}${skusPorCategoria.length > 6 ? '…' : ''}.`,
+      mensaje: categoriaAnswer.mensaje,
       accionLabel: 'Ver inventario',
       accionHref: '/dashboard/inventario',
     }
@@ -489,6 +838,7 @@ export function tryDistributorQuickAnswer(
   if (
     q.includes('deben') ||
     q.includes('por cobrar') ||
+    q.includes('cuentas por cobrar') ||
     q.includes('cobros pendientes') ||
     q.includes('me deben') ||
     (q.includes('cobrar') && (q.includes('cuanto') || q.includes('cuanta')))
@@ -616,14 +966,6 @@ export function tryDistributorQuickAnswer(
       mensaje: `${criticos.length} SKU${criticos.length === 1 ? '' : 's'} crítico${criticos.length === 1 ? '' : 's'}: ${lista}${criticos.length > 5 ? '…' : ''}.`,
       accionLabel: 'Ver inventario',
       accionHref: '/dashboard/inventario',
-    }
-  }
-
-  if (q.includes('nuevo pedido') || (q.includes('registrar') && q.includes('pedido'))) {
-    return {
-      mensaje: 'Abre el formulario para crear un pedido con cliente y fecha de entrega.',
-      accionLabel: 'Nuevo pedido',
-      accionHref: '/dashboard/pedidos/nuevo',
     }
   }
 

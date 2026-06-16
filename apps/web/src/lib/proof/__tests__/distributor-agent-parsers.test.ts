@@ -21,16 +21,23 @@ describe('clasificación venta vs compra', () => {
     expect(parseDistributorActionIntent(q, ctx)).toBeNull()
   })
 
-  it('compra con cantidad y producto crea OC', () => {
+  it('compra completa en un mensaje propone OC (no crea sin confirmar)', () => {
     const action = parseDistributorActionIntent(
-      'comprar 24 cajas de cerveza a mi proveedor',
+      'comprar 24 cajas de IPA a Cervecería Norte',
       ctx
     )
-    expect(action?.type).toBe('crear_orden_compra')
-    if (action?.type === 'crear_orden_compra') {
-      expect(action.cantidad).toBe(24)
-      expect(action.producto.toLowerCase()).toContain('cerveza')
-    }
+    expect(action).toBeNull()
+  })
+
+  it('one-shot con prefijo orden de compra parsea proveedor', () => {
+    const q = 'orden de compra, 50 cajas de mezcal Borroso al Proveedor Cla Cla'
+    expect(needsOrdenCompraDetails(q)).toBe(false)
+  })
+
+  it('compra con proveedor placeholder no crea OC', () => {
+    const q = 'comprar 24 cajas de cerveza a mi proveedor'
+    expect(needsOrdenCompraDetails(q)).toBe(true)
+    expect(parseDistributorActionIntent(q, ctx)).toBeNull()
   })
 
   it('OC sin detalle no es mutación automática', () => {
@@ -52,6 +59,13 @@ describe('llegada OC vs entrega venta', () => {
     const q = 'confirmar llegada OC-001'
     expect(looksLikeCompraLlegadaQuery(q)).toBe(true)
     expect(looksLikeEntregaVentaQuery(q)).toBe(false)
+    const action = parseDistributorActionIntent(q, ctx)
+    expect(action?.type).toBe('confirmar_llegada_distribuidor')
+  })
+
+  it('confirmar ingreso a bodega hoy es llegada de compra', () => {
+    const q = 'confirma que entro hoy a bodega'
+    expect(looksLikeCompraLlegadaQuery(q)).toBe(true)
     const action = parseDistributorActionIntent(q, ctx)
     expect(action?.type).toBe('confirmar_llegada_distribuidor')
   })

@@ -61,6 +61,9 @@ export default function SettingsPage() {
 
   const [username, setUsername] = useState('')
   const [isSuperUser, setIsSuperUser] = useState(false)
+  const [cuentaDeposito, setCuentaDeposito] = useState('')
+  const [bancoDeposito, setBancoDeposito] = useState('')
+  const [titularCuenta, setTitularCuenta] = useState('')
 
   const email = user?.primaryEmailAddress?.emailAddress || ''
   const isSuperEmail = email.toLowerCase() === SUPER_USER_EMAIL.toLowerCase()
@@ -73,6 +76,9 @@ export default function SettingsPage() {
     }
     setUsername(activeProfile.username || '')
     setIsSuperUser(activeProfile.is_super_user || isSuperEmail)
+    setCuentaDeposito(activeProfile.cuenta_deposito ?? '')
+    setBancoDeposito(activeProfile.banco_deposito ?? '')
+    setTitularCuenta(activeProfile.titular_cuenta ?? '')
   }, [activeProfile, user, isSuperEmail])
 
   async function handleSave(e: React.FormEvent) {
@@ -90,6 +96,10 @@ export default function SettingsPage() {
         extra_profiles: activeProfile.extra_profiles || [],
         email,
         onboarding_complete: activeProfile.onboarding_complete,
+        cuenta_deposito: cuentaDeposito.trim() || null,
+        banco_deposito: bancoDeposito.trim() || null,
+        titular_cuenta: titularCuenta.trim() || null,
+        constancia_fiscal_path: activeProfile.constancia_fiscal_path ?? null,
       })
       await reload()
       setSavedAt(new Date())
@@ -427,6 +437,71 @@ export default function SettingsPage() {
                     cursor: 'not-allowed',
                   }}
                 />
+              </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              border: '1px solid var(--hairline)',
+              padding: 24,
+              background: '#fff',
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: '.1em',
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}
+            >
+              Datos para cobro
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: '#888',
+                fontWeight: 500,
+                marginBottom: 16,
+                lineHeight: 1.45,
+              }}
+            >
+              También disponibles desde el menú de cuenta en el canvas (copiar cuenta y constancia).
+            </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div>
+                <label style={label}>Titular de la cuenta</label>
+                <input
+                  type="text"
+                  value={titularCuenta}
+                  onChange={e => setTitularCuenta(e.target.value)}
+                  style={input}
+                  placeholder="Nombre como aparece en el banco"
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={label}>Banco</label>
+                <input
+                  type="text"
+                  value={bancoDeposito}
+                  onChange={e => setBancoDeposito(e.target.value)}
+                  style={input}
+                  placeholder="BBVA, Santander…"
+                />
+              </div>
+              <div>
+                <label style={label}>Cuenta / CLABE</label>
+                <input
+                  type="text"
+                  value={cuentaDeposito}
+                  onChange={e => setCuentaDeposito(e.target.value)}
+                  style={{ ...input, fontFamily: 'ui-monospace, monospace' }}
+                  placeholder="012345678901234567"
+                />
+              </div>
               </div>
             </div>
           </section>

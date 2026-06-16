@@ -113,7 +113,14 @@ export function makeDistributorContext(
         ],
       },
     ],
+    ultima_orden_ingresada: null,
     cxp: { total_por_pagar: 0, proveedores_con_saldo: 0, cuentas: [] },
+    mi_informacion: {
+      titular_cuenta: null,
+      cuenta_deposito: null,
+      banco_deposito: null,
+      tiene_constancia_fiscal: false,
+    },
     ...overrides,
   }
 }

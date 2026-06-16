@@ -163,10 +163,9 @@ export async function finalizarTomaPedido(
     etiqueta_id: primary.id,
     etiqueta_nombre: lineas.length === 1 ? primary.nombre : `${primary.nombre} +${lineas.length - 1}`,
     fecha_entrega: input.fechaEntrega,
-    condicion_pago: input.anticipo
-      ? `anticipo${anticipoMonto != null ? ` $${anticipoMonto.toFixed(2)}` : ''}`
-      : '30 días crédito',
+    condicion_pago: input.anticipo ? 'anticipo' : '30 días crédito',
     anticipo: input.anticipo,
+    anticipo_monto: anticipoMonto,
     notas: JSON.stringify(notas),
     clerk_id: scope.clerk_id,
     profile_type_v2: scope.profile_type_v2,

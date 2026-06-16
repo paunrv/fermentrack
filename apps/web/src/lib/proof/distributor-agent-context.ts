@@ -96,6 +96,18 @@ export type DistributorAgentContext = {
       costo_unitario: number
     }[]
   }[]
+  ultima_orden_ingresada: {
+    id: string
+    numero_orden: string
+    proveedor_nombre: string
+    estado: string
+    fecha_recepcion: string | null
+    items: {
+      producto_nombre: string
+      cantidad_recibida: number | null
+      cantidad_ordenada: number
+    }[]
+  } | null
   cxp: {
     total_por_pagar: number
     proveedores_con_saldo: number
@@ -107,6 +119,13 @@ export type DistributorAgentContext = {
       orden_compra_id: string
       estado: string
     }[]
+  }
+  /** Cuenta de depósito y constancia fiscal del distribuidor (para cobros a clientes). */
+  mi_informacion: {
+    titular_cuenta: string | null
+    cuenta_deposito: string | null
+    banco_deposito: string | null
+    tiene_constancia_fiscal: boolean
   }
 }
 
@@ -120,7 +139,17 @@ export function buildDistributorAgentContext(
   cuentasPorCobrar: CuentaPorCobrarRow[],
   ordenesCompra: OrdenCompraDistribuidorWithItems[] = [],
   cuentasPorPagar: CuentaPorPagarRow[] = [],
-  opts?: { selectedId?: string | null; query?: string | null }
+  opts?: {
+    selectedId?: string | null
+    query?: string | null
+    ultimaOrdenIngresada?: OrdenCompraDistribuidorWithItems | null
+    miInformacion?: {
+      titular_cuenta?: string | null
+      cuenta_deposito?: string | null
+      banco_deposito?: string | null
+      constancia_fiscal_path?: string | null
+    }
+  }
 ): DistributorAgentContext {
   const activos = pedidos.filter(p =>
     ['confirmado', 'preparando', 'en_ruta', 'borrador'].includes(p.estado)
@@ -239,6 +268,20 @@ export function buildDistributorAgentContext(
           costo_unitario: Number(it.costo_unitario),
         })),
       })),
+    ultima_orden_ingresada: opts?.ultimaOrdenIngresada
+      ? {
+          id: opts.ultimaOrdenIngresada.id,
+          numero_orden: opts.ultimaOrdenIngresada.numero_orden,
+          proveedor_nombre: opts.ultimaOrdenIngresada.proveedor_nombre,
+          estado: opts.ultimaOrdenIngresada.estado,
+          fecha_recepcion: opts.ultimaOrdenIngresada.fecha_recepcion,
+          items: (opts.ultimaOrdenIngresada.items_orden_compra_distribuidor ?? []).map(it => ({
+            producto_nombre: it.producto_nombre,
+            cantidad_recibida: it.cantidad_recibida,
+            cantidad_ordenada: it.cantidad_ordenada,
+          })),
+        }
+      : null,
     cxp: {
       total_por_pagar: totalPorPagar,
       proveedores_con_saldo: cxpActivas.length,
@@ -250,6 +293,12 @@ export function buildDistributorAgentContext(
         orden_compra_id: c.orden_compra_id,
         estado: c.estado,
       })),
+    },
+    mi_informacion: {
+      titular_cuenta: opts?.miInformacion?.titular_cuenta?.trim() || null,
+      cuenta_deposito: opts?.miInformacion?.cuenta_deposito?.trim() || null,
+      banco_deposito: opts?.miInformacion?.banco_deposito?.trim() || null,
+      tiene_constancia_fiscal: Boolean(opts?.miInformacion?.constancia_fiscal_path),
     },
   }
 }

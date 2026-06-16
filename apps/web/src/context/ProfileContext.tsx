@@ -16,6 +16,10 @@ import {
   type ProfileScope,
 } from '@/lib/supabase'
 import { resolveDistribuidorScopeClerkId } from '@/lib/supabase/distribuidor'
+import {
+  fetchMiInformacionProfile,
+  mergeMiInformacionIntoProfile,
+} from '@/lib/proof/profile-mi-informacion'
 import { createSupabaseBrowserClientWithToken } from '@/utils/supabase/browser'
 
 const STORAGE_KEY = 'proof_active_profile'
@@ -29,7 +33,7 @@ interface ProfileContextValue {
   activeProfile: Profile | null
   scope: ProfileScope | null
   switchProfile: (type: ExtraProfile) => Promise<void>
-  reload: () => Promise<void>
+  reload: (opts?: { silent?: boolean }) => Promise<void>
 }
 
 const ProfileContext = createContext<ProfileContextValue | null>(null)
@@ -141,7 +145,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       )
     }
     console.log('[ProfileContext] active profile', found.profile_type_v2)
-    setActiveProfile(found)
+    let active = found
+    if (found.profile_type_v2 === 'distributor') {
+      try {
+        const scopeId = await resolveDistribuidorScopeClerkId(sb, user.id)
+        const scopeRow = await fetchMiInformacionProfile(sb, scopeId)
+        if (scopeRow) active = mergeMiInformacionIntoProfile(found, scopeRow)
+      } catch (err) {
+        console.warn('[ProfileContext] mi informacion en load', err)
+      }
+    }
+    setActiveProfile(active)
     writeStoredType(found.profile_type_v2)
     try {
       await syncClerkProfileClaim(user, found.profile_type_v2, getToken)
@@ -250,7 +264,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [user?.id, activeProfile?.profile_type_v2, getToken, activeProfile])
+  }, [user?.id, activeProfile?.profile_type_v2, getToken])
 
   const switchProfile = useCallback(
     async (type: ExtraProfile) => {
@@ -282,14 +296,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       activeProfile,
       scope,
       switchProfile,
-      reload: async () => {
-        setLoading(true)
-        setProfilesResolved(false)
+      reload: async (opts?: { silent?: boolean }) => {
+        const silent = opts?.silent ?? false
+        if (!silent) {
+          setLoading(true)
+          setProfilesResolved(false)
+        }
         try {
           const done = await load()
-          if (done) setProfilesResolved(true)
+          if (done && !silent) setProfilesResolved(true)
         } finally {
-          setLoading(false)
+          if (!silent) setLoading(false)
         }
       },
     }),

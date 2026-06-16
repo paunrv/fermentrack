@@ -9,6 +9,15 @@ export const CATEGORIA_LIQUIDO_OPTIONS: { value: CategoriaLiquido; label: string
   { value: 'otro', label: 'Otro' },
 ]
 
+/** Categorías núcleo del distribuidor (sin "otro"). */
+export const CORE_CATEGORIA_LIQUIDO: CategoriaLiquido[] = [
+  'mezcal',
+  'vino',
+  'cerveza',
+  'destilado',
+  'gin',
+]
+
 export const CATEGORIA_LIQUIDO_BADGE: Record<
   CategoriaLiquido,
   { bg: string; color: string }
@@ -128,4 +137,44 @@ export function filterSkusByCategoriaQuery<T extends SkuCategoriaInput>(
     categoria,
     items: skus.filter(s => resolveSkuCategoriaLiquido(s) === categoria),
   }
+}
+
+export type OrdenCompraItemConSku = {
+  producto_nombre: string
+  sku_id?: string | null
+  skus?:
+    | {
+        nombre?: string | null
+        productor?: string | null
+        categoria_liquido?: CategoriaLiquido | string | null
+      }
+    | null
+}
+
+export function resolveOrdenCompraItemCategoria(
+  item: OrdenCompraItemConSku
+): CategoriaLiquido {
+  if (item.skus) {
+    return resolveSkuCategoriaLiquido({
+      nombre: item.skus.nombre ?? item.producto_nombre,
+      productor: item.skus.productor,
+      categoria_liquido: item.skus.categoria_liquido,
+    })
+  }
+  return resolveSkuCategoriaLiquido({ nombre: item.producto_nombre })
+}
+
+export function uniqueCategoriasOrdenCompraItems(
+  items: OrdenCompraItemConSku[]
+): CategoriaLiquido[] {
+  const seen = new Set<CategoriaLiquido>()
+  const out: CategoriaLiquido[] = []
+  for (const item of items) {
+    const c = resolveOrdenCompraItemCategoria(item)
+    if (!seen.has(c)) {
+      seen.add(c)
+      out.push(c)
+    }
+  }
+  return out
 }

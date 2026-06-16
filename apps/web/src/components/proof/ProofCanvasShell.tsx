@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DisplayCards } from '@/lib/proof/agent-response-types'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
+import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
 import { PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
 import {
   ProofChatThread,
@@ -14,6 +15,9 @@ import { ProofResultsZone, focusResultsZone } from '@/components/proof/ProofResu
 
 export type { ProofMessage }
 export type { ProofQuickAction }
+export type { ProofModeAction }
+export type { ProofHubLensAction }
+export type { ProofBodegaLensAction } from '@/lib/proof/proof-canvas-copy'
 
 const ANALYZING = ['PROOF analizando…', 'PROOF analizando tu operación…']
 
@@ -26,6 +30,10 @@ export function ProofCanvasShell({
   error,
   onSend,
   quickActions,
+  modeActions,
+  compraLensActions,
+  ventaLensActions,
+  bodegaLensActions,
   queryFromUrl,
 }: {
   accent: string
@@ -36,11 +44,16 @@ export function ProofCanvasShell({
   error?: string | null
   onSend: (message: string, conversation: ProofMessage[]) => void
   quickActions?: ProofQuickAction[]
+  modeActions?: ProofModeAction[]
+  compraLensActions?: ProofHubLensAction[]
+  ventaLensActions?: ProofHubLensAction[]
+  bodegaLensActions?: ProofHubLensAction[]
   queryFromUrl?: string | null
 }) {
   const [messages, setMessages] = useState<ProofMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
+  const [activeSubHub, setActiveSubHub] = useState<ProofSubHub | null>(null)
   const pendingSendRef = useRef(0)
   const consumedUrlQueryRef = useRef<string | null>(null)
   const lastQuickActionRef = useRef(false)
@@ -186,6 +199,24 @@ export function ProofCanvasShell({
         messages={messages}
         isTyping={isTyping}
         showWelcome={showWelcome}
+        modeActions={modeActions}
+        compraLensActions={compraLensActions}
+        ventaLensActions={ventaLensActions}
+        bodegaLensActions={bodegaLensActions}
+        activeSubHub={activeSubHub}
+        onModeAction={action => {
+          setActiveSubHub(null)
+          sendPrompt(action.message, true)
+        }}
+        onCompraHubOpen={() => setActiveSubHub('compra')}
+        onVentaHubOpen={() => setActiveSubHub('venta')}
+        onBodegaHubOpen={() => setActiveSubHub('bodega')}
+        onSubHubClose={() => setActiveSubHub(null)}
+        onHubLensAction={(msg, hub) => {
+          setActiveSubHub(hub)
+          sendPrompt(msg, true)
+        }}
+        modeActionsDisabled={isTyping}
       />
 
       <ProofResultsZone
@@ -201,6 +232,14 @@ export function ProofCanvasShell({
         onInputChange={setInputValue}
         onSubmit={handleSubmit}
         onQuickAction={msg => sendPrompt(msg, true)}
+        compraLensActions={compraLensActions}
+        ventaLensActions={ventaLensActions}
+        bodegaLensActions={bodegaLensActions}
+        activeSubHub={activeSubHub}
+        onHubLensAction={(msg, hub) => {
+          setActiveSubHub(hub)
+          sendPrompt(msg, true)
+        }}
         quickActions={quickActions ?? []}
         disabled={isTyping}
         showHint={showHint}

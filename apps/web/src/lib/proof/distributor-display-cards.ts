@@ -78,6 +78,8 @@ function isDataQuery(q: string): boolean {
     q.includes('quiebre') ||
     q.includes('sin stock') ||
     q.includes('inventario') ||
+    q.includes('bodega') ||
+    q.includes('que hay') ||
     q.includes('pedidos pendientes') ||
     q.includes('por entregar') ||
     q.includes('por cobrar') ||

@@ -161,6 +161,114 @@ function resolveSkuByNombre(
   return best
 }
 
+/** Inicio explícito de pedido de venta a cliente (no compra a proveedor). */
+export function looksLikeIniciarPedidoVentaQuery(q: string): boolean {
+  if (looksLikeEditarSkuQuery(q)) return false
+  const n = norm(q)
+  if (n.includes('compra') || n.includes('proveedor') || n.includes('orden de compra')) {
+    return false
+  }
+  return (
+    (n.includes('nuevo') && n.includes('pedido')) ||
+    (n.includes('registrar') && n.includes('pedido')) ||
+    (n.includes('quiero') && n.includes('pedido'))
+  )
+}
+
+export function isPedidoVentaFlowActive(
+  conversation: AgentConversationTurn[] | undefined
+): boolean {
+  if (!conversation?.length) return false
+
+  for (let i = conversation.length - 1; i >= 0; i--) {
+    const turn = conversation[i]!
+    if (turn.role === 'user' && looksLikeCrearOrdenCompraQueryFromPedidoModule(turn.content)) {
+      return false
+    }
+    if (turn.role === 'user' && looksLikeIniciarPedidoVentaQuery(turn.content)) {
+      return true
+    }
+  }
+
+  for (let i = conversation.length - 1; i >= 0; i--) {
+    const turn = conversation[i]!
+    if (
+      turn.role === 'agent' &&
+      /pedido de venta|vender a tu cliente|registrar un pedido|registrar un pedido de venta/i.test(
+        turn.content
+      ) &&
+      (/cantidad|producto|cliente/i.test(turn.content) || /ejemplo:/i.test(turn.content))
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+export function isPedidoVentaTurn(
+  query: string,
+  conversation?: AgentConversationTurn[]
+): boolean {
+  if (looksLikeIniciarPedidoVentaQuery(query)) return true
+  if (
+    /^\d[\d,]*\s*(cajas?|latas?|botellas?|unidades?)\s+de\s+/i.test(query.trim()) &&
+    isPedidoVentaFlowActive(conversation)
+  ) {
+    return true
+  }
+  if (isPedidoVentaFlowActive(conversation) && isConfirmationReply(query)) {
+    return true
+  }
+  return false
+}
+
+function looksLikeCrearOrdenCompraQueryFromPedidoModule(q: string): boolean {
+  const n = norm(q)
+  return (
+    n.includes('orden de compra') ||
+    n.includes('crear orden') ||
+    (n.includes('comprar') && !n.includes('cliente')) ||
+    (n.includes('quiero') && n.includes('compra') && !n.includes('pedido para'))
+  )
+}
+
+function extractPartialFromQtyLine(
+  query: string,
+  ctx: DistributorAgentContext
+): PartialTomaPedidoDraft | null {
+  const raw = query.trim()
+  const m = raw.match(/^(\d[\d,]*)\s*(cajas?|latas?|botellas?|unidades?)\s+de\s+(.+)$/i)
+  if (!m?.[1] || !m[2] || !m[3]) return null
+
+  const cantidad = Number(m[1].replace(/,/g, ''))
+  if (!Number.isFinite(cantidad) || cantidad <= 0) return null
+
+  let rest = m[3].trim()
+  let cliente: string | null = null
+  const aFinal = rest.match(/^(.+?)\s+a\s+([a-záéíóúñ][a-záéíóúñ0-9\s\-'&.]{2,60})$/i)
+  if (aFinal?.[1] && aFinal[2]) {
+    cliente = stripClienteSuffix(aFinal[2].trim())
+    rest = aFinal[1].trim()
+  }
+
+  const etiqueta = rest.trim()
+  if (!etiqueta) return null
+
+  const sku = resolveSkuByNombre(etiqueta, ctx)
+  const anticipoInfo = parseAnticipoFromQuery(raw)
+  return {
+    cantidad,
+    unidad: parseUnidadEntrega(m[2]),
+    etiqueta,
+    cliente,
+    sku_id: sku?.id ?? null,
+    sku_nombre: sku?.nombre ?? null,
+    stock_disponible: sku?.stock_disponible ?? null,
+    anticipo: anticipoInfo.anticipo,
+    anticipo_monto: anticipoInfo.anticipo_monto,
+  }
+}
+
 export function looksLikeTomaPedidoQuery(q: string): boolean {
   if (looksLikeEditarSkuQuery(q)) return false
   const n = norm(q)
@@ -211,6 +319,9 @@ export function extractPartialTomaPedidoDraft(
   query: string,
   ctx: DistributorAgentContext
 ): PartialTomaPedidoDraft | null {
+  const fromLine = extractPartialFromQtyLine(query, ctx)
+  if (fromLine) return fromLine
+
   const q = norm(query)
   const cantidad = parseCantidadEntrega(q)
   const etiqueta = parseProductoEntrega(q)

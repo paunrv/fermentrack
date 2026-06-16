@@ -23,7 +23,9 @@ function parseSseChunk(
     accionHref?: string
     refreshLoteId?: string | null
     refreshPedidoId?: string | null
+    refreshOcId?: string | null
     openSkuImagePicker?: string | null
+    refreshProfile?: boolean
   }) => void,
   onError: (message: string) => void
 ): boolean {
@@ -83,6 +85,8 @@ export function useProofContextBar(options: {
   const [accionHref, setAccionHref] = useState(options.fallback?.accionHref ?? '/dashboard/agente')
   const [refreshLoteId, setRefreshLoteId] = useState<string | null>(null)
   const [refreshPedidoId, setRefreshPedidoId] = useState<string | null>(null)
+  const [refreshOcId, setRefreshOcId] = useState<string | null>(null)
+  const [refreshProfile, setRefreshProfile] = useState(false)
   const [openSkuImagePicker, setOpenSkuImagePicker] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -138,6 +142,8 @@ export function useProofContextBar(options: {
     setError(null)
     setDisplayCards(null)
     setOpenSkuImagePicker(null)
+    setRefreshOcId(null)
+    setRefreshProfile(false)
     setChatResponse('PROOF analizando…')
 
     console.log('[useProofContextBar] fetch', {
@@ -180,7 +186,9 @@ export function useProofContextBar(options: {
           accionHref?: string
           refreshLoteId?: string | null
           refreshPedidoId?: string | null
+          refreshOcId?: string | null
           openSkuImagePicker?: string | null
+          refreshProfile?: boolean
         } | null = null
 
         const applyDone = (payload: NonNullable<typeof pendingDone>) => {
@@ -192,7 +200,9 @@ export function useProofContextBar(options: {
           if (payload.accionHref) setAccionHref(payload.accionHref)
           if (payload.refreshLoteId) setRefreshLoteId(payload.refreshLoteId)
           if (payload.refreshPedidoId) setRefreshPedidoId(payload.refreshPedidoId)
+          if (payload.refreshOcId) setRefreshOcId(payload.refreshOcId)
           if (payload.openSkuImagePicker) setOpenSkuImagePicker(payload.openSkuImagePicker)
+          if (payload.refreshProfile) setRefreshProfile(true)
         }
 
         const handleDone = (payload: NonNullable<typeof pendingDone>) => {
@@ -286,6 +296,7 @@ export function useProofContextBar(options: {
     options.profileType,
     options.requestId,
     options.hints?.query,
+    options.hints?.conversation?.length,
     options.enabled,
   ])
 
@@ -299,6 +310,8 @@ export function useProofContextBar(options: {
     error,
     refreshLoteId,
     refreshPedidoId,
+    refreshOcId,
     openSkuImagePicker,
+    refreshProfile,
   }
 }

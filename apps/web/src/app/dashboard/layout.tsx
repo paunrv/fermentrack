@@ -23,6 +23,7 @@ import {
 import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
 import { useIsMobile } from '@/hooks/useBreakpoint'
 import { MobileBottomNav, MOBILE_BOTTOM_NAV_HEIGHT } from '@/components/proof/MobileBottomNav'
+import { ProofDatosCobroSheet } from '@/components/proof/ProofDatosCobroSheet'
 
 type Role = ExtraProfile | 'producer'
 
@@ -100,6 +101,15 @@ const ICONS = {
     <>
       <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
       <circle cx="12" cy="13" r="4" />
+    </>
+  ),
+  infoPersonal: ic(
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <circle cx="9" cy="11" r="2.5" />
+      <path d="M6 17v-.5a3 3 0 0 1 6 0V17" />
+      <path d="M14 9h5" />
+      <path d="M14 13h4" />
     </>
   ),
 }
@@ -203,6 +213,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { activeProfile, allProfiles, loading, profilesResolved } = useProfile()
   const [ask, setAsk] = useState('')
   const [membresia, setMembresia] = useState<DestMembresia>('basico')
+  const [datosCobroOpen, setDatosCobroOpen] = useState(false)
+  const [datosCobroStrip, setDatosCobroStrip] = useState(false)
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isCanvas = path === '/dashboard'
@@ -273,6 +285,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     router.push('/dashboard/agente')
   }
+
+  function openDatosCobroSheet() {
+    setDatosCobroStrip(false)
+    setDatosCobroOpen(true)
+  }
+
+  function toggleDatosCobroStrip() {
+    setDatosCobroOpen(false)
+    setDatosCobroStrip(v => !v)
+  }
+
+  const datosCobroHeaderExpanded = isCanvas && datosCobroStrip
+  const canvasContentTop = isCanvas ? 64 + (datosCobroHeaderExpanded ? 88 : 0) : 0
 
   const showInnerHeader =
     !isCanvas &&
@@ -458,17 +483,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {MEMBRESIA_LABEL[membresia]}
                 </span>
               )}
+              {isDistributor && (
+                <button
+                  type="button"
+                  onClick={toggleDatosCobroStrip}
+                  aria-expanded={datosCobroStrip}
+                  aria-label="Información personal"
+                  title="Información personal"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 34,
+                    height: 34,
+                    padding: 0,
+                    borderRadius: 8,
+                    border: datosCobroStrip
+                      ? `1px solid ${theme.accent}`
+                      : '0.5px solid var(--hairline)',
+                    background: datosCobroStrip
+                      ? `color-mix(in srgb, ${theme.accent} 12%, transparent)`
+                      : 'transparent',
+                    color: datosCobroStrip ? theme.accent : 'var(--fg-2)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {ICONS.infoPersonal}
+                </button>
+              )}
               <AvatarMenu
                 initials={initials}
                 imageUrl={user?.imageUrl}
                 accent={theme.accent}
                 canSwitchProfile={allProfiles.length > 1}
                 onSwitchProfile={() => router.push('/profile-select')}
+                onDatosCobro={openDatosCobroSheet}
                 onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
               />
             </div>
           </header>
         )}
+
+        {datosCobroHeaderExpanded && (
+          <ProofDatosCobroSheet
+            open
+            variant="strip"
+            accent={theme.accent}
+            profile={activeProfile}
+            onClose={() => setDatosCobroStrip(false)}
+          />
+        )}
+
+        <ProofDatosCobroSheet
+          open={datosCobroOpen}
+          variant="sheet"
+          accent={theme.accent}
+          profile={activeProfile}
+          onClose={() => setDatosCobroOpen(false)}
+        />
 
         {showInnerHeader && (
           <header
@@ -530,6 +602,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 accent={theme.accent}
                 canSwitchProfile={allProfiles.length > 1}
                 onSwitchProfile={() => router.push('/profile-select')}
+                onDatosCobro={openDatosCobroSheet}
                 onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
               />
             </div>
@@ -558,7 +631,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{
             flex: 1,
             minHeight: 0,
-            paddingTop: isCanvas ? 64 : 0,
+            paddingTop: canvasContentTop,
             paddingBottom: showMobileNav
               ? `calc(${MOBILE_BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
               : 0,
@@ -688,6 +761,7 @@ function AvatarMenu({
   accent,
   canSwitchProfile,
   onSwitchProfile,
+  onDatosCobro,
   onSignOut,
 }: {
   initials: string
@@ -695,6 +769,7 @@ function AvatarMenu({
   accent: string
   canSwitchProfile: boolean
   onSwitchProfile: () => void
+  onDatosCobro?: () => void
   onSignOut: () => void
 }) {
   const [open, setOpen] = useState(false)
@@ -775,6 +850,15 @@ function AvatarMenu({
               }}
             />
           )}
+          {onDatosCobro ? (
+            <DropdownItem
+              label="Datos para cobro"
+              onClick={() => {
+                setOpen(false)
+                onDatosCobro()
+              }}
+            />
+          ) : null}
           <DropdownItem
             label="Configuración"
             href="/dashboard/settings"
