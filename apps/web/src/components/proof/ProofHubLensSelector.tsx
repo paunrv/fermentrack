@@ -94,6 +94,58 @@ function LensIcon({
     )
   }
 
+  if (hub === 'wm_ticket') {
+    if (id === 'subir') {
+      return (
+        <span style={shell} aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75">
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+          </svg>
+        </span>
+      )
+    }
+    return (
+      <span style={shell} aria-hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" strokeLinecap="round" />
+        </svg>
+      </span>
+    )
+  }
+
+  if (hub === 'wm_bodega') {
+    return (
+      <span style={shell} aria-hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75">
+          <path d="M8 22h8M12 15v7" strokeLinecap="round" />
+          <path d="M7 10c0-4 2.5-7 5-7s5 3 5 7v5H7v-5z" />
+        </svg>
+      </span>
+    )
+  }
+
+  if (hub === 'wm_agenda') {
+    if (id === 'calendario') {
+      return (
+        <span style={shell} aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
+          </svg>
+        </span>
+      )
+    }
+    return (
+      <span style={shell} aria-hidden>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.75">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 2" strokeLinecap="round" />
+        </svg>
+      </span>
+    )
+  }
+
   if (id === 'fisica') {
     return (
       <span style={shell} aria-hidden>
@@ -136,6 +188,18 @@ const HUB_COPY: Record<ProofSubHub, { title: string; aria: string }> = {
     title: 'Estado de bodega — ¿qué quieres revisar?',
     aria: 'Vista de bodega',
   },
+  wm_ticket: {
+    title: 'Tickets y documentos — ¿qué necesitas?',
+    aria: 'Acciones de tickets y gastos',
+  },
+  wm_bodega: {
+    title: 'Tu bodega — ¿qué quieres consultar?',
+    aria: 'Consulta de bodega winemaker',
+  },
+  wm_agenda: {
+    title: 'Agenda y tiempos — ¿qué revisamos?',
+    aria: 'Agenda de la bodega',
+  },
 }
 
 export function ProofHubLensSelector({
@@ -151,14 +215,15 @@ export function ProofHubLensSelector({
   hub: ProofSubHub
   actions: ProofHubLensAction[]
   disabled?: boolean
-  onSelect: (message: string) => void
+  onSelect: (action: ProofHubLensAction) => void
   onBack?: () => void
   compact?: boolean
 }) {
   if (actions.length === 0) return null
 
   const copy = HUB_COPY[hub]
-  const columns = hub === 'compra' ? 2 : 3
+  const columns =
+    hub === 'compra' || hub === 'wm_ticket' || hub === 'wm_agenda' ? 2 : 3
 
   return (
     <div
@@ -235,7 +300,7 @@ export function ProofHubLensSelector({
             type="button"
             className="proof-hub-lens-card"
             disabled={disabled}
-            onClick={() => onSelect(action.message)}
+            onClick={() => onSelect(action)}
           >
             <LensIcon id={action.id} accent={accent} hub={hub} />
             <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>

@@ -2,7 +2,8 @@
 
 import { useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import type { ProofHubLensAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
+import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
+import { lensActionsForSubHub } from '@/lib/proof/proof-canvas-copy'
 import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
 import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
 
@@ -42,9 +43,7 @@ export function ProofComposer({
   onSubmit,
   onQuickAction,
   quickActions,
-  compraLensActions,
-  ventaLensActions,
-  bodegaLensActions,
+  hubLenses,
   activeSubHub,
   onHubLensAction,
   disabled,
@@ -57,24 +56,20 @@ export function ProofComposer({
   onSubmit: (e: React.FormEvent) => void
   onQuickAction: (message: string) => void
   quickActions: ProofQuickAction[]
-  compraLensActions?: ProofHubLensAction[]
-  ventaLensActions?: ProofHubLensAction[]
-  bodegaLensActions?: ProofHubLensAction[]
+  hubLenses?: Partial<Record<ProofSubHub, ProofHubLensAction[]>>
   activeSubHub?: ProofSubHub | null
-  onHubLensAction?: (message: string, hub: ProofSubHub) => void
+  onHubLensAction?: (action: ProofHubLensAction, hub: ProofSubHub) => void
   disabled: boolean
   showHint: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const hintKey = profileType === 'distiller' ? 'distiller' : 'distributor'
-  const hubLensActions =
-    activeSubHub === 'compra'
-      ? compraLensActions
-      : activeSubHub === 'venta'
-        ? ventaLensActions
-        : activeSubHub === 'bodega'
-          ? bodegaLensActions
-          : undefined
+  const hintKey =
+    profileType === 'distiller'
+      ? 'distiller'
+      : profileType === 'winemaker'
+        ? 'winemaker'
+        : 'distributor'
+  const hubLensActions = lensActionsForSubHub(activeSubHub, hubLenses ?? {})
 
   return (
     <div
@@ -109,7 +104,7 @@ export function ProofComposer({
             actions={hubLensActions!}
             disabled={disabled}
             compact
-            onSelect={msg => onHubLensAction(msg, activeSubHub)}
+            onSelect={action => onHubLensAction(action, activeSubHub)}
           />
         </div>
       ) : null}

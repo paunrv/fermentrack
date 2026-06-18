@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
+import { buildWinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 import { throwIfSupabaseError } from '@/lib/proof/proof-error'
 import {
   buildDistributorAgentContext,
@@ -19,6 +20,13 @@ import {
   fetchUltimaOrdenCompraIngresada,
   resolveDistribuidorScopeClerkId,
 } from '@/lib/supabase/distribuidor'
+import {
+  fetchDocuments,
+  fetchProductionCosts,
+  fetchSuppliers,
+  fetchWineLots,
+  fetchWinemakerSummary,
+} from '@/lib/supabase/winemaker'
 import type { ProfileScope } from '@/lib/supabase'
 import type { CorridaRow, LoteRow, ViajeRow } from '@/lib/proof/destilador-types'
 import type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-context-types'
@@ -209,6 +217,37 @@ export async function loadIsolatedAgentContext(
       ...datos,
       clerk_id: clerkId,
       profile_type: 'distiller',
+      ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
+    }
+  }
+
+  if (profileType === 'winemaker') {
+    const [lotes, documents, costs, suppliers, summary] = await Promise.all([
+      fetchWineLots(sb, clerkId, { limit: 500 }).catch(() => []),
+      fetchDocuments(sb, clerkId, { limit: 100, withLines: true }).catch(() => []),
+      fetchProductionCosts(sb, clerkId, { limit: 100 }).catch(() => []),
+      fetchSuppliers(sb, clerkId, { limit: 200 }).catch(() => []),
+      fetchWinemakerSummary(sb, clerkId).catch(() => ({
+        lotesTotal: 0,
+        lotesActivos: 0,
+        documentosTotal: 0,
+        gastosMesMxn: 0,
+        gastosBodegaMxn: 0,
+        litrosEnProceso: 0,
+      })),
+    ])
+    const datos = buildWinemakerAgentContext(lotes, documents, costs, suppliers, summary, {
+      selectedId,
+      query,
+      selectedDocumentId:
+        typeof hints?.pantalla?.documentId === 'string'
+          ? hints.pantalla.documentId
+          : null,
+    })
+    return {
+      ...datos,
+      clerk_id: clerkId,
+      profile_type: 'winemaker',
       ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
     }
   }

@@ -3,7 +3,12 @@
 import { useCallback, useEffect, useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
 import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
-import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import {
+  lensActionsForSubHub,
+  subHubForModeAction,
+  PROOF_CANVAS_CONTENT_WIDTH,
+  PROOF_COPIES,
+} from '@/lib/proof/proof-canvas-copy'
 import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
 import { ProofModeSelector } from '@/components/proof/ProofModeSelector'
 
@@ -47,15 +52,11 @@ export function ProofChatThread({
   isTyping,
   showWelcome,
   modeActions,
-  compraLensActions,
-  ventaLensActions,
-  bodegaLensActions,
+  hubLenses,
   activeSubHub,
   onModeAction,
   onHubLensAction,
-  onCompraHubOpen,
-  onVentaHubOpen,
-  onBodegaHubOpen,
+  onSubHubOpen,
   onSubHubClose,
   modeActionsDisabled,
 }: {
@@ -65,15 +66,11 @@ export function ProofChatThread({
   isTyping: boolean
   showWelcome: boolean
   modeActions?: ProofModeAction[]
-  compraLensActions?: ProofHubLensAction[]
-  ventaLensActions?: ProofHubLensAction[]
-  bodegaLensActions?: ProofHubLensAction[]
+  hubLenses?: Partial<Record<ProofSubHub, ProofHubLensAction[]>>
   activeSubHub?: ProofSubHub | null
   onModeAction?: (action: ProofModeAction) => void
-  onHubLensAction?: (message: string, hub: ProofSubHub) => void
-  onCompraHubOpen?: () => void
-  onVentaHubOpen?: () => void
-  onBodegaHubOpen?: () => void
+  onHubLensAction?: (action: ProofHubLensAction, hub: ProofSubHub) => void
+  onSubHubOpen?: (hub: ProofSubHub) => void
   onSubHubClose?: () => void
   modeActionsDisabled?: boolean
 }) {
@@ -90,19 +87,17 @@ export function ProofChatThread({
     scrollToEnd()
   }, [messages.length, isTyping, scrollToEnd])
 
-  const welcomeKey = profileType === 'distiller' ? 'distiller' : 'distributor'
+  const welcomeKey =
+    profileType === 'distiller'
+      ? 'distiller'
+      : profileType === 'winemaker'
+        ? 'winemaker'
+        : 'distributor'
   const welcomeText = PROOF_COPIES.welcome[welcomeKey]
   const emptyState = showWelcome && messages.length === 0 && !isTyping
   const showModeSelector =
     emptyState && !activeSubHub && (modeActions?.length ?? 0) > 0 && Boolean(onModeAction)
-  const hubActions =
-    activeSubHub === 'compra'
-      ? compraLensActions
-      : activeSubHub === 'venta'
-        ? ventaLensActions
-        : activeSubHub === 'bodega'
-          ? bodegaLensActions
-          : undefined
+  const hubActions = lensActionsForSubHub(activeSubHub, hubLenses ?? {})
   const showSubHub =
     emptyState &&
     activeSubHub != null &&
@@ -174,16 +169,9 @@ export function ProofChatThread({
                 disabled={modeActionsDisabled}
                 activeSubHub={activeSubHub}
                 onSelect={action => {
-                  if (action.compraHub) {
-                    onCompraHubOpen?.()
-                    return
-                  }
-                  if (action.ventaHub) {
-                    onVentaHubOpen?.()
-                    return
-                  }
-                  if (action.bodegaHub) {
-                    onBodegaHubOpen?.()
+                  const hub = subHubForModeAction(action)
+                  if (hub) {
+                    onSubHubOpen?.(hub)
                     return
                   }
                   onModeAction?.(action)
@@ -196,7 +184,7 @@ export function ProofChatThread({
                 hub={activeSubHub}
                 actions={hubActions!}
                 disabled={modeActionsDisabled}
-                onSelect={msg => onHubLensAction?.(msg, activeSubHub)}
+                onSelect={action => onHubLensAction?.(action, activeSubHub)}
                 onBack={onSubHubClose}
               />
             ) : null}

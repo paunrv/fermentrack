@@ -1,10 +1,18 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { DisplayCards } from '@/lib/proof/agent-response-types'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
-import { PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import type {
+  ProofHubLensAction,
+  ProofModeAction,
+  ProofSubHub,
+} from '@/lib/proof/proof-canvas-copy'
+import {
+  lensActionsForSubHub,
+  PROOF_COPIES,
+} from '@/lib/proof/proof-canvas-copy'
 import {
   ProofChatThread,
   newProofMessageId,
@@ -29,11 +37,11 @@ export function ProofCanvasShell({
   loading,
   error,
   onSend,
+  onTicketFile,
+  onDeleteCard,
   quickActions,
   modeActions,
-  compraLensActions,
-  ventaLensActions,
-  bodegaLensActions,
+  hubLenses,
   queryFromUrl,
 }: {
   accent: string
@@ -43,13 +51,16 @@ export function ProofCanvasShell({
   loading?: boolean
   error?: string | null
   onSend: (message: string, conversation: ProofMessage[]) => void
+  /** Winemaker: archivo de ticket seleccionado (fase OCR posterior) */
+  onTicketFile?: (file: File, conversation: ProofMessage[]) => void | Promise<void>
+  /** Dev/evaluación: eliminar tarjeta de resultados (winemaker documentos) */
+  onDeleteCard?: (itemId: string) => void | Promise<void>
   quickActions?: ProofQuickAction[]
   modeActions?: ProofModeAction[]
-  compraLensActions?: ProofHubLensAction[]
-  ventaLensActions?: ProofHubLensAction[]
-  bodegaLensActions?: ProofHubLensAction[]
+  hubLenses?: Partial<Record<ProofSubHub, ProofHubLensAction[]>>
   queryFromUrl?: string | null
 }) {
+  const router = useRouter()
   const [messages, setMessages] = useState<ProofMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -58,6 +69,7 @@ export function ProofCanvasShell({
   const consumedUrlQueryRef = useRef<string | null>(null)
   const lastQuickActionRef = useRef(false)
   const agentStartedRef = useRef(false)
+  const ticketFileRef = useRef<HTMLInputElement>(null)
   const agentLoading = Boolean(loading)
 
   const hasUserMessage = messages.some(m => m.role === 'user')
@@ -86,6 +98,24 @@ export function ProofCanvasShell({
     [isTyping, messages, onSend]
   )
 
+  const handleLensAction = useCallback(
+    (action: ProofHubLensAction, hub: ProofSubHub) => {
+      setActiveSubHub(hub)
+      if (action.href) {
+        router.push(action.href)
+        return
+      }
+      if (action.pickTicketFile) {
+        ticketFileRef.current?.click()
+        return
+      }
+      if (action.message.trim()) {
+        sendPrompt(action.message, true)
+      }
+    },
+    [router, sendPrompt]
+  )
+
   useEffect(() => {
     const q = queryFromUrl?.trim()
     if (!q || consumedUrlQueryRef.current === q) return
@@ -102,7 +132,6 @@ export function ProofCanvasShell({
       return
     }
 
-    // El hook aún no arrancó el fetch — no marcar como fallido todavía
     if (!agentStartedRef.current) {
       setIsTyping(true)
       return
@@ -180,6 +209,46 @@ export function ProofCanvasShell({
     sendPrompt(inputValue, false)
   }
 
+  function handleTicketFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    const userMsg: ProofMessage = {
+      id: newProofMessageId(),
+      role: 'user',
+      content: `Subí ticket: ${file.name}`,
+    }
+    const nextConversation = [...messages, userMsg]
+    setMessages(nextConversation)
+    setIsTyping(true)
+    agentStartedRef.current = false
+    pendingSendRef.current += 1
+
+    if (onTicketFile) {
+      void Promise.resolve(onTicketFile(file, nextConversation)).catch((err: unknown) => {
+        pendingSendRef.current = 0
+        setIsTyping(false)
+        const detail =
+          err instanceof Error && err.message.trim()
+            ? err.message.trim()
+            : 'No se pudo subir el ticket. Intenta de nuevo.'
+        setMessages(prev => [
+          ...prev,
+          {
+            id: newProofMessageId(),
+            role: 'system',
+            content: detail,
+          },
+        ])
+      })
+    } else {
+      onSend('quiero registrar este ticket de compra', nextConversation)
+    }
+  }
+
+  const resolvedHubLenses = hubLenses ?? {}
+
   return (
     <div
       className="proof-canvas-shell"
@@ -193,6 +262,14 @@ export function ProofCanvasShell({
         '--proof-accent': accent,
       } as React.CSSProperties}
     >
+      <input
+        ref={ticketFileRef}
+        type="file"
+        accept="image/*,.pdf,application/pdf"
+        style={{ display: 'none' }}
+        onChange={handleTicketFileChange}
+      />
+
       <ProofChatThread
         accent={accent}
         profileType={profileType}
@@ -200,22 +277,15 @@ export function ProofCanvasShell({
         isTyping={isTyping}
         showWelcome={showWelcome}
         modeActions={modeActions}
-        compraLensActions={compraLensActions}
-        ventaLensActions={ventaLensActions}
-        bodegaLensActions={bodegaLensActions}
+        hubLenses={resolvedHubLenses}
         activeSubHub={activeSubHub}
         onModeAction={action => {
           setActiveSubHub(null)
           sendPrompt(action.message, true)
         }}
-        onCompraHubOpen={() => setActiveSubHub('compra')}
-        onVentaHubOpen={() => setActiveSubHub('venta')}
-        onBodegaHubOpen={() => setActiveSubHub('bodega')}
+        onSubHubOpen={hub => setActiveSubHub(hub)}
         onSubHubClose={() => setActiveSubHub(null)}
-        onHubLensAction={(msg, hub) => {
-          setActiveSubHub(hub)
-          sendPrompt(msg, true)
-        }}
+        onHubLensAction={handleLensAction}
         modeActionsDisabled={isTyping}
       />
 
@@ -223,6 +293,7 @@ export function ProofCanvasShell({
         displayCards={displayCards ?? null}
         loading={isTyping}
         onAction={prompt => sendPrompt(prompt, false)}
+        onDeleteCard={onDeleteCard}
       />
 
       <ProofComposer
@@ -232,14 +303,9 @@ export function ProofCanvasShell({
         onInputChange={setInputValue}
         onSubmit={handleSubmit}
         onQuickAction={msg => sendPrompt(msg, true)}
-        compraLensActions={compraLensActions}
-        ventaLensActions={ventaLensActions}
-        bodegaLensActions={bodegaLensActions}
+        hubLenses={resolvedHubLenses}
         activeSubHub={activeSubHub}
-        onHubLensAction={(msg, hub) => {
-          setActiveSubHub(hub)
-          sendPrompt(msg, true)
-        }}
+        onHubLensAction={handleLensAction}
         quickActions={quickActions ?? []}
         disabled={isTyping}
         showHint={showHint}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { DisplayCards } from '@/lib/proof/agent-response-types'
 import type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-context-types'
 
@@ -300,10 +300,19 @@ export function useProofContextBar(options: {
     options.enabled,
   ])
 
+  const dismissDisplayCard = useCallback((itemId: string) => {
+    setDisplayCards(prev => {
+      if (!prev) return null
+      const items = prev.items.filter(item => item.id !== itemId)
+      return items.length > 0 ? { ...prev, items } : null
+    })
+  }, [])
+
   return {
     chatResponse,
     mensaje: chatResponse,
     displayCards,
+    dismissDisplayCard,
     accionLabel,
     accionHref,
     loading,

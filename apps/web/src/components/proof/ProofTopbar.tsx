@@ -8,6 +8,7 @@ import type { DestMembresia } from '@/lib/proof/destilador-types'
 const BADGE_LABEL: Record<ProfileType, string> = {
   distiller: 'DESTILADOR',
   distributor: 'DISTRIBUIDOR',
+  winemaker: 'WINEMAKER',
 }
 
 const MEMBRESIA_LABEL: Record<DestMembresia, string> = {

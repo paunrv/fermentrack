@@ -1,6 +1,6 @@
 'use client'
 
-export type ProfileType = 'distiller' | 'distributor'
+export type ProfileType = 'distiller' | 'distributor' | 'winemaker'
 
 export type DistillerMetric =
   | 'litros_crudo'
@@ -67,11 +67,14 @@ export const DISTRIBUTOR_METRICS: { key: DistributorMetric; label: string }[] = 
 export const DEFAULT_METRICS: Record<ProfileType, [KpiMetric, KpiMetric, KpiMetric]> = {
   distiller: ['litros_crudo', 'botellas_inventario', 'botellas_vendidas'],
   distributor: ['stock_disponible', 'pedidos_activos', 'por_cobrar'],
+  winemaker: ['litros_crudo', 'dias_bodega', 'costo_botella'],
 }
 
 export function metricLabel(profileType: ProfileType, metric: KpiMetric): string {
-  const list = profileType === 'distiller' ? DISTILLER_METRICS : DISTRIBUTOR_METRICS
-  return list.find(m => m.key === metric)?.label ?? metric
+  if (profileType === 'distiller' || profileType === 'winemaker') {
+    return DISTILLER_METRICS.find(m => m.key === metric)?.label ?? metric
+  }
+  return DISTRIBUTOR_METRICS.find(m => m.key === metric)?.label ?? metric
 }
 
 const DISTRIBUTOR_SHORT: Partial<Record<DistributorMetric, string>> = {
@@ -97,5 +100,6 @@ export function metricCardLabel(profileType: ProfileType, metric: KpiMetric): st
 }
 
 export function metricsForProfile(profileType: ProfileType) {
-  return profileType === 'distiller' ? DISTILLER_METRICS : DISTRIBUTOR_METRICS
+  if (profileType === 'distiller' || profileType === 'winemaker') return DISTILLER_METRICS
+  return DISTRIBUTOR_METRICS
 }

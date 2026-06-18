@@ -29,10 +29,12 @@ interface ProfileContextValue {
   loading: boolean
   /** true tras consultar `profiles` en Supabase (éxito); evita mandar a onboarding por race/JWT. */
   profilesResolved: boolean
+  /** Error al cargar perfiles desde Supabase (p. ej. red caída). */
+  loadError: string | null
   allProfiles: Profile[]
   activeProfile: Profile | null
   scope: ProfileScope | null
-  switchProfile: (type: ExtraProfile) => Promise<void>
+  switchProfile: (type: ExtraProfile) => void
   reload: (opts?: { silent?: boolean }) => Promise<void>
 }
 
@@ -68,18 +70,50 @@ function writeStoredType(type: ExtraProfile) {
   localStorage.setItem(STORAGE_KEY, type)
 }
 
+const CLERK_SYNC_TIMEOUT_MS = 8_000
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('Clerk sync timeout')), ms)
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+/** Sincroniza metadata + JWT en segundo plano; no bloquea el cambio de perfil local. */
 async function syncClerkProfileClaim(
   user: NonNullable<ReturnType<typeof useUser>['user']>,
   type: ExtraProfile,
   getToken: ReturnType<typeof useAuth>['getToken']
-) {
-  await user.update({
-    unsafeMetadata: {
-      ...(user.unsafeMetadata as Record<string, unknown>),
-      profile_type_v2: type,
-    },
-  })
-  await getToken({ template: 'supabase', skipCache: true })
+): Promise<void> {
+  try {
+    await withTimeout(
+      user.update({
+        unsafeMetadata: {
+          ...(user.unsafeMetadata as Record<string, unknown>),
+          profile_type_v2: type,
+        },
+      }),
+      CLERK_SYNC_TIMEOUT_MS
+    )
+  } catch (err) {
+    console.warn('[ProfileContext] Clerk metadata sync failed', err)
+    return
+  }
+  try {
+    await withTimeout(
+      getToken({ template: 'supabase', skipCache: true }),
+      CLERK_SYNC_TIMEOUT_MS
+    )
+  } catch (err) {
+    console.warn('[ProfileContext] JWT refresh after profile switch failed', err)
+  }
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
@@ -89,6 +123,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [profilesResolved, setProfilesResolved] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [scopeClerkId, setScopeClerkId] = useState<string | null>(null)
 
   /** @returns true si la consulta a `profiles` terminó; false si falta JWT (reintentar). */
@@ -184,6 +219,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     async function run() {
       setLoading(true)
       setProfilesResolved(false)
+      setLoadError(null)
 
       if (!user) {
         setAllProfiles([])
@@ -193,18 +229,31 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return
       }
 
+      let loaded = false
+      let lastError: unknown = null
       const maxAttempts = 12
       for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
         try {
           const done = await load()
-          if (done) break
+          if (done) {
+            loaded = true
+            break
+          }
         } catch (err) {
+          lastError = err
           console.error('[ProfileContext] error cargando profiles', err)
         }
         await new Promise(r => setTimeout(r, 250))
       }
 
       if (!cancelled) {
+        if (!loaded && lastError) {
+          const msg =
+            lastError instanceof Error
+              ? lastError.message
+              : 'No se pudo conectar con el servidor'
+          setLoadError(msg)
+        }
         setProfilesResolved(true)
         setLoading(false)
       }
@@ -267,17 +316,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [user?.id, activeProfile?.profile_type_v2, getToken])
 
   const switchProfile = useCallback(
-    async (type: ExtraProfile) => {
+    (type: ExtraProfile) => {
       const next = allProfiles.find(p => p.profile_type_v2 === type)
       if (!next) return
       setActiveProfile(next)
       writeStoredType(type)
       if (user) {
-        try {
-          await syncClerkProfileClaim(user, type, getToken)
-        } catch {
-          /* JWT se refrescará en la próxima interacción */
-        }
+        void syncClerkProfileClaim(user, type, getToken)
       }
     },
     [allProfiles, user, getToken]
@@ -292,6 +337,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     () => ({
       loading,
       profilesResolved,
+      loadError,
       allProfiles,
       activeProfile,
       scope,
@@ -301,16 +347,24 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         if (!silent) {
           setLoading(true)
           setProfilesResolved(false)
+          setLoadError(null)
         }
         try {
           const done = await load()
           if (done && !silent) setProfilesResolved(true)
+        } catch (err) {
+          if (!silent) {
+            const msg =
+              err instanceof Error ? err.message : 'No se pudo conectar con el servidor'
+            setLoadError(msg)
+            setProfilesResolved(true)
+          }
         } finally {
           if (!silent) setLoading(false)
         }
       },
     }),
-    [loading, profilesResolved, allProfiles, activeProfile, scope, switchProfile, load]
+    [loading, profilesResolved, loadError, allProfiles, activeProfile, scope, switchProfile, load]
   )
 
   return (

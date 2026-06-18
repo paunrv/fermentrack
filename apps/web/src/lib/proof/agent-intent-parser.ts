@@ -15,6 +15,8 @@ import {
   type DistributorAgentAction,
 } from '@/lib/proof/distributor-agent-actions'
 import { tryDistributorQuickAnswer } from '@/lib/proof/distributor-agent-answers'
+import { tryWinemakerQuickAnswer } from '@/lib/proof/winemaker-agent-answers'
+import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 import type { ProfileScope } from '@/lib/supabase'
 
 export type AgentQuickAnswer = {
@@ -76,6 +78,9 @@ export function quickAnswer(
   }
   if (profileType === 'distributor') {
     return tryDistributorQuickAnswer(query, datos)
+  }
+  if (profileType === 'winemaker') {
+    return tryWinemakerQuickAnswer(query, datos as unknown as WinemakerAgentContext)
   }
   return null
 }

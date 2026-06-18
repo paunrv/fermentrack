@@ -19,24 +19,87 @@ const PROFILE_META: Record<
 
 export default function ProfileSelectPage() {
   const router = useRouter()
-  const { loading, allProfiles, profilesResolved, switchProfile } = useProfile()
+  const { loading, allProfiles, profilesResolved, loadError, reload, switchProfile } =
+    useProfile()
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
 
   useEffect(() => {
     if (loading || !profilesResolved) return
-    if (allProfiles.length === 0) {
+    if (allProfiles.length === 0 && !loadError) {
       router.replace('/onboarding')
     }
-  }, [loading, profilesResolved, allProfiles.length, router])
+  }, [loading, profilesResolved, allProfiles.length, loadError, router])
 
-  async function handleSelect(type: ExtraProfile) {
-    await switchProfile(type)
+  function handleSelect(type: ExtraProfile) {
+    switchProfile(type)
     router.push('/dashboard')
   }
 
   const canAddMore = allProfiles.length < 5
 
-  if (loading || allProfiles.length === 0) {
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--ink)',
+          color: 'var(--fg-3)',
+          fontFamily: 'var(--font-display)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 14,
+        }}
+      >
+        Cargando perfiles…
+      </div>
+    )
+  }
+
+  if (loadError && allProfiles.length === 0) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--ink)',
+          color: 'var(--fg-0)',
+          fontFamily: 'var(--font-display)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 32,
+          gap: 16,
+          textAlign: 'center',
+        }}
+      >
+        <p style={{ margin: 0, fontSize: 15, color: 'var(--fg-2)' }}>
+          No pudimos cargar tus perfiles. Revisa tu conexión e intenta de nuevo.
+        </p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>{loadError}</p>
+        <button
+          type="button"
+          onClick={() => void reload()}
+          style={{
+            marginTop: 8,
+            padding: '10px 20px',
+            background: 'var(--fg-0)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Reintentar
+        </button>
+      </div>
+    )
+  }
+
+  if (allProfiles.length === 0) {
     return (
       <div
         style={{

@@ -49,15 +49,25 @@ export function ProofResultsZone({
   displayCards,
   loading,
   onAction,
+  onDeleteCard,
 }: {
   displayCards: DisplayCards | null
   loading: boolean
   onAction: (prompt: string) => void
+  onDeleteCard?: (itemId: string) => void | Promise<void>
 }) {
   const [visibleCards, setVisibleCards] = useState<DisplayCards | null>(null)
   const [contentOpacity, setContentOpacity] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const zoneRef = useRef<HTMLDivElement>(null)
   const wasLoadingRef = useRef(false)
+  const dismissedIdsRef = useRef(new Set<string>())
+
+  function applyDismissed(cards: DisplayCards): DisplayCards | null {
+    const items = cards.items.filter(item => !dismissedIdsRef.current.has(item.id))
+    return items.length > 0 ? { ...cards, items } : null
+  }
 
   useEffect(() => {
     if (loading) {
@@ -70,7 +80,7 @@ export function ProofResultsZone({
 
     if (wasLoadingRef.current && displayCards) {
       const t = window.setTimeout(() => {
-        setVisibleCards(displayCards)
+        setVisibleCards(applyDismissed(displayCards))
         setContentOpacity(0)
         requestAnimationFrame(() => {
           setContentOpacity(1)
@@ -90,12 +100,12 @@ export function ProofResultsZone({
       if (visibleCards && visibleCards.title !== displayCards.title) {
         setContentOpacity(0)
         const t = window.setTimeout(() => {
-          setVisibleCards(displayCards)
+          setVisibleCards(applyDismissed(displayCards))
           requestAnimationFrame(() => setContentOpacity(1))
         }, 120)
         return () => window.clearTimeout(t)
       }
-      setVisibleCards(displayCards)
+      setVisibleCards(applyDismissed(displayCards))
       setContentOpacity(1)
     }
 
@@ -103,8 +113,28 @@ export function ProofResultsZone({
   }, [loading, displayCards, visibleCards])
 
   const showLoading = loading
-  const showResults = !loading && visibleCards != null
+  const showResults = !loading && visibleCards != null && visibleCards.items.length > 0
   const showZone = showLoading || showResults
+
+  async function handleDeleteCard(itemId: string) {
+    if (!onDeleteCard || deletingId) return
+    setDeletingId(itemId)
+    setDeleteError(null)
+    try {
+      await onDeleteCard(itemId)
+      dismissedIdsRef.current.add(itemId)
+      setVisibleCards(prev => {
+        if (!prev) return null
+        const items = prev.items.filter(item => item.id !== itemId)
+        return items.length > 0 ? { ...prev, items } : null
+      })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'No se pudo eliminar'
+      setDeleteError(msg)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (!showZone) return null
 
@@ -182,6 +212,18 @@ export function ProofResultsZone({
             </span>
             <span>· Resultado</span>
           </header>
+          {deleteError ? (
+            <p
+              style={{
+                maxWidth: 720,
+                margin: '0 auto 8px',
+                fontSize: 12,
+                color: 'var(--color-text-danger)',
+              }}
+            >
+              {deleteError}
+            </p>
+          ) : null}
           <div
             className="proof-results-grid"
             style={
@@ -192,7 +234,16 @@ export function ProofResultsZone({
             }
           >
             {visibleCards.items.map(item => (
-              <ProofResultCard key={item.id} item={item} onAction={onAction} />
+              <ProofResultCard
+                key={item.id}
+                item={item}
+                onAction={onAction}
+                onDelete={
+                  onDeleteCard && item.devDeletable && deletingId !== item.id
+                    ? handleDeleteCard
+                    : undefined
+                }
+              />
             ))}
           </div>
         </>

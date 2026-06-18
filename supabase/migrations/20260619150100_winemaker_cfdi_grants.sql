@@ -1,0 +1,1 @@
+-- PROOF · Winemaker CFDI — grants (columnas nuevas heredan permisos de tabla)

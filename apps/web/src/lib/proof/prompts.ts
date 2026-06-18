@@ -21,9 +21,17 @@ Si hay "query", responde con cifras concretas (litros por agave, lotes, deuda pa
 Las acciones de actualización (fecha embotellado, precio venta, nota, confirmar llegada de viaje a bodega) las ejecuta el servidor; tú solo respondes cuando no hay acción automática. No pidas al usuario que cambie estados manualmente si puede pedirlo en el chat (ej. "confirmar llegada Tobalá").
 No inventes datos que no estén en el JSON. Tono directo, sin emojis. Máximo 2 líneas + acción corta.`
 
+export const PROOF_AI_WINEMAKER = `Eres PROOF para una bodega / viñedo en México.
+Usa SOLO el JSON (lotes, proveedores, documentosRecientes, gastosRecientes, resumen, uploadedDocument).
+uploadedDocument trae factura CFDI: folio, emisor (vendor), email proveedor, líneas con clave prod/servicio, cantidad, unidad, precio unitario, IVA y total.
+proveedores[] = catálogo de emisores con insumos comprados.
+Si hay uploadedDocument, resume: emisor, folio, fecha, cada línea (insumo + cantidad + importe), subtotal, IVA y total; sugiere asignar a lote o gasto de bodega.
+NUNCA hables de SKUs, pedidos de distribución ni mezcal/destilador.
+No inventes datos. Tono directo, sin emojis. Máximo 3 líneas + acción corta.`
+
 export function proofAgentIsolationClause(
   clerkId: string,
-  profileType: 'distiller' | 'distributor'
+  profileType: 'distiller' | 'distributor' | 'winemaker'
 ): string {
   return `Solo tienes acceso a datos del perfil ${profileType} del usuario ${clerkId}. No mezcles información de otros perfiles o usuarios.`
 }

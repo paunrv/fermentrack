@@ -75,6 +75,7 @@ function OnboardingContent() {
   const [businessName, setBusinessName] = useState('')
   const [categories, setCategories] = useState({ cerveza: false, vino: false, destilados: false })
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [cameraGranted, setCameraGranted] = useState<boolean | null>(null)
 
   function styleOptions(): string[] {
@@ -119,48 +120,59 @@ function OnboardingContent() {
   async function finish() {
     if (!user || !profileType) return
     setSaving(true)
+    setSaveError(null)
     const email = user.primaryEmailAddress?.emailAddress || null
 
-    await upsertProfile(supabase, {
-      clerk_id: user.id,
-      profile_type_v2: profileType,
-      profile_type: profileType,
-      username: username.trim() || user.firstName || 'Productor',
-      onboarding_complete: true,
-      email,
-    })
-
-    if (isProducer(profileType) && productName.trim() && productStyle) {
-      const id = 'FT-' + Date.now().toString().slice(-4)
-      await supabase.from('batches').insert({
-        id,
-        name: productName.trim(),
-        type: BATCH_TYPE[profileType],
-        volume: 0,
-        yeast: null,
-        density: null,
-        ph: null,
-        temp: null,
-        day: 1,
-        progress: 0,
-        status: 'active',
-        alert: null,
+    try {
+      await upsertProfile(supabase, {
         clerk_id: user.id,
         profile_type_v2: profileType,
+        profile_type: profileType,
+        username: username.trim() || user.firstName || 'Productor',
+        onboarding_complete: true,
+        email,
       })
-    }
 
-    await reloadProfiles()
+      if (isProducer(profileType) && productName.trim() && productStyle) {
+        const id = 'FT-' + Date.now().toString().slice(-4)
+        await supabase.from('batches').insert({
+          id,
+          name: productName.trim(),
+          type: BATCH_TYPE[profileType],
+          volume: 0,
+          yeast: null,
+          density: null,
+          ph: null,
+          temp: null,
+          day: 1,
+          progress: 0,
+          status: 'active',
+          alert: null,
+          clerk_id: user.id,
+          profile_type_v2: profileType,
+        })
+      }
 
-    if (isAddMode) {
+      await reloadProfiles()
+
+      if (isAddMode) {
+        router.push('/profile-select')
+        return
+      }
+
+      switchProfile(profileType)
+      router.push('/dashboard')
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'No se pudo guardar el perfil'
+      setSaveError(
+        msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')
+          ? `${msg} — revisa tu conexión e intenta de nuevo`
+          : msg
+      )
+    } finally {
       setSaving(false)
-      router.push('/profile-select')
-      return
     }
-
-    await switchProfile(profileType)
-    setSaving(false)
-    router.push('/dashboard')
   }
 
   const inputClass =
@@ -435,6 +447,9 @@ function OnboardingContent() {
                     : 'Entrar a PROOF →'}
               </button>
             </div>
+            {saveError ? (
+              <p className="mt-3 text-sm text-[#EB5757] font-medium">{saveError}</p>
+            ) : null}
             {cameraGranted === null && (
               <button
                 type="button"

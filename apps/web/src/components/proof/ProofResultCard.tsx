@@ -25,15 +25,19 @@ const outlineBtn: React.CSSProperties = {
 export function ProofResultCard({
   item,
   onAction,
+  onDelete,
 }: {
   item: CardItem
   onAction: (prompt: string) => void
+  onDelete?: (itemId: string) => void | Promise<void>
 }) {
   const status = item.status ?? 'neutral'
+  const showDelete = Boolean(item.devDeletable && onDelete)
 
   return (
     <article
       style={{
+        position: 'relative',
         background: 'var(--color-background-primary)',
         border: '0.5px solid var(--color-border-tertiary)',
         borderRadius: 12,
@@ -44,7 +48,45 @@ export function ProofResultCard({
         minWidth: 0,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: 0 }}>
+      {showDelete ? (
+        <button
+          type="button"
+          aria-label={`Eliminar ${item.name} (dev)`}
+          title="Eliminar (solo dev)"
+          onClick={() => void onDelete!(item.id)}
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 28,
+            height: 28,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 0,
+            border: 'none',
+            borderRadius: 6,
+            background: 'transparent',
+            color: 'var(--color-text-tertiary)',
+            cursor: 'pointer',
+            lineHeight: 0,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'var(--hover)'
+            e.currentTarget.style.color = 'var(--color-text-danger)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'var(--color-text-tertiary)'
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M10 11v6M14 11v6" strokeLinecap="round" />
+          </svg>
+        </button>
+      ) : null}
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: 0, paddingRight: showDelete ? 24 : 0 }}>
         <span
           aria-hidden
           style={{

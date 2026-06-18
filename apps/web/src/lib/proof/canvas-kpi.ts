@@ -207,5 +207,6 @@ export function skuEstadoColor(estado: SkuRow['estado'], accent: string): string
 export function profileTypeFromV2(v2: string | undefined): ProfileType | null {
   if (v2 === 'distiller') return 'distiller'
   if (v2 === 'distributor') return 'distributor'
+  if (v2 === 'winemaker') return 'winemaker'
   return null
 }

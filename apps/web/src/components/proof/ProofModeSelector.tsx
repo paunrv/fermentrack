@@ -1,8 +1,11 @@
 'use client'
 
 import type { ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
+import { subHubForModeAction } from '@/lib/proof/proof-canvas-copy'
 
-function ModeIcon({ kind, accent }: { kind: 'compra' | 'venta' | 'bodega'; accent: string }) {
+type ModeIconKind = 'compra' | 'venta' | 'bodega' | 'ticket' | 'wm_bodega' | 'agenda'
+
+function ModeIcon({ kind, accent }: { kind: ModeIconKind; accent: string }) {
   const bg = `color-mix(in srgb, ${accent} 12%, var(--color-background-primary))`
   const color = accent
   const shell = {
@@ -35,6 +38,36 @@ function ModeIcon({ kind, accent }: { kind: 'compra' | 'venta' | 'bodega'; accen
       </span>
     )
   }
+  if (kind === 'ticket') {
+    return (
+      <span style={shell} aria-hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+          <circle cx="12" cy="13" r="3" />
+        </svg>
+      </span>
+    )
+  }
+  if (kind === 'agenda') {
+    return (
+      <span style={shell} aria-hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75">
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round" />
+        </svg>
+      </span>
+    )
+  }
+  if (kind === 'wm_bodega') {
+    return (
+      <span style={shell} aria-hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75">
+          <path d="M8 22h8M12 15v7" strokeLinecap="round" />
+          <path d="M7 10c0-4 2.5-7 5-7s5 3 5 7v5H7v-5z" />
+        </svg>
+      </span>
+    )
+  }
   return (
     <span style={shell} aria-hidden>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.75">
@@ -46,10 +79,20 @@ function ModeIcon({ kind, accent }: { kind: 'compra' | 'venta' | 'bodega'; accen
   )
 }
 
-function iconForIndex(i: number): 'compra' | 'venta' | 'bodega' {
-  if (i === 0) return 'compra'
-  if (i === 1) return 'venta'
+function iconForAction(action: ProofModeAction, index: number): ModeIconKind {
+  if (action.ticketHub) return 'ticket'
+  if (action.wmBodegaHub) return 'wm_bodega'
+  if (action.agendaHub) return 'agenda'
+  if (action.compraHub) return 'compra'
+  if (action.ventaHub) return 'venta'
+  if (index === 0) return 'compra'
+  if (index === 1) return 'venta'
   return 'bodega'
+}
+
+function isModeActive(action: ProofModeAction, activeSubHub?: ProofSubHub | null): boolean {
+  const hub = subHubForModeAction(action)
+  return hub != null && hub === activeSubHub
 }
 
 export function ProofModeSelector({
@@ -129,17 +172,11 @@ export function ProofModeSelector({
           <button
             key={action.label}
             type="button"
-            className={`proof-mode-card${
-              (action.compraHub && activeSubHub === 'compra') ||
-              (action.ventaHub && activeSubHub === 'venta') ||
-              (action.bodegaHub && activeSubHub === 'bodega')
-                ? ' proof-mode-card--active'
-                : ''
-            }`}
+            className={`proof-mode-card${isModeActive(action, activeSubHub) ? ' proof-mode-card--active' : ''}`}
             disabled={disabled}
             onClick={() => onSelect(action)}
           >
-            <ModeIcon kind={iconForIndex(i)} accent={accent} />
+            <ModeIcon kind={iconForAction(action, i)} accent={accent} />
             <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
               <span
                 style={{

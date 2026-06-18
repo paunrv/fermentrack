@@ -14,12 +14,17 @@ import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
+import type { ProofSubHub } from '@/lib/proof/proof-canvas-copy'
 import {
   DISTILLER_QUICK_ACTIONS,
   DISTRIBUTOR_MODE_ACTIONS,
   DISTRIBUTOR_BODEGA_LENS_ACTIONS,
   DISTRIBUTOR_COMPRA_LENS_ACTIONS,
   DISTRIBUTOR_VENTA_LENS_ACTIONS,
+  WINEMAKER_MODE_ACTIONS,
+  WINEMAKER_TICKET_LENS_ACTIONS,
+  WINEMAKER_BODEGA_LENS_ACTIONS,
+  WINEMAKER_AGENDA_LENS_ACTIONS,
 } from '@/lib/proof/proof-canvas-copy'
 
 export default function DashboardPage() {
@@ -34,6 +39,7 @@ export default function DashboardPage() {
   const clerkId = scope?.clerk_id
   const isDistiller = profileType === 'distiller'
   const isDistributor = profileType === 'distributor'
+  const isWinemaker = profileType === 'winemaker'
 
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [urlQuery, setUrlQuery] = useState<string | null>(null)
@@ -42,6 +48,9 @@ export default function DashboardPage() {
   const consumedOcRef = useRef<string | null>(null)
   const [agentConversation, setAgentConversation] = useState<ProofMessage[]>([])
   const [agentRequestId, setAgentRequestId] = useState(0)
+  const [winemakerPantalla, setWinemakerPantalla] = useState<Record<string, unknown> | null>(
+    null
+  )
 
   const agentHints = useMemo(
     () => ({
@@ -52,20 +61,27 @@ export default function DashboardPage() {
           role: m.role as 'user' | 'agent',
           content: m.content,
         })),
+      ...(winemakerPantalla ? { pantalla: winemakerPantalla } : {}),
     }),
-    [userQuery, agentConversation]
+    [userQuery, agentConversation, winemakerPantalla]
   )
 
   const {
     chatResponse,
     displayCards,
+    dismissDisplayCard,
     loading: agentLoading,
     error: agentError,
     refreshOcId,
     refreshProfile,
   } = useProofContextBar({
     pantalla: 'inicio',
-    vista: agentProfileType === 'distiller' ? 'destilador' : 'distribuidor',
+    vista:
+      agentProfileType === 'distiller'
+        ? 'destilador'
+        : agentProfileType === 'winemaker'
+          ? 'winemaker'
+          : 'distribuidor',
     profileType: agentProfileType,
     hints: agentHints,
     requestId: agentRequestId,
@@ -74,10 +90,26 @@ export default function DashboardPage() {
   })
 
   const quickActionsForProfile = isDistiller ? [...DISTILLER_QUICK_ACTIONS] : []
-  const modeActionsForProfile = isDistributor ? [...DISTRIBUTOR_MODE_ACTIONS] : []
-  const compraLensForProfile = isDistributor ? [...DISTRIBUTOR_COMPRA_LENS_ACTIONS] : []
-  const ventaLensForProfile = isDistributor ? [...DISTRIBUTOR_VENTA_LENS_ACTIONS] : []
-  const bodegaLensForProfile = isDistributor ? [...DISTRIBUTOR_BODEGA_LENS_ACTIONS] : []
+  const modeActionsForProfile = isDistributor
+    ? [...DISTRIBUTOR_MODE_ACTIONS]
+    : isWinemaker
+      ? [...WINEMAKER_MODE_ACTIONS]
+      : []
+
+  const hubLensesForProfile: Partial<Record<ProofSubHub, typeof DISTRIBUTOR_COMPRA_LENS_ACTIONS>> =
+    isDistributor
+      ? {
+          compra: [...DISTRIBUTOR_COMPRA_LENS_ACTIONS],
+          venta: [...DISTRIBUTOR_VENTA_LENS_ACTIONS],
+          bodega: [...DISTRIBUTOR_BODEGA_LENS_ACTIONS],
+        }
+      : isWinemaker
+        ? {
+            wm_ticket: [...WINEMAKER_TICKET_LENS_ACTIONS],
+            wm_bodega: [...WINEMAKER_BODEGA_LENS_ACTIONS],
+            wm_agenda: [...WINEMAKER_AGENDA_LENS_ACTIONS],
+          }
+        : {}
 
   useEffect(() => {
     const q = searchParams.get('q')?.trim()
@@ -111,6 +143,57 @@ export default function DashboardPage() {
     setUserQuery(message)
     setAgentRequestId(n => n + 1)
   }, [])
+
+  const handleTicketFile = useCallback(
+    async (file: File, conversation: ProofMessage[]) => {
+      setAgentConversation(conversation)
+      const form = new FormData()
+      form.append('file', file)
+
+      const res = await fetch('/api/winemaker/documentos', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: form,
+      })
+
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string
+        documentId?: string
+        agentQuery?: string
+        mensaje?: string
+      }
+
+      if (!res.ok) {
+        throw new Error(body.error || 'No se pudo guardar el ticket')
+      }
+
+      setWinemakerPantalla({
+        hub: 'wm_ticket',
+        documentId: body.documentId,
+      })
+      setUserQuery(body.agentQuery ?? `Ticket guardado: ${file.name}`)
+      setAgentRequestId(n => n + 1)
+    },
+    []
+  )
+
+  const handleDeleteCard = useCallback(
+    async (itemId: string) => {
+      const res = await fetch(`/api/winemaker/documentos/${itemId}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        throw new Error(body.error || 'No se pudo eliminar')
+      }
+      dismissDisplayCard(itemId)
+      setWinemakerPantalla(prev =>
+        prev && prev.documentId === itemId ? null : prev
+      )
+    },
+    [dismissDisplayCard]
+  )
 
   if (profileLoading) {
     return (
@@ -173,11 +256,11 @@ export default function DashboardPage() {
           loading={agentLoading}
           error={agentError}
           onSend={handleAgentSend}
+          onTicketFile={isWinemaker ? handleTicketFile : undefined}
+          onDeleteCard={isWinemaker ? handleDeleteCard : undefined}
           quickActions={quickActionsForProfile}
           modeActions={modeActionsForProfile}
-          compraLensActions={compraLensForProfile}
-          ventaLensActions={ventaLensForProfile}
-          bodegaLensActions={bodegaLensForProfile}
+          hubLenses={hubLensesForProfile}
           queryFromUrl={urlQuery}
         />
       </div>

@@ -17,6 +17,9 @@ import {
 import { buildDistillerAgentContext } from '@/lib/proof/distiller-agent-context'
 import { buildDistributorDisplayCards } from '@/lib/proof/distributor-display-cards'
 import { buildDistillerDisplayCards } from '@/lib/proof/distiller-display-cards'
+import { buildWinemakerDisplayCards } from '@/lib/proof/winemaker-display-cards'
+import { tryWinemakerDocumentAction } from '@/lib/proof/winemaker-agent-actions'
+import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 import { narrowDistributorContextForQuery } from '@/lib/proof/toma-pedido-intent'
 import {
   isDistributorGuidedFlowQuery,
@@ -26,6 +29,7 @@ import { proofErrorMessage } from '@/lib/proof/proof-error'
 import {
   PROOF_AI_DESTILADOR,
   PROOF_AI_SYSTEM,
+  PROOF_AI_WINEMAKER,
   proofAgentIsolationClause,
 } from '@/lib/proof/prompts'
 import { createSseStream } from '@/lib/proof/sse'
@@ -46,7 +50,7 @@ type Body = {
 }
 
 function parseProfileType(raw: unknown): AgentProfileType | null {
-  if (raw === 'distiller' || raw === 'distributor') return raw
+  if (raw === 'distiller' || raw === 'distributor' || raw === 'winemaker') return raw
   return null
 }
 
@@ -59,6 +63,9 @@ function buildDisplayCardsForQuery(
 ): { displayCards: DisplayCards | null; emptyResults: boolean } {
   if (profileType === 'distributor') {
     return buildDistributorDisplayCards(query, datos)
+  }
+  if (profileType === 'winemaker') {
+    return buildWinemakerDisplayCards(query, datos)
   }
   return buildDistillerDisplayCards(query, datos)
 }
@@ -119,7 +126,7 @@ export async function POST(req: NextRequest) {
   const profileType = parseProfileType(body.profileType)
   if (!profileType) {
     return new Response(
-      JSON.stringify({ error: 'profileType requerido: distiller | distributor' }),
+      JSON.stringify({ error: 'profileType requerido: distiller | distributor | winemaker' }),
       { status: 400 }
     )
   }
@@ -136,6 +143,8 @@ export async function POST(req: NextRequest) {
   void (async () => {
     try {
       const { sb, mode } = await createSupabaseForProofApi()
+      const isDestilador = profileType === 'distiller'
+      const isWinemaker = profileType === 'winemaker'
       const queryText = body.hints?.query?.trim() ?? ''
       console.log('[proof/contexto] branch', {
         profileType,
@@ -242,6 +251,41 @@ export async function POST(req: NextRequest) {
             ...body.hints,
             selectedId: refreshEntityId ?? body.hints?.selectedId,
           })
+        } else if (profileType === 'winemaker') {
+          datos = await loadIsolatedAgentContext(sb, clerkId, profileType, {
+            ...body.hints,
+            query: queryText,
+            selectedId: body.hints?.selectedId,
+          })
+          const wmCtx = datos as unknown as WinemakerAgentContext
+          const docAction = await tryWinemakerDocumentAction(sb, clerkId, queryText, wmCtx)
+          if (docAction) {
+            console.log('[proof/contexto] winemaker document action', { query: queryText })
+            sendAgentDone(send, {
+              queryText,
+              profileType,
+              datos,
+              mensaje: docAction.message,
+              accionLabel: docAction.accionLabel,
+              accionHref: docAction.accionHref,
+              skipDisplayCards: true,
+            })
+            return
+          }
+          const quick = quickAnswer(queryText, profileType, datos)
+          if (quick) {
+            console.log('[proof/contexto] quick answer winemaker', { query: queryText })
+            sendAgentDone(send, {
+              queryText,
+              profileType,
+              datos,
+              mensaje: quick.mensaje,
+              accionLabel: quick.accionLabel,
+              accionHref: quick.accionHref,
+              skipDisplayCards: true,
+            })
+            return
+          }
         } else {
           const distCtx = await loadDistributorAgentContext(sb, clerkId, {
             ...body.hints,
@@ -324,7 +368,6 @@ export async function POST(req: NextRequest) {
       }
 
       if (actionMessage) {
-        const isDestilador = profileType === 'distiller'
         const miInfoUpdated = refreshProfile && profileType === 'distributor'
         sendAgentDone(send, {
           queryText,
@@ -339,14 +382,16 @@ export async function POST(req: NextRequest) {
               ? 'Ver pedido'
               : isDestilador
                 ? 'Ver bodega'
-                : 'Ver inventario',
+                : isWinemaker
+                  ? 'Ver lotes'
+                  : 'Ver inventario',
           accionHref: miInfoUpdated
             ? '/dashboard'
             : refreshOcId
             ? `/dashboard?oc=${refreshOcId}`
             : refreshPedidoId
               ? `/dashboard/pedidos/${refreshPedidoId}`
-              : isDestilador
+              : isDestilador || isWinemaker
                 ? '/dashboard'
                 : '/dashboard/inventario',
           refreshLoteId: refreshSkuId ?? (refreshPedidoId || refreshOcId ? null : refreshEntityId),
@@ -360,8 +405,12 @@ export async function POST(req: NextRequest) {
       }
 
       const isolation = proofAgentIsolationClause(clerkId, profileType)
-      const isDestilador = profileType === 'distiller'
-      const systemBase = isDestilador ? PROOF_AI_DESTILADOR : PROOF_AI_SYSTEM
+      const systemBase =
+        profileType === 'distiller'
+          ? PROOF_AI_DESTILADOR
+          : profileType === 'winemaker'
+            ? PROOF_AI_WINEMAKER
+            : PROOF_AI_SYSTEM
 
       if (queryText) {
         const quick = quickAnswer(queryText, profileType, datos)
@@ -407,7 +456,9 @@ export async function POST(req: NextRequest) {
       const userPayload = JSON.stringify(
         {
           pantalla: body.pantalla,
-          vista: body.vista ?? (isDestilador ? 'destilador' : 'distribuidor'),
+          vista:
+            body.vista ??
+            (isDestilador ? 'destilador' : isWinemaker ? 'winemaker' : 'distribuidor'),
           profileType,
           clerk_id:
             profileType === 'distributor' && typeof datos.clerk_id === 'string'
@@ -481,7 +532,7 @@ Responde SOLO JSON válido:
 
       let mensaje = full.trim()
       let accionLabel = 'Ver más'
-      let accionHref = isDestilador ? '/dashboard' : '/dashboard/inventario'
+      let accionHref = isDestilador || isWinemaker ? '/dashboard' : '/dashboard/inventario'
       try {
         const m = full.match(/\{[\s\S]*\}/)
         if (m) {

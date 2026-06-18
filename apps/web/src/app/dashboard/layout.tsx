@@ -9,11 +9,16 @@ import { useSupabase } from '@/hooks/useSupabase'
 import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
   distillerBlockedFromPath,
+  distillerBlockedFromWinemakerPath,
   distributorBlockedFromPath,
+  distributorBlockedFromWinemakerPath,
   isCanvasStylePath,
   isDestiladorPath,
+  isDistributorOnlyPath,
   isProducerOnlyPath,
   isProducerProfile,
+  isWinemakerPath,
+  winemakerBlockedFromPath,
 } from '@/lib/proof/dashboard-routes'
 import type { DestMembresia } from '@/lib/proof/destilador-types'
 import {
@@ -141,6 +146,14 @@ const NAV_DESTILADOR: NavItem[] = [
   { href: '/dashboard/destilador/ventas', label: 'Ventas', roles: ['distiller'], icon: ICONS.clientes },
 ]
 
+const NAV_WINEMAKER: NavItem[] = [
+  { href: '/dashboard/winemaker/lotes', label: 'Lotes', roles: ['winemaker'], icon: ICONS.inventario },
+  { href: '/dashboard/winemaker/proveedores', label: 'Proveedores', roles: ['winemaker'], icon: ICONS.clientes },
+  { href: '/dashboard/winemaker/documentos', label: 'Documentos', roles: ['winemaker'], icon: ICONS.camera },
+  { href: '/dashboard/winemaker/gastos', label: 'Gastos', roles: ['winemaker'], icon: ICONS.movimientos },
+  { href: '/dashboard/winemaker/agenda', label: 'Agenda', roles: ['winemaker'], icon: ICONS.catalogo },
+]
+
 const NAV_LEGACY: NavItem[] = [
   { href: '/dashboard/clientes', label: 'Clientes', roles: ['producer'], icon: ICONS.clientes },
 ]
@@ -150,6 +163,7 @@ const NAV: NavItem[] = [
   ...NAV_FINANZAS,
   ...NAV_RECEPCION,
   ...NAV_DESTILADOR,
+  ...NAV_WINEMAKER,
   ...NAV_LEGACY,
 ]
 
@@ -178,6 +192,11 @@ function pageTitleFor(path: string): string {
   if (path.startsWith('/dashboard/destilador/bodega')) return 'Bodega'
   if (path.startsWith('/dashboard/destilador/ventas')) return 'Ventas'
   if (path.startsWith('/dashboard/destilador/lotes/')) return 'Detalle lote'
+  if (path.startsWith('/dashboard/winemaker/lotes')) return 'Lotes'
+  if (path.startsWith('/dashboard/winemaker/proveedores')) return 'Proveedores'
+  if (path.startsWith('/dashboard/winemaker/documentos')) return 'Documentos'
+  if (path.startsWith('/dashboard/winemaker/gastos')) return 'Gastos'
+  if (path.startsWith('/dashboard/winemaker/agenda')) return 'Agenda'
   return 'PROOF'
 }
 
@@ -186,10 +205,11 @@ function visibleNav(active: Profile | null): NavItem[] {
   if (active.is_super_user) return NAV
   const isProducer = PRODUCERS.includes(active.profile_type_v2)
   const isDistiller = active.profile_type_v2 === 'distiller'
+  const isWinemaker = active.profile_type_v2 === 'winemaker'
   return NAV.filter(n => {
     if (n.roles === 'all') {
       if (
-        isDistiller &&
+        (isDistiller || isWinemaker) &&
         (n.href === '/dashboard/inventario' ||
           n.href === '/dashboard/movimientos' ||
           n.href === '/dashboard/productos')
@@ -199,7 +219,7 @@ function visibleNav(active: Profile | null): NavItem[] {
       return true
     }
     return n.roles.some(r =>
-      r === 'producer' ? isProducer && !isDistiller : r === active.profile_type_v2
+      r === 'producer' ? isProducer && !isDistiller && !isWinemaker : r === active.profile_type_v2
     )
   })
 }
@@ -221,6 +241,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isCanvasStyle = isCanvasStylePath(path)
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
+  const isWinemaker = activeProfile?.profile_type_v2 === 'winemaker'
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const pageTitle = pageTitleFor(path)
   const isMobile = useIsMobile()
@@ -247,7 +268,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace('/dashboard')
       return
     }
+    if (winemakerBlockedFromPath(activeProfile?.profile_type_v2, path)) {
+      router.replace('/dashboard')
+      return
+    }
     if (distillerBlockedFromPath(activeProfile?.profile_type_v2, path)) {
+      router.replace('/dashboard')
+      return
+    }
+    if (distillerBlockedFromWinemakerPath(activeProfile?.profile_type_v2, path)) {
+      router.replace('/dashboard')
+      return
+    }
+    if (distributorBlockedFromWinemakerPath(activeProfile?.profile_type_v2, path)) {
       router.replace('/dashboard')
     }
   }, [loading, activeProfile?.profile_type_v2, path, router])
@@ -272,6 +305,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push(`/dashboard?q=${encodeURIComponent(q)}`)
       return
     }
+    if (isDistiller || isWinemaker) {
+      router.push(`/dashboard?q=${encodeURIComponent(q)}`)
+      return
+    }
     if (isProducerProfile(activeProfile?.profile_type_v2)) {
       router.push(`/dashboard/agente?q=${encodeURIComponent(q)}`)
     }
@@ -281,6 +318,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     e.target.value = ''
     if (isDistributor) {
       router.push('/dashboard/recepcion')
+      return
+    }
+    if (isDistiller || isWinemaker) {
+      router.push('/dashboard')
       return
     }
     router.push('/dashboard/agente')
@@ -303,8 +344,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     !isCanvas &&
     !isCanvasStyle &&
     !isOnAssistant &&
-    !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path))) &&
-    !(isDistiller && isProducerOnlyPath(path))
+    !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path) || isWinemakerPath(path))) &&
+    !(isDistiller && (isProducerOnlyPath(path) || isWinemakerPath(path))) &&
+    !(isWinemaker && (isProducerOnlyPath(path) || isDistributorOnlyPath(path) || isDestiladorPath(path)))
 
   return (
     <div

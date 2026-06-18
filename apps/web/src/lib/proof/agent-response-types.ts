@@ -16,6 +16,8 @@ export type CardItem = {
   primaryValue?: { label: string; value: string | number }
   secondaryValues?: { label: string; value: string | number }[]
   actions?: { label: string; prompt: string }[]
+  /** Solo dev/evaluación: muestra tachita para quitar tarjeta del canvas */
+  devDeletable?: boolean
 }
 
 export type DisplayCards = {
