@@ -10,14 +10,15 @@ import type {
   ProofSubHub,
 } from '@/lib/proof/proof-canvas-copy'
 import {
-  lensActionsForSubHub,
   PROOF_COPIES,
 } from '@/lib/proof/proof-canvas-copy'
 import {
   ProofChatThread,
   newProofMessageId,
   type ProofMessage,
+  type ProofSuggestedReply,
 } from '@/components/proof/ProofChatThread'
+import { inferTicketAllocationReplies } from '@/lib/proof/winemaker-ticket-vision'
 import { ProofComposer, type ProofQuickAction } from '@/components/proof/ProofComposer'
 import { ProofResultsZone, focusResultsZone } from '@/components/proof/ProofResultsZone'
 
@@ -43,6 +44,7 @@ export function ProofCanvasShell({
   modeActions,
   hubLenses,
   queryFromUrl,
+  suggestedReplies,
 }: {
   accent: string
   profileType: ProfileType
@@ -59,6 +61,7 @@ export function ProofCanvasShell({
   modeActions?: ProofModeAction[]
   hubLenses?: Partial<Record<ProofSubHub, ProofHubLensAction[]>>
   queryFromUrl?: string | null
+  suggestedReplies?: ProofSuggestedReply[] | null
 }) {
   const router = useRouter()
   const [messages, setMessages] = useState<ProofMessage[]>([])
@@ -76,18 +79,28 @@ export function ProofCanvasShell({
   const showWelcome = !hasUserMessage
   const showHint = !hasUserMessage
 
+  function stripMessageReplies(msgs: ProofMessage[]): ProofMessage[] {
+    return msgs.map(m => (m.suggestedReplies ? { ...m, suggestedReplies: undefined } : m))
+  }
+
+  function repliesForAgentText(text: string): ProofSuggestedReply[] | undefined {
+    if (suggestedReplies?.length) return suggestedReplies
+    return inferTicketAllocationReplies(text)
+  }
+
   const sendPrompt = useCallback(
     (text: string, fromQuickAction = false) => {
       const trimmed = text.trim()
       if (!trimmed || isTyping) return
 
       lastQuickActionRef.current = fromQuickAction
+      setActiveSubHub(null)
       const userMsg: ProofMessage = {
         id: newProofMessageId(),
         role: 'user',
         content: trimmed,
       }
-      const nextConversation = [...messages, userMsg]
+      const nextConversation = [...stripMessageReplies(messages), userMsg]
       setMessages(nextConversation)
       setInputValue('')
       setIsTyping(true)
@@ -173,7 +186,16 @@ export function ProofCanvasShell({
     setMessages(prev => {
       const last = prev[prev.length - 1]
       if (last?.role === 'agent' && last.content === text) return prev
-      return [...prev, { id: newProofMessageId(), role: 'agent', content: text }]
+      const replies = repliesForAgentText(text)
+      return [
+        ...prev,
+        {
+          id: newProofMessageId(),
+          role: 'agent',
+          content: text,
+          ...(replies?.length ? { suggestedReplies: replies } : {}),
+        },
+      ]
     })
 
     if (lastQuickActionRef.current && displayCards) {
@@ -184,7 +206,7 @@ export function ProofCanvasShell({
       })
     }
     lastQuickActionRef.current = false
-  }, [chatResponse, agentLoading, error, displayCards])
+  }, [chatResponse, agentLoading, error, displayCards, suggestedReplies])
 
   useEffect(() => {
     if (!isTyping || pendingSendRef.current === 0) return
@@ -219,7 +241,8 @@ export function ProofCanvasShell({
       role: 'user',
       content: `Subí ticket: ${file.name}`,
     }
-    const nextConversation = [...messages, userMsg]
+    setActiveSubHub(null)
+    const nextConversation = [...stripMessageReplies(messages), userMsg]
     setMessages(nextConversation)
     setIsTyping(true)
     agentStartedRef.current = false
@@ -287,6 +310,7 @@ export function ProofCanvasShell({
         onSubHubClose={() => setActiveSubHub(null)}
         onHubLensAction={handleLensAction}
         modeActionsDisabled={isTyping}
+        onSuggestedReply={msg => sendPrompt(msg, true)}
       />
 
       <ProofResultsZone
@@ -303,9 +327,6 @@ export function ProofCanvasShell({
         onInputChange={setInputValue}
         onSubmit={handleSubmit}
         onQuickAction={msg => sendPrompt(msg, true)}
-        hubLenses={resolvedHubLenses}
-        activeSubHub={activeSubHub}
-        onHubLensAction={handleLensAction}
         quickActions={quickActions ?? []}
         disabled={isTyping}
         showHint={showHint}

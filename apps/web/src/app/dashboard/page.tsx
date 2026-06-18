@@ -74,6 +74,7 @@ export default function DashboardPage() {
     error: agentError,
     refreshOcId,
     refreshProfile,
+    suggestedReplies,
   } = useProofContextBar({
     pantalla: 'inicio',
     vista:
@@ -262,6 +263,7 @@ export default function DashboardPage() {
           modeActions={modeActionsForProfile}
           hubLenses={hubLensesForProfile}
           queryFromUrl={urlQuery}
+          suggestedReplies={suggestedReplies}
         />
       </div>
     </div>

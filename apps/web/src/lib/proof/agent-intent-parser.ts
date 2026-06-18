@@ -23,6 +23,9 @@ export type AgentQuickAnswer = {
   mensaje: string
   accionLabel: string
   accionHref: string
+  suggestedReplies?: { label: string; message: string }[]
+  /** Si true, sendAgentDone construye display cards desde la query (listados). */
+  showDisplayCards?: boolean
 }
 
 export type DistillerIntentContext = {

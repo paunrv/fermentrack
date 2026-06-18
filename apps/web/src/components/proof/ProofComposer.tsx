@@ -2,10 +2,8 @@
 
 import { useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
-import { lensActionsForSubHub } from '@/lib/proof/proof-canvas-copy'
+import type { ProofQuickAction } from '@/lib/proof/proof-canvas-copy'
 import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
-import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
 
 export type ProofQuickAction = {
   label: string
@@ -43,9 +41,6 @@ export function ProofComposer({
   onSubmit,
   onQuickAction,
   quickActions,
-  hubLenses,
-  activeSubHub,
-  onHubLensAction,
   disabled,
   showHint,
 }: {
@@ -56,9 +51,6 @@ export function ProofComposer({
   onSubmit: (e: React.FormEvent) => void
   onQuickAction: (message: string) => void
   quickActions: ProofQuickAction[]
-  hubLenses?: Partial<Record<ProofSubHub, ProofHubLensAction[]>>
-  activeSubHub?: ProofSubHub | null
-  onHubLensAction?: (action: ProofHubLensAction, hub: ProofSubHub) => void
   disabled: boolean
   showHint: boolean
 }) {
@@ -69,7 +61,7 @@ export function ProofComposer({
       : profileType === 'winemaker'
         ? 'winemaker'
         : 'distributor'
-  const hubLensActions = lensActionsForSubHub(activeSubHub, hubLenses ?? {})
+  const showQuickActions = showHint && quickActions.length > 0
 
   return (
     <div
@@ -94,19 +86,6 @@ export function ProofComposer({
         >
           {PROOF_COPIES.hint[hintKey]}
         </p>
-      ) : null}
-
-      {!showHint && activeSubHub && (hubLensActions?.length ?? 0) > 0 && onHubLensAction ? (
-        <div style={{ maxWidth: PROOF_CANVAS_CONTENT_WIDTH, margin: '0 auto 10px' }}>
-          <ProofHubLensSelector
-            accent={accent}
-            hub={activeSubHub}
-            actions={hubLensActions!}
-            disabled={disabled}
-            compact
-            onSelect={action => onHubLensAction(action, activeSubHub)}
-          />
-        </div>
       ) : null}
 
       <form
@@ -185,7 +164,7 @@ export function ProofComposer({
         </button>
       </form>
 
-      {quickActions.length > 0 ? (
+      {showQuickActions ? (
         <div
           className="proof-quick-actions"
           style={{

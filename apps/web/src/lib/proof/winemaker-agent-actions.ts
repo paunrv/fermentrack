@@ -12,7 +12,67 @@ function norm(s: string): string {
     .trim()
 }
 
-function resolveDocumentId(ctx: WinemakerAgentContext, query: string): string | null {
+function isListQuery(q: string): boolean {
+  return (
+    q.includes('muéstrame') ||
+    q.includes('muestrame') ||
+    q.includes('mostrar') ||
+    q.includes('cuant') ||
+    q.includes('cuánt')
+  )
+}
+
+/** Registro como gasto de bodega (sin lote), incl. respuestas naturales post-ticket. */
+export function isOverheadBodegaIntent(q: string): boolean {
+  if (isListQuery(q)) return false
+
+  if (
+    (q.includes('registra') || q.includes('registrar')) &&
+    q.includes('gast') &&
+    (q.includes('bodega') || q.includes('sin lote'))
+  ) {
+    return true
+  }
+
+  if (q.includes('queda') && q.includes('bodega')) return true
+
+  if (
+    (q.includes('deja') || q.includes('dejalo') || q.includes('dejalo')) &&
+    q.includes('bodega')
+  ) {
+    return true
+  }
+
+  if (q.includes('sin lote') || q.includes('sin asignar')) return true
+
+  if (q.includes('gasto') && q.includes('bodega')) return true
+
+  return false
+}
+
+export function isAssignLotIntent(q: string): boolean {
+  if (isListQuery(q)) return false
+  return q.includes('asigna') && q.includes('lote')
+}
+
+function isFollowUpToUploadPrompt(
+  conversation: { role: string; content: string }[] | undefined
+): boolean {
+  const lastAgent = [...(conversation ?? [])].reverse().find(m => m.role === 'agent')
+  if (!lastAgent) return false
+  const t = norm(lastAgent.content)
+  return (
+    t.includes('asignamos a un lote') ||
+    t.includes('queda en bodega') ||
+    t.includes('datos guardados en tu bodega')
+  )
+}
+
+function resolveDocumentId(
+  ctx: WinemakerAgentContext,
+  query: string,
+  conversation?: { role: string; content: string }[]
+): string | null {
   if (ctx.selectedDocumentId) return ctx.selectedDocumentId
   if (ctx.uploadedDocument?.id) return ctx.uploadedDocument.id
 
@@ -27,6 +87,14 @@ function resolveDocumentId(ctx: WinemakerAgentContext, query: string): string | 
     if (filename && q.includes(filename)) return doc.id
     if (norm(label) && q.includes(norm(label))) return doc.id
   }
+
+  const followUp =
+    isFollowUpToUploadPrompt(conversation) &&
+    (isOverheadBodegaIntent(q) || isAssignLotIntent(q) || q === 'bodega' || q === 'si')
+  if (followUp || isOverheadBodegaIntent(q) || isAssignLotIntent(q)) {
+    return ctx.documentosRecientes?.[0]?.id ?? null
+  }
+
   return null
 }
 
@@ -40,23 +108,17 @@ export async function tryWinemakerDocumentAction(
   sb: SupabaseClient,
   clerkId: string,
   query: string,
-  ctx: WinemakerAgentContext
+  ctx: WinemakerAgentContext,
+  conversation?: { role: string; content: string }[]
 ): Promise<WinemakerDocumentActionResult | null> {
   const q = norm(query)
 
-  const wantsOverhead =
-    (q.includes('registra') || q.includes('registrar')) &&
-    q.includes('gast') &&
-    (q.includes('bodega') || q.includes('sin lote'))
-
-  const wantsAssignLot =
-    q.includes('asigna') &&
-    q.includes('lote') &&
-    (q.includes('factura') || q.includes('ticket'))
+  const wantsOverhead = isOverheadBodegaIntent(q)
+  const wantsAssignLot = isAssignLotIntent(q)
 
   if (!wantsOverhead && !wantsAssignLot) return null
 
-  const documentId = resolveDocumentId(ctx, query)
+  const documentId = resolveDocumentId(ctx, query, conversation)
   if (!documentId) {
     return {
       message: 'No ubiqué la factura. Sube el ticket de nuevo o dime el folio del proveedor.',

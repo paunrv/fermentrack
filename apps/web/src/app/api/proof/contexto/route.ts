@@ -85,6 +85,7 @@ function sendAgentDone(
     openSkuImagePicker?: string | null
     refreshProfile?: boolean
     skipDisplayCards?: boolean
+    suggestedReplies?: { label: string; message: string }[]
   }
 ) {
   let chatResponse = opts.mensaje.replace(/\*\*/g, '')
@@ -109,6 +110,7 @@ function sendAgentDone(
     refreshOcId: opts.refreshOcId ?? null,
     openSkuImagePicker: opts.openSkuImagePicker ?? null,
     refreshProfile: opts.refreshProfile ?? false,
+    suggestedReplies: opts.suggestedReplies ?? null,
   })
 }
 
@@ -258,7 +260,13 @@ export async function POST(req: NextRequest) {
             selectedId: body.hints?.selectedId,
           })
           const wmCtx = datos as unknown as WinemakerAgentContext
-          const docAction = await tryWinemakerDocumentAction(sb, clerkId, queryText, wmCtx)
+          const docAction = await tryWinemakerDocumentAction(
+            sb,
+            clerkId,
+            queryText,
+            wmCtx,
+            conversation
+          )
           if (docAction) {
             console.log('[proof/contexto] winemaker document action', { query: queryText })
             sendAgentDone(send, {
@@ -282,7 +290,8 @@ export async function POST(req: NextRequest) {
               mensaje: quick.mensaje,
               accionLabel: quick.accionLabel,
               accionHref: quick.accionHref,
-              skipDisplayCards: true,
+              skipDisplayCards: quick.showDisplayCards !== true,
+              suggestedReplies: quick.suggestedReplies,
             })
             return
           }
@@ -423,6 +432,7 @@ export async function POST(req: NextRequest) {
             mensaje: quick.mensaje,
             accionLabel: quick.accionLabel,
             accionHref: quick.accionHref,
+            suggestedReplies: quick.suggestedReplies,
           })
           return
         }

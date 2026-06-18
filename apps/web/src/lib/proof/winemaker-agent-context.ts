@@ -85,6 +85,7 @@ export type WinemakerAgentContext = {
     amount: number
     lot_id: string | null
     cost_date: string
+    created_at: string
   }[]
 }
 
@@ -246,6 +247,7 @@ export function buildWinemakerAgentContext(
       amount: Number(c.amount),
       lot_id: c.lot_id,
       cost_date: c.cost_date,
+      created_at: c.created_at,
     })),
   }
 }

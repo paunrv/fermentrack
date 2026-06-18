@@ -1,6 +1,14 @@
 import type { AgentQuickAnswer } from '@/lib/proof/agent-intent-parser'
 import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 import { fmtMoney } from '@/lib/proof/format'
+import {
+  filterBodegaGastos,
+  filterGastosByLookback,
+  gastosLookbackLabel,
+  isBodegaGastosListQuery,
+  isGastosListQuery,
+  parseGastosLookbackDays,
+} from '@/lib/proof/winemaker-gastos-query'
 import { buildTicketUploadMessage } from '@/lib/proof/winemaker-ticket-vision'
 import type { WmTicketVisionStatus } from '@/lib/proof/winemaker-ticket-vision'
 
@@ -23,7 +31,7 @@ function uploadQuickAnswer(
     d.lines.length > 0 ? d.lines.map(l => l.supply_label).join(', ') : 'sin líneas clasificadas'
   const total = d.total != null && d.total > 0 ? ` Total: ${fmtMoney(d.total)}.` : ''
 
-  const { mensaje, agentQuery: _agentQuery } = buildTicketUploadMessage({
+  const { mensaje, agentQuery: _agentQuery, suggestedReplies } = buildTicketUploadMessage({
     filename: d.original_filename || d.vendor || 'documento',
     contentType:
       d.vision_status === 'skipped_pdf'
@@ -42,6 +50,7 @@ function uploadQuickAnswer(
     mensaje,
     accionLabel: 'Ver documentos',
     accionHref: '/dashboard/winemaker/documentos',
+    suggestedReplies,
   }
 }
 
@@ -84,12 +93,40 @@ export function tryWinemakerQuickAnswer(
 
   if (
     (q.includes('gast') || q.includes('costo') || q.includes('pague')) &&
-    (q.includes('mes') || q.includes('este mes') || q.includes('del mes'))
+    (q.includes('mes') || q.includes('este mes') || q.includes('del mes')) &&
+    !q.includes('muéstrame') &&
+    !q.includes('muestrame') &&
+    !q.includes('mostrar')
   ) {
     return {
       mensaje: `Este mes llevas ${fmtMoney(r.gastosMesMxn)} en gastos registrados (lotes y bodega).`,
       accionLabel: 'Ver gastos',
       accionHref: '/dashboard/winemaker/gastos',
+    }
+  }
+
+  if (isGastosListQuery(q)) {
+    let costs = ctx.gastosRecientes ?? []
+    if (isBodegaGastosListQuery(q)) costs = filterBodegaGastos(costs)
+    const filtered = filterGastosByLookback(costs, q)
+    const days = parseGastosLookbackDays(q)
+    const period = gastosLookbackLabel(days)
+    const total = filtered.reduce((s, c) => s + c.amount, 0)
+
+    if (filtered.length === 0) {
+      return {
+        mensaje: `No registraste gastos en ${period}.`,
+        accionLabel: 'Ver gastos',
+        accionHref: '/dashboard/winemaker/gastos',
+        showDisplayCards: true,
+      }
+    }
+
+    return {
+      mensaje: `${filtered.length} gasto${filtered.length === 1 ? '' : 's'} registrado${filtered.length === 1 ? '' : 's'} en ${period}: ${fmtMoney(total)}.`,
+      accionLabel: 'Ver gastos',
+      accionHref: '/dashboard/winemaker/gastos',
+      showDisplayCards: true,
     }
   }
 

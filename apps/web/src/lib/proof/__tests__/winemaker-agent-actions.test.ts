@@ -72,4 +72,45 @@ describe('tryWinemakerDocumentAction', () => {
     expect(result?.message).toContain('13')
     expect(result?.accionHref).toBe('/dashboard/winemaker/gastos')
   })
+
+  it('registers overhead when user says queda en bodega after upload', async () => {
+    vi.spyOn(winemaker, 'registerDocumentOverheadCosts').mockResolvedValue({
+      costs: [],
+      total: 9905,
+      vendor: 'GLOBAL FUENTES',
+    })
+
+    const result = await tryWinemakerDocumentAction(
+      {} as never,
+      'clerk-1',
+      'queda en bodega',
+      {
+        ...baseCtx,
+        selectedDocumentId: 'doc-global',
+        documentosRecientes: [
+          {
+            ...baseCtx.documentosRecientes[0],
+            id: 'doc-global',
+            vendor: 'GLOBAL FUENTES',
+            total_amount: 9905,
+          },
+        ],
+      },
+      [
+        { role: 'user', content: 'Subí ticket: screen.png' },
+        {
+          role: 'agent',
+          content:
+            'Leí screen.png: GLOBAL FUENTES — Botella. Total: $9,905. Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?',
+        },
+      ]
+    )
+
+    expect(winemaker.registerDocumentOverheadCosts).toHaveBeenCalledWith(
+      expect.anything(),
+      'clerk-1',
+      'doc-global'
+    )
+    expect(result?.message).toContain('9')
+  })
 })

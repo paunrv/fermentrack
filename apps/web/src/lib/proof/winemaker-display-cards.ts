@@ -6,6 +6,15 @@ import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 import { formatCfdiFolioLabel } from '@/lib/proof/winemaker-cfdi-types'
 import { WM_LOT_STATUS_LABEL, type WmWineLotStatus } from '@/lib/proof/winemaker-types'
 import { fmtMoney } from '@/lib/proof/format'
+import {
+  filterBodegaGastos,
+  filterGastosByLookback,
+  gastosLookbackLabel,
+  isBodegaGastosListQuery,
+  isGastosListQuery,
+  parseGastosLookbackDays,
+} from '@/lib/proof/winemaker-gastos-query'
+import { isAssignLotIntent, isOverheadBodegaIntent } from '@/lib/proof/winemaker-agent-actions'
 
 function norm(s: string): string {
   return s
@@ -50,6 +59,49 @@ function winemakerCostCardActions(description: string): CardItem['actions'] {
   ]
 }
 
+function costToCardItem(c: WinemakerAgentContext['gastosRecientes'][number]): CardItem {
+  return {
+    id: c.id,
+    name: c.description || c.category,
+    subtitle: c.lot_id ? 'Lote' : 'Bodega',
+    status: c.lot_id ? ('ok' as const) : ('warning' as const),
+    primaryValue: { label: 'monto', value: fmtMoney(c.amount) },
+    secondaryValues: [
+      { label: 'categoría', value: c.category },
+      { label: 'factura', value: c.cost_date },
+    ],
+    actions: winemakerCostCardActions(c.description || c.category),
+  }
+}
+
+function buildGastosCards(
+  query: string,
+  ctx: WinemakerAgentContext,
+  opts?: { bodegaOnly?: boolean }
+): DisplayCardsBuildResult {
+  let costs = ctx.gastosRecientes ?? []
+  if (opts?.bodegaOnly) costs = filterBodegaGastos(costs)
+  costs = filterGastosByLookback(costs, query)
+
+  const days = parseGastosLookbackDays(query)
+  const title = opts?.bodegaOnly
+    ? `Gastos de bodega · ${gastosLookbackLabel(days)}`
+    : `Gastos · ${gastosLookbackLabel(days)}`
+
+  if (costs.length === 0) {
+    return { displayCards: null, emptyResults: false }
+  }
+
+  return {
+    displayCards: {
+      type: 'orders',
+      title,
+      items: costs.slice(0, 12).map(costToCardItem),
+    },
+    emptyResults: false,
+  }
+}
+
 function isClassifiedDoc(d: WinemakerAgentContext['documentosRecientes'][number]): boolean {
   return d.classified
 }
@@ -89,8 +141,10 @@ function documentToCardItem(
 
 function isWinemakerActionQuery(q: string): boolean {
   return (
-    (q.includes('registra') || q.includes('asigna')) &&
-    (q.includes('factura') || q.includes('ticket') || q.includes('gast'))
+    isOverheadBodegaIntent(q) ||
+    isAssignLotIntent(q) ||
+    ((q.includes('registra') || q.includes('asigna')) &&
+      (q.includes('factura') || q.includes('ticket') || q.includes('gast')))
   )
 }
 
@@ -129,25 +183,12 @@ export function buildWinemakerDisplayCards(
     return { displayCards: null, emptyResults: false }
   }
 
+  if (isGastosListQuery(query)) {
+    return buildGastosCards(query, ctx, { bodegaOnly: isBodegaGastosListQuery(query) })
+  }
+
   if (q.includes('bodega') && (q.includes('gast') || q.includes('overhead') || q.includes('sin lote'))) {
-    const costs = ctx.gastosRecientes ?? []
-    if (costs.length === 0) {
-      return { displayCards: null, emptyResults: true }
-    }
-    const type = 'orders' as const
-    const items: CardItem[] = costs.slice(0, 12).map(c => ({
-      id: c.id,
-      name: c.description || c.category,
-      subtitle: c.lot_id ? 'Lote' : 'Bodega',
-      status: c.lot_id ? ('ok' as const) : ('warning' as const),
-      primaryValue: { label: 'monto', value: fmtMoney(c.amount) },
-      secondaryValues: [{ label: 'categoría', value: c.category }],
-      actions: winemakerCostCardActions(c.description || c.category),
-    }))
-    return {
-      displayCards: { type, title: 'Gastos recientes', items },
-      emptyResults: false,
-    }
+    return buildGastosCards(query, ctx, { bodegaOnly: true })
   }
 
   if (
@@ -178,8 +219,11 @@ export function buildWinemakerDisplayCards(
   }
 
   const lotes = ctx.lotes ?? []
-  if (lotes.length === 0) {
+  if (lotes.length === 0 && (q.includes('lote') || q.includes('ferment') || q.includes('vino'))) {
     return { displayCards: null, emptyResults: true }
+  }
+  if (lotes.length === 0) {
+    return { displayCards: null, emptyResults: false }
   }
 
   const type = 'inventory' as const

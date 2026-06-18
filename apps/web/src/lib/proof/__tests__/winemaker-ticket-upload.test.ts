@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
+  inferTicketAllocationReplies,
   parseWmTicketVisionJson,
   resolveTicketContentType,
+  WINEMAKER_TICKET_ALLOCATION_REPLIES,
 } from '@/lib/proof/winemaker-ticket-vision'
+
+describe('inferTicketAllocationReplies', () => {
+  it('detects post-upload allocation question', () => {
+    const replies = inferTicketAllocationReplies(
+      'Leí ticket.png: GLOBAL FUENTES — Botella. Total: $9,905. Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?'
+    )
+    expect(replies).toEqual(WINEMAKER_TICKET_ALLOCATION_REPLIES)
+  })
+
+  it('returns undefined for unrelated agent text', () => {
+    expect(inferTicketAllocationReplies('Registré $100 como gasto de bodega.')).toBeUndefined()
+  })
+})
 
 describe('parseWmTicketVisionJson', () => {
   it('parses multi-line ticket with supply kinds', () => {

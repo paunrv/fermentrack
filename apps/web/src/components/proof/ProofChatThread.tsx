@@ -12,16 +12,87 @@ import {
 import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
 import { ProofModeSelector } from '@/components/proof/ProofModeSelector'
 
+export type ProofSuggestedReply = {
+  label: string
+  message: string
+}
+
 export interface ProofMessage {
   id: string
   role: 'user' | 'agent' | 'system'
   content: string
+  suggestedReplies?: ProofSuggestedReply[]
 }
 
 function newId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `msg-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function isLastAgentMessage(msg: ProofMessage, messages: ProofMessage[]): boolean {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i].role === 'agent') return messages[i].id === msg.id
+  }
+  return false
+}
+
+function SuggestedReplies({
+  accent,
+  replies,
+  disabled,
+  onSelect,
+}: {
+  accent: string
+  replies: ProofSuggestedReply[]
+  disabled?: boolean
+  onSelect: (message: string) => void
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Respuestas sugeridas"
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 10,
+      }}
+    >
+      {replies.map(reply => (
+        <button
+          key={reply.label}
+          type="button"
+          disabled={disabled}
+          onClick={() => onSelect(reply.message)}
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--color-text-primary)',
+            border: `0.5px solid color-mix(in srgb, ${accent} 35%, var(--color-border-tertiary))`,
+            borderRadius: 999,
+            padding: '8px 14px',
+            background: `color-mix(in srgb, ${accent} 8%, var(--color-background-primary))`,
+            cursor: disabled ? 'default' : 'pointer',
+            fontFamily: 'var(--font-display)',
+            opacity: disabled ? 0.55 : 1,
+            transition: 'border-color 0.15s ease, background 0.15s ease',
+          }}
+          onMouseEnter={e => {
+            if (disabled) return
+            e.currentTarget.style.borderColor = accent
+            e.currentTarget.style.background = `color-mix(in srgb, ${accent} 14%, var(--color-background-primary))`
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = `color-mix(in srgb, ${accent} 35%, var(--color-border-tertiary))`
+            e.currentTarget.style.background = `color-mix(in srgb, ${accent} 8%, var(--color-background-primary))`
+          }}
+        >
+          {reply.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 function TypingDots({ accent }: { accent: string }) {
@@ -59,6 +130,7 @@ export function ProofChatThread({
   onSubHubOpen,
   onSubHubClose,
   modeActionsDisabled,
+  onSuggestedReply,
 }: {
   accent: string
   profileType: ProfileType
@@ -73,6 +145,7 @@ export function ProofChatThread({
   onSubHubOpen?: (hub: ProofSubHub) => void
   onSubHubClose?: () => void
   modeActionsDisabled?: boolean
+  onSuggestedReply?: (message: string) => void
 }) {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -216,24 +289,44 @@ export function ProofChatThread({
           }
 
           const isSystem = msg.role === 'system'
+          const showReplies =
+            !isSystem &&
+            !isTyping &&
+            Boolean(onSuggestedReply) &&
+            (msg.suggestedReplies?.length ?? 0) > 0 &&
+            isLastAgentMessage(msg, messages)
+
           return (
-            <p
+            <div
               key={msg.id}
               style={{
-                margin: 0,
                 alignSelf: 'flex-start',
                 maxWidth: '100%',
-                fontSize: isSystem ? 14 : 15,
-                lineHeight: 1.6,
-                fontWeight: 400,
-                color: isSystem ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
-                fontFamily: 'var(--font-display)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
               }}
             >
-              {msg.content}
-            </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: isSystem ? 14 : 15,
+                  lineHeight: 1.6,
+                  fontWeight: 400,
+                  color: isSystem ? 'var(--color-text-tertiary)' : 'var(--color-text-primary)',
+                  fontFamily: 'var(--font-display)',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {msg.content}
+              </p>
+              {showReplies ? (
+                <SuggestedReplies
+                  accent={accent}
+                  replies={msg.suggestedReplies!}
+                  disabled={modeActionsDisabled}
+                  onSelect={onSuggestedReply!}
+                />
+              ) : null}
+            </div>
           )
         })}
 

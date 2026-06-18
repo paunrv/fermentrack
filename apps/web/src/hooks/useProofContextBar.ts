@@ -26,6 +26,7 @@ function parseSseChunk(
     refreshOcId?: string | null
     openSkuImagePicker?: string | null
     refreshProfile?: boolean
+    suggestedReplies?: { label: string; message: string }[] | null
   }) => void,
   onError: (message: string) => void
 ): boolean {
@@ -49,7 +50,10 @@ function parseSseChunk(
     accionHref?: string
     refreshLoteId?: string | null
     refreshPedidoId?: string | null
+    refreshOcId?: string | null
     openSkuImagePicker?: string | null
+    refreshProfile?: boolean
+    suggestedReplies?: { label: string; message: string }[] | null
   }
   try {
     payload = JSON.parse(line.slice(6))
@@ -88,6 +92,9 @@ export function useProofContextBar(options: {
   const [refreshOcId, setRefreshOcId] = useState<string | null>(null)
   const [refreshProfile, setRefreshProfile] = useState(false)
   const [openSkuImagePicker, setOpenSkuImagePicker] = useState<string | null>(null)
+  const [suggestedReplies, setSuggestedReplies] = useState<
+    { label: string; message: string }[] | null
+  >(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fallbackRef = useRef(options.fallback)
@@ -141,6 +148,7 @@ export function useProofContextBar(options: {
     setLoading(true)
     setError(null)
     setDisplayCards(null)
+    setSuggestedReplies(null)
     setOpenSkuImagePicker(null)
     setRefreshOcId(null)
     setRefreshProfile(false)
@@ -189,6 +197,7 @@ export function useProofContextBar(options: {
           refreshOcId?: string | null
           openSkuImagePicker?: string | null
           refreshProfile?: boolean
+          suggestedReplies?: { label: string; message: string }[] | null
         } | null = null
 
         const applyDone = (payload: NonNullable<typeof pendingDone>) => {
@@ -196,6 +205,9 @@ export function useProofContextBar(options: {
           const text = (payload.chatResponse ?? payload.mensaje ?? '').replace(/\*\*/g, '')
           if (text) setChatResponse(text)
           if (payload.displayCards !== undefined) setDisplayCards(payload.displayCards)
+          if (payload.suggestedReplies !== undefined) {
+            setSuggestedReplies(payload.suggestedReplies)
+          }
           if (payload.accionLabel) setAccionLabel(payload.accionLabel)
           if (payload.accionHref) setAccionHref(payload.accionHref)
           if (payload.refreshLoteId) setRefreshLoteId(payload.refreshLoteId)
@@ -322,5 +334,6 @@ export function useProofContextBar(options: {
     refreshOcId,
     openSkuImagePicker,
     refreshProfile,
+    suggestedReplies,
   }
 }

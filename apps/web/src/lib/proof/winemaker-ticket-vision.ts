@@ -274,6 +274,27 @@ export function isTicketVisionClassified(
   return hasSupplier || hasUsefulLines
 }
 
+export type ProofSuggestedReply = {
+  label: string
+  message: string
+}
+
+export const WINEMAKER_TICKET_ALLOCATION_REPLIES: ProofSuggestedReply[] = [
+  { label: 'Queda en bodega', message: 'queda en bodega' },
+  { label: 'Asignar a lote', message: 'asignar a un lote' },
+]
+
+export function inferTicketAllocationReplies(content: string): ProofSuggestedReply[] | undefined {
+  const t = content
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+  if (t.includes('asignamos a un lote') && t.includes('queda en bodega')) {
+    return WINEMAKER_TICKET_ALLOCATION_REPLIES
+  }
+  return undefined
+}
+
 export function buildTicketUploadMessage(input: {
   filename: string
   contentType: string
@@ -282,7 +303,7 @@ export function buildTicketUploadMessage(input: {
   supplierName: string | null
   summaryLabel: string
   total?: string
-}): { mensaje: string; agentQuery: string } {
+}): { mensaje: string; agentQuery: string; suggestedReplies?: ProofSuggestedReply[] } {
   const { filename, contentType, visionStatus, classified, supplierName, summaryLabel, total = '' } =
     input
 
@@ -325,6 +346,7 @@ export function buildTicketUploadMessage(input: {
   return {
     mensaje: `Leí ${filename}: ${vendor}${summaryLabel ? ` — ${summaryLabel}` : ''}.${total} Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?`,
     agentQuery: `acabo de subir la factura de ${vendor} (${summaryLabel}), ¿cómo lo registro?`,
+    suggestedReplies: WINEMAKER_TICKET_ALLOCATION_REPLIES,
   }
 }
 
