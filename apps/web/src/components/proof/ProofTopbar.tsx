@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useUser } from '@clerk/nextjs'
+import { useAuth } from '@/hooks/useAuth'
+import { getUserAvatarUrl, getUserInitials } from '@/lib/auth/user'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
 import type { DestMembresia } from '@/lib/proof/destilador-types'
 
@@ -28,13 +29,11 @@ export function ProofTopbar({
   membresia?: DestMembresia | null
   profileLabel?: string
 }) {
-  const { user } = useUser()
+  const { user } = useAuth()
   const router = useRouter()
 
-  const initials =
-    user?.firstName && user?.lastName
-      ? `${user.firstName[0]}${user.lastName[0]}`
-      : user?.firstName?.[0] || 'U'
+  const initials = getUserInitials(user)
+  const avatarUrl = getUserAvatarUrl(user)
 
   return (
     <header
@@ -123,9 +122,9 @@ export function ProofTopbar({
             padding: 0,
           }}
         >
-          {user?.imageUrl ? (
+          {avatarUrl ? (
             <img
-              src={user.imageUrl}
+              src={avatarUrl}
               alt=""
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />

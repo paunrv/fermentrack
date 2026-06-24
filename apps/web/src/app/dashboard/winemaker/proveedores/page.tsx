@@ -97,7 +97,7 @@ export default function WinemakerProveedoresPage() {
               <strong>{s.name}</strong>
               {(insumosBySupplier[s.id]?.length ?? 0) > 0 ? (
                 <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 6 }}>
-                  Insumos: {insumosBySupplier[s.id].join(' · ')}
+                  Insumos: {insumosBySupplier[s.id]?.join(' · ')}
                 </div>
               ) : (
                 <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 6 }}>

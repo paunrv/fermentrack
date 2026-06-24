@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { useClerk, useUser } from '@clerk/nextjs'
+import { useAuth } from '@/hooks/useAuth'
+import { getUserAvatarUrl, getUserInitials } from '@/lib/auth/user'
 import { useProfile } from '@/context/ProfileContext'
-import { useSupabase } from '@/hooks/useSupabase'
 import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
   distillerBlockedFromPath,
@@ -227,9 +227,7 @@ function visibleNav(active: Profile | null): NavItem[] {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname()
   const router = useRouter()
-  const { user, isLoaded } = useUser()
-  const { signOut } = useClerk()
-  const supabase = useSupabase()
+  const { user, isLoaded, supabase } = useAuth()
   const { activeProfile, allProfiles, loading, profilesResolved } = useProfile()
   const [ask, setAsk] = useState('')
   const [membresia, setMembresia] = useState<DestMembresia>('basico')
@@ -248,10 +246,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const showSidebar = !isCanvas && !isMobile
   const showMobileNav = isMobile
 
-  const initials =
-    user?.firstName && user?.lastName
-      ? `${user.firstName[0]}${user.lastName[0]}`
-      : user?.firstName?.[0] || 'U'
+  const initials = getUserInitials(user)
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/sign-in')
+  }
 
   const navItems = loading ? NAV_OPERACION : visibleNav(activeProfile)
 
@@ -555,12 +555,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
               <AvatarMenu
                 initials={initials}
-                imageUrl={user?.imageUrl}
+                imageUrl={getUserAvatarUrl(user)}
                 accent={theme.accent}
                 canSwitchProfile={allProfiles.length > 1}
                 onSwitchProfile={() => router.push('/profile-select')}
                 onDatosCobro={openDatosCobroSheet}
-                onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
+                onSignOut={() => void handleSignOut()}
               />
             </div>
           </header>
@@ -640,12 +640,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
               <AvatarMenu
                 initials={initials}
-                imageUrl={user?.imageUrl}
+                imageUrl={getUserAvatarUrl(user)}
                 accent={theme.accent}
                 canSwitchProfile={allProfiles.length > 1}
                 onSwitchProfile={() => router.push('/profile-select')}
                 onDatosCobro={openDatosCobroSheet}
-                onSignOut={() => signOut({ redirectUrl: '/sign-in' })}
+                onSignOut={() => void handleSignOut()}
               />
             </div>
             {isMobile && (

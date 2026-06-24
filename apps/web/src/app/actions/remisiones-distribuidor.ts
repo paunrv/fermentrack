@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUserId } from '@/lib/supabase/server'
 import {
   ensureRemisionPdfForPedido,
   fetchRemisionResumenForPedido,
@@ -8,7 +8,7 @@ import {
 } from '@/lib/proof/remision-salida-server'
 
 export async function generarRemisionPedidoAction(pedidoId: string) {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
   const result = await ensureRemisionPdfForPedido(pedidoId, userId)
   return {
@@ -18,7 +18,7 @@ export async function generarRemisionPedidoAction(pedidoId: string) {
 }
 
 export async function obtenerRemisionPedidoAction(pedidoId: string) {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
   const remision = await fetchRemisionResumenForPedido(pedidoId, userId)
   if (!remision) return null

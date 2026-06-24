@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUserId } from '@/lib/supabase/server'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 import {
   createClienteCartera,
@@ -18,7 +18,7 @@ export async function ensureClientAction(input: {
   name: string
   profile_type_v2?: string
 }): Promise<{ id: string; name: string }> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const name = input.name.trim()
@@ -70,7 +70,7 @@ function scopeFromAuth(
 export async function crearCliente(
   data: ClienteFormInput & { profile_type_v2?: string }
 ): Promise<ClienteRow> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const { profile_type_v2, ...input } = data
@@ -82,7 +82,7 @@ export async function editarCliente(
   id: string,
   data: Partial<ClienteFormInput> & { profile_type_v2?: string; activo?: boolean }
 ): Promise<ClienteRow> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const { profile_type_v2, ...input } = data
@@ -93,7 +93,7 @@ export async function editarCliente(
 export async function obtenerClientes(input?: {
   profile_type_v2?: string
 }): Promise<ClienteConSaldo[]> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const { sb } = await createSupabaseForProofApi()
@@ -104,7 +104,7 @@ export async function obtenerCliente(
   id: string,
   input?: { profile_type_v2?: string }
 ): Promise<ClienteDetalle | null> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const { sb } = await createSupabaseForProofApi()

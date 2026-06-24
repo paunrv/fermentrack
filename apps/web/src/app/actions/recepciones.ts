@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUserId } from '@/lib/supabase/server'
 import { createServiceSupabase } from '@/utils/supabase/service'
 import {
   clearRecepcionLineItems,
@@ -41,7 +41,7 @@ export async function createRecepcionFromAnalysisAction(input: {
   discrepancias: RecepcionDiscInput
   profile_type_v2?: string
 }): Promise<RecepcionRow> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const profileType = input.profile_type_v2 || 'distributor'
@@ -103,7 +103,7 @@ export async function createRecepcionFromAnalysisAction(input: {
 
 /** Refresca URLs firmadas de evidencia (bucket privado recepciones). */
 export async function refreshRecepcionFotoUrlsAction(recepcionId: string): Promise<string[]> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const sb = createServiceSupabase()

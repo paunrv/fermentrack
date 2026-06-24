@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUserId } from '@/lib/supabase/server'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 import {
   createPedidoBorrador,
@@ -17,7 +17,7 @@ export async function createPedidoDraftAction(input: {
   notas?: string | null
   profile_type_v2?: string
 }): Promise<PedidoRow> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const profileType = input.profile_type_v2 || 'distributor'

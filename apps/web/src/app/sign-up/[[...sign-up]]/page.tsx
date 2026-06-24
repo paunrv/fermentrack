@@ -1,5 +1,3 @@
-import { SignUp } from '@clerk/nextjs'
-
 export default function SignUpPage() {
   return (
     <main
@@ -9,9 +7,11 @@ export default function SignUpPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        color: 'var(--fg-2)',
+        fontSize: 14,
       }}
     >
-      <SignUp />
+      <p>Registro — disponible en el Paso 4.</p>
     </main>
   )
 }

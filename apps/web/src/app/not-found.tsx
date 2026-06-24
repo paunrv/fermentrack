@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-/** Sin ClerkProvider: evita 404 en cadena cuando middleware no corre (assets, etc.). */
+/** Sin auth provider: evita 404 en cadena cuando middleware no corre (assets, etc.). */
 export default function NotFound() {
   return (
     <main

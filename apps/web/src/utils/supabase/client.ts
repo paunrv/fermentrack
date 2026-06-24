@@ -1,2 +1,2 @@
-/** @deprecated Usa `useSupabase()` en componentes cliente (JWT Clerk). */
-export { createSupabaseBrowserClient as createClient } from './browser'
+/** @deprecated Usa `createClient` desde `@/lib/supabase/client`. */
+export { createClient } from '@/lib/supabase/client'

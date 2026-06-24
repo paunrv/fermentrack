@@ -2,7 +2,8 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useUser } from '@clerk/nextjs'
+import { useAuth } from '@/hooks/useAuth'
+import { getUserEmail, getUserFirstName } from '@/lib/auth/user'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
 import { upsertProfile } from '@/lib/supabase'
@@ -55,7 +56,7 @@ function isProducer(type: ProfileType | null): type is ProducerType {
 }
 
 function OnboardingContent() {
-  const { user } = useUser()
+  const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const isAddMode = searchParams.get('mode') === 'add'
@@ -121,14 +122,14 @@ function OnboardingContent() {
     if (!user || !profileType) return
     setSaving(true)
     setSaveError(null)
-    const email = user.primaryEmailAddress?.emailAddress || null
+    const email = getUserEmail(user) || null
 
     try {
       await upsertProfile(supabase, {
         clerk_id: user.id,
         profile_type_v2: profileType,
         profile_type: profileType,
-        username: username.trim() || user.firstName || 'Productor',
+        username: username.trim() || getUserFirstName(user) || 'Productor',
         onboarding_complete: true,
         email,
       })
@@ -281,7 +282,7 @@ function OnboardingContent() {
                 </label>
                 <input
                   type="text"
-                  placeholder={user?.firstName || 'Tu nombre'}
+                  placeholder={getUserFirstName(user) || 'Tu nombre'}
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   className={inputClass}

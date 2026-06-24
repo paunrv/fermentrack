@@ -5,9 +5,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { requireClerkSupabaseToken } from '@/hooks/useSupabase'
-import { createSupabaseBrowserClientWithToken } from '@/utils/supabase/browser'
-import { useAuth } from '@clerk/nextjs'
+import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
 import { fmtMoney } from '@/lib/proof/format'
@@ -134,7 +132,7 @@ function messageFromSaveError(err: unknown): string {
 
 export default function NuevoViajePage() {
   const router = useRouter()
-  const { getToken } = useAuth()
+  const supabaseAuthed = useSupabase()
   const { loading, ok, clerkId } = useDestiladorScope()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -211,12 +209,8 @@ export default function NuevoViajePage() {
         }
       }
 
-      const jwt = await requireClerkSupabaseToken(getToken)
-      const supabaseAuthed = createSupabaseBrowserClientWithToken(jwt)
-
       console.info('[viaje/nuevo] guardando viaje (insert viajes + productos_viaje)', {
         clerkId,
-        jwtPresent: true,
         payload,
       })
 

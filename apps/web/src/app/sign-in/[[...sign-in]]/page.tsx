@@ -1,4 +1,4 @@
-import { SignIn } from '@clerk/nextjs'
+import { SignInForm } from '@/components/auth/SignInForm'
 
 export default function SignInPage() {
   return (
@@ -9,9 +9,11 @@ export default function SignInPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        padding: 24,
+        fontFamily: 'var(--font-display)',
       }}
     >
-      <SignIn />
+      <SignInForm />
     </main>
   )
 }

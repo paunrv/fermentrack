@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useUser } from '@clerk/nextjs'
+import { useAuth } from '@/hooks/useAuth'
+import { getUserEmail, getUserFirstName } from '@/lib/auth/user'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -50,7 +51,7 @@ const input: React.CSSProperties = {
 }
 
 export default function SettingsPage() {
-  const { user, isLoaded } = useUser()
+  const { user, isLoaded } = useAuth()
   const router = useRouter()
   const { allProfiles, activeProfile, reload, loading } = useProfile()
   const supabase = useSupabase()
@@ -65,12 +66,12 @@ export default function SettingsPage() {
   const [bancoDeposito, setBancoDeposito] = useState('')
   const [titularCuenta, setTitularCuenta] = useState('')
 
-  const email = user?.primaryEmailAddress?.emailAddress || ''
+  const email = getUserEmail(user)
   const isSuperEmail = email.toLowerCase() === SUPER_USER_EMAIL.toLowerCase()
 
   useEffect(() => {
     if (!activeProfile) {
-      setUsername(user?.firstName || '')
+      setUsername(getUserFirstName(user))
       setIsSuperUser(isSuperEmail)
       return
     }
@@ -91,7 +92,7 @@ export default function SettingsPage() {
         clerk_id: user.id,
         profile_type_v2: activeProfile.profile_type_v2,
         profile_type: activeProfile.profile_type,
-        username: username.trim() || user.firstName || 'Productor',
+        username: username.trim() || getUserFirstName(user) || 'Productor',
         is_super_user: isSuperUser,
         extra_profiles: activeProfile.extra_profiles || [],
         email,

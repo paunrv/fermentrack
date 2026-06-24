@@ -1,6 +1,6 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
+import { getAuthUserId } from '@/lib/supabase/server'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 
 export async function ensureClientEtiquetaAction(input: {
@@ -8,7 +8,7 @@ export async function ensureClientEtiquetaAction(input: {
   nombre: string
   profile_type_v2?: string
 }): Promise<{ id: string; nombre: string }> {
-  const { userId } = await auth()
+  const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
 
   const nombre = input.nombre.trim()

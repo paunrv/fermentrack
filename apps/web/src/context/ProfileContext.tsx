@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useAuth, useUser } from '@clerk/nextjs'
+import { useAuth } from '@/hooks/useAuth'
 import {
   type ExtraProfile,
   type Profile,
@@ -20,7 +20,7 @@ import {
   fetchMiInformacionProfile,
   mergeMiInformacionIntoProfile,
 } from '@/lib/proof/profile-mi-informacion'
-import { createSupabaseBrowserClientWithToken } from '@/utils/supabase/browser'
+import { createClient } from '@/lib/supabase/client'
 
 const STORAGE_KEY = 'proof_active_profile'
 const LEGACY_STORAGE_KEY = 'fermentrack_active_profile'
@@ -70,55 +70,8 @@ function writeStoredType(type: ExtraProfile) {
   localStorage.setItem(STORAGE_KEY, type)
 }
 
-const CLERK_SYNC_TIMEOUT_MS = 8_000
-
-async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<T>((_, reject) => {
-        timer = setTimeout(() => reject(new Error('Clerk sync timeout')), ms)
-      }),
-    ])
-  } finally {
-    if (timer) clearTimeout(timer)
-  }
-}
-
-/** Sincroniza metadata + JWT en segundo plano; no bloquea el cambio de perfil local. */
-async function syncClerkProfileClaim(
-  user: NonNullable<ReturnType<typeof useUser>['user']>,
-  type: ExtraProfile,
-  getToken: ReturnType<typeof useAuth>['getToken']
-): Promise<void> {
-  try {
-    await withTimeout(
-      user.update({
-        unsafeMetadata: {
-          ...(user.unsafeMetadata as Record<string, unknown>),
-          profile_type_v2: type,
-        },
-      }),
-      CLERK_SYNC_TIMEOUT_MS
-    )
-  } catch (err) {
-    console.warn('[ProfileContext] Clerk metadata sync failed', err)
-    return
-  }
-  try {
-    await withTimeout(
-      getToken({ template: 'supabase', skipCache: true }),
-      CLERK_SYNC_TIMEOUT_MS
-    )
-  } catch (err) {
-    console.warn('[ProfileContext] JWT refresh after profile switch failed', err)
-  }
-}
-
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const { user, isLoaded } = useUser()
-  const { getToken, isSignedIn } = useAuth()
+  const { user, isLoaded, isSignedIn } = useAuth()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -134,12 +87,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return true
     }
 
-    const token = await getToken({ template: 'supabase' })
-    console.log('[ProfileContext] token:', token ? 'OK' : 'NULL')
-    console.log('[ProfileContext] isLoaded:', isLoaded, 'isSignedIn:', isSignedIn)
-    if (!token) return false
-
-    const sb = createSupabaseBrowserClientWithToken(token)
+    const sb = createClient()
     const { data, error } = await sb
       .from('profiles')
       .select('*')
@@ -192,13 +140,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     }
     setActiveProfile(active)
     writeStoredType(found.profile_type_v2)
-    try {
-      await syncClerkProfileClaim(user, found.profile_type_v2, getToken)
-    } catch {
-      /* JWT se refrescará en la próxima interacción */
-    }
     return true
-  }, [user, getToken, isLoaded, isSignedIn])
+  }, [user, isLoaded, isSignedIn])
 
   useEffect(() => {
     console.log(
@@ -268,7 +211,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoaded) return
     const t = window.setTimeout(() => {
-      console.warn('[ProfileContext] Clerk no cargó a tiempo — desbloqueando UI')
+      console.warn('[ProfileContext] Auth no cargó a tiempo — desbloqueando UI')
       setProfilesResolved(true)
       setLoading(false)
     }, 10_000)
@@ -290,12 +233,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     void (async () => {
       try {
-        const token = await getToken({ template: 'supabase' })
-        if (!token) {
-          if (!cancelled) setScopeClerkId(user.id)
-          return
-        }
-        const sb = createSupabaseBrowserClientWithToken(token)
+        const sb = createClient()
         const orgClerkId = await resolveDistribuidorScopeClerkId(sb, user.id)
         if (!cancelled) {
           console.log('[ProfileContext] scope clerk_id', {
@@ -313,7 +251,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [user?.id, activeProfile?.profile_type_v2, getToken])
+  }, [user?.id, activeProfile?.profile_type_v2])
 
   const switchProfile = useCallback(
     (type: ExtraProfile) => {
@@ -321,11 +259,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       if (!next) return
       setActiveProfile(next)
       writeStoredType(type)
-      if (user) {
-        void syncClerkProfileClaim(user, type, getToken)
-      }
     },
-    [allProfiles, user, getToken]
+    [allProfiles]
   )
 
   const scope = useMemo((): ProfileScope | null => {
