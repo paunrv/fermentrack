@@ -15,9 +15,8 @@ function resolveBreakpoint(width: number): Breakpoint {
 }
 
 export function useBreakpoint(): Breakpoint {
-  const [bp, setBp] = useState<Breakpoint>(() =>
-    typeof window !== 'undefined' ? resolveBreakpoint(window.innerWidth) : 'desktop'
-  )
+  // Primer render idéntico en servidor y cliente; se sincroniza en useEffect.
+  const [bp, setBp] = useState<Breakpoint>('desktop')
 
   useEffect(() => {
     const mqMobile = window.matchMedia(`(max-width: ${MOBILE_MAX}px)`)

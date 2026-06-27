@@ -3,6 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware'
 
 const PUBLIC_PREFIXES = ['/', '/sign-in', '/sign-up', '/auth/callback']
 
+/** Public routes — no auth redirect. Protected: /dashboard/*, /onboarding */
 function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith('/api/chat')) return true
   return PUBLIC_PREFIXES.some(

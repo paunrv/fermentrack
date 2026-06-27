@@ -12,6 +12,7 @@ import {
 } from '@/components/proof/ProofCanvasShell'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
+import { fetchTeamAccess } from '@/app/actions/equipo'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const [winemakerPantalla, setWinemakerPantalla] = useState<Record<string, unknown> | null>(
     null
   )
+  const [isWinemakerOwner, setIsWinemakerOwner] = useState<boolean | null>(null)
 
   const agentHints = useMemo(
     () => ({
@@ -139,6 +141,20 @@ export default function DashboardPage() {
     if (!refreshProfile || !isDistributor) return
     void reloadProfile({ silent: true })
   }, [refreshProfile, isDistributor])
+
+  useEffect(() => {
+    if (profileLoading || !isWinemaker || !userId) {
+      setIsWinemakerOwner(null)
+      return
+    }
+    let cancelled = false
+    void fetchTeamAccess().then(access => {
+      if (!cancelled) setIsWinemakerOwner(access.isOwner)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [profileLoading, isWinemaker, userId])
 
   const handleAgentSend = useCallback((message: string, conversation: ProofMessage[]) => {
     setAgentConversation(conversation)
@@ -232,15 +248,30 @@ export default function DashboardPage() {
   }
 
   if (isWinemaker) {
-    const displayName =
-      activeProfile?.username?.trim() ||
-      activeProfile?.email?.split('@')[0]?.trim() ||
-      'Aldo'
-    return (
-      <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
-        <WinemakerMobileHome displayName={displayName} />
-      </div>
-    )
+    if (isWinemakerOwner === null) {
+      return (
+        <div
+          style={{
+            height: '100%',
+            background: 'var(--canvas)',
+            display: 'grid',
+            placeItems: 'center',
+            color: 'var(--fg-3)',
+            fontSize: 14,
+          }}
+        >
+          Cargando PROOF…
+        </div>
+      )
+    }
+
+    if (isWinemakerOwner) {
+      return (
+        <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+          <WinemakerMobileHome />
+        </div>
+      )
+    }
   }
 
   return (

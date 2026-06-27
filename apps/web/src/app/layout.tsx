@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: 'PROOF · Operational Intelligence for Liquid Operations',
   description:
     'The operating system for wineries, breweries, distilleries and distributors. Every bottle tells a story. We track the proof.',
+  icons: {
+    icon: '/favicon.ico',
+  },
   viewport: {
     width: 'device-width',
     initialScale: 1,
