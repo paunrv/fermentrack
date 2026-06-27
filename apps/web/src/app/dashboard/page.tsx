@@ -11,6 +11,7 @@ import {
   type ProofMessage,
 } from '@/components/proof/ProofCanvasShell'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
+import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
@@ -36,7 +37,7 @@ export default function DashboardPage() {
   const profileType = profileTypeFromV2(activeProfile?.profile_type_v2)
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const accent = theme.accent
-  const clerkId = scope?.clerk_id
+  const userId = scope?.user_id
   const isDistiller = profileType === 'distiller'
   const isDistributor = profileType === 'distributor'
   const isWinemaker = profileType === 'winemaker'
@@ -86,7 +87,7 @@ export default function DashboardPage() {
     profileType: agentProfileType,
     hints: agentHints,
     requestId: agentRequestId,
-    enabled: Boolean(clerkId) && agentProfileType != null,
+    enabled: Boolean(userId) && agentProfileType != null,
     fallback: { mensaje: '' },
   })
 
@@ -226,6 +227,18 @@ export default function DashboardPage() {
         }}
       >
         Perfil no compatible con el canvas PROOF.
+      </div>
+    )
+  }
+
+  if (isWinemaker) {
+    const displayName =
+      activeProfile?.username?.trim() ||
+      activeProfile?.email?.split('@')[0]?.trim() ||
+      'Aldo'
+    return (
+      <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
+        <WinemakerMobileHome displayName={displayName} />
       </div>
     )
   }

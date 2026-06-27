@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildOrdenCompraShareText } from '@/lib/proof/orden-compra-share'
 
+const TEST_USER_ID = 'cd459e32-718d-46da-9003-5b002c483cfd'
+
 describe('buildOrdenCompraShareText', () => {
   it('export logístico antes de recibir', () => {
     const text = buildOrdenCompraShareText({
@@ -31,7 +33,7 @@ describe('buildOrdenCompraShareText', () => {
         pagos: [
           {
             id: 'p1',
-            clerk_id: 'u',
+            user_id: TEST_USER_ID,
             profile_type_v2: 'distributor',
             cuenta_por_pagar_id: 'c1',
             monto: 7000,

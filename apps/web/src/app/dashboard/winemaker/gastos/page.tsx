@@ -11,15 +11,15 @@ import { fetchProductionCosts } from '@/lib/supabase/winemaker'
 
 export default function WinemakerGastosPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useWinemakerScope()
+  const { loading: scopeLoading, ok, userId } = useWinemakerScope()
   const [costs, setCosts] = useState<WmProductionCostRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
-    fetchProductionCosts(supabase, clerkId, { limit: 200 })
+    fetchProductionCosts(supabase, userId, { limit: 200 })
       .then(rows => {
         if (!cancelled) setCosts(rows)
       })
@@ -29,7 +29,7 @@ export default function WinemakerGastosPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase])
+  }, [ok, userId, supabase])
 
   const total = costs.reduce((s, c) => s + Number(c.amount), 0)
   const overhead = costs.filter(c => c.lot_id == null).reduce((s, c) => s + Number(c.amount), 0)

@@ -70,7 +70,7 @@ export function ViajePendienteDetalle({
 }) {
   const supabase = useSupabase()
   const { scope } = useProfile()
-  const clerkId = scope?.clerk_id
+  const userId = scope?.user_id
 
   const [loading, setLoading] = useState(true)
   const [viaje, setViaje] = useState<ViajeRow | null>(null)
@@ -80,7 +80,7 @@ export function ViajePendienteDetalle({
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    if (!clerkId) {
+    if (!userId) {
       setLoading(false)
       return
     }
@@ -88,8 +88,8 @@ export function ViajePendienteDetalle({
     setError(null)
     try {
       const [v, prods] = await Promise.all([
-        fetchViajeById(supabase, clerkId, viajeId),
-        fetchProductosForViaje(supabase, clerkId, viajeId),
+        fetchViajeById(supabase, userId, viajeId),
+        fetchProductosForViaje(supabase, userId, viajeId),
       ])
       setViaje(v)
       setProductos(prods)
@@ -110,7 +110,7 @@ export function ViajePendienteDetalle({
     } finally {
       setLoading(false)
     }
-  }, [supabase, clerkId, viajeId])
+  }, [supabase, userId, viajeId])
 
   useEffect(() => {
     void load()

@@ -131,7 +131,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     )
       .then(([row, cxcRow]) => {
         if (cancelled) return
-        if (row && scope && row.clerk_id !== scope.clerk_id) {
+        if (row && scope && row.user_id !== scope.user_id) {
           setPedido(null)
           setCuenta(null)
           setLoadError('No se encontró el pedido.')
@@ -153,7 +153,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     return () => {
       cancelled = true
     }
-  }, [supabase, pedidoId, refreshKey, refreshTick, scope?.clerk_id])
+  }, [supabase, pedidoId, refreshKey, refreshTick, scope?.user_id])
 
   const toma = useMemo(
     () => parseTomaPedidoNotas(pedido?.notas ?? null),

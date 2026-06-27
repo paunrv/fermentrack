@@ -58,7 +58,7 @@ export default function ProductorDetallePage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase, nombre])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase, nombre])
 
   const deudaTotal = deudas.reduce((a, d) => a + Number(d.monto), 0)
 

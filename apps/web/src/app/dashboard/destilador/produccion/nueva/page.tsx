@@ -20,7 +20,7 @@ export default function NuevaCorridaPage() {
   const router = useRouter()
   const search = useSearchParams()
   const supabase = useSupabase()
-  const { loading, ok, clerkId } = useDestiladorScope()
+  const { loading, ok, userId } = useDestiladorScope()
   const [lotes, setLotes] = useState<LoteRow[]>([])
   const [bodegas, setBodegas] = useState<{ id: string; nombre: string }[]>([])
   const [saving, setSaving] = useState(false)
@@ -37,8 +37,8 @@ export default function NuevaCorridaPage() {
   const [tarifa, setTarifa] = useState('')
 
   useEffect(() => {
-    if (!ok || !clerkId) return
-    Promise.all([fetchLotesCrudo(supabase, clerkId), fetchBodegas(supabase, clerkId)]).then(
+    if (!ok || !userId) return
+    Promise.all([fetchLotesCrudo(supabase, userId), fetchBodegas(supabase, userId)]).then(
       ([l, b]) => {
         setLotes(l)
         setBodegas(b)
@@ -49,7 +49,7 @@ export default function NuevaCorridaPage() {
         else if (l[0]) setLoteId(l[0].id)
       }
     )
-  }, [ok, clerkId, supabase, search])
+  }, [ok, userId, supabase, search])
 
   const loteSel = lotes.find(l => l.id === loteId)
   const litrosNum = parseFloat(litros) || (loteSel ? Number(loteSel.litros_disponibles_granel) : 0)
@@ -66,11 +66,11 @@ export default function NuevaCorridaPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!clerkId || !loteId || !bodegaId) return
+    if (!userId || !loteId || !bodegaId) return
     setSaving(true)
     setError(null)
     try {
-      const { corridaId } = await iniciarCorridaDestilador(supabase, clerkId, {
+      const { corridaId } = await iniciarCorridaDestilador(supabase, userId, {
         lote_id: loteId,
         bodega_id: bodegaId,
         formato_botella: formato,

@@ -22,7 +22,7 @@ export async function ensureClientEtiquetaAction(input: {
     .from('client_etiquetas')
     .select('id, nombre')
     .eq('client_id', input.client_id)
-    .eq('clerk_id', userId)
+    .eq('user_id', userId)
     .eq('profile_type_v2', profileType)
     .ilike('nombre', nombre)
     .limit(1)
@@ -36,7 +36,7 @@ export async function ensureClientEtiquetaAction(input: {
     .insert({
       client_id: input.client_id,
       nombre,
-      clerk_id: userId,
+      user_id: userId,
       profile_type_v2: profileType,
     })
     .select('id, nombre')

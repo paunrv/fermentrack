@@ -37,7 +37,7 @@ function appScopeToRow(scope: KpiScope): 'all' | 'lote_id' {
 }
 
 async function loadConfig(
-  clerkId: string,
+  userId: string,
   profileType: ProfileType,
   loteId: string | undefined,
   supabase: SupabaseClient
@@ -45,7 +45,7 @@ async function loadConfig(
   const { data, error } = await supabase
     .from('kpi_config')
     .select('slot, metric, scope, scope_id')
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .eq('profile_type', profileType)
     .order('slot')
 
@@ -85,27 +85,27 @@ async function loadConfig(
 export function useKpiConfig(profileType: ProfileType, loteId?: string) {
   const supabase = useSupabase()
   const { scope } = useProfile()
-  const clerkId = scope?.clerk_id
+  const userId = scope?.user_id
 
   const [config, setConfig] = useState<KpiConfig[]>(() => buildDefaultConfig(profileType))
   const [loading, setLoading] = useState(true)
 
   const reload = useCallback(async () => {
-    if (!clerkId) {
+    if (!userId) {
       setConfig(buildDefaultConfig(profileType))
       setLoading(false)
       return
     }
     setLoading(true)
     try {
-      const rows = await loadConfig(clerkId, profileType, loteId, supabase)
+      const rows = await loadConfig(userId, profileType, loteId, supabase)
       setConfig(rows)
     } catch {
       setConfig(buildDefaultConfig(profileType))
     } finally {
       setLoading(false)
     }
-  }, [supabase, clerkId, profileType, loteId])
+  }, [supabase, userId, profileType, loteId])
 
   useEffect(() => {
     void reload()
@@ -113,7 +113,7 @@ export function useKpiConfig(profileType: ProfileType, loteId?: string) {
 
   const updateKpi = useCallback(
     async (slot: number, metric: string, kpiScope: KpiScope) => {
-      if (!clerkId) return
+      if (!userId) return
 
       const rowScope = appScopeToRow(kpiScope)
       const scopeId = kpiScope === 'single' && loteId ? loteId : null
@@ -135,7 +135,7 @@ export function useKpiConfig(profileType: ProfileType, loteId?: string) {
         const { error: delErr } = await supabase
           .from('kpi_config')
           .delete()
-          .eq('clerk_id', clerkId)
+          .eq('user_id', userId)
           .eq('profile_type', profileType)
           .eq('slot', slot)
           .not('scope_id', 'is', null)
@@ -147,7 +147,7 @@ export function useKpiConfig(profileType: ProfileType, loteId?: string) {
 
       const { error } = await supabase.from('kpi_config').upsert(
         {
-          clerk_id: clerkId,
+          user_id: userId,
           profile_type: profileType,
           slot,
           metric,
@@ -155,7 +155,7 @@ export function useKpiConfig(profileType: ProfileType, loteId?: string) {
           scope_id: scopeId,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'clerk_id,profile_type,slot,scope_id' }
+        { onConflict: 'user_id,profile_type,slot,scope_id' }
       )
 
       if (error && !error.message.includes('does not exist')) {
@@ -163,7 +163,7 @@ export function useKpiConfig(profileType: ProfileType, loteId?: string) {
         await reload()
       }
     },
-    [supabase, clerkId, profileType, loteId, reload]
+    [supabase, userId, profileType, loteId, reload]
   )
 
   return { config, updateKpi, loading }

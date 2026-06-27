@@ -49,18 +49,18 @@ function LoteBar({
 export default function DetalleLotePage() {
   const { id } = useParams<{ id: string }>()
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useDestiladorScope()
+  const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [lote, setLote] = useState<LoteRow | null>(null)
   const [corridas, setCorridas] = useState<CorridaRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId || !id) return
+    if (!ok || !userId || !id) return
     let cancelled = false
     setDataLoading(true)
     Promise.all([
-      fetchLoteById(supabase, clerkId, id),
-      fetchCorridasByLote(supabase, clerkId, id),
+      fetchLoteById(supabase, userId, id),
+      fetchCorridasByLote(supabase, userId, id),
     ])
       .then(([l, c]) => {
         if (cancelled) return
@@ -73,7 +73,7 @@ export default function DetalleLotePage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, id, supabase])
+  }, [ok, userId, id, supabase])
 
   const stats = useMemo(() => {
     if (!lote) return null

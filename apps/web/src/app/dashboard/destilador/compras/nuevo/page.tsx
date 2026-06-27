@@ -74,7 +74,7 @@ function isPostgrestError(err: unknown): err is {
 }
 
 /** Diagnóstico en consola del navegador (F12 → Console). */
-function logViajeSaveError(err: unknown, context: { clerkId: string; payload: ViajeSubmitPayload }) {
+function logViajeSaveError(err: unknown, context: { userId: string; payload: ViajeSubmitPayload }) {
   if (err instanceof Error && err.message.includes('Revisa litros')) {
     console.error('[viaje/nuevo] validación del formulario (antes de Supabase)', {
       message: err.message,
@@ -100,7 +100,7 @@ function logViajeSaveError(err: unknown, context: { clerkId: string; payload: Vi
       details: err.details,
       hint: err.hint,
       status: err.status,
-      clerkId: context.clerkId,
+      userId: context.userId,
       payload: context.payload,
       raw: err,
     })
@@ -109,7 +109,7 @@ function logViajeSaveError(err: unknown, context: { clerkId: string; payload: Vi
 
   console.error('[viaje/nuevo] error desconocido al guardar viaje', {
     err,
-    clerkId: context.clerkId,
+    userId: context.userId,
     payload: context.payload,
     type: typeof err,
     stack: err instanceof Error ? err.stack : undefined,
@@ -133,7 +133,7 @@ function messageFromSaveError(err: unknown): string {
 export default function NuevoViajePage() {
   const router = useRouter()
   const supabaseAuthed = useSupabase()
-  const { loading, ok, clerkId } = useDestiladorScope()
+  const { loading, ok, userId } = useDestiladorScope()
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -176,8 +176,8 @@ export default function NuevoViajePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!clerkId) {
-      console.error('[viaje/nuevo] submit sin clerkId — perfil destilador no listo')
+    if (!userId) {
+      console.error('[viaje/nuevo] submit sin userId — perfil destilador no listo')
       setError('Sesión destilador no disponible. Recarga la página.')
       return
     }
@@ -210,11 +210,11 @@ export default function NuevoViajePage() {
       }
 
       console.info('[viaje/nuevo] guardando viaje (insert viajes + productos_viaje)', {
-        clerkId,
+        userId,
         payload,
       })
 
-      const { viajeId } = await createViajeDestilador(supabaseAuthed, clerkId, payload)
+      const { viajeId } = await createViajeDestilador(supabaseAuthed, userId, payload)
 
       console.info('[viaje/nuevo] viaje creado', { viajeId })
 
@@ -222,7 +222,7 @@ export default function NuevoViajePage() {
         recibirEnBodega &&
         (payload.estado === 'confirmado' || payload.estado === 'en_transito')
       ) {
-        const prods = await fetchProductosForViaje(supabaseAuthed, clerkId, viajeId)
+        const prods = await fetchProductosForViaje(supabaseAuthed, userId, viajeId)
         await confirmarLlegadaDestilador(
           supabaseAuthed,
           viajeId,
@@ -240,7 +240,7 @@ export default function NuevoViajePage() {
 
       router.push(`/dashboard/destilador/compras/${viajeId}`)
     } catch (err: unknown) {
-      logViajeSaveError(err, { clerkId, payload })
+      logViajeSaveError(err, { userId, payload })
       setError(messageFromSaveError(err))
     } finally {
       setSaving(false)

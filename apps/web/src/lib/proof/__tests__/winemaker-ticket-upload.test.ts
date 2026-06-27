@@ -49,8 +49,8 @@ describe('parseWmTicketVisionJson', () => {
     const p = parseWmTicketVisionJson(raw)
     expect(p?.supplier_name).toBe('Embotellados del Norte')
     expect(p?.lines).toHaveLength(2)
-    expect(p?.lines[0].supply_kind).toBe('botella')
-    expect(p?.lines[1].supply_kind).toBe('corcho')
+    expect(p?.lines[0]!.supply_kind).toBe('botella')
+    expect(p?.lines[1]!.supply_kind).toBe('corcho')
   })
 
   it('parses uva line with varietal', () => {
@@ -66,8 +66,8 @@ describe('parseWmTicketVisionJson', () => {
       ],
     })
     const p = parseWmTicketVisionJson(raw)
-    expect(p?.lines[0].supply_kind).toBe('uva')
-    expect(p?.lines[0].varietal).toBe('cabernet sauvignon')
+    expect(p?.lines[0]!.supply_kind).toBe('uva')
+    expect(p?.lines[0]!.varietal).toBe('cabernet sauvignon')
   })
 
   it('parses CFDI invoice with emisor, folio and line detail', () => {
@@ -102,8 +102,8 @@ describe('parseWmTicketVisionJson', () => {
     expect(p?.supplier_name).toContain('LARSON')
     expect(p?.folio).toBe('20022')
     expect(p?.supplier_email).toBe('larson.sauzal@gmail.com')
-    expect(p?.lines[0].product_service_code).toBe('24122003')
-    expect(p?.lines[0].quantity).toBe(1232)
+    expect(p?.lines[0]!.product_service_code).toBe('24122003')
+    expect(p?.lines[0]!.quantity).toBe(1232)
   })
 
   it('infers png mime from screenshot filename when browser omits type', () => {

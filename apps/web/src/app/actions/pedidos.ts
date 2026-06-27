@@ -37,7 +37,7 @@ export async function createPedidoDraftAction(input: {
     fecha_entrega: input.fecha_entrega,
     condicion_pago: input.condicion_pago,
     notas: input.notas ?? null,
-    clerk_id: userId,
+    user_id: userId,
     profile_type_v2: profileType,
   })
 }

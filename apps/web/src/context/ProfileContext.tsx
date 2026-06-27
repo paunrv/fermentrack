@@ -14,6 +14,7 @@ import {
   type ExtraProfile,
   type Profile,
   type ProfileScope,
+  PROOF_PROFILES_TABLE,
 } from '@/lib/supabase'
 import { resolveDistribuidorScopeClerkId } from '@/lib/supabase/distribuidor'
 import {
@@ -77,7 +78,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [profilesResolved, setProfilesResolved] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [scopeClerkId, setScopeClerkId] = useState<string | null>(null)
+  const [scopeUserId, setScopeUserId] = useState<string | null>(null)
 
   /** @returns true si la consulta a `profiles` terminó; false si falta JWT (reintentar). */
   const load = useCallback(async (): Promise<boolean> => {
@@ -89,9 +90,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     const sb = createClient()
     const { data, error } = await sb
-      .from('profiles')
+      .from(PROOF_PROFILES_TABLE)
       .select('*')
-      .eq('clerk_id', user.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true })
     console.log('[ProfileContext] profiles result:', data, error)
     if (error) throw error
@@ -100,6 +101,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       row =>
         ({
           ...row,
+          user_id: row.user_id ?? row.clerk_id,
           extra_profiles: (row.extra_profiles || []) as ExtraProfile[],
           is_super_user: Boolean(row.is_super_user),
           onboarding_complete: Boolean(row.onboarding_complete),
@@ -220,12 +222,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user || !activeProfile) {
-      setScopeClerkId(null)
+      setScopeUserId(null)
       return
     }
 
     if (activeProfile.profile_type_v2 !== 'distributor') {
-      setScopeClerkId(user.id)
+      setScopeUserId(user.id)
       return
     }
 
@@ -234,17 +236,17 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     void (async () => {
       try {
         const sb = createClient()
-        const orgClerkId = await resolveDistribuidorScopeClerkId(sb, user.id)
+        const orgUserId = await resolveDistribuidorScopeClerkId(sb, user.id)
         if (!cancelled) {
-          console.log('[ProfileContext] scope clerk_id', {
-            clerkUserId: user.id,
-            scopeClerkId: orgClerkId,
+          console.log('[ProfileContext] scope user_id', {
+            authUserId: user.id,
+            scopeUserId: orgUserId,
           })
-          setScopeClerkId(orgClerkId)
+          setScopeUserId(orgUserId)
         }
       } catch (err) {
-        console.warn('[ProfileContext] resolve scope clerk_id', err)
-        if (!cancelled) setScopeClerkId(user.id)
+        console.warn('[ProfileContext] resolve scope user_id', err)
+        if (!cancelled) setScopeUserId(user.id)
       }
     })()
 
@@ -264,9 +266,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   )
 
   const scope = useMemo((): ProfileScope | null => {
-    if (!user || !activeProfile || !scopeClerkId) return null
-    return { clerk_id: scopeClerkId, profile_type_v2: activeProfile.profile_type_v2 }
-  }, [user, activeProfile, scopeClerkId])
+    if (!user || !activeProfile || !scopeUserId) return null
+    return { user_id: scopeUserId, profile_type_v2: activeProfile.profile_type_v2 }
+  }, [user, activeProfile, scopeUserId])
 
   const contextValue = useMemo(
     () => ({

@@ -127,11 +127,14 @@ export {
 } from './supabase/distribuidor'
 
 export type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
-export type ExtraProfile = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
+export type ExtraProfile = 'brewer' | 'winemaker' | 'distiller' | 'distributor' | 'bodega'
+
+/** Perfiles de negocio PROOF (≠ public.profiles de identidad Supabase Auth). */
+export const PROOF_PROFILES_TABLE = 'proof_profiles' as const
 
 export interface Profile {
   id?: string
-  clerk_id: string
+  user_id: string
   username: string | null
   profile_type: ProfileType | null
   profile_type_v2: ExtraProfile
@@ -148,7 +151,7 @@ export interface Profile {
 }
 
 export interface ProfileScope {
-  clerk_id: string
+  user_id: string
   profile_type_v2: ExtraProfile
 }
 
@@ -202,7 +205,7 @@ export async function fetchBatches(
     .select('*')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -219,7 +222,7 @@ export async function fetchSamples(
     .order('created_at', { ascending: false })
     .limit(30)
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -326,7 +329,7 @@ export async function fetchBottling(
     .select('*')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -352,7 +355,7 @@ export async function fetchProductionCosts(
     .eq('batch_id', batchId)
     .order('cost_date', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -376,7 +379,7 @@ export async function fetchWarehouseExits(
     .select('*')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -416,7 +419,7 @@ export async function fetchClients(
     .select('*')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -451,7 +454,7 @@ export interface DistProduct {
   notes: string | null
   created_at: string
   image_url?: string | null
-  clerk_id?: string | null
+  user_id?: string | null
   profile_type_v2?: ExtraProfile | null
 }
 
@@ -464,7 +467,7 @@ export async function fetchDistProducts(
     .select('*')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -547,7 +550,7 @@ export async function fetchDistInventory(
     .select('*, dist_inventory(*)')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error
@@ -593,7 +596,7 @@ export async function fetchDistMovements(
   }
   if (options?.scope) {
     query = query
-      .eq('clerk_id', options.scope.clerk_id)
+      .eq('clerk_id', options.scope.user_id)
       .eq('profile_type_v2', options.scope.profile_type_v2)
   }
 
@@ -638,6 +641,7 @@ export async function updateDistInventory(
 function normalizeProfile(row: any): Profile {
   return {
     ...row,
+    user_id: row.user_id ?? row.clerk_id,
     extra_profiles: (row.extra_profiles || []) as ExtraProfile[],
     is_super_user: Boolean(row.is_super_user),
     onboarding_complete: Boolean(row.onboarding_complete),
@@ -646,12 +650,12 @@ function normalizeProfile(row: any): Profile {
 
 export async function fetchProfiles(
   sb: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<Profile[]> {
   const { data, error } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .order('created_at', { ascending: true })
   if (error) throw error
   return (data || []).map(normalizeProfile)
@@ -659,13 +663,13 @@ export async function fetchProfiles(
 
 export async function fetchActiveProfile(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   profileType: ExtraProfile
 ): Promise<Profile | null> {
   const { data, error } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .eq('profile_type_v2', profileType)
     .maybeSingle()
   if (error) throw error
@@ -675,7 +679,7 @@ export async function fetchActiveProfile(
 
 export async function upsertProfile(
   sb: SupabaseClient,
-  data: Partial<Profile> & { clerk_id: string; profile_type_v2: ExtraProfile }
+  data: Partial<Profile> & { user_id: string; profile_type_v2: ExtraProfile }
 ): Promise<void> {
   const isSuper =
     Boolean(data.is_super_user) ||
@@ -683,26 +687,28 @@ export async function upsertProfile(
 
   const record = {
     ...data,
+    // PK legacy en proof_profiles sigue siendo (clerk_id, profile_type_v2)
+    clerk_id: data.user_id,
     is_super_user: isSuper,
     extra_profiles: data.extra_profiles || [],
     updated_at: new Date().toISOString(),
   }
 
   const { error } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .upsert(record, { onConflict: 'clerk_id,profile_type_v2' })
   if (error) throw error
 }
 
 export async function deleteProfile(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   profileType: ExtraProfile
 ): Promise<void> {
   const { error } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .delete()
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .eq('profile_type_v2', profileType)
   if (error) throw error
 }

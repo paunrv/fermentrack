@@ -15,7 +15,7 @@ export function ProofBodegaLensSelector({
   accent: string
   actions: ProofBodegaLensAction[]
   disabled?: boolean
-  onSelect: (message: string) => void
+  onSelect: (action: ProofBodegaLensAction) => void
   onBack?: () => void
   compact?: boolean
 }) {
@@ -25,7 +25,7 @@ export function ProofBodegaLensSelector({
       hub="bodega"
       actions={actions}
       disabled={disabled}
-      onSelect={onSelect}
+      onSelect={(action) => onSelect(action as ProofBodegaLensAction)}
       onBack={onBack}
       compact={compact}
     />

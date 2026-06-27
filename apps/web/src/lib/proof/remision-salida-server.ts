@@ -14,13 +14,13 @@ export type RemisionPdfResult = {
 async function fetchRemisionByPedido(
   sb: ReturnType<typeof createServiceSupabase>,
   pedidoId: string,
-  clerkId: string
+  userId: string
 ): Promise<RemisionDistribuidorRow | null> {
   const { data, error } = await sb
     .from('remisiones_distribuidor')
     .select('*')
     .eq('pedido_id', pedidoId)
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .maybeSingle()
   if (error) throw error
   return (data as RemisionDistribuidorRow | null) ?? null
@@ -40,23 +40,23 @@ async function ensureRemisionRow(
 /** Crea fila de remisión (si falta) y genera/sube PDF. Idempotente si pdf_url ya existe. */
 export async function ensureRemisionPdfForPedido(
   pedidoId: string,
-  clerkId: string
+  userId: string
 ): Promise<RemisionPdfResult> {
   const sb = createServiceSupabase()
 
   const pedido = await fetchPedidoWithItems(sb, pedidoId)
   if (!pedido) throw new Error('Pedido no encontrado')
-  if (pedido.clerk_id !== clerkId) throw new Error('No autorizado')
+  if (pedido.user_id !== userId) throw new Error('No autorizado')
   if (!['entregado', 'parcial'].includes(pedido.estado)) {
     throw new Error('Solo pedidos entregados pueden generar remisión')
   }
 
-  let remision = await fetchRemisionByPedido(sb, pedidoId, clerkId)
+  let remision = await fetchRemisionByPedido(sb, pedidoId, userId)
   if (!remision) {
     remision = await ensureRemisionRow(sb, pedidoId)
   }
 
-  const storagePath = remision.pdf_url?.trim() || remisionStoragePath(clerkId, remision.id)
+  const storagePath = remision.pdf_url?.trim() || remisionStoragePath(userId, remision.id)
 
   if (remision.pdf_url?.trim()) {
     try {
@@ -90,13 +90,13 @@ export async function ensureRemisionPdfForPedido(
     generadoEn: new Date(),
   })
 
-  const { path, signedUrl } = await uploadRemisionPdf(sb, clerkId, remision.id, pdfBuffer)
+  const { path, signedUrl } = await uploadRemisionPdf(sb, userId, remision.id, pdfBuffer)
 
   const { data: updated, error: upErr } = await sb
     .from('remisiones_distribuidor')
     .update({ pdf_url: path })
     .eq('id', remision.id)
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .select('*')
     .single()
   if (upErr) throw upErr
@@ -109,10 +109,10 @@ export async function ensureRemisionPdfForPedido(
 
 export async function getRemisionDownloadForPedido(
   pedidoId: string,
-  clerkId: string
+  userId: string
 ): Promise<{ remision: RemisionDistribuidorRow; downloadUrl: string } | null> {
   const sb = createServiceSupabase()
-  const remision = await fetchRemisionByPedido(sb, pedidoId, clerkId)
+  const remision = await fetchRemisionByPedido(sb, pedidoId, userId)
   if (!remision?.pdf_url?.trim()) return null
   const downloadUrl = await signRemisionPdfUrl(sb, remision.pdf_url.trim())
   return { remision, downloadUrl }
@@ -120,8 +120,8 @@ export async function getRemisionDownloadForPedido(
 
 export async function fetchRemisionResumenForPedido(
   pedidoId: string,
-  clerkId: string
+  userId: string
 ): Promise<RemisionDistribuidorRow | null> {
   const sb = createServiceSupabase()
-  return fetchRemisionByPedido(sb, pedidoId, clerkId)
+  return fetchRemisionByPedido(sb, pedidoId, userId)
 }

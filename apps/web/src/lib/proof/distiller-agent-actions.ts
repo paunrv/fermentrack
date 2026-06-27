@@ -421,7 +421,7 @@ function parseCreateCompraIntent(q: string): DistillerAgentAction | null {
 
 export async function executeDistillerAgentAction(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   action: DistillerAgentAction
 ): Promise<{ ok: true; message: string; loteId: string }> {
   if (action.type === 'confirmar_llegada_viaje') {
@@ -429,7 +429,7 @@ export async function executeDistillerAgentAction(
       .from('viajes')
       .select('id, estado, region, palenquero_nombre')
       .eq('id', action.viaje_id)
-      .eq('clerk_id', clerkId)
+      .eq('clerk_id', userId)
       .maybeSingle()
     if (viajeErr) throw viajeErr
     if (!viaje) throw new Error('Viaje no encontrado o no pertenece a tu cuenta')
@@ -454,7 +454,7 @@ export async function executeDistillerAgentAction(
 
   if (action.type === 'create_compra_recibida') {
     const today = new Date().toISOString().slice(0, 10)
-    const { viajeId } = await createViajeDestilador(sb, clerkId, {
+    const { viajeId } = await createViajeDestilador(sb, userId, {
       fecha: today,
       region: action.region,
       comunidad: action.region,
@@ -497,7 +497,7 @@ export async function executeDistillerAgentAction(
   const { data: lote, error: loteErr } = await sb
     .from('lotes')
     .select('id, numero_lote, tipo_agave')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('id', action.lote_id)
     .maybeSingle()
   if (loteErr) throw loteErr
@@ -513,7 +513,7 @@ export async function executeDistillerAgentAction(
           updated_at: new Date().toISOString(),
         })
         .eq('id', action.lote_id)
-        .eq('clerk_id', clerkId)
+        .eq('clerk_id', userId)
       if (upErr) {
         const msg = upErr.message ?? ''
         if (
@@ -545,7 +545,7 @@ export async function executeDistillerAgentAction(
           updated_at: new Date().toISOString(),
         })
         .eq('id', action.lote_id)
-        .eq('clerk_id', clerkId)
+        .eq('clerk_id', userId)
       if (upErr) throw upErr
       return {
         ok: true,
@@ -562,7 +562,7 @@ export async function executeDistillerAgentAction(
           updated_at: new Date().toISOString(),
         })
         .eq('id', action.lote_id)
-        .eq('clerk_id', clerkId)
+        .eq('clerk_id', userId)
       if (upErr) throw upErr
       return {
         ok: true,

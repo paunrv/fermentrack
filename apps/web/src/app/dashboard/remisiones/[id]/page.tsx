@@ -57,7 +57,7 @@ export default function RemisionDetallePage() {
     return () => {
       cancelled = true
     }
-  }, [id, supabase, scope?.clerk_id])
+  }, [id, supabase, scope?.user_id])
 
   const totalBts =
     rec?.items_recepcion?.reduce((a, it) => a + (it.cantidad_recibida || 0), 0) ?? 0

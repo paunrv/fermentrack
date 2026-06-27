@@ -61,7 +61,7 @@ function ClientesDistribuidorPage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2])
+  }, [scope?.user_id, scope?.profile_type_v2])
 
   function resetForm() {
     setNombre('')

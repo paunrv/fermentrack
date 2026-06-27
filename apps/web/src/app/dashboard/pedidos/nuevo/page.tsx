@@ -76,7 +76,7 @@ export default function NuevoPedidoPage() {
       setClients(c)
       setSkus(s)
     })
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   const matchedClient = resolveClientByName(clients, clienteInput)
 
@@ -88,7 +88,7 @@ export default function NuevoPedidoPage() {
     fetchClientEtiquetas(supabase, scope, matchedClient.id)
       .then(rows => setEtiquetaHints(rows.map(r => r.nombre)))
       .catch(() => setEtiquetaHints([]))
-  }, [matchedClient?.id, scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [matchedClient?.id, scope?.user_id, scope?.profile_type_v2, supabase])
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {

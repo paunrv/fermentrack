@@ -38,7 +38,7 @@ export default function RemisionesPage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>

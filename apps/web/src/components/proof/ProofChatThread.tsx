@@ -7,6 +7,7 @@ import {
   lensActionsForSubHub,
   subHubForModeAction,
   PROOF_CANVAS_CONTENT_WIDTH,
+  PROOF_CHAT_MAX_HEIGHT,
   PROOF_COPIES,
 } from '@/lib/proof/proof-canvas-copy'
 import { ProofHubLensSelector } from '@/components/proof/ProofHubLensSelector'
@@ -32,7 +33,8 @@ function newId() {
 
 function isLastAgentMessage(msg: ProofMessage, messages: ProofMessage[]): boolean {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (messages[i].role === 'agent') return messages[i].id === msg.id
+    const row = messages[i]
+    if (row?.role === 'agent') return row.id === msg.id
   }
   return false
 }
@@ -176,49 +178,60 @@ export function ProofChatThread({
     activeSubHub != null &&
     (hubActions?.length ?? 0) > 0 &&
     Boolean(onHubLensAction)
+  const hasConversation = !emptyState
 
   return (
     <div
-      ref={scrollRef}
-      className="proof-chat-thread"
-      aria-live="polite"
-      aria-label="Conversación con PROOF"
+      className="proof-chat-dock"
       style={{
-        flex: 1,
-        minHeight: 0,
-        overflowY: 'auto',
-        overflowX: 'hidden',
-        padding: '12px 20px 8px',
-        display: 'flex',
-        flexDirection: 'column',
-        background: 'var(--color-background-tertiary)',
+        flexShrink: 0,
+        padding: hasConversation ? '0 20px' : '0 20px 4px',
       }}
     >
-      <style>{`
-        @keyframes proof-chat-typing-bounce {
-          0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
-          40% { opacity: 1; transform: scale(1); }
-        }
-        .proof-chat-thread::-webkit-scrollbar { width: 3px; }
-        .proof-chat-thread::-webkit-scrollbar-thumb {
-          background: var(--fg-5);
-          border-radius: 3px;
-        }
-      `}</style>
-
       <div
-        className="proof-chat-column"
+        ref={scrollRef}
+        className="proof-chat-thread"
+        aria-live="polite"
+        aria-label="Conversación con PROOF"
         style={{
           maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
           margin: '0 auto',
           width: '100%',
-          flex: emptyState ? 1 : undefined,
+          maxHeight: hasConversation ? `min(${PROOF_CHAT_MAX_HEIGHT}px, 40vh)` : undefined,
+          overflowY: hasConversation ? 'auto' : 'visible',
+          overflowX: 'hidden',
+          padding: hasConversation ? '12px 14px 10px' : '0',
           display: 'flex',
           flexDirection: 'column',
-          gap: showModeSelector || showSubHub ? 20 : 8,
-          justifyContent: emptyState ? 'flex-end' : 'flex-start',
+          background: hasConversation ? 'var(--color-background-primary)' : 'transparent',
+          border: hasConversation ? '0.5px solid var(--color-border-tertiary)' : 'none',
+          borderBottom: hasConversation ? 'none' : undefined,
+          borderRadius: hasConversation ? '10px 10px 0 0' : undefined,
+          boxSizing: 'border-box',
         }}
       >
+        <style>{`
+          @keyframes proof-chat-typing-bounce {
+            0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
+            40% { opacity: 1; transform: scale(1); }
+          }
+          .proof-chat-thread::-webkit-scrollbar { width: 3px; }
+          .proof-chat-thread::-webkit-scrollbar-thumb {
+            background: var(--fg-5);
+            border-radius: 3px;
+          }
+        `}</style>
+
+        <div
+          className="proof-chat-column"
+          style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: showModeSelector || showSubHub ? 20 : 8,
+            justifyContent: 'flex-start',
+          }}
+        >
         {emptyState ? (
           <>
             <p
@@ -336,7 +349,8 @@ export function ProofChatThread({
           </div>
         ) : null}
 
-        <div ref={chatEndRef} style={{ height: 0 }} aria-hidden />
+          <div ref={chatEndRef} style={{ height: 0 }} aria-hidden />
+        </div>
       </div>
     </div>
   )

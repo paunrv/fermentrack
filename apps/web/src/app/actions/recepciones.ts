@@ -70,7 +70,7 @@ export async function createRecepcionFromAnalysisAction(input: {
       costo_total: input.costo_total,
       deuda_registrada: input.deuda_registrada,
       foto_urls: input.foto_urls,
-      clerk_id: userId,
+      user_id: userId,
       profile_type_v2: profileType,
     })
   }
@@ -109,11 +109,11 @@ export async function refreshRecepcionFotoUrlsAction(recepcionId: string): Promi
   const sb = createServiceSupabase()
   const { data, error } = await sb
     .from('recepciones')
-    .select('foto_urls, clerk_id')
+    .select('foto_urls, user_id')
     .eq('id', recepcionId)
     .maybeSingle()
   if (error) throw error
-  if (!data || data.clerk_id !== userId) throw new Error('Recepción no encontrada')
+  if (!data || data.user_id !== userId) throw new Error('Recepción no encontrada')
 
   const { signRecepcionFotoPaths } = await import('@/lib/proof/storage-recepciones')
   return signRecepcionFotoPaths(sb, (data.foto_urls as string[]) || [])

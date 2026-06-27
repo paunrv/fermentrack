@@ -104,7 +104,7 @@ export default function EmbotelladoPage() {
   useEffect(() => {
     if (!scope) return
     load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   function updateMaterial(key: keyof BottlingMaterials, field: 'qty' | 'unit_cost', value: number) {
     setMaterials(m => ({
@@ -125,9 +125,9 @@ export default function EmbotelladoPage() {
         total_units: totalUnits,
         notes: notes.trim() || null,
         ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
-      } as Bottling & { clerk_id?: string; profile_type_v2?: string })
+      } as Bottling & { user_id?: string; profile_type_v2?: string })
       setMaterials(emptyMaterials())
       setNotes('')
       await load()

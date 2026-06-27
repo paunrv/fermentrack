@@ -3,6 +3,8 @@ import * as winemaker from '@/lib/supabase/winemaker'
 import { tryWinemakerDocumentAction } from '@/lib/proof/winemaker-agent-actions'
 import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 
+const TEST_USER_ID = 'cd459e32-718d-46da-9003-5b002c483cfd'
+
 const baseCtx: WinemakerAgentContext = {
   perfil: 'winemaker',
   proveedores: [],
@@ -59,14 +61,14 @@ describe('tryWinemakerDocumentAction', () => {
 
     const result = await tryWinemakerDocumentAction(
       {} as never,
-      'clerk-1',
+      TEST_USER_ID,
       'registra la factura LARSON IRRIGATION DE BAJA CALIFORNIA · Folio 20022 como gasto de bodega sin lote',
       baseCtx
     )
 
     expect(winemaker.registerDocumentOverheadCosts).toHaveBeenCalledWith(
       expect.anything(),
-      'clerk-1',
+      TEST_USER_ID,
       'doc-larson'
     )
     expect(result?.message).toContain('13')
@@ -82,14 +84,14 @@ describe('tryWinemakerDocumentAction', () => {
 
     const result = await tryWinemakerDocumentAction(
       {} as never,
-      'clerk-1',
+      TEST_USER_ID,
       'queda en bodega',
       {
         ...baseCtx,
         selectedDocumentId: 'doc-global',
         documentosRecientes: [
           {
-            ...baseCtx.documentosRecientes[0],
+            ...baseCtx.documentosRecientes[0]!,
             id: 'doc-global',
             vendor: 'GLOBAL FUENTES',
             total_amount: 9905,
@@ -108,7 +110,7 @@ describe('tryWinemakerDocumentAction', () => {
 
     expect(winemaker.registerDocumentOverheadCosts).toHaveBeenCalledWith(
       expect.anything(),
-      'clerk-1',
+      TEST_USER_ID,
       'doc-global'
     )
     expect(result?.message).toContain('9')

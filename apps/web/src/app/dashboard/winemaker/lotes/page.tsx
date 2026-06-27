@@ -10,16 +10,16 @@ import { countWineLotsByStatus, fetchWineLots } from '@/lib/supabase/winemaker'
 
 export default function WinemakerLotesPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useWinemakerScope()
+  const { loading: scopeLoading, ok, userId } = useWinemakerScope()
   const [lotes, setLotes] = useState<WmWineLotRow[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
-    Promise.all([countWineLotsByStatus(supabase, clerkId), fetchWineLots(supabase, clerkId)])
+    Promise.all([countWineLotsByStatus(supabase, userId), fetchWineLots(supabase, userId)])
       .then(([c, rows]) => {
         if (cancelled) return
         setCounts(c)
@@ -31,7 +31,7 @@ export default function WinemakerLotesPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase])
+  }, [ok, userId, supabase])
 
   if (scopeLoading || !ok) {
     return (

@@ -35,7 +35,7 @@ export function ConnectedProofAIBar({
     vista,
     profileType,
     hints,
-    enabled: enabled && Boolean(scope?.clerk_id) && profileType != null,
+    enabled: enabled && Boolean(scope?.user_id) && profileType != null,
     fallback,
   })
 

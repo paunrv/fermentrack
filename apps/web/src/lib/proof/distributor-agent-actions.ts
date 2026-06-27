@@ -29,8 +29,7 @@ import {
   parseActualizarMiInformacionIntent,
 } from '@/lib/proof/mi-informacion-intent'
 import { uploadSkuImagen } from '@/lib/proof/storage-skus'
-import type { ProfileScope } from '@/lib/supabase'
-import { upsertProfile } from '@/lib/supabase'
+import { PROOF_PROFILES_TABLE, type ProfileScope, upsertProfile } from '@/lib/supabase'
 import {
   confirmarLlegadaOrdenCompraDistribuidor,
   createOrdenCompraDistribuidor,
@@ -1099,7 +1098,7 @@ function todayIsoDate(): string {
 
 export async function executeDistributorAgentAction(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   scope: ProfileScope,
   action: DistributorAgentAction
 ): Promise<{
@@ -1167,7 +1166,7 @@ export async function executeDistributorAgentAction(
         .from('pedidos')
         .select('id, numero, estado')
         .eq('id', action.pedido_id)
-        .eq('clerk_id', scope.clerk_id)
+        .eq('user_id', scope.user_id)
         .eq('profile_type_v2', scope.profile_type_v2)
         .maybeSingle()
       if (pedErr) throw pedErr
@@ -1187,7 +1186,7 @@ export async function executeDistributorAgentAction(
       }
       let remisionLine = ''
       try {
-        const rem = await ensureRemisionPdfForPedido(action.pedido_id, clerkId)
+        const rem = await ensureRemisionPdfForPedido(action.pedido_id, userId)
         remisionLine = ` Remisión ${rem.remision.numero_remision} lista ✓`
       } catch (e) {
         console.error('[agent] remision pdf after entrega', e)
@@ -1202,7 +1201,7 @@ export async function executeDistributorAgentAction(
       }
     }
     case 'generar_remision': {
-      const rem = await ensureRemisionPdfForPedido(action.pedido_id, clerkId)
+      const rem = await ensureRemisionPdfForPedido(action.pedido_id, userId)
       return {
         ok: true,
         entityId: rem.remision.id,
@@ -1276,7 +1275,7 @@ export async function executeDistributorAgentAction(
           updated_at: new Date().toISOString(),
         })
         .eq('id', action.sku_id)
-        .eq('clerk_id', scope.clerk_id)
+        .eq('user_id', scope.user_id)
         .eq('profile_type_v2', scope.profile_type_v2)
       if (upErr) {
         const msg = upErr.message ?? ''
@@ -1352,11 +1351,11 @@ export async function executeDistributorAgentAction(
     }
     case 'actualizar_mi_informacion': {
       const { data: profile, error: profileErr } = await sb
-        .from('profiles')
+        .from(PROOF_PROFILES_TABLE)
         .select(
-          'clerk_id, profile_type_v2, profile_type, username, onboarding_complete, is_super_user, extra_profiles, email, cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path'
+          'user_id, profile_type_v2, profile_type, username, onboarding_complete, is_super_user, extra_profiles, email, cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path'
         )
-        .eq('clerk_id', scope.clerk_id)
+        .eq('user_id', scope.user_id)
         .eq('profile_type_v2', 'distributor')
         .maybeSingle()
       if (profileErr) throw profileErr
@@ -1376,7 +1375,7 @@ export async function executeDistributorAgentAction(
         null
 
       await upsertProfile(sb, {
-        clerk_id: profile.clerk_id,
+        user_id: profile.user_id,
         profile_type_v2: profile.profile_type_v2,
         profile_type: profile.profile_type,
         username: profile.username,
@@ -1412,7 +1411,7 @@ export async function executeDistributorAgentAction(
 
       return {
         ok: true,
-        entityId: profile.clerk_id,
+        entityId: profile.user_id,
         refreshProfile: true,
         message,
       }

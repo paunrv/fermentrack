@@ -352,7 +352,7 @@ export default function NuevaProductoPage() {
           price_especial: 0,
           currency: 'MXN',
           notes: null,
-          clerk_id: scope?.clerk_id ?? null,
+          user_id: scope?.user_id ?? null,
           profile_type_v2: scope?.profile_type_v2 ?? null,
         })
         .select()
@@ -368,7 +368,7 @@ export default function NuevaProductoPage() {
         loose_units: units_qty,
         movement_date: date,
         notes: 'Inventario inicial',
-        clerk_id: scope?.clerk_id ?? null,
+        user_id: scope?.user_id ?? null,
         profile_type_v2: scope?.profile_type_v2 ?? null,
       })
 

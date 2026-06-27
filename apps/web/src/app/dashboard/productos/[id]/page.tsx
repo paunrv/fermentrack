@@ -1210,7 +1210,7 @@ function MovementModal({
         loose_units: u,
         movement_date: today,
         notes: notes.trim() || null,
-        clerk_id: product.clerk_id ?? null,
+        user_id: product.user_id ?? null,
         profile_type_v2: product.profile_type_v2 ?? null,
       }
 

@@ -30,7 +30,7 @@ export async function ensureClientAction(input: {
   const { data: existing, error: findErr } = await sb
     .from('clients')
     .select('id, name')
-    .eq('clerk_id', userId)
+    .eq('user_id', userId)
     .eq('profile_type_v2', profileType)
     .ilike('name', name)
     .limit(1)
@@ -41,7 +41,7 @@ export async function ensureClientAction(input: {
 
   const row: Record<string, unknown> = {
     name,
-    clerk_id: userId,
+    user_id: userId,
     type: 'tienda',
     price_tier: 'regular',
   }
@@ -62,7 +62,7 @@ function scopeFromAuth(
   profileType?: string
 ): ProfileScope {
   return {
-    clerk_id: userId,
+    user_id: userId,
     profile_type_v2: (profileType || 'distributor') as ProfileScope['profile_type_v2'],
   }
 }

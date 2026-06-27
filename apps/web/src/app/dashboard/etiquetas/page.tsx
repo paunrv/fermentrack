@@ -172,7 +172,7 @@ export default function EtiquetasPage() {
         if (b.length && b[0]) setBatchId(b[0].id)
       })
       .finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   useEffect(() => {
     if (!previewBarcodeVal) {

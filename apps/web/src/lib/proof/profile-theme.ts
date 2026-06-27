@@ -46,6 +46,16 @@ export const PROFILES: Record<ExtraProfile, ProfileTheme> = {
     badge: { bg: 'rgba(203, 145, 47, 0.1)', color: '#CB912F', border: 'rgba(203, 145, 47, 0.2)' },
     label: 'Brewer',
   },
+  bodega: {
+    accent: '#2F5F8F',
+    ...NOTION_NAV,
+    badge: {
+      bg: 'rgba(47, 95, 143, 0.1)',
+      color: '#2F5F8F',
+      border: 'rgba(47, 95, 143, 0.2)',
+    },
+    label: 'Bodega',
+  },
 }
 
 /** Page background — pure white (same as --ink) */

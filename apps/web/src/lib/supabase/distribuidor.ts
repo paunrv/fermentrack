@@ -102,7 +102,7 @@ export interface SkuRow {
   etiqueta_id: string | null
   imagen_url: string | null
   notas: string | null
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
   updated_at: string
@@ -116,12 +116,11 @@ export type RolTrabajador = 'patron' | 'manager' | 'bodega'
 
 export interface TrabajadorRow {
   id: string
-  clerk_user_id: string
+  user_id: string
   nombre: string
   rol: RolTrabajador
-  clerk_id: string
   profile_type_v2: string
-  patron_clerk_id: string
+  patron_user_id: string
   activo: boolean
   created_at: string
 }
@@ -137,7 +136,7 @@ export interface ClienteRow {
   dias_credito: number
   notas: string | null
   activo: boolean
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
 }
@@ -148,7 +147,7 @@ export interface ClientEtiquetaRow {
   id: string
   client_id: string
   nombre: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
 }
@@ -173,7 +172,7 @@ export interface PedidoRow {
   imagen_origen_url: string | null
   anticipo: boolean
   anticipo_monto: number | null
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
   updated_at: string
@@ -204,7 +203,7 @@ export interface PedidoWithItems extends PedidoRow {
 
 export interface RemisionDistribuidorRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   pedido_id: string
   numero_remision: string
@@ -217,7 +216,7 @@ export type EstadoOrdenCompra = 'borrador' | 'enviada' | 'recibida' | 'parcial'
 
 export interface OrdenCompraRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   productor_id: string
   estado: EstadoOrdenCompra
@@ -253,7 +252,7 @@ export interface RecepcionRow {
   estado: EstadoRecepcion
   fecha_recepcion: string
   foto_urls: string[]
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
   updated_at: string
@@ -289,7 +288,7 @@ export interface DeudaProductorRow {
   estado: EstadoDeudaProductor
   skus_asociados: string[]
   notas: string | null
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
   updated_at: string
@@ -305,7 +304,7 @@ export interface CuentaClienteRow {
   dias_vencido: number
   pedido_activo_hoy: boolean
   estado: EstadoCuentaCliente
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
   updated_at: string
@@ -314,7 +313,7 @@ export interface CuentaClienteRow {
 /** Payload NOTIFY / Realtime stock */
 export interface SkuStockPayload {
   id: string
-  clerk_id: string
+  user_id: string
   stock_total: number
   stock_reservado: number
   stock_disponible: number
@@ -401,11 +400,11 @@ export async function rpcConfirmarRecepcion(
 
 export async function rpcSyncAllSkusForScope(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   profileTypeV2 = 'distributor'
 ): Promise<number> {
   const { data, error } = await sb.rpc('sync_all_skus_for_scope', {
-    p_clerk_id: clerkId,
+    p_user_id: userId,
     p_profile_type_v2: profileTypeV2,
   })
   throwIfError(error)
@@ -414,12 +413,12 @@ export async function rpcSyncAllSkusForScope(
 
 export async function rpcProofNextCodigo(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   profileTypeV2: string,
   kind: 'sku' | 'pedido' | 'recepcion' | 'oc'
 ): Promise<string> {
   const { data, error } = await sb.rpc('proof_next_codigo', {
-    p_clerk_id: clerkId,
+    p_user_id: userId,
     p_profile_type_v2: profileTypeV2,
     p_kind: kind,
   })
@@ -431,37 +430,41 @@ export async function rpcProofNextCodigo(
 // Scope (patrón / trabajadores)
 // =============================================================================
 
-/** clerk_id de organización para datos distributor (patrón o staff → patron_clerk_id). */
-export async function resolveDistribuidorScopeClerkId(
+/** user_id de organización para datos distributor (patrón o staff → patron_user_id). */
+export async function resolveDistribuidorScopeUserId(
   sb: SupabaseClient,
-  clerkUserId: string
+  authUserId: string
 ): Promise<string> {
   const { data, error } = await sb
     .from('trabajadores')
-    .select('clerk_id')
-    .eq('clerk_user_id', clerkUserId)
+    .select('patron_user_id, user_id, rol')
+    .eq('user_id', authUserId)
     .eq('profile_type_v2', 'distributor')
     .eq('activo', true)
     .maybeSingle()
 
   if (error) {
-    console.warn('[distribuidor] resolveScopeClerkId', error.message)
-    return clerkUserId
+    console.warn('[distribuidor] resolveScopeUserId', error.message)
+    return authUserId
   }
 
-  const orgClerkId = data?.clerk_id ?? clerkUserId
-  if (orgClerkId !== clerkUserId) {
-    console.log('[distribuidor] scope clerk_id', { clerkUserId, orgClerkId })
+  const orgUserId = data?.patron_user_id ?? authUserId
+  if (orgUserId !== authUserId) {
+    console.log('[distribuidor] scope user_id', { authUserId, orgUserId })
   }
-  return orgClerkId
+  return orgUserId
 }
+
+
+/** @deprecated Use resolveDistribuidorScopeUserId */
+export const resolveDistribuidorScopeClerkId = resolveDistribuidorScopeUserId
 
 export async function resolveDistribuidorScope(
   sb: SupabaseClient,
-  clerkUserId: string
+  authUserId: string
 ): Promise<ProfileScope> {
   return {
-    clerk_id: await resolveDistribuidorScopeClerkId(sb, clerkUserId),
+    user_id: await resolveDistribuidorScopeUserId(sb, authUserId),
     profile_type_v2: 'distributor',
   }
 }
@@ -475,7 +478,7 @@ function scopeFilter<T extends { eq: (c: string, v: string) => T }>(
   scope?: ProfileScope
 ): T {
   if (!scope) return q
-  return q.eq('clerk_id', scope.clerk_id).eq('profile_type_v2', scope.profile_type_v2)
+  return q.eq('user_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
 }
 
 export async function fetchClientEtiquetas(
@@ -503,7 +506,7 @@ export async function fetchSkus(
   const { data, error } = await q
   if (error) {
     console.error('[distribuidor] fetchSkus', {
-      clerk_id: scope?.clerk_id,
+      user_id: scope?.user_id,
       profile_type_v2: scope?.profile_type_v2,
       error: error.message,
     })
@@ -512,7 +515,7 @@ export async function fetchSkus(
   const rows = (data || []) as SkuRow[]
   if (scope && rows.length === 0) {
     console.log('[distribuidor] fetchSkus 0 rows', {
-      clerk_id: scope.clerk_id,
+      user_id: scope.user_id,
       profile_type_v2: scope.profile_type_v2,
     })
   }
@@ -541,7 +544,7 @@ export async function createSkuCartera(
 
   const codigo = await rpcProofNextCodigo(
     sb,
-    scope.clerk_id,
+    scope.user_id,
     scope.profile_type_v2,
     'sku'
   )
@@ -554,7 +557,7 @@ export async function createSkuCartera(
       categoria_liquido: input.categoria_liquido ?? 'otro',
       precio_venta: input.precio_venta ?? 0,
       productor: input.productor?.trim() || '',
-      clerk_id: scope.clerk_id,
+      user_id: scope.user_id,
       profile_type_v2: scope.profile_type_v2,
     })
     .select('*')
@@ -651,7 +654,7 @@ export async function createPedidoBorrador(
     anticipo?: boolean
     anticipo_monto?: number | null
     notas?: string | null
-    clerk_id: string
+    user_id: string
     profile_type_v2: string
   }
 ): Promise<PedidoRow> {
@@ -720,20 +723,20 @@ export function subscribeSkuStock(
   onPayload: (payload: SkuStockPayload) => void
 ) {
   const channel = sb
-    .channel(`sku-stock-${scope.clerk_id}`)
+    .channel(`sku-stock-${scope.user_id}`)
     .on(
       'postgres_changes',
       {
         event: 'UPDATE',
         schema: 'public',
         table: 'skus',
-        filter: `clerk_id=eq.${scope.clerk_id}`,
+        filter: `user_id=eq.${scope.user_id}`,
       },
       payload => {
         const n = payload.new as SkuRow
         onPayload({
           id: n.id,
-          clerk_id: n.clerk_id,
+          user_id: n.user_id,
           stock_total: n.stock_total,
           stock_reservado: n.stock_reservado,
           stock_disponible: n.stock_disponible,
@@ -763,7 +766,7 @@ export async function createRecepcionDraft(
     costo_total?: number
     deuda_registrada?: number
     foto_urls?: string[]
-    clerk_id: string
+    user_id: string
     profile_type_v2: string
   }
 ): Promise<RecepcionRow> {
@@ -779,7 +782,7 @@ export async function createRecepcionDraft(
       deuda_registrada: input.deuda_registrada ?? 0,
       foto_urls: input.foto_urls ?? [],
       estado: 'en_revision',
-      clerk_id: input.clerk_id,
+      user_id: input.user_id,
       profile_type_v2: input.profile_type_v2,
     })
     .select()
@@ -899,7 +902,7 @@ export type EstadoOrdenCompraDistribuidor = 'pendiente' | 'parcial' | 'recibida'
 
 export interface OrdenCompraDistribuidorRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   numero_orden: string
   proveedor_nombre: string
@@ -998,7 +1001,9 @@ export async function fetchUltimaOrdenCompraIngresada(
     .not('fecha_recepcion', 'is', null)
     .order('fecha_recepcion', { ascending: false })
     .limit(1)
-  q = scopeFilter(q, scope)
+  if (scope) {
+    q = q.eq('user_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
+  }
   const { data, error } = await q.maybeSingle()
   throwIfError(error)
   return data as OrdenCompraDistribuidorWithItems | null
@@ -1032,7 +1037,7 @@ export async function createOrdenCompraDistribuidor(
 
   const numeroOrden = await rpcProofNextCodigo(
     sb,
-    scope.clerk_id,
+    scope.user_id,
     scope.profile_type_v2,
     'oc'
   )
@@ -1040,7 +1045,7 @@ export async function createOrdenCompraDistribuidor(
   const { data: orden, error: ordenErr } = await sb
     .from('ordenes_compra_distribuidor')
     .insert({
-      clerk_id: scope.clerk_id,
+      user_id: scope.user_id,
       profile_type_v2: scope.profile_type_v2,
       numero_orden: numeroOrden,
       proveedor_nombre: input.proveedor_nombre.trim(),
@@ -1089,7 +1094,7 @@ export type MetodoPagoProveedor = 'efectivo' | 'transferencia' | 'cheque'
 
 export interface CuentaPorPagarRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   orden_compra_id: string
   proveedor_nombre: string
@@ -1104,7 +1109,7 @@ export interface CuentaPorPagarRow {
 
 export interface PagoProveedorRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   cuenta_por_pagar_id: string
   monto: number
@@ -1243,7 +1248,7 @@ export type MetodoPagoCliente = 'efectivo' | 'transferencia' | 'cheque'
 
 export interface CuentaPorCobrarRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   pedido_id: string
   cliente_nombre: string
@@ -1258,7 +1263,7 @@ export interface CuentaPorCobrarRow {
 
 export interface PagoClienteRow {
   id: string
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   cuenta_por_cobrar_id: string
   monto: number
@@ -1286,7 +1291,7 @@ export interface PagoRow {
   banco_origen: string | null
   banco_destino: string | null
   imagen_comprobante_url: string | null
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
 }
@@ -1462,7 +1467,7 @@ export async function createClienteCartera(
     dias_credito: input.dias_credito,
     notas: input.notas?.trim() || null,
     activo: true,
-    clerk_id: scope.clerk_id,
+    user_id: scope.user_id,
     profile_type_v2: scope.profile_type_v2,
   }
 
@@ -1511,7 +1516,7 @@ export interface CajaDistribuidor {
   sku_id: string
   oc_id: string | null
   estado: EstadoCajaDistribuidor
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   created_at: string
 }
@@ -1542,7 +1547,7 @@ export interface MovimientoStock {
   pedido_id: string | null
   oc_id: string | null
   trabajador_id: string | null
-  clerk_id: string
+  user_id: string
   profile_type_v2: string
   timestamp: string
 }
@@ -1872,7 +1877,7 @@ export async function fetchCreditoResumen(
     sb
       .from('cuentas_clientes')
       .select('saldo_pendiente')
-      .eq('clerk_id', scope.clerk_id)
+      .eq('user_id', scope.user_id)
       .eq('profile_type_v2', scope.profile_type_v2),
   ])
 
@@ -1915,7 +1920,7 @@ export async function fetchAlertasCreditoCriticas(
   const { data: cuentas, error } = await sb
     .from('cuentas_clientes')
     .select('*, clients(id, name)')
-    .eq('clerk_id', scope.clerk_id)
+    .eq('user_id', scope.user_id)
     .eq('profile_type_v2', scope.profile_type_v2)
     .gt('dias_vencido', 0)
     .eq('pedido_activo_hoy', true)
@@ -1931,7 +1936,7 @@ export async function fetchAlertasCreditoCriticas(
       .from('pedidos')
       .select('id, numero')
       .eq('cliente_id', cuenta.cliente_id)
-      .eq('clerk_id', scope.clerk_id)
+      .eq('user_id', scope.user_id)
       .eq('fecha_entrega', new Date().toISOString().slice(0, 10))
       .in('estado', ['confirmado', 'preparando', 'en_ruta', 'parcial'])
       .limit(1)

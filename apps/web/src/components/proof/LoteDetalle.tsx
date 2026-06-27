@@ -649,7 +649,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
   const router = useRouter()
   const supabase = useSupabase()
   const { scope } = useProfile()
-  const clerkId = scope?.clerk_id
+  const userId = scope?.user_id
 
   const [loading, setLoading] = useState(true)
   const [lote, setLote] = useState<LoteRow | null>(null)
@@ -667,7 +667,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
   const [kpiDrawerSlot, setKpiDrawerSlot] = useState<0 | 1 | 2 | null>(null)
 
   const load = useCallback(async () => {
-    if (!clerkId && profileType === 'distiller') {
+    if (!userId && profileType === 'distiller') {
       setLoading(false)
       return
     }
@@ -678,11 +678,11 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
 
     setLoading(true)
     try {
-      if (profileType === 'distiller' && clerkId) {
+      if (profileType === 'distiller' && userId) {
         const [l, c, m] = await Promise.all([
-          fetchLoteById(supabase, clerkId, loteId),
-          fetchCorridasByLote(supabase, clerkId, loteId),
-          fetchMovimientosInventarioByLote(supabase, clerkId, loteId),
+          fetchLoteById(supabase, userId, loteId),
+          fetchCorridasByLote(supabase, userId, loteId),
+          fetchMovimientosInventarioByLote(supabase, userId, loteId),
         ])
         setLote(l)
         setCorridas(c)
@@ -711,7 +711,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
     } finally {
       setLoading(false)
     }
-  }, [supabase, clerkId, scope, profileType, loteId])
+  }, [supabase, userId, scope, profileType, loteId])
 
   useEffect(() => {
     void load()

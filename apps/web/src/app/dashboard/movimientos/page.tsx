@@ -158,7 +158,7 @@ export default function MovimientosPage() {
   useEffect(() => {
     if (!scope) return
     load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   function resetForm() {
     setCases('')
@@ -196,7 +196,7 @@ export default function MovimientosPage() {
         movement_date: today,
         notes: notes.trim() || null,
         ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
       }
 

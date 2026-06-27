@@ -85,7 +85,7 @@ export default function PedidoComposerPage() {
         }))
       )
     }
-  }, [supabase, pedidoId, scope?.clerk_id, scope?.profile_type_v2])
+  }, [supabase, pedidoId, scope?.user_id, scope?.profile_type_v2])
 
   useEffect(() => {
     let cancelled = false
@@ -99,7 +99,7 @@ export default function PedidoComposerPage() {
     return () => {
       cancelled = true
     }
-  }, [pedidoId, scope?.clerk_id, scope?.profile_type_v2, load])
+  }, [pedidoId, scope?.user_id, scope?.profile_type_v2, load])
 
   useEffect(() => {
     if (!scope) return
@@ -118,7 +118,7 @@ export default function PedidoComposerPage() {
         )
       )
     })
-  }, [supabase, scope?.clerk_id, scope?.profile_type_v2])
+  }, [supabase, scope?.user_id, scope?.profile_type_v2])
 
   const editable = pedido?.estado === 'borrador'
 

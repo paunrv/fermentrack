@@ -66,7 +66,7 @@ export default function MuestrasPage() {
       setForm(f => ({ ...f, batchId: b[0]?.id || '' }))
     })
     fetchSamples(supabase, scope).then(setSamples)
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   function readFile(file: File) {
     const reader = new FileReader()
@@ -117,9 +117,9 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
         img_url: imgB64 ? `data:${imgType};base64,${imgB64}` : null,
         analysis: text,
         ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
-      } as Sample & { clerk_id?: string; profile_type_v2?: string })
+      } as Sample & { user_id?: string; profile_type_v2?: string })
       if (form.ph || form.density) {
         const updates: Record<string, unknown> = {}
         if (form.ph) updates.ph = parseFloat(form.ph)

@@ -1,4 +1,6 @@
 export const PROOF_CANVAS_CONTENT_WIDTH = 720
+/** Altura máxima del hilo de chat activo (panel sobre el composer). */
+export const PROOF_CHAT_MAX_HEIGHT = 320
 
 export type ProofModeAction = {
   label: string

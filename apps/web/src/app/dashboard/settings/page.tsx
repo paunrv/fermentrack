@@ -26,6 +26,11 @@ const PROFILE_META: Record<
   winemaker: { emoji: '🍷', label: 'Winemaker', color: '#9FE1CB' },
   distiller: { emoji: '🥃', label: 'Distiller', color: '#F5C4B3' },
   distributor: { emoji: '📦', label: 'Distribuidor', color: '#B5D4F4' },
+  bodega: {
+    emoji: '📦',
+    label: 'Bodega',
+    color: '#2F5F8F',
+  },
 }
 
 const label: React.CSSProperties = {
@@ -89,7 +94,7 @@ export default function SettingsPage() {
     setSaving(true)
     try {
       await upsertProfile(supabase, {
-        clerk_id: user.id,
+        user_id: user.id,
         profile_type_v2: activeProfile.profile_type_v2,
         profile_type: activeProfile.profile_type,
         username: username.trim() || getUserFirstName(user) || 'Productor',

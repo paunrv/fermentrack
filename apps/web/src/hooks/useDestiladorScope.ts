@@ -18,7 +18,7 @@ export function useDestiladorScope() {
   return {
     loading,
     ok,
-    clerkId: scope?.clerk_id ?? null,
+    userId: scope?.user_id ?? null,
     profile: activeProfile,
   }
 }

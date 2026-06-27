@@ -20,7 +20,7 @@ const PIPELINE: { key: DestLoteEstado; label: string }[] = [
 
 export default function DestiladorLotesPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useDestiladorScope()
+  const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [filter, setFilter] = useState<DestLoteEstado | null>(null)
   const [counts, setCounts] = useState<Record<DestLoteEstado, number>>({
     en_bodega_crudo: 0,
@@ -32,12 +32,12 @@ export default function DestiladorLotesPage() {
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
     Promise.all([
-      countLotesByEstado(supabase, clerkId),
-      fetchLotes(supabase, clerkId, { estado: filter ?? undefined, limit: 100 }),
+      countLotesByEstado(supabase, userId),
+      fetchLotes(supabase, userId, { estado: filter ?? undefined, limit: 100 }),
     ])
       .then(([c, rows]) => {
         if (cancelled) return
@@ -50,7 +50,7 @@ export default function DestiladorLotesPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase, filter])
+  }, [ok, userId, supabase, filter])
 
   if (scopeLoading || !ok) {
     return (

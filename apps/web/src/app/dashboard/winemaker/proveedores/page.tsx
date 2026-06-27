@@ -11,18 +11,18 @@ import { fetchDocuments, fetchSuppliers } from '@/lib/supabase/winemaker'
 
 export default function WinemakerProveedoresPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useWinemakerScope()
+  const { loading: scopeLoading, ok, userId } = useWinemakerScope()
   const [suppliers, setSuppliers] = useState<WmSupplierRow[]>([])
   const [insumosBySupplier, setInsumosBySupplier] = useState<Record<string, string[]>>({})
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
     Promise.all([
-      fetchSuppliers(supabase, clerkId),
-      fetchDocuments(supabase, clerkId, { limit: 200, withLines: true }),
+      fetchSuppliers(supabase, userId),
+      fetchDocuments(supabase, userId, { limit: 200, withLines: true }),
     ])
       .then(([rows, docs]) => {
         if (cancelled) return
@@ -48,7 +48,7 @@ export default function WinemakerProveedoresPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase])
+  }, [ok, userId, supabase])
 
   const sorted = useMemo(
     () => [...suppliers].sort((a, b) => a.name.localeCompare(b.name, 'es')),

@@ -20,7 +20,7 @@ async function scopeFromAuth(
   if (type === 'distributor') {
     return resolveDistribuidorScope(sb, userId)
   }
-  return { clerk_id: userId, profile_type_v2: type }
+  return { user_id: userId, profile_type_v2: type }
 }
 
 export async function crearSku(

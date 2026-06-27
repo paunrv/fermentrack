@@ -18,7 +18,7 @@ import {
   fetchPedidos,
   fetchSkus,
   fetchUltimaOrdenCompraIngresada,
-  resolveDistribuidorScopeClerkId,
+  resolveDistribuidorScopeUserId,
 } from '@/lib/supabase/distribuidor'
 import {
   fetchDocuments,
@@ -27,7 +27,7 @@ import {
   fetchWineLots,
   fetchWinemakerSummary,
 } from '@/lib/supabase/winemaker'
-import type { ProfileScope } from '@/lib/supabase'
+import { PROOF_PROFILES_TABLE, type ProfileScope } from '@/lib/supabase'
 import type { CorridaRow, LoteRow, ViajeRow } from '@/lib/proof/destilador-types'
 import type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-context-types'
 
@@ -35,13 +35,13 @@ export type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-cont
 
 export async function verifyUserProfileType(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   profileType: AgentProfileType
 ): Promise<void> {
   const { data, error } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .select('profile_type_v2, extra_profiles, is_super_user')
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
   if (error) {
     console.warn('[proof/contexto] verify profiles query failed', error.message)
     return
@@ -54,8 +54,8 @@ export async function verifyUserProfileType(
   )
   const superUser = rows.some(r => r.is_super_user)
   if (!hasProfile && !superUser) {
-    console.warn('[proof/contexto] profile not in DB, continuing with clerk auth', {
-      clerkId,
+    console.warn('[proof/contexto] profile not in DB, continuing with auth user', {
+      userId,
       profileType,
       rows: rows.map(r => r.profile_type_v2),
     })
@@ -65,13 +65,13 @@ export async function verifyUserProfileType(
 /** Query directa en servidor (service role) — sin embed que pueda vaciar resultados. */
 export async function fetchLotesForAgent(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { limit?: number }
 ): Promise<LoteRow[]> {
   let q = sb
     .from('lotes')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('fecha_recepcion', { ascending: false })
 
   if (opts?.limit) q = q.limit(opts.limit)
@@ -80,7 +80,7 @@ export async function fetchLotesForAgent(
 
   if (error) {
     console.log('[proof/contexto] lotes query', {
-      clerk_id: clerkId,
+      user_id: userId,
       count: 0,
       error: error.message,
       sample: null,
@@ -88,7 +88,7 @@ export async function fetchLotesForAgent(
     throwIfSupabaseError(error, 'lotes')
   }
   console.log('[proof/contexto] lotes query', {
-    clerk_id: clerkId,
+    user_id: userId,
     count: data?.length ?? 0,
     error: null,
     sample: data?.[0]
@@ -107,19 +107,19 @@ export async function fetchLotesForAgent(
 /** Contexto completo distribuidor (SKUs, pedidos, crédito) para agente. */
 export async function loadDistributorAgentContext(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   hints?: AgentContextHints
 ): Promise<DistributorAgentContext & Record<string, unknown>> {
-  const scopeClerkId = await resolveDistribuidorScopeClerkId(sb, clerkId)
+  const scopeUserId = await resolveDistribuidorScopeUserId(sb, userId)
   const scope: ProfileScope = {
-    clerk_id: scopeClerkId,
+    user_id: scopeUserId,
     profile_type_v2: 'distributor',
   }
 
   const { data: profileRow } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .select('cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path, username')
-    .eq('clerk_id', scopeClerkId)
+    .eq('user_id', scopeUserId)
     .eq('profile_type_v2', 'distributor')
     .maybeSingle()
 
@@ -131,8 +131,8 @@ export async function loadDistributorAgentContext(
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       console.error(`[agente] loadDistributorAgentContext ${label} failed`, {
-        scopeClerkId,
-        clerkUserId: clerkId,
+        scopeUserId,
+        authUserId: userId,
         error: msg,
       })
       contextLoadWarnings.push(label)
@@ -158,8 +158,8 @@ export async function loadDistributorAgentContext(
     ),
   ])
   console.log('[agente] distributor context', {
-    clerkUserId: clerkId,
-    scopeClerkId,
+    authUserId: userId,
+    scopeUserId,
     skusEnContexto: skus.length,
     contextLoadWarnings,
   })
@@ -177,8 +177,8 @@ export async function loadDistributorAgentContext(
   })
   return {
     ...datos,
-    clerk_id: scopeClerkId,
-    clerk_user_id: clerkId,
+    user_id: scopeUserId,
+    auth_user_id: userId,
     profile_type: 'distributor',
     ...(contextLoadWarnings.length > 0 ? { context_load_warnings: contextLoadWarnings } : {}),
     ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
@@ -188,20 +188,20 @@ export async function loadDistributorAgentContext(
 
 export async function loadIsolatedAgentContext(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   profileType: AgentProfileType,
   hints?: AgentContextHints
 ): Promise<Record<string, unknown>> {
-  await verifyUserProfileType(sb, clerkId, profileType)
+  await verifyUserProfileType(sb, userId, profileType)
 
   const query = hints?.query ?? undefined
   const selectedId = hints?.selectedId ?? null
 
   if (profileType === 'distiller') {
     const [lotes, viajes, corridas] = await Promise.all([
-      fetchLotesForAgent(sb, clerkId, { limit: 500 }),
-      fetchViajes(sb, clerkId, { limit: 200 }).catch(() => [] as ViajeRow[]),
-      fetchCorridas(sb, clerkId, { estado: 'activa', limit: 50 }).catch(
+      fetchLotesForAgent(sb, userId, { limit: 500 }),
+      fetchViajes(sb, userId, { limit: 200 }).catch(() => [] as ViajeRow[]),
+      fetchCorridas(sb, userId, { estado: 'activa', limit: 50 }).catch(
         () => [] as CorridaRow[]
       ),
     ])
@@ -215,7 +215,7 @@ export async function loadIsolatedAgentContext(
     })
     return {
       ...datos,
-      clerk_id: clerkId,
+      user_id: userId,
       profile_type: 'distiller',
       ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
     }
@@ -223,11 +223,11 @@ export async function loadIsolatedAgentContext(
 
   if (profileType === 'winemaker') {
     const [lotes, documents, costs, suppliers, summary] = await Promise.all([
-      fetchWineLots(sb, clerkId, { limit: 500 }).catch(() => []),
-      fetchDocuments(sb, clerkId, { limit: 100, withLines: true }).catch(() => []),
-      fetchProductionCosts(sb, clerkId, { limit: 100 }).catch(() => []),
-      fetchSuppliers(sb, clerkId, { limit: 200 }).catch(() => []),
-      fetchWinemakerSummary(sb, clerkId).catch(() => ({
+      fetchWineLots(sb, userId, { limit: 500 }).catch(() => []),
+      fetchDocuments(sb, userId, { limit: 100, withLines: true }).catch(() => []),
+      fetchProductionCosts(sb, userId, { limit: 100 }).catch(() => []),
+      fetchSuppliers(sb, userId, { limit: 200 }).catch(() => []),
+      fetchWinemakerSummary(sb, userId).catch(() => ({
         lotesTotal: 0,
         lotesActivos: 0,
         documentosTotal: 0,
@@ -246,11 +246,11 @@ export async function loadIsolatedAgentContext(
     })
     return {
       ...datos,
-      clerk_id: clerkId,
+      user_id: userId,
       profile_type: 'winemaker',
       ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
     }
   }
 
-  return loadDistributorAgentContext(sb, clerkId, hints)
+  return loadDistributorAgentContext(sb, userId, hints)
 }

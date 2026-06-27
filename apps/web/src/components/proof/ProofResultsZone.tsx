@@ -150,7 +150,7 @@ export function ProofResultsZone({
       style={{
         flexShrink: 0,
         overflow: 'hidden',
-        padding: '0 20px 8px',
+        padding: '0 0 8px',
       }}
     >
       <style>{`

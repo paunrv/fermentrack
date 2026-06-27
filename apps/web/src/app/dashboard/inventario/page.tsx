@@ -125,7 +125,7 @@ export default function InventarioPage() {
 
   useEffect(() => {
     void loadSkus()
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   const skus = useMemo(() => skuRows.map(mapSkuRowToSKU), [skuRows])
   const skuRowById = useMemo(() => new Map(skuRows.map(r => [r.id, r])), [skuRows])
@@ -135,7 +135,7 @@ export default function InventarioPage() {
     if (!scope) return
     setSyncing(true)
     try {
-      await rpcSyncAllSkusForScope(supabase, scope.clerk_id, scope.profile_type_v2)
+      await rpcSyncAllSkusForScope(supabase, scope.user_id, scope.profile_type_v2)
       await loadSkus()
     } catch (e) {
       console.error(e)

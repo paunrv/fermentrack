@@ -92,7 +92,7 @@ export default function ClientesLegacyPage() {
   useEffect(() => {
     if (!scope) return
     load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   function resetForm() {
     setName('')
@@ -122,9 +122,9 @@ export default function ClientesLegacyPage() {
         price_tier: priceTier,
         notes: notes.trim() || null,
         ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
-      } as Omit<Client, 'id' | 'created_at'> & { clerk_id?: string; profile_type_v2?: string })
+      } as Omit<Client, 'id' | 'created_at'> & { user_id?: string; profile_type_v2?: string })
       resetForm()
       setShowForm(false)
       await load()

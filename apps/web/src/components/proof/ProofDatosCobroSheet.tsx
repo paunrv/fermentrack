@@ -83,13 +83,13 @@ export function ProofDatosCobroSheet({
   const [openingPdf, setOpeningPdf] = useState(false)
 
   const syncFromScope = useCallback(async () => {
-    const scopeClerkId = scope?.clerk_id ?? profile?.clerk_id
-    if (!scopeClerkId) {
+    const scopeUserId = scope?.user_id ?? profile?.user_id
+    if (!scopeUserId) {
       setDataProfile(profile)
       return
     }
     try {
-      const row = await fetchMiInformacionProfile(supabase, scopeClerkId)
+      const row = await fetchMiInformacionProfile(supabase, scopeUserId)
       const resolved = row ?? profile
       setDataProfile(resolved)
       if (resolved) {
@@ -102,7 +102,7 @@ export function ProofDatosCobroSheet({
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cargar tu información')
     }
-  }, [scope?.clerk_id, profile, supabase])
+  }, [scope?.user_id, profile, supabase])
 
   useEffect(() => {
     if (!open) return
@@ -112,12 +112,12 @@ export function ProofDatosCobroSheet({
   const targetProfile = dataProfile ?? profile
 
   const handleSave = useCallback(async () => {
-    if (!targetProfile?.clerk_id) return
+    if (!targetProfile?.user_id) return
     setSaving(true)
     setError(null)
     try {
       await upsertProfile(supabase, {
-        clerk_id: targetProfile.clerk_id,
+        user_id: targetProfile.user_id,
         profile_type_v2: targetProfile.profile_type_v2,
         profile_type: targetProfile.profile_type,
         username: targetProfile.username,
@@ -149,14 +149,14 @@ export function ProofDatosCobroSheet({
   }, [open, onClose])
 
   const handleUpload = async (file: File | undefined) => {
-    if (!file || !targetProfile?.clerk_id) return
+    if (!file || !targetProfile?.user_id) return
     setUploading(true)
     setError(null)
     try {
-      const path = await uploadConstanciaFiscalPdf(supabase, targetProfile.clerk_id, file)
+      const path = await uploadConstanciaFiscalPdf(supabase, targetProfile.user_id, file)
       setConstanciaPath(path)
       await upsertProfile(supabase, {
-        clerk_id: targetProfile.clerk_id,
+        user_id: targetProfile.user_id,
         profile_type_v2: targetProfile.profile_type_v2,
         profile_type: targetProfile.profile_type,
         username: targetProfile.username,

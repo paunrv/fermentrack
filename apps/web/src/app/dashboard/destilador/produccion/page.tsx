@@ -18,7 +18,7 @@ import {
 
 export default function DestiladorProduccionPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useDestiladorScope()
+  const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [botellas, setBotellas] = useState<StockBotellaRow[]>([])
   const [etiquetas, setEtiquetas] = useState<StockEtiquetaRow[]>([])
   const [corridas, setCorridas] = useState<CorridaRow[]>([])
@@ -26,13 +26,13 @@ export default function DestiladorProduccionPage() {
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
     Promise.all([
-      fetchStockBotellas(supabase, clerkId),
-      fetchStockEtiquetas(supabase, clerkId),
-      fetchCorridas(supabase, clerkId, { limit: 30 }),
+      fetchStockBotellas(supabase, userId),
+      fetchStockEtiquetas(supabase, userId),
+      fetchCorridas(supabase, userId, { limit: 30 }),
     ])
       .then(([b, e, c]) => {
         if (cancelled) return
@@ -51,7 +51,7 @@ export default function DestiladorProduccionPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase])
+  }, [ok, userId, supabase])
 
   const alertaInsumo = useMemo(() => {
     const b0 = botellas.some(b => b.cantidad_disponible <= 0)

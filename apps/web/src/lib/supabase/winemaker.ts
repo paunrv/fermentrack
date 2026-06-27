@@ -31,13 +31,13 @@ function num(v: unknown): number {
 
 export async function fetchWineLots(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { status?: WmWineLotStatus; limit?: number }
 ): Promise<WmWineLotRow[]> {
   let q = sb
     .from('wm_wine_lots')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('created_at', { ascending: false })
 
   if (opts?.status) q = q.eq('status', opts.status)
@@ -50,7 +50,7 @@ export async function fetchWineLots(
 
 export async function countWineLotsByStatus(
   sb: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<Record<WmWineLotStatus, number>> {
   const base: Record<WmWineLotStatus, number> = {
     fermentation: 0,
@@ -64,7 +64,7 @@ export async function countWineLotsByStatus(
   const { data, error } = await sb
     .from('wm_wine_lots')
     .select('status')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
 
   if (error) {
     if (isWinemakerSchemaMissingError(error)) return base
@@ -80,7 +80,7 @@ export async function countWineLotsByStatus(
 
 export async function fetchDocuments(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { limit?: number; withLines?: boolean }
 ): Promise<WmDocumentRow[]> {
   const select = opts?.withLines
@@ -90,7 +90,7 @@ export async function fetchDocuments(
   let q = sb
     .from('wm_documents')
     .select(select)
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('document_date', { ascending: false })
 
   if (opts?.limit) q = q.limit(opts.limit)
@@ -100,18 +100,18 @@ export async function fetchDocuments(
     if (isWinemakerSchemaMissingError(error)) return []
     throw error
   }
-  return (data ?? []) as WmDocumentRow[]
+  return (data ?? []) as unknown as WmDocumentRow[]
 }
 
 export async function fetchSuppliers(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { limit?: number }
 ): Promise<WmSupplierRow[]> {
   let q = sb
     .from('wm_suppliers')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('name', { ascending: true })
 
   if (opts?.limit) q = q.limit(opts.limit)
@@ -126,7 +126,7 @@ export async function fetchSuppliers(
 
 export async function findOrCreateWmSupplier(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   name: string,
   meta?: { rfc?: string; email?: string; address?: string }
 ): Promise<WmSupplierRow> {
@@ -142,7 +142,7 @@ export async function findOrCreateWmSupplier(
   const { data: existing, error: findErr } = await sb
     .from('wm_suppliers')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('name_normalized', name_normalized)
     .maybeSingle()
 
@@ -166,7 +166,7 @@ export async function findOrCreateWmSupplier(
   const { data, error } = await sb
     .from('wm_suppliers')
     .insert({
-      clerk_id: clerkId,
+      clerk_id: userId,
       name: trimmed,
       name_normalized,
       rfc: meta?.rfc?.trim() ?? '',
@@ -198,14 +198,14 @@ export type InsertWmDocumentLineInput = {
 
 export async function insertWmDocumentLines(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   documentId: string,
   lines: InsertWmDocumentLineInput[]
 ): Promise<WmDocumentLineRow[]> {
   if (lines.length === 0) return []
 
   const rows = lines.map(line => ({
-    clerk_id: clerkId,
+    clerk_id: userId,
     document_id: documentId,
     supplier_id: line.supplier_id ?? null,
     supply_kind: line.supply_kind,
@@ -229,13 +229,13 @@ export async function insertWmDocumentLines(
 
 export async function fetchDocumentLines(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   documentId: string
 ): Promise<WmDocumentLineRow[]> {
   const { data, error } = await sb
     .from('wm_document_lines')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('document_id', documentId)
     .order('line_index', { ascending: true })
 
@@ -248,13 +248,13 @@ export async function fetchDocumentLines(
 
 export async function fetchProductionCosts(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { lotId?: string; overheadOnly?: boolean; limit?: number }
 ): Promise<WmProductionCostRow[]> {
   let q = sb
     .from('wm_production_costs')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('cost_date', { ascending: false })
 
   if (opts?.lotId) q = q.eq('lot_id', opts.lotId)
@@ -296,12 +296,12 @@ export type CreateWmDocumentInput = {
 
 export async function createWmDocument(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   input: CreateWmDocumentInput
 ): Promise<WmDocumentRow> {
   const row = {
     ...(input.id ? { id: input.id } : {}),
-    clerk_id: clerkId,
+    clerk_id: userId,
     document_type: input.document_type,
     storage_path: input.storage_path,
     original_filename: input.original_filename,
@@ -332,7 +332,7 @@ export async function createWmDocument(
 
 export async function recordWmEvent(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   input: {
     event_type: 'document_uploaded' | 'cost_recorded' | 'note'
     document_id?: string | null
@@ -342,7 +342,7 @@ export async function recordWmEvent(
   }
 ): Promise<void> {
   const { error } = await sb.from('wm_events').insert({
-    clerk_id: clerkId,
+    clerk_id: userId,
     event_type: input.event_type,
     document_id: input.document_id ?? null,
     lot_id: input.lot_id ?? null,
@@ -363,13 +363,13 @@ export type WinemakerSummary = {
 
 export async function registerDocumentOverheadCosts(
   sb: SupabaseClient,
-  clerkId: string,
+  userId: string,
   documentId: string
 ): Promise<{ costs: WmProductionCostRow[]; total: number; vendor: string }> {
   const { data: existing, error: existErr } = await sb
     .from('wm_production_costs')
     .select('id')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('document_id', documentId)
     .limit(1)
 
@@ -378,7 +378,7 @@ export async function registerDocumentOverheadCosts(
     throw new Error('Esta factura ya está registrada como gasto')
   }
 
-  const doc = await fetchDocuments(sb, clerkId, { withLines: true, limit: 500 }).then(docs =>
+  const doc = await fetchDocuments(sb, userId, { withLines: true, limit: 500 }).then(docs =>
     docs.find(x => x.id === documentId)
   )
   if (!doc) throw new Error('Documento no encontrado')
@@ -392,7 +392,7 @@ export async function registerDocumentOverheadCosts(
       ? lines
           .filter(l => Number(l.amount) > 0)
           .map(line => ({
-            clerk_id: clerkId,
+            clerk_id: userId,
             lot_id: null,
             document_id: documentId,
             supplier_id: line.supplier_id ?? doc.supplier_id,
@@ -410,11 +410,11 @@ export async function registerDocumentOverheadCosts(
           }))
       : [
           {
-            clerk_id: clerkId,
+            clerk_id: userId,
             lot_id: null,
             document_id: documentId,
             supplier_id: doc.supplier_id,
-            supply_kind: null,
+            supply_kind: 'otro' as WmSupplyKind,
             varietal: '',
             category: 'insumo' as const,
             allocation_method: 'overhead' as const,
@@ -435,7 +435,7 @@ export async function registerDocumentOverheadCosts(
   const costs = (data ?? []) as WmProductionCostRow[]
   const total = costs.reduce((s, c) => s + Number(c.amount), 0)
 
-  await recordWmEvent(sb, clerkId, {
+  await recordWmEvent(sb, userId, {
     event_type: 'cost_recorded',
     document_id: documentId,
     payload: {
@@ -451,7 +451,7 @@ export async function registerDocumentOverheadCosts(
 
 export async function fetchWinemakerSummary(
   sb: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<WinemakerSummary> {
   const empty: WinemakerSummary = {
     lotesTotal: 0,
@@ -464,9 +464,9 @@ export async function fetchWinemakerSummary(
 
   try {
     const [lotes, documents, costs] = await Promise.all([
-      fetchWineLots(sb, clerkId, { limit: 500 }),
-      fetchDocuments(sb, clerkId, { limit: 500 }),
-      fetchProductionCosts(sb, clerkId, { limit: 500 }),
+      fetchWineLots(sb, userId, { limit: 500 }),
+      fetchDocuments(sb, userId, { limit: 500 }),
+      fetchProductionCosts(sb, userId, { limit: 500 }),
     ])
 
     const activos = lotes.filter(

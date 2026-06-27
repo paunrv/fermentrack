@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { PROOF_PROFILES_TABLE } from '@/lib/supabase'
 import type {
   BodegaRow,
   ConfirmarLlegadaLinea,
@@ -85,21 +86,21 @@ function normalizeCorridaRow(raw: Record<string, unknown>): CorridaRow {
   }
 }
 
-export function destiladorClerkFilter<T extends { eq: (col: string, val: string) => T }>(
+export function destiladorUserFilter<T extends { eq: (col: string, val: string) => T }>(
   q: T,
-  clerkId: string
+  userId: string
 ): T {
-  return q.eq('clerk_id', clerkId)
+  return q.eq('clerk_id', userId)
 }
 
 export async function fetchDestiladorMembresia(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<DestMembresia> {
   const { data } = await supabase
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .select('destilador_membresia')
-    .eq('clerk_id', clerkId)
+    .eq('user_id', userId)
     .eq('profile_type_v2', 'distiller')
     .maybeSingle()
   const m = data?.destilador_membresia as DestMembresia | null
@@ -108,13 +109,13 @@ export async function fetchDestiladorMembresia(
 
 export async function fetchViajes(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { estado?: DestViajeEstado; limit?: number }
 ): Promise<ViajeRow[]> {
   let q = supabase
     .from('viajes')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('fecha', { ascending: false })
   if (opts?.estado) q = q.eq('estado', opts.estado)
   if (opts?.limit) q = q.limit(opts.limit)
@@ -139,9 +140,9 @@ export async function fetchProductosViaje(
 /** Conteos por estado — nunca suma litros entre agaves. */
 export async function countViajesByEstado(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<Record<DestViajeEstado, number>> {
-  const rows = await fetchViajes(supabase, clerkId, { limit: 500 })
+  const rows = await fetchViajes(supabase, userId, { limit: 500 })
   const base: Record<DestViajeEstado, number> = {
     en_negociacion: 0,
     confirmado: 0,
@@ -156,9 +157,9 @@ export async function countViajesByEstado(
 
 export async function sumSaldosPalenqueros(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<number> {
-  const viajes = await fetchViajes(supabase, clerkId, { limit: 200 })
+  const viajes = await fetchViajes(supabase, userId, { limit: 200 })
   const activos = viajes.filter(v => v.estado !== 'recibido')
   if (activos.length === 0) return 0
   const productos = await fetchProductosViaje(
@@ -187,14 +188,14 @@ function isSchemaCacheColumnError(err: unknown): boolean {
 
 export async function fetchLotes(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { estado?: DestLoteEstado; limit?: number }
 ): Promise<LoteRow[]> {
   for (const select of [LOTES_SELECT_WITH_FECHA, LOTES_SELECT_BASE]) {
     let q = supabase
       .from('lotes')
       .select(select)
-      .eq('clerk_id', clerkId)
+      .eq('clerk_id', userId)
       .order('fecha_recepcion', { ascending: false })
     if (opts?.estado) q = q.eq('estado', opts.estado)
     if (opts?.limit) q = q.limit(opts.limit)
@@ -214,9 +215,9 @@ export async function fetchLotes(
 
 export async function countLotesByEstado(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<Record<DestLoteEstado, number>> {
-  const rows = await fetchLotes(supabase, clerkId, { limit: 500 })
+  const rows = await fetchLotes(supabase, userId, { limit: 500 })
   const base: Record<DestLoteEstado, number> = {
     en_bodega_crudo: 0,
     en_produccion: 0,
@@ -232,7 +233,7 @@ export async function countLotesByEstado(
 /** Pipeline compras: viajes en tránsito + lotes por etapa (conteos, no litros). */
 export async function fetchComprasPipelineCounts(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<{
   enTransito: number
   enBodegaCrudo: number
@@ -240,8 +241,8 @@ export async function fetchComprasPipelineCounts(
   terminado: number
 }> {
   const [viajes, lotesBy] = await Promise.all([
-    fetchViajes(supabase, clerkId, { limit: 500 }),
-    countLotesByEstado(supabase, clerkId),
+    fetchViajes(supabase, userId, { limit: 500 }),
+    countLotesByEstado(supabase, userId),
   ])
   const enTransito = viajes.filter(v => v.estado === 'en_transito').length
   return {
@@ -254,13 +255,13 @@ export async function fetchComprasPipelineCounts(
 
 export async function fetchViajeById(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   viajeId: string
 ): Promise<ViajeRow | null> {
   const { data, error } = await supabase
     .from('viajes')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('id', viajeId)
     .maybeSingle()
   if (error) throw error
@@ -269,13 +270,13 @@ export async function fetchViajeById(
 
 export async function fetchProductosForViaje(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   viajeId: string
 ): Promise<ProductoViajeRow[]> {
   const { data, error } = await supabase
     .from('productos_viaje')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('viaje_id', viajeId)
     .order('created_at', { ascending: true })
   if (error) throw error
@@ -284,13 +285,13 @@ export async function fetchProductosForViaje(
 
 export async function createViajeDestilador(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   input: CreateViajeInput
 ): Promise<{ viajeId: string }> {
   const { data: viaje, error: viajeErr } = await supabase
     .from('viajes')
     .insert({
-      clerk_id: clerkId,
+      clerk_id: userId,
       fecha: input.fecha,
       region: input.region,
       comunidad: input.comunidad,
@@ -307,7 +308,7 @@ export async function createViajeDestilador(
   }
 
   const rows = input.productos.map(p => ({
-    clerk_id: clerkId,
+    clerk_id: userId,
     viaje_id: viaje.id,
     tipo_agave: p.tipo_agave.trim(),
     litros_acordados: p.litros_acordados,
@@ -347,9 +348,9 @@ export async function confirmarLlegadaDestilador(
 /** Promedio $/L en últimas 3 compras recibidas (ponderado por litros recibidos). */
 export async function fetchCostoPromedioLitroUltimasCompras(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<number | null> {
-  const viajes = await fetchViajes(supabase, clerkId, { estado: 'recibido', limit: 3 })
+  const viajes = await fetchViajes(supabase, userId, { estado: 'recibido', limit: 3 })
   if (viajes.length === 0) return null
 
   const productos = await fetchProductosViaje(
@@ -373,7 +374,7 @@ export async function fetchCostoPromedioLitroUltimasCompras(
 
 export async function fetchLoteById(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   loteId: string
 ): Promise<LoteRow | null> {
   const selects = [
@@ -389,7 +390,7 @@ export async function fetchLoteById(
     const { data, error } = await supabase
       .from('lotes')
       .select(select)
-      .eq('clerk_id', clerkId)
+      .eq('clerk_id', userId)
       .eq('id', loteId)
       .maybeSingle()
     if (!error) return data ? normalizeLoteRow(data as unknown as Record<string, unknown>) : null
@@ -409,14 +410,14 @@ export interface MovimientoInventarioRow {
 
 export async function fetchMovimientosInventarioByLote(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   loteId: string,
   limit = 30
 ): Promise<MovimientoInventarioRow[]> {
   const { data: cajas, error: cajasErr } = await supabase
     .from('cajas')
     .select('id')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('lote_id', loteId)
   if (cajasErr) {
     if (isDestSchemaMissingError(cajasErr)) return []
@@ -428,7 +429,7 @@ export async function fetchMovimientosInventarioByLote(
   const { data, error } = await supabase
     .from('movimientos_inventario')
     .select('id, tipo, timestamp, notas, metodo')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .in('caja_id', cajaIds)
     .order('timestamp', { ascending: false })
     .limit(limit)
@@ -441,13 +442,13 @@ export async function fetchMovimientosInventarioByLote(
 
 export async function fetchCorridasByLote(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   loteId: string
 ): Promise<CorridaRow[]> {
   const { data, error } = await supabase
     .from('corridas_embotellado')
     .select('*')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .eq('lote_id', loteId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -456,13 +457,13 @@ export async function fetchCorridasByLote(
 
 export async function fetchCorridas(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   opts?: { estado?: 'activa' | 'completada'; limit?: number }
 ): Promise<CorridaRow[]> {
   let q = supabase
     .from('corridas_embotellado')
     .select('*, lotes ( numero_lote, tipo_agave )')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('created_at', { ascending: false })
   if (opts?.estado) q = q.eq('estado', opts.estado)
   if (opts?.limit) q = q.limit(opts.limit)
@@ -473,19 +474,19 @@ export async function fetchCorridas(
 
 export async function fetchLotesCrudo(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<LoteRow[]> {
-  return fetchLotes(supabase, clerkId, { estado: 'en_bodega_crudo', limit: 100 })
+  return fetchLotes(supabase, userId, { estado: 'en_bodega_crudo', limit: 100 })
 }
 
 export async function fetchBodegas(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<BodegaRow[]> {
   const { data, error } = await supabase
     .from('bodegas')
     .select('id, nombre, es_embotellado')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
     .order('es_embotellado', { ascending: false })
   if (error) throw error
   return (data ?? []) as BodegaRow[]
@@ -493,24 +494,24 @@ export async function fetchBodegas(
 
 export async function fetchStockBotellas(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<StockBotellaRow[]> {
   const { data, error } = await supabase
     .from('stock_botellas_vacias')
     .select('formato, cantidad_disponible')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
   if (error) throw error
   return (data ?? []) as StockBotellaRow[]
 }
 
 export async function fetchStockEtiquetas(
   supabase: SupabaseClient,
-  clerkId: string
+  userId: string
 ): Promise<StockEtiquetaRow[]> {
   const { data, error } = await supabase
     .from('stock_etiquetas')
     .select('nombre, tipo, cantidad_disponible')
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
   if (error) throw error
   return (data ?? []) as StockEtiquetaRow[]
 }
@@ -522,10 +523,10 @@ export function estimateBotellas(litros: number, formato: DestFormatoBotella): n
 
 export async function iniciarCorridaDestilador(
   supabase: SupabaseClient,
-  clerkId: string,
+  userId: string,
   input: CreateCorridaInput
 ): Promise<{ corridaId: string }> {
-  const lote = await fetchLoteById(supabase, clerkId, input.lote_id)
+  const lote = await fetchLoteById(supabase, userId, input.lote_id)
   if (!lote) throw new Error('Lote no encontrado')
   if (lote.estado !== 'en_bodega_crudo') {
     throw new Error('Solo lotes en bodega crudo pueden embotellarse')
@@ -534,7 +535,7 @@ export async function iniciarCorridaDestilador(
     throw new Error('Litros asignados superan el granel disponible')
   }
 
-  const stock = await fetchStockBotellas(supabase, clerkId)
+  const stock = await fetchStockBotellas(supabase, userId)
   const row = stock.find(s => s.formato === input.formato_botella)
   const estimadas = estimateBotellas(input.litros_asignados, input.formato_botella)
   if (!row || row.cantidad_disponible < estimadas) {
@@ -553,11 +554,11 @@ export async function iniciarCorridaDestilador(
       updated_at: new Date().toISOString(),
     })
     .eq('id', input.lote_id)
-    .eq('clerk_id', clerkId)
+    .eq('clerk_id', userId)
   if (loteErr) throw loteErr
 
   const insert: Record<string, unknown> = {
-    clerk_id: clerkId,
+    clerk_id: userId,
     lote_id: input.lote_id,
     bodega_id: input.bodega_id,
     formato_botella: input.formato_botella,

@@ -103,7 +103,7 @@ export default function ProductosPage() {
   useEffect(() => {
     if (!scope) return
     load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   function resetForm() {
     setName('')

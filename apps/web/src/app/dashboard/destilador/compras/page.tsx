@@ -27,7 +27,7 @@ const ESTADO_LABEL: Record<DestViajeEstado, string> = {
 
 export default function DestiladorComprasPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useDestiladorScope()
+  const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [viajes, setViajes] = useState<ViajeRow[]>([])
   const [pipeline, setPipeline] = useState({
     enTransito: 0,
@@ -41,15 +41,15 @@ export default function DestiladorComprasPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
     setError(null)
     Promise.all([
-      fetchViajes(supabase, clerkId, { limit: 80 }),
-      fetchComprasPipelineCounts(supabase, clerkId),
-      sumSaldosPalenqueros(supabase, clerkId),
-      fetchCostoPromedioLitroUltimasCompras(supabase, clerkId),
+      fetchViajes(supabase, userId, { limit: 80 }),
+      fetchComprasPipelineCounts(supabase, userId),
+      sumSaldosPalenqueros(supabase, userId),
+      fetchCostoPromedioLitroUltimasCompras(supabase, userId),
     ])
       .then(([v, pipe, debo, prom]) => {
         if (cancelled) return
@@ -68,14 +68,14 @@ export default function DestiladorComprasPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase])
+  }, [ok, userId, supabase])
 
   const [productosByViaje, setProductosByViaje] = useState<
     Record<string, { agaves: string[]; saldo: number }>
   >({})
 
   useEffect(() => {
-    if (!clerkId || viajes.length === 0) {
+    if (!userId || viajes.length === 0) {
       setProductosByViaje({})
       return
     }
@@ -97,7 +97,7 @@ export default function DestiladorComprasPage() {
     return () => {
       cancelled = true
     }
-  }, [clerkId, supabase, viajes])
+  }, [userId, supabase, viajes])
 
   const viajesActivos = useMemo(
     () => viajes.filter(v => v.estado !== 'recibido').length,

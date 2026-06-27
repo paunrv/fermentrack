@@ -36,7 +36,6 @@ describe('tryDistributorQuickAnswer — consultas', () => {
           {
             id: 'cx1',
             pedido_id: 'ped-1',
-            cliente_id: 'c1',
             cliente_nombre: 'Bar La Cueva',
             saldo_pendiente: 5000,
             monto_total: 5000,

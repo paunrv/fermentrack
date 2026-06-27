@@ -1,18 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/supabase'
+import { PROOF_PROFILES_TABLE } from '@/lib/supabase'
 
 const MI_INFORMACION_SELECT =
-  'clerk_id, profile_type_v2, profile_type, username, onboarding_complete, is_super_user, extra_profiles, email, cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path'
+  'user_id, profile_type_v2, profile_type, username, onboarding_complete, is_super_user, extra_profiles, email, cuenta_deposito, banco_deposito, titular_cuenta, constancia_fiscal_path'
 
 /** Perfil distributor del scope (patrón u org) donde viven cuenta y constancia fiscal. */
 export async function fetchMiInformacionProfile(
   sb: SupabaseClient,
-  scopeClerkId: string
+  scopeUserId: string
 ): Promise<Profile | null> {
   const { data, error } = await sb
-    .from('profiles')
+    .from(PROOF_PROFILES_TABLE)
     .select(MI_INFORMACION_SELECT)
-    .eq('clerk_id', scopeClerkId)
+    .eq('user_id', scopeUserId)
     .eq('profile_type_v2', 'distributor')
     .maybeSingle()
 
@@ -21,6 +22,7 @@ export async function fetchMiInformacionProfile(
 
   return {
     ...data,
+    user_id: data.user_id ?? (data as { clerk_id?: string }).clerk_id,
     extra_profiles: (data.extra_profiles || []) as Profile['extra_profiles'],
     is_super_user: Boolean(data.is_super_user),
     onboarding_complete: Boolean(data.onboarding_complete),

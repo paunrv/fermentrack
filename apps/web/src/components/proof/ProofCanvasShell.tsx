@@ -293,6 +293,24 @@ export function ProofCanvasShell({
         onChange={handleTicketFileChange}
       />
 
+      <div
+        className="proof-canvas-workspace"
+        aria-label="Espacio de trabajo PROOF"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          padding: '16px 20px',
+        }}
+      >
+        <ProofResultsZone
+          displayCards={displayCards ?? null}
+          loading={isTyping}
+          onAction={prompt => sendPrompt(prompt, false)}
+          onDeleteCard={onDeleteCard}
+        />
+      </div>
+
       <ProofChatThread
         accent={accent}
         profileType={profileType}
@@ -313,13 +331,6 @@ export function ProofCanvasShell({
         onSuggestedReply={msg => sendPrompt(msg, true)}
       />
 
-      <ProofResultsZone
-        displayCards={displayCards ?? null}
-        loading={isTyping}
-        onAction={prompt => sendPrompt(prompt, false)}
-        onDeleteCard={onDeleteCard}
-      />
-
       <ProofComposer
         accent={accent}
         profileType={profileType}
@@ -330,6 +341,7 @@ export function ProofCanvasShell({
         quickActions={quickActions ?? []}
         disabled={isTyping}
         showHint={showHint}
+        docked={hasUserMessage}
       />
     </div>
   )

@@ -80,7 +80,7 @@ export default function AgentePage() {
             }. ¿En qué te ayudo?`
       setMessages([{ role: 'assistant', ts: Date.now(), content: intro }])
     })
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   /* ── pick up ?q= from top bar ─────────────────────────────────── */
   useEffect(() => {

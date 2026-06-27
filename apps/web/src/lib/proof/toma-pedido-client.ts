@@ -55,7 +55,7 @@ export async function ensureClientForScope(
   const { data: existing, error: findErr } = await sb
     .from('clients')
     .select('id, name')
-    .eq('clerk_id', scope.clerk_id)
+    .eq('user_id', scope.user_id)
     .eq('profile_type_v2', scope.profile_type_v2)
     .ilike('name', trimmed)
     .limit(1)
@@ -68,7 +68,7 @@ export async function ensureClientForScope(
     .from('clients')
     .insert({
       name: trimmed,
-      clerk_id: scope.clerk_id,
+      user_id: scope.user_id,
       profile_type_v2: scope.profile_type_v2,
       type: 'tienda',
       price_tier: 'regular',
@@ -93,7 +93,7 @@ async function ensureEtiquetaForClient(
     .from('client_etiquetas')
     .select('id, nombre')
     .eq('client_id', clientId)
-    .eq('clerk_id', scope.clerk_id)
+    .eq('user_id', scope.user_id)
     .eq('profile_type_v2', scope.profile_type_v2)
     .ilike('nombre', trimmed)
     .limit(1)
@@ -107,7 +107,7 @@ async function ensureEtiquetaForClient(
     .insert({
       client_id: clientId,
       nombre: trimmed,
-      clerk_id: scope.clerk_id,
+      user_id: scope.user_id,
       profile_type_v2: scope.profile_type_v2,
     })
     .select('id, nombre')
@@ -152,7 +152,7 @@ export async function finalizarTomaPedido(
     lineas.map(l => ensureEtiquetaForClient(sb, scope, cliente.id, l.etiqueta))
   )
 
-  const numero = await rpcProofNextCodigo(sb, scope.clerk_id, scope.profile_type_v2, 'pedido')
+  const numero = await rpcProofNextCodigo(sb, scope.user_id, scope.profile_type_v2, 'pedido')
   const primary = etiquetas[0]!
   const anticipoMonto = input.anticipo ? (input.anticipoMonto ?? null) : null
   const notas: TomaPedidoNotas = { lineas, anticipo: input.anticipo, anticipo_monto: anticipoMonto }
@@ -167,7 +167,7 @@ export async function finalizarTomaPedido(
     anticipo: input.anticipo,
     anticipo_monto: anticipoMonto,
     notas: JSON.stringify(notas),
-    clerk_id: scope.clerk_id,
+    user_id: scope.user_id,
     profile_type_v2: scope.profile_type_v2,
   })
 

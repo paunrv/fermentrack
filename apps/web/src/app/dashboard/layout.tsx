@@ -27,7 +27,8 @@ import {
 } from '@/lib/proof/profile-theme'
 import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
 import { useIsMobile } from '@/hooks/useBreakpoint'
-import { MobileBottomNav, MOBILE_BOTTOM_NAV_HEIGHT } from '@/components/proof/MobileBottomNav'
+import { MobileBottomNav } from '@/components/proof/MobileBottomNav'
+import { WinemakerMobileNav } from '@/components/proof/WinemakerMobileNav'
 import { ProofDatosCobroSheet } from '@/components/proof/ProofDatosCobroSheet'
 
 type Role = ExtraProfile | 'producer'
@@ -197,6 +198,7 @@ function pageTitleFor(path: string): string {
   if (path.startsWith('/dashboard/winemaker/documentos')) return 'Documentos'
   if (path.startsWith('/dashboard/winemaker/gastos')) return 'Gastos'
   if (path.startsWith('/dashboard/winemaker/agenda')) return 'Agenda'
+  if (path.startsWith('/dashboard/equipo')) return 'Mi equipo'
   return 'PROOF'
 }
 
@@ -243,8 +245,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const theme = getProfileTheme(activeProfile?.profile_type_v2)
   const pageTitle = pageTitleFor(path)
   const isMobile = useIsMobile()
+  const isWinemakerMobileHome = isWinemaker && isCanvas && isMobile
+  const showWinemakerMobileNav = isWinemaker && isMobile
   const showSidebar = !isCanvas && !isMobile
-  const showMobileNav = isMobile
+  const showMobileNav = isMobile && !showWinemakerMobileNav
 
   const initials = getUserInitials(user)
 
@@ -286,15 +290,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [loading, activeProfile?.profile_type_v2, path, router])
 
   useEffect(() => {
-    if (!isCanvas || !isDistiller || !activeProfile?.clerk_id) return
+    if (!isCanvas || !isDistiller || !activeProfile?.user_id) return
     let cancelled = false
-    void fetchDestiladorMembresia(supabase, activeProfile.clerk_id).then(m => {
+    void fetchDestiladorMembresia(supabase, activeProfile.user_id).then(m => {
       if (!cancelled) setMembresia(m)
     })
     return () => {
       cancelled = true
     }
-  }, [isCanvas, isDistiller, activeProfile?.clerk_id, supabase])
+  }, [isCanvas, isDistiller, activeProfile?.user_id, supabase])
 
   function submitAsk(e: React.FormEvent) {
     e.preventDefault()
@@ -338,7 +342,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const datosCobroHeaderExpanded = isCanvas && datosCobroStrip
-  const canvasContentTop = isCanvas ? 64 + (datosCobroHeaderExpanded ? 88 : 0) : 0
+  const canvasContentTop =
+    isCanvas && !isWinemakerMobileHome ? 64 + (datosCobroHeaderExpanded ? 88 : 0) : 0
 
   const showInnerHeader =
     !isCanvas &&
@@ -358,6 +363,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ...proofAccentCssVars(theme),
       }}
     >
+      {showWinemakerMobileNav && <WinemakerMobileNav />}
+
       {showMobileNav && (
         <MobileBottomNav
           primaryItems={navItems}
@@ -467,7 +474,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           flexDirection: 'column',
         }}
       >
-        {isCanvas && (
+        {isCanvas && !isWinemakerMobileHome && (
           <header
             className="proof-canvas-header"
             style={{
@@ -674,9 +681,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             flex: 1,
             minHeight: 0,
             paddingTop: canvasContentTop,
-            paddingBottom: showMobileNav
-              ? `calc(${MOBILE_BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom, 0px))`
-              : 0,
+            paddingBottom:
+              showWinemakerMobileNav || showMobileNav ? 'var(--proof-bottom-nav)' : 0,
           }}
         >
           {children}

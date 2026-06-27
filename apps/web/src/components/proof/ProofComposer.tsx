@@ -2,7 +2,6 @@
 
 import { useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import type { ProofQuickAction } from '@/lib/proof/proof-canvas-copy'
 import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
 
 export type ProofQuickAction = {
@@ -43,6 +42,7 @@ export function ProofComposer({
   quickActions,
   disabled,
   showHint,
+  docked = false,
 }: {
   accent: string
   profileType: ProfileType
@@ -53,6 +53,8 @@ export function ProofComposer({
   quickActions: ProofQuickAction[]
   disabled: boolean
   showHint: boolean
+  /** Hilo activo encima: une visualmente chat + composer en un panel de 720px */
+  docked?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const hintKey =
@@ -67,9 +69,9 @@ export function ProofComposer({
     <div
       style={{
         flexShrink: 0,
-        padding: '12px 20px 16px',
+        padding: docked ? '0 20px 16px' : '12px 20px 16px',
         background: 'var(--color-background-tertiary)',
-        borderTop: '0.5px solid var(--color-border-tertiary)',
+        borderTop: docked ? 'none' : '0.5px solid var(--color-border-tertiary)',
       }}
     >
       {showHint ? (
@@ -102,7 +104,8 @@ export function ProofComposer({
           margin: '0 auto',
           background: 'var(--color-background-primary)',
           border: '0.5px solid var(--color-border-tertiary)',
-          borderRadius: 10,
+          borderRadius: docked ? '0 0 10px 10px' : 10,
+          borderTop: docked ? '0.5px solid var(--color-border-tertiary)' : undefined,
           padding: '10px 14px',
         }}
       >

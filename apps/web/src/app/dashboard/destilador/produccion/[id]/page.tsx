@@ -25,7 +25,7 @@ export default function CerrarCorridaPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useDestiladorScope()
+  const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [corrida, setCorrida] = useState<CorridaRow | null>(null)
   const [producidas, setProducidas] = useState('')
   const [defectuosas, setDefectuosas] = useState('0')
@@ -33,12 +33,12 @@ export default function CerrarCorridaPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!ok || !clerkId || !id) return
+    if (!ok || !userId || !id) return
     supabase
       .from('corridas_embotellado')
       .select('*, lotes ( numero_lote, tipo_agave )')
       .eq('id', id)
-      .eq('clerk_id', clerkId)
+      .eq('clerk_id', userId)
       .maybeSingle()
       .then(({ data, error: err }) => {
         if (err) throw err
@@ -51,7 +51,7 @@ export default function CerrarCorridaPage() {
           setProducidas(String(est))
         }
       })
-  }, [ok, clerkId, id, supabase])
+  }, [ok, userId, id, supabase])
 
   const mermaPct = useMemo(() => {
     if (!corrida) return 0

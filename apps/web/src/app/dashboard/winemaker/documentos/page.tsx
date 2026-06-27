@@ -11,15 +11,15 @@ import { fetchDocuments } from '@/lib/supabase/winemaker'
 
 export default function WinemakerDocumentosPage() {
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useWinemakerScope()
+  const { loading: scopeLoading, ok, userId } = useWinemakerScope()
   const [docs, setDocs] = useState<WmDocumentRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !clerkId) return
+    if (!ok || !userId) return
     let cancelled = false
     setDataLoading(true)
-    fetchDocuments(supabase, clerkId, { limit: 100, withLines: true })
+    fetchDocuments(supabase, userId, { limit: 100, withLines: true })
       .then(rows => {
         if (!cancelled) setDocs(rows)
       })
@@ -29,7 +29,7 @@ export default function WinemakerDocumentosPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, supabase])
+  }, [ok, userId, supabase])
 
   if (scopeLoading || !ok) {
     return (

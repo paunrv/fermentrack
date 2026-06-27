@@ -66,7 +66,7 @@ export default function RecepcionPage() {
         setOrdenesDistribuidor([])
         setOrdenesLegacy([])
       })
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   const ocVinculo = parseOcRecepcionValue(ocVinculoValue)
 

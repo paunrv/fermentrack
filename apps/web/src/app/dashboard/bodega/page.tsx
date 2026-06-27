@@ -119,7 +119,7 @@ export default function BodegaPage() {
   useEffect(() => {
     if (!scope) return
     load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   async function handleExit(e: React.FormEvent) {
     e.preventDefault()
@@ -141,9 +141,9 @@ export default function BodegaPage() {
         price_per_unit: price,
         notes: notes.trim() || null,
         ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
-      } as WarehouseExit & { clerk_id?: string; profile_type_v2?: string })
+      } as WarehouseExit & { user_id?: string; profile_type_v2?: string })
       setUnits('')
       setPricePerUnit('')
       setNotes('')

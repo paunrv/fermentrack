@@ -75,7 +75,7 @@ export default function LotesPage() {
   useEffect(() => {
     if (!scope) return
     load()
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   async function handleCreate() {
     if (!form.nombre) return
@@ -95,9 +95,9 @@ export default function LotesPage() {
       status: 'active',
       alert: null,
       ...(scope
-        ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+        ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
         : {}),
-    } as Batch & { clerk_id?: string; profile_type_v2?: string })
+    } as Batch & { user_id?: string; profile_type_v2?: string })
     await logActivity(supabase, id, `Nuevo lote ${id} creado`, form.nombre)
     setForm({
       nombre: '',

@@ -126,7 +126,7 @@ function OnboardingContent() {
 
     try {
       await upsertProfile(supabase, {
-        clerk_id: user.id,
+        user_id: user.id,
         profile_type_v2: profileType,
         profile_type: profileType,
         username: username.trim() || getUserFirstName(user) || 'Productor',
@@ -149,7 +149,7 @@ function OnboardingContent() {
           progress: 0,
           status: 'active',
           alert: null,
-          clerk_id: user.id,
+          user_id: user.id,
           profile_type_v2: profileType,
         })
       }
@@ -165,7 +165,11 @@ function OnboardingContent() {
       router.push('/dashboard')
     } catch (err) {
       const msg =
-        err instanceof Error ? err.message : 'No se pudo guardar el perfil'
+        err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'No se pudo guardar el perfil'
       setSaveError(
         msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')
           ? `${msg} — revisa tu conexión e intenta de nuevo`

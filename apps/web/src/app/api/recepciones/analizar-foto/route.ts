@@ -40,8 +40,8 @@ type Body = {
 }
 
 export async function POST(req: NextRequest) {
-  const clerkId = await requireClerkUserId()
-  if (!clerkId) {
+  const userId = await requireClerkUserId()
+  if (!userId) {
     return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
   }
   const body = (await req.json()) as Body
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
   const profileType = (body.profile_type_v2 || 'distributor') as ExtraProfile
   const sb = createServiceSupabase()
-  const skus = await fetchSkus(sb, { clerk_id: clerkId, profile_type_v2: profileType })
+  const skus = await fetchSkus(sb, { user_id: userId, profile_type_v2: profileType })
 
   let expectedItems: ExpectedOcItem[] | undefined
   let productorNombre = body.productorId?.trim() || 'Pendiente'
@@ -97,13 +97,13 @@ export async function POST(req: NextRequest) {
   let fotoUrls: string[] = []
 
   if (!recepcionId) {
-    const codigo = await rpcProofNextCodigo(sb, clerkId, profileType, 'recepcion')
+    const codigo = await rpcProofNextCodigo(sb, userId, profileType, 'recepcion')
     const draft = await createRecepcionDraft(sb, {
       codigo,
       productor: productorNombre,
       orden_compra_id: ordenCompraLegacyId,
       orden_compra_distribuidor_id: ordenCompraDistribuidorId,
-      clerk_id: clerkId,
+      user_id: userId,
       profile_type_v2: profileType,
     })
     recepcionId = draft.id
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       .from('recepciones')
       .select('foto_urls, productor')
       .eq('id', recepcionId)
-      .eq('clerk_id', clerkId)
+      .eq('user_id', userId)
       .maybeSingle()
     if (!existing) {
       return new Response(JSON.stringify({ error: 'Recepción no encontrada' }), { status: 404 })
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
   const imageBuffer = Buffer.from(rawB64, 'base64')
   const mediaType = body.mediaType || 'image/jpeg'
 
-  const { signedUrl } = await uploadRecepcionFoto(sb, clerkId, recepcionId!, imageBuffer, mediaType)
+  const { signedUrl } = await uploadRecepcionFoto(sb, userId, recepcionId!, imageBuffer, mediaType)
   await appendRecepcionFotoUrl(sb, recepcionId!, signedUrl, fotoUrls)
   fotoUrls = [...fotoUrls, signedUrl]
 

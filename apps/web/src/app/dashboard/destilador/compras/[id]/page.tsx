@@ -35,7 +35,7 @@ export default function DetalleViajePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, clerkId } = useDestiladorScope()
+  const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [viaje, setViaje] = useState<ViajeRow | null>(null)
   const [productos, setProductos] = useState<ProductoViajeRow[]>([])
   const [lineas, setLineas] = useState<LineaForm[]>([])
@@ -45,13 +45,13 @@ export default function DetalleViajePage() {
   const [resultado, setResultado] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!ok || !clerkId || !id) return
+    if (!ok || !userId || !id) return
     let cancelled = false
     setDataLoading(true)
     setError(null)
     Promise.all([
-      fetchViajeById(supabase, clerkId, id),
-      fetchProductosForViaje(supabase, clerkId, id),
+      fetchViajeById(supabase, userId, id),
+      fetchProductosForViaje(supabase, userId, id),
     ])
       .then(([v, prods]) => {
         if (cancelled) return
@@ -80,7 +80,7 @@ export default function DetalleViajePage() {
     return () => {
       cancelled = true
     }
-  }, [ok, clerkId, id, supabase])
+  }, [ok, userId, id, supabase])
 
   const totalLitrosAcordados = useMemo(
     () => productos.reduce((s, p) => s + Number(p.litros_acordados), 0),

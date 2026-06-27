@@ -107,7 +107,7 @@ export default function CostosPage() {
   useEffect(() => {
     if (!scope) return
     load().finally(() => setLoading(false))
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   useEffect(() => {
     if (batchId) loadCosts(batchId)
@@ -127,9 +127,9 @@ export default function CostosPage() {
         currency,
         cost_date: costDate,
         ...(scope
-          ? { clerk_id: scope.clerk_id, profile_type_v2: scope.profile_type_v2 }
+          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
-      } as ProductionCost & { clerk_id?: string; profile_type_v2?: string })
+      } as ProductionCost & { user_id?: string; profile_type_v2?: string })
       setDescription('')
       setAmount('')
       await loadCosts(batchId)

@@ -15,6 +15,11 @@ const PROFILE_META: Record<
   winemaker: { emoji: '🍷', label: 'Winemaker', color: 'rgba(159, 225, 203, 0.35)' },
   distiller: { emoji: '🥃', label: 'Distiller', color: 'rgba(245, 196, 179, 0.35)' },
   distributor: { emoji: '📦', label: 'Distribuidor', color: 'rgba(181, 212, 244, 0.35)' },
+  bodega: {
+    emoji: '📦',
+    label: 'Bodega',
+    color: '#2F5F8F',
+  },
 }
 
 export default function ProfileSelectPage() {

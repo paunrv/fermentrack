@@ -115,15 +115,15 @@ function sendAgentDone(
 }
 
 export async function POST(req: NextRequest) {
-  const clerkId = await requireClerkUserId()
-  if (!clerkId) {
+  const userId = await requireClerkUserId()
+  if (!userId) {
     return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
   }
 
   const body = (await req.json()) as Body
   console.log('[proof/contexto] request', {
     profileType: body.profileType,
-    clerkId,
+    userId,
   })
   const profileType = parseProfileType(body.profileType)
   if (!profileType) {
@@ -191,13 +191,13 @@ export async function POST(req: NextRequest) {
 
       const distributorScope =
         profileType === 'distributor'
-          ? await resolveDistribuidorScope(sb, clerkId)
-          : { clerk_id: clerkId, profile_type_v2: 'distributor' as const }
+          ? await resolveDistribuidorScope(sb, userId)
+          : { user_id: userId, profile_type_v2: 'distributor' as const }
 
       if (queryText) {
         if (profileType === 'distiller') {
-          const lotes = await fetchLotesForAgent(sb, clerkId, { limit: 500 })
-          const viajes = await fetchViajes(sb, clerkId, { limit: 100 })
+          const lotes = await fetchLotesForAgent(sb, userId, { limit: 500 })
+          const viajes = await fetchViajes(sb, userId, { limit: 100 })
           const viajesPendientes = viajes.filter(
             v => v.estado === 'confirmado' || v.estado === 'en_transito'
           )
@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
           const action = parseIntent(queryText, profileType, intentCtx, conversation)
           if (action) {
             console.log('[proof/contexto] ejecutando acción', action)
-            const result = await executeIntent(sb, clerkId, profileType, action)
+            const result = await executeIntent(sb, userId, profileType, action)
             actionMessage = result.message
             refreshEntityId = result.entityId
           }
@@ -249,12 +249,12 @@ export async function POST(req: NextRequest) {
               return
             }
           }
-          datos = await loadIsolatedAgentContext(sb, clerkId, profileType, {
+          datos = await loadIsolatedAgentContext(sb, userId, profileType, {
             ...body.hints,
             selectedId: refreshEntityId ?? body.hints?.selectedId,
           })
         } else if (profileType === 'winemaker') {
-          datos = await loadIsolatedAgentContext(sb, clerkId, profileType, {
+          datos = await loadIsolatedAgentContext(sb, userId, profileType, {
             ...body.hints,
             query: queryText,
             selectedId: body.hints?.selectedId,
@@ -262,7 +262,7 @@ export async function POST(req: NextRequest) {
           const wmCtx = datos as unknown as WinemakerAgentContext
           const docAction = await tryWinemakerDocumentAction(
             sb,
-            clerkId,
+            userId,
             queryText,
             wmCtx,
             conversation
@@ -296,7 +296,7 @@ export async function POST(req: NextRequest) {
             return
           }
         } else {
-          const distCtx = await loadDistributorAgentContext(sb, clerkId, {
+          const distCtx = await loadDistributorAgentContext(sb, userId, {
             ...body.hints,
             query: queryText,
             image: body.hints?.image,
@@ -304,8 +304,8 @@ export async function POST(req: NextRequest) {
           const action = parseIntent(queryText, profileType, distCtx, conversation)
           console.log('[agente] intent resuelto', action ?? null, {
             query: queryText,
-            clerkUserId: clerkId,
-            scopeClerkId: distributorScope.clerk_id,
+            authUserId: userId,
+            scopeUserId: distributorScope.user_id,
             skusEnContexto: distCtx.skus?.length ?? 0,
           })
           if (action) {
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
             try {
               const result = await executeIntent(
                 sb,
-                clerkId,
+                userId,
                 profileType,
                 action,
                 distributorScope,
@@ -366,14 +366,14 @@ export async function POST(req: NextRequest) {
               return
             }
           }
-          datos = await loadDistributorAgentContext(sb, clerkId, {
+          datos = await loadDistributorAgentContext(sb, userId, {
             ...body.hints,
             selectedId: refreshEntityId ?? body.hints?.selectedId,
             query: queryText,
           })
         }
       } else {
-        datos = await loadIsolatedAgentContext(sb, clerkId, profileType, body.hints)
+        datos = await loadIsolatedAgentContext(sb, userId, profileType, body.hints)
       }
 
       if (actionMessage) {
@@ -413,7 +413,7 @@ export async function POST(req: NextRequest) {
         return
       }
 
-      const isolation = proofAgentIsolationClause(clerkId, profileType)
+      const isolation = proofAgentIsolationClause(userId, profileType)
       const systemBase =
         profileType === 'distiller'
           ? PROOF_AI_DESTILADOR
@@ -470,11 +470,11 @@ export async function POST(req: NextRequest) {
             body.vista ??
             (isDestilador ? 'destilador' : isWinemaker ? 'winemaker' : 'distribuidor'),
           profileType,
-          clerk_id:
-            profileType === 'distributor' && typeof datos.clerk_id === 'string'
-              ? datos.clerk_id
-              : clerkId,
-          clerk_user_id: clerkId,
+          user_id:
+            profileType === 'distributor' && typeof datos.user_id === 'string'
+              ? datos.user_id
+              : userId,
+          auth_user_id: userId,
           datos,
         },
         null,

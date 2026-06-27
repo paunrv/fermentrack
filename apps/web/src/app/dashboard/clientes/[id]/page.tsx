@@ -87,7 +87,7 @@ export default function ClienteDetallePage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2, clienteId])
+  }, [scope?.user_id, scope?.profile_type_v2, clienteId])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()

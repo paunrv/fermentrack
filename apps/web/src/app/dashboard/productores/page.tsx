@@ -55,7 +55,7 @@ export default function ProductoresPage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2, supabase])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   const conDeuda = useMemo(() => rows.filter(r => r.deudaTotal > 0).length, [rows])
 

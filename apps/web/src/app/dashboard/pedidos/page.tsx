@@ -42,7 +42,7 @@ export default function PedidosPage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.clerk_id, scope?.profile_type_v2])
+  }, [scope?.user_id, scope?.profile_type_v2])
 
   return (
     <div style={pagePadding({ isMobile })}>
