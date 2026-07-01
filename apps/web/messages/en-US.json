@@ -2113,5 +2113,46 @@
         }
       }
     }
+  },
+  "agent": {
+    "contextBar": {
+      "analyzing": "PROOF analyzing…",
+      "noResponse": "PROOF did not respond. Try again or use quick actions.",
+      "error": "PROOF could not process your request. Please try again.",
+      "contextError": "PROOF context error",
+      "viewMore": "View more"
+    },
+    "chat": {
+      "attachedPhoto": "Photo attached",
+      "noReply": "I could not generate a reply. Can you try again?",
+      "connectionError": "I had a connection problem: {detail}. Shall we try again?",
+      "reconnectFailed": "could not reconnect"
+    },
+    "api": {
+      "unauthenticated": "Not authenticated",
+      "profileTypeRequired": "profileType required: distiller | distributor | winemaker",
+      "apiKeyMissing": "ANTHROPIC_API_KEY not configured",
+      "emptyResults": "No results found for that search.",
+      "guidedFlowFallback": "I could not process that. For supplier purchase: quantity, product and supplier. For sale: quantity, product and customer.",
+      "actionFailed": "Could not complete the action. Please try again.",
+      "jsonResponseInstruction": "Reply ONLY with valid JSON:\n{\"mensaje\":\"max 2 lines\",\"accionLabel\":\"short button text\",\"accionHref\":\"optional path /dashboard/...\"}",
+      "viewMore": "View more",
+      "viewHome": "View home",
+      "viewInventory": "View inventory",
+      "viewWarehouse": "View cellar",
+      "viewLots": "View lots",
+      "viewOrder": "View order",
+      "viewOc": "View PO",
+      "myInfo": "My information",
+      "cobroUserPrompt": {
+        "client": "Customer",
+        "amount": "Outstanding amount",
+        "daysOverdue": "Days overdue",
+        "activeOrder": "Active order today",
+        "tone": "Tone",
+        "toneFirm": "firm",
+        "toneSoft": "soft"
+      }
+    }
   }
 }

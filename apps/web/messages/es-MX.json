@@ -2113,5 +2113,46 @@
         }
       }
     }
+  },
+  "agent": {
+    "contextBar": {
+      "analyzing": "PROOF analizando…",
+      "noResponse": "PROOF no respondió. Intenta de nuevo o usa los accesos rápidos.",
+      "error": "PROOF no pudo procesar tu solicitud. Intenta de nuevo.",
+      "contextError": "Error en contexto PROOF",
+      "viewMore": "Ver más"
+    },
+    "chat": {
+      "attachedPhoto": "Foto adjunta",
+      "noReply": "No pude generar una respuesta. ¿Puedes intentar de nuevo?",
+      "connectionError": "Tuve un problema de conexión: {detail}. ¿Probamos de nuevo?",
+      "reconnectFailed": "no logré reconectar"
+    },
+    "api": {
+      "unauthenticated": "No autenticado",
+      "profileTypeRequired": "profileType requerido: distiller | distributor | winemaker",
+      "apiKeyMissing": "ANTHROPIC_API_KEY no configurada",
+      "emptyResults": "No encontré resultados para esa búsqueda.",
+      "guidedFlowFallback": "No pude procesar eso. Para compra a proveedor: cantidad, producto y proveedor. Para venta: cantidad, producto y cliente.",
+      "actionFailed": "No se pudo completar la acción. Intenta de nuevo.",
+      "jsonResponseInstruction": "Responde SOLO JSON válido:\n{\"mensaje\":\"max 2 líneas\",\"accionLabel\":\"texto botón corto\",\"accionHref\":\"ruta opcional /dashboard/...\"}",
+      "viewMore": "Ver más",
+      "viewHome": "Ver inicio",
+      "viewInventory": "Ver inventario",
+      "viewWarehouse": "Ver bodega",
+      "viewLots": "Ver lotes",
+      "viewOrder": "Ver pedido",
+      "viewOc": "Ver OC",
+      "myInfo": "Mi información",
+      "cobroUserPrompt": {
+        "client": "Cliente",
+        "amount": "Monto pendiente",
+        "daysOverdue": "Días vencido",
+        "activeOrder": "Pedido activo hoy",
+        "tone": "Tono",
+        "toneFirm": "firme",
+        "toneSoft": "suave"
+      }
+    }
   }
 }

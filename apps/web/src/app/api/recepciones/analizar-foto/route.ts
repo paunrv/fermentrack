@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server'
 import { requireClerkUserId } from '@/lib/proof/auth-api'
-import { RECEPCION_VISION_SYSTEM } from '@/lib/proof/prompts'
+import { getAgentApiMessages } from '@/lib/i18n/agent-messages-server'
+import { getLocaleFromRequest } from '@/lib/i18n/request-locale'
+import { getRecepcionVisionSystem } from '@/lib/proof/prompts'
+import type { AppLocale } from '@/i18n/routing'
 import {
   type AnalisisFotoResponse,
   enrichDetectedItems,
@@ -37,14 +40,17 @@ type Body = {
   productorId?: string
   recepcionId?: string
   profile_type_v2?: string
+  locale?: AppLocale
 }
 
 export async function POST(req: NextRequest) {
+  const body = (await req.json()) as Body
+  const locale = getLocaleFromRequest(req, body.locale)
+  const api = await getAgentApiMessages(locale)
   const userId = await requireClerkUserId()
   if (!userId) {
-    return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
+    return new Response(JSON.stringify({ error: api.unauthenticated }), { status: 401 })
   }
-  const body = (await req.json()) as Body
 
   if (!body.imagenBase64?.trim()) {
     return new Response(JSON.stringify({ error: 'imagenBase64 requerida' }), { status: 400 })
@@ -52,9 +58,7 @@ export async function POST(req: NextRequest) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY no configurada' }), {
-      status: 500,
-    })
+    return new Response(JSON.stringify({ error: api.apiKeyMissing }), { status: 500 })
   }
 
   const profileType = (body.profile_type_v2 || 'distributor') as ExtraProfile
@@ -182,7 +186,7 @@ export async function POST(req: NextRequest) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 4096,
-          system: RECEPCION_VISION_SYSTEM,
+          system: getRecepcionVisionSystem(locale),
           messages: [
             {
               role: 'user',

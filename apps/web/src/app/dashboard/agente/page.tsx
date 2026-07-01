@@ -4,9 +4,12 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, type Batch } from '@/lib/supabase'
+import { getProofGeneralChatSystem } from '@/lib/proof/prompts'
 
 /* =========================================================================
    PROOF · ASSISTANT
@@ -51,6 +54,8 @@ export default function AgentePage() {
   const search = useSearchParams()
   const { scope } = useProfile()
   const supabase = useSupabase()
+  const locale = useLocale() as AppLocale
+  const tAgent = useTranslations('agent.chat')
   const [batches, setBatches] = useState<Batch[]>([])
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -109,29 +114,7 @@ export default function AgentePage() {
   }
 
   function systemPrompt() {
-    return `Eres PROOF — el asistente operativo para bodegas, cervecerías, destilerías, distribuidores y bares. PROOF es a la vez la plataforma y la inteligencia que opera con el usuario.
-
-TU PERSONALIDAD
-- Hablas español de México, claro, directo, humano, no robótico.
-- Eres calmado, preciso y útil. Como un operador experto que está al lado del usuario.
-- NO usas lenguaje de ERP. Evita frases como "inventory discrepancy detected", "movement anomaly", "threshold exceeded".
-- En vez de eso usas frases naturales: "Parece que salieron más botellas de las registradas", "Tu cerveza Lager bajará de stock en 4 días", "Faltan movimientos por registrar".
-- Cuando confirmas algo, lo haces simple: "Listo. Registré 24 cajas de Cabernet Reserva 2025 en el almacén Ensenada."
-- Cuando preguntas para confirmar, lo haces breve: "¿Las agrego al lote B-220?"
-
-CUANDO ALGUIEN SUBE UNA FOTO
-- Si es una factura, remisión o nota: extrae productos, cantidades, precios y propones a qué lote o almacén asignarlas. Pide confirmación simple.
-- Si es un pallet o caja: detecta producto, cantidad y propone almacén. Pide confirmación simple.
-- Si es una botella en el almacén o un líquido en muestra: analiza visualmente color, turbidez, sedimentación; describe en español enológico/cervecero claro.
-
-TELEMETRÍA DISPONIBLE (${batches.length} lotes):
-${batchSummary() || 'Sin lotes registrados todavía.'}
-
-REGLAS
-- Responde SIEMPRE en español, salvo que el usuario escriba en otro idioma.
-- Sé breve. Operacional. Sin párrafos largos a menos que el usuario los pida.
-- Cuando hagas falta una acción del usuario, propone UN paso con CTA claro entre corchetes, ej: [Confirmar] o [Registrar].
-- Si hay alertas relevantes en la operación, súrgelas naturalmente.`
+    return getProofGeneralChatSystem(locale, batchSummary())
   }
 
   /* ── messaging ────────────────────────────────────────────────── */
@@ -153,7 +136,7 @@ REGLAS
     const imgSrc = imgB64 ? `data:${imgType};base64,${imgB64}` : undefined
     const userMsg: Message = {
       role: 'user',
-      content: input || 'Foto adjunta',
+      content: input || tAgent('attachedPhoto'),
       imgSrc,
       ts: Date.now(),
     }
@@ -172,7 +155,7 @@ REGLAS
         const content: unknown[] = [
           { type: 'image', source: { type: 'base64', media_type: localImgType, data: localImgB64 } },
         ]
-        if (m.content !== 'Foto adjunta') content.push({ type: 'text', text: m.content })
+        if (m.content !== tAgent('attachedPhoto')) content.push({ type: 'text', text: m.content })
         return { role: 'user', content }
       }
       return { role: m.role, content: m.content }
@@ -192,17 +175,16 @@ REGLAS
       const data = await res.json()
       const reply =
         data.content?.find((c: { type: string }) => c.type === 'text')?.text ||
-        'No pude generar una respuesta. ¿Puedes intentar de nuevo?'
+        tAgent('noReply')
       setMessages(m => [...m, { role: 'assistant', content: reply, ts: Date.now() }])
     } catch (e: unknown) {
       setMessages(m => [
         ...m,
         {
           role: 'assistant',
-          content:
-            'Tuve un problema de conexión: ' +
-            (e instanceof Error ? e.message : 'no logré reconectar') +
-            '. ¿Probamos de nuevo?',
+          content: tAgent('connectionError', {
+            detail: e instanceof Error ? e.message : tAgent('reconnectFailed'),
+          }),
           ts: Date.now(),
         },
       ])
@@ -232,17 +214,16 @@ REGLAS
       const data = await res.json()
       const reply =
         data.content?.find((c: { type: string }) => c.type === 'text')?.text ||
-        'No pude generar una respuesta. ¿Puedes intentar de nuevo?'
+        tAgent('noReply')
       setMessages(m => [...m, { role: 'assistant', content: reply, ts: Date.now() }])
     } catch (e: unknown) {
       setMessages(m => [
         ...m,
         {
           role: 'assistant',
-          content:
-            'Tuve un problema de conexión: ' +
-            (e instanceof Error ? e.message : 'no logré reconectar') +
-            '. ¿Probamos de nuevo?',
+          content: tAgent('connectionError', {
+            detail: e instanceof Error ? e.message : tAgent('reconnectFailed'),
+          }),
           ts: Date.now(),
         },
       ])

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server'
+import type { AppLocale } from '@/i18n/routing'
 import { requireClerkUserId } from '@/lib/proof/auth-api'
 import {
   executeIntent,
@@ -20,7 +21,9 @@ import { buildDistillerDisplayCards } from '@/lib/proof/distiller-display-cards'
 import { buildWinemakerDisplayCards } from '@/lib/proof/winemaker-display-cards'
 import { tryWinemakerDocumentAction } from '@/lib/proof/winemaker-agent-actions'
 import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
-import { getWinemakerTicketCopy } from '@/lib/i18n/winemaker-ticket-copy-server'
+import { getAgentApiMessages } from '@/lib/i18n/agent-messages-server'
+import { getLocaleFromRequest } from '@/lib/i18n/request-locale'
+import { getWinemakerTicketCopyForLocale } from '@/lib/i18n/winemaker-ticket-copy-server'
 import { narrowDistributorContextForQuery } from '@/lib/proof/toma-pedido-intent'
 import {
   isDistributorGuidedFlowQuery,
@@ -28,9 +31,7 @@ import {
 } from '@/lib/proof/distributor-guided-flow'
 import { proofErrorMessage } from '@/lib/proof/proof-error'
 import {
-  PROOF_AI_DESTILADOR,
-  PROOF_AI_SYSTEM,
-  PROOF_AI_WINEMAKER,
+  getProofAgentSystem,
   proofAgentIsolationClause,
 } from '@/lib/proof/prompts'
 import { createSseStream } from '@/lib/proof/sse'
@@ -46,6 +47,7 @@ type Body = {
   pantalla: string
   vista?: string
   profileType: AgentProfileType
+  locale?: AppLocale
   hints?: AgentContextHints
   contexto?: Record<string, unknown>
 }
@@ -54,8 +56,6 @@ function parseProfileType(raw: unknown): AgentProfileType | null {
   if (raw === 'distiller' || raw === 'distributor' || raw === 'winemaker') return raw
   return null
 }
-
-const EMPTY_RESULTS_MSG = 'No encontré resultados para esa búsqueda.'
 
 function buildDisplayCardsForQuery(
   query: string,
@@ -73,6 +73,7 @@ function buildDisplayCardsForQuery(
 
 function sendAgentDone(
   send: (event: string, data: unknown) => void,
+  api: Awaited<ReturnType<typeof getAgentApiMessages>>,
   opts: {
     queryText: string
     profileType: AgentProfileType
@@ -96,7 +97,7 @@ function sendAgentDone(
     const built = buildDisplayCardsForQuery(opts.queryText, opts.profileType, opts.datos)
     displayCards = built.displayCards
     if (built.emptyResults && !displayCards) {
-      chatResponse = EMPTY_RESULTS_MSG
+      chatResponse = api.emptyResults
     }
   }
 
@@ -104,7 +105,7 @@ function sendAgentDone(
     chatResponse,
     mensaje: chatResponse,
     displayCards,
-    accionLabel: opts.accionLabel ?? 'Ver más',
+    accionLabel: opts.accionLabel ?? api.viewMore,
     accionHref: opts.accionHref ?? '/dashboard',
     refreshLoteId: opts.refreshLoteId ?? null,
     refreshPedidoId: opts.refreshPedidoId ?? null,
@@ -117,28 +118,27 @@ function sendAgentDone(
 
 export async function POST(req: NextRequest) {
   const userId = await requireClerkUserId()
+  const body = (await req.json()) as Body
+  const locale = getLocaleFromRequest(req, body.locale)
+  const api = await getAgentApiMessages(locale)
+
   if (!userId) {
-    return new Response(JSON.stringify({ error: 'No autenticado' }), { status: 401 })
+    return new Response(JSON.stringify({ error: api.unauthenticated }), { status: 401 })
   }
 
-  const body = (await req.json()) as Body
   console.log('[proof/contexto] request', {
     profileType: body.profileType,
     userId,
+    locale,
   })
   const profileType = parseProfileType(body.profileType)
   if (!profileType) {
-    return new Response(
-      JSON.stringify({ error: 'profileType requerido: distiller | distributor | winemaker' }),
-      { status: 400 }
-    )
+    return new Response(JSON.stringify({ error: api.profileTypeRequired }), { status: 400 })
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY no configurada' }), {
-      status: 500,
-    })
+    return new Response(JSON.stringify({ error: api.apiKeyMissing }), { status: 500 })
   }
 
   const { stream, send, close } = createSseStream()
@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
         )
         if (earlyQuick) {
           console.log('[proof/contexto] early quick answer (sin DB)', { query: queryText })
-          sendAgentDone(send, {
+          sendAgentDone(send, api, {
             queryText,
             profileType,
             datos: minimalDistributorQuickContext(conversation) as unknown as Record<
@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
             const quick = quickAnswer(queryText, profileType, quickCtx)
             if (quick) {
               console.log('[proof/contexto] quick answer', { query: queryText })
-              sendAgentDone(send, {
+              sendAgentDone(send, api, {
                 queryText,
                 profileType,
                 datos: quickCtx as unknown as Record<string, unknown>,
@@ -255,7 +255,7 @@ export async function POST(req: NextRequest) {
             selectedId: refreshEntityId ?? body.hints?.selectedId,
           })
         } else if (profileType === 'winemaker') {
-          const ticketCopy = await getWinemakerTicketCopy()
+          const ticketCopy = await getWinemakerTicketCopyForLocale(locale)
           datos = await loadIsolatedAgentContext(sb, userId, profileType, {
             ...body.hints,
             query: queryText,
@@ -265,7 +265,7 @@ export async function POST(req: NextRequest) {
           const docAction = await tryWinemakerDocumentAction(sb, queryText, wmCtx, conversation)
           if (docAction) {
             console.log('[proof/contexto] winemaker document action', { query: queryText })
-            sendAgentDone(send, {
+            sendAgentDone(send, api, {
               queryText,
               profileType,
               datos,
@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
           const quick = quickAnswer(queryText, profileType, datos, { ticketCopy })
           if (quick) {
             console.log('[proof/contexto] quick answer winemaker', { query: queryText })
-            sendAgentDone(send, {
+            sendAgentDone(send, api, {
               queryText,
               profileType,
               datos,
@@ -337,9 +337,7 @@ export async function POST(req: NextRequest) {
             } catch (e) {
               console.error('[proof/contexto] acción distribuidor falló', action.type, e)
               actionMessage =
-                e instanceof Error
-                  ? e.message
-                  : 'No se pudo completar la acción. Intenta de nuevo.'
+                e instanceof Error ? e.message : api.actionFailed
             }
           }
           if (!actionMessage) {
@@ -351,7 +349,7 @@ export async function POST(req: NextRequest) {
               console.log('[proof/contexto] quick answer distribuidor', {
                 query: queryText,
               })
-              sendAgentDone(send, {
+              sendAgentDone(send, api, {
                 queryText,
                 profileType,
                 datos: { ...distCtx, conversation } as unknown as Record<string, unknown>,
@@ -374,31 +372,31 @@ export async function POST(req: NextRequest) {
 
       if (actionMessage) {
         const miInfoUpdated = refreshProfile && profileType === 'distributor'
-        sendAgentDone(send, {
+        sendAgentDone(send, api, {
           queryText,
           profileType,
           datos,
           mensaje: actionMessage,
           accionLabel: miInfoUpdated
-            ? 'Mi información'
+            ? api.myInfo
             : refreshOcId
-            ? 'Ver OC'
-            : refreshPedidoId
-              ? 'Ver pedido'
-              : isDestilador
-                ? 'Ver bodega'
-                : isWinemaker
-                  ? 'Ver lotes'
-                  : 'Ver inventario',
+              ? api.viewOc
+              : refreshPedidoId
+                ? api.viewOrder
+                : isDestilador
+                  ? api.viewWarehouse
+                  : isWinemaker
+                    ? api.viewLots
+                    : api.viewInventory,
           accionHref: miInfoUpdated
             ? '/dashboard'
             : refreshOcId
-            ? `/dashboard?oc=${refreshOcId}`
-            : refreshPedidoId
-              ? `/dashboard/pedidos/${refreshPedidoId}`
-              : isDestilador || isWinemaker
-                ? '/dashboard'
-                : '/dashboard/inventario',
+              ? `/dashboard?oc=${refreshOcId}`
+              : refreshPedidoId
+                ? `/dashboard/pedidos/${refreshPedidoId}`
+                : isDestilador || isWinemaker
+                  ? '/dashboard'
+                  : '/dashboard/inventario',
           refreshLoteId: refreshSkuId ?? (refreshPedidoId || refreshOcId ? null : refreshEntityId),
           refreshPedidoId,
           refreshOcId,
@@ -409,24 +407,21 @@ export async function POST(req: NextRequest) {
         return
       }
 
-      const isolation = proofAgentIsolationClause(userId, profileType)
-      const systemBase =
-        profileType === 'distiller'
-          ? PROOF_AI_DESTILADOR
-          : profileType === 'winemaker'
-            ? PROOF_AI_WINEMAKER
-            : PROOF_AI_SYSTEM
+      const isolation = proofAgentIsolationClause(userId, profileType, locale)
+      const systemBase = getProofAgentSystem(profileType, locale)
 
       if (queryText) {
         const quick = quickAnswer(
           queryText,
           profileType,
           datos,
-          profileType === 'winemaker' ? { ticketCopy: await getWinemakerTicketCopy() } : undefined
+          profileType === 'winemaker'
+            ? { ticketCopy: await getWinemakerTicketCopyForLocale(locale) }
+            : undefined
         )
         if (quick) {
           console.log('[proof/contexto] quick answer (full ctx)', { query: queryText })
-          sendAgentDone(send, {
+          sendAgentDone(send, api, {
             queryText,
             profileType,
             datos,
@@ -443,13 +438,12 @@ export async function POST(req: NextRequest) {
           isDistributorGuidedFlowQuery(queryText, conversation)
         ) {
           console.log('[proof/contexto] guided flow fallback (sin LLM)', { query: queryText })
-          sendAgentDone(send, {
+          sendAgentDone(send, api, {
             queryText,
             profileType,
             datos,
-            mensaje:
-              'No pude procesar eso. Para compra a proveedor: cantidad, producto y proveedor. Para venta: cantidad, producto y cliente.',
-            accionLabel: 'Ver inicio',
+            mensaje: api.guidedFlowFallback,
+            accionLabel: api.viewHome,
             accionHref: '/dashboard',
             skipDisplayCards: true,
           })
@@ -497,8 +491,7 @@ export async function POST(req: NextRequest) {
 
 ${isolation}
 
-Responde SOLO JSON válido:
-{"mensaje":"max 2 líneas","accionLabel":"texto botón corto","accionHref":"ruta opcional /dashboard/..."}`,
+${api.jsonResponseInstruction}`,
           messages: [
             {
               role: 'user',
@@ -542,7 +535,7 @@ Responde SOLO JSON válido:
       }
 
       let mensaje = full.trim()
-      let accionLabel = 'Ver más'
+      let accionLabel = api.viewMore
       let accionHref = isDestilador || isWinemaker ? '/dashboard' : '/dashboard/inventario'
       try {
         const m = full.match(/\{[\s\S]*\}/)
@@ -560,7 +553,7 @@ Responde SOLO JSON válido:
         /* usar texto crudo */
       }
 
-      sendAgentDone(send, {
+      sendAgentDone(send, api, {
         queryText,
         profileType,
         datos,
@@ -574,12 +567,12 @@ Responde SOLO JSON válido:
       })
     } catch (e) {
       console.error('[proof/contexto] error', e)
-      sendAgentDone(send, {
+      sendAgentDone(send, api, {
         queryText: body.hints?.query?.trim() ?? '',
         profileType: profileType ?? 'distributor',
         datos: {},
         mensaje: proofErrorMessage(e),
-        accionLabel: 'Ver inicio',
+        accionLabel: api.viewHome,
         accionHref: '/dashboard',
         skipDisplayCards: true,
       })

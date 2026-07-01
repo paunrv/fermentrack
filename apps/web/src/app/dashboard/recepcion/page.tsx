@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
@@ -32,6 +33,7 @@ const STEP_IDS = ['foto', 'analiza', 'revisar', 'discrepancias', 'confirmar'] as
 export default function RecepcionPage() {
   const t = useTranslations('distributor.recepcion')
   const tCommon = useTranslations('distributor.common')
+  const locale = useLocale() as AppLocale
   const router = useRouter()
   const { scope, activeProfile } = useProfile()
   const supabase = useSupabase()
@@ -117,6 +119,7 @@ export default function RecepcionPage() {
           productorId: productor || undefined,
           recepcionId: recepcionId || undefined,
           profile_type_v2: activeProfile?.profile_type_v2 || 'distributor',
+          locale,
         }),
       })
 

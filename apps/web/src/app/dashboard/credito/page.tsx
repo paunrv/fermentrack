@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -62,6 +63,7 @@ function CanvasDivider({ label }: { label: string }) {
 export default function CreditoPage() {
   const t = useTranslations('distributor.credito')
   const tCommon = useTranslations('distributor.common')
+  const locale = useLocale() as AppLocale
   const { scope, profilesResolved, activeProfile, loading: profileLoading } = useProfile()
   const supabase = useSupabase()
   const accent = getProfileTheme(activeProfile?.profile_type_v2).accent
@@ -133,6 +135,7 @@ export default function CreditoPage() {
           monto: cliente.saldo_pendiente,
           diasVencido: diasVencido(cliente.fecha_vencimiento),
           pedidoNumero: null,
+          locale,
         }),
       })
       const data = await res.json()

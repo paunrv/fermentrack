@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import type { DisplayCards } from '@/lib/proof/agent-response-types'
 import type { AgentContextHints, AgentProfileType } from '@/lib/proof/agent-context-types'
 
@@ -83,9 +85,11 @@ export function useProofContextBar(options: {
   requestId?: number
   fallback?: { mensaje: string; accionLabel?: string; accionHref?: string }
 }) {
+  const locale = useLocale() as AppLocale
+  const t = useTranslations('agent.contextBar')
   const [chatResponse, setChatResponse] = useState(options.fallback?.mensaje ?? '…')
   const [displayCards, setDisplayCards] = useState<DisplayCards | null>(null)
-  const [accionLabel, setAccionLabel] = useState(options.fallback?.accionLabel ?? 'Ver más')
+  const [accionLabel, setAccionLabel] = useState(options.fallback?.accionLabel ?? t('viewMore'))
   const [accionHref, setAccionHref] = useState(options.fallback?.accionHref ?? '/dashboard/agente')
   const [refreshLoteId, setRefreshLoteId] = useState<string | null>(null)
   const [refreshPedidoId, setRefreshPedidoId] = useState<string | null>(null)
@@ -134,7 +138,7 @@ export function useProofContextBar(options: {
       const fb = fallbackRef.current
       if (fb && !hasAgentReplyRef.current) {
         setChatResponse(fb.mensaje)
-        setAccionLabel(fb.accionLabel ?? 'Ver más')
+        setAccionLabel(fb.accionLabel ?? t('viewMore'))
         setAccionHref(fb.accionHref ?? '/dashboard/agente')
       }
       setLoading(false)
@@ -152,7 +156,7 @@ export function useProofContextBar(options: {
     setOpenSkuImagePicker(null)
     setRefreshOcId(null)
     setRefreshProfile(false)
-    setChatResponse('PROOF analizando…')
+    setChatResponse(t('analyzing'))
 
     console.log('[useProofContextBar] fetch', {
       profileType,
@@ -172,6 +176,7 @@ export function useProofContextBar(options: {
             pantalla: options.pantalla,
             vista: options.vista,
             profileType,
+            locale,
             hints: hintsRef.current,
           }),
         })
@@ -270,11 +275,7 @@ export function useProofContextBar(options: {
         if (!gotDone) {
           const fb = fallbackRef.current
           if (fb) {
-            setChatResponse(
-              query
-                ? 'PROOF no respondió. Intenta de nuevo o usa los accesos rápidos.'
-                : fb.mensaje
-            )
+            setChatResponse(query ? t('noResponse') : fb.mensaje)
           }
         }
       } catch (err) {
@@ -286,11 +287,11 @@ export function useProofContextBar(options: {
           query: options.hints?.query ?? null,
           err,
         })
-        setError('PROOF no pudo procesar tu solicitud. Intenta de nuevo.')
+        setError(t('error'))
         const fb = fallbackRef.current
         if (fb && !query) {
           setChatResponse(fb.mensaje)
-          setAccionLabel(fb.accionLabel ?? 'Ver más')
+          setAccionLabel(fb.accionLabel ?? t('viewMore'))
           setAccionHref(fb.accionHref ?? '/dashboard/agente')
         }
       } finally {
@@ -310,6 +311,8 @@ export function useProofContextBar(options: {
     options.hints?.query,
     options.hints?.conversation?.length,
     options.enabled,
+    locale,
+    t,
   ])
 
   const dismissDisplayCard = useCallback((itemId: string) => {
