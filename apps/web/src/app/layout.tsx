@@ -1,6 +1,9 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { Providers } from './providers';
+import type { Metadata } from 'next'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages } from 'next-intl/server'
+import '@fermentrack/ui/styles.css'
+import './globals.css'
+import { Providers } from './providers'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -17,18 +20,19 @@ export const metadata: Metadata = {
     initialScale: 1,
     viewportFit: 'cover',
   },
-};
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="es">
+    <html lang={locale}>
       <body>
-        <Providers>{children}</Providers>
+        <NextIntlClientProvider messages={messages}>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
-  );
+  )
 }

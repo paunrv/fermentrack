@@ -8,7 +8,9 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build --filter=@fermentrack/web",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "storybook": "turbo run storybook --filter=@fermentrack/storybook",
+    "build-storybook": "turbo run build-storybook --filter=@fermentrack/storybook"
   },
   "packageManager": "npm@11.11.0",
   "engines": {

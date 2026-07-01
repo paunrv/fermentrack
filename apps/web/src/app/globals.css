@@ -61,6 +61,8 @@
     'Apple Color Emoji', Arial, sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
     'Courier New', monospace;
+  --font-voice: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
+    'Times New Roman', serif;
 
   /* — Motion — */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -329,6 +331,19 @@ select {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
+}
+
+.proof-dashboard-rail-link:focus-visible {
+  outline: 2px solid var(--proof-accent);
+  outline-offset: 2px;
+}
+
+.proof-dashboard-header {
+  flex-shrink: 0;
+  z-index: 15;
+  box-sizing: border-box;
+  background: var(--ink);
+  border-bottom: 1px solid var(--hairline);
 }
 
 /* Canvas home — vertical sections, horizontal item rails */

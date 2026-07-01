@@ -1,0 +1,1886 @@
+{
+  "common": {
+    "localeSwitcher": {
+      "label": "Language",
+      "es-MX": "Español (MX)",
+      "en-US": "English (US)"
+    },
+    "pilot": {
+      "title": "PROOF i18n pilot",
+      "greeting": "Hello from next-intl",
+      "today": "Today is {date}",
+      "price": "From {price} MXN",
+      "backHome": "Back to home"
+    }
+  },
+  "landing": {
+    "nav": {
+      "productores": "Producers",
+      "distribuidores": "Distributors",
+      "precios": "Pricing",
+      "logIn": "Log in",
+      "startFree": "Start free",
+      "goDashboard": "Go to my dashboard"
+    },
+    "hero": {
+      "tag": "// AI-native operating system",
+      "headlineLine1": "Every bottle tells a story.",
+      "headlineLine2": "We track the proof.",
+      "subtitleLine1": "PROOF is not an ERP.",
+      "subtitleLine2": "It is the operational memory of your production.",
+      "subtitleHighlight": "operational memory",
+      "body": "Upload any document, photo or note. PROOF extracts, connects and makes your operation intelligent.",
+      "ctaDemo": "See demo",
+      "ctaStart": "Start free",
+      "mockup": {
+        "userLabel": "Aldo · Winemaker",
+        "liveLabel": "Live",
+        "alerts": [
+          {
+            "tone": "warn",
+            "title": "Fermentation out of range",
+            "meta": "LOT-2026-001 · Chardonnay"
+          },
+          {
+            "tone": "info",
+            "title": "3 lots ready to bottle",
+            "meta": "Viñas del Tigre · this week"
+          },
+          {
+            "tone": "ok",
+            "title": "Receiving confirmed",
+            "meta": "PO-284 · 120 cases"
+          }
+        ]
+      }
+    },
+    "contrast": {
+      "title": "ERPs record. PROOF understands.",
+      "subtitle": "We do not replace your accounting. We give memory to your liquid operation.",
+      "cards": [
+        {
+          "title": "Records vs. context",
+          "body": "An ERP stores numbers. PROOF understands that lot 2026-001 is in malolactic and the winemaker chose to wait 48 more hours."
+        },
+        {
+          "title": "Forms vs. conversation",
+          "body": "Dictate in the cellar, upload a ticket photo, or ask in plain language. PROOF structures the info without breaking your flow."
+        },
+        {
+          "title": "Reports vs. answers",
+          "body": "No hunting through ten screens. Ask \"which lots are ready?\" and get the answer with full context."
+        }
+      ]
+    },
+    "productores": {
+      "eyebrow": "For producers",
+      "title": "A living timeline for every lot",
+      "subtitle": "Wine, beer, or spirits — PROOF adapts protocols, stages, and alerts to your category.",
+      "tabs": {
+        "winemaker": {
+          "label": "Winemaker",
+          "bullets": [
+            "🍷 Full timeline for every lot — from harvest to bottle",
+            "📋 Protocols by style — red, white, sparkling, rosé",
+            "🎙️ Voice agent — dictate in the cellar and PROOF records it",
+            "💡 \"Which lots are ready to bottle?\""
+          ],
+          "timelineTitle": "LOT-2026-001 · Chardonnay · Viñas del Tigre",
+          "stages": [
+            {
+              "label": "Harvest",
+              "status": "done"
+            },
+            {
+              "label": "Analysis",
+              "status": "done"
+            },
+            {
+              "label": "Fermentation",
+              "status": "active"
+            },
+            {
+              "label": "Malolactic",
+              "status": "pending"
+            },
+            {
+              "label": "Aging",
+              "status": "pending"
+            },
+            {
+              "label": "Bottling",
+              "status": "pending"
+            }
+          ]
+        },
+        "brewer": {
+          "label": "Brewer",
+          "bullets": [
+            "🍺 Recipe control (grain bill, hops, yeast) per batch",
+            "📋 Protocols by style — IPA, Stout, Lager, Sour, Witbier",
+            "🌡️ Fermentation and density monitoring (OG/FG) with alerts",
+            "💡 \"How many liters of IPA do I have available?\""
+          ],
+          "timelineTitle": "BATCH-2026-008 · West Coast IPA · Cervecería Norte",
+          "stages": [
+            {
+              "label": "Mashing",
+              "status": "done"
+            },
+            {
+              "label": "Boil",
+              "status": "done"
+            },
+            {
+              "label": "Fermentation",
+              "status": "active"
+            },
+            {
+              "label": "Dry hopping",
+              "status": "pending"
+            },
+            {
+              "label": "Conditioning",
+              "status": "pending"
+            },
+            {
+              "label": "Packaging",
+              "status": "pending"
+            }
+          ]
+        },
+        "distiller": {
+          "label": "Distiller",
+          "bullets": [
+            "🌵 Full traceability from harvest to packaging",
+            "📋 Protocols by category — blanco, reposado, añejo, extra añejo",
+            "✂️ Cut logging (heads, hearts, tails) with master distiller decisions",
+            "💡 \"How much reposado is ready to bottle?\""
+          ],
+          "timelineTitle": "LOTE-2026-003 · Reposado · Destilería Aculla",
+          "stages": [
+            {
+              "label": "Harvest",
+              "status": "done"
+            },
+            {
+              "label": "Cooking",
+              "status": "done"
+            },
+            {
+              "label": "Fermentation",
+              "status": "done"
+            },
+            {
+              "label": "Distillation",
+              "status": "active"
+            },
+            {
+              "label": "Resting",
+              "status": "pending"
+            },
+            {
+              "label": "Packaging",
+              "status": "pending"
+            }
+          ]
+        }
+      }
+    },
+    "distribuidores": {
+      "eyebrow": "For distributors",
+      "title": "Inventory, orders, and credit in one place",
+      "subtitle": "From goods receipt to customer collection.",
+      "bullets": [
+        "📦 Smart receiving — photograph the pallet and PROOF matches your PO",
+        "🛒 Order taking with real-time stock and credit rules",
+        "💳 Portfolio and collections — balance per customer, limits, and due alerts",
+        "📊 Operational KPIs — turnover, margins, and critical SKUs without Excel exports"
+      ]
+    },
+    "upload": {
+      "eyebrow": "Upload anything",
+      "title": "Upload what you have. PROOF understands.",
+      "subtitle": "Tickets, invoices, delivery notes, label photos — any format.",
+      "items": [
+        "📸 Ticket or invoice photo",
+        "🎙️ Voice note in the cellar",
+        "📄 PDF or Excel inventory",
+        "💬 Ask in natural language"
+      ]
+    },
+    "pricing": {
+      "eyebrow": "Pricing",
+      "title": "Plans that grow with your operation",
+      "plans": [
+        {
+          "name": "Basic",
+          "price": "$0",
+          "period": "/mo",
+          "description": "Start giving memory to your operation.",
+          "features": [
+            "Lot timeline",
+            "Manual logging and chat",
+            "1 user",
+            "90-day history"
+          ],
+          "cta": "Start free"
+        },
+        {
+          "name": "Pro",
+          "price": "$29",
+          "period": "/mo",
+          "description": "For teams operating in real time.",
+          "features": [
+            "Voice agent",
+            "Smart photo",
+            "Unlimited sub-users",
+            "Alerts and protocols",
+            "Full history"
+          ],
+          "cta": "Start with Pro",
+          "highlighted": true
+        },
+        {
+          "name": "Enterprise",
+          "price": "Custom",
+          "period": "",
+          "description": "For groups with multiple sites and integrations.",
+          "features": [
+            "Multi-site",
+            "API and integrations",
+            "Dedicated SLA",
+            "Custom onboarding"
+          ],
+          "cta": "Contact us"
+        }
+      ]
+    },
+    "finalCta": {
+      "title": "Give your operation a memory.",
+      "subtitle": "Every bottle tells a story. We track the proof.",
+      "inputPlaceholder": "you@email.com",
+      "cta": "Start free"
+    },
+    "footer": {
+      "tagline": "Operational memory for liquid production.",
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "copyright": "© 2026 PROOF. All rights reserved.",
+      "about": "About",
+      "contact": "Contact",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "upgradeModal": {
+      "title": "This feature is part of the Pro plan",
+      "body": "Voice agent, smart photo, and sub-users included from $29/mo.",
+      "seePlans": "See plans",
+      "stayBasic": "Stay on Basic"
+    }
+  },
+  "about": {
+    "meta": {
+      "title": "About · PROOF",
+      "description": "PROOF started by listening to wine, beer, and spirits producers. Learn why we exist."
+    },
+    "hero": {
+      "eyebrow": "// why we exist",
+      "titleLine1": "It did not start as a startup idea.",
+      "titleLine2": "It started by listening.",
+      "p1": "PROOF did not come from a market study or an investor meeting. It came from years of conversations with people who dedicate their lives to making wine, beer, spirits, and other handcrafted products.",
+      "p2": "The same problems kept coming up: inventory scattered across Excel sheets, production notes on paper, purchasing managed from memory, and expensive software built for companies nothing like an independent producer."
+    },
+    "insight": {
+      "eyebrow": "// the insight",
+      "title": "\"Why did this wine end up the way it did?\"",
+      "p1": "That was the question we heard again and again. Not \"how many liters did we produce\" — they already knew that. The real question was why a wine from ten or fifteen years ago turned out exactly the way it did.",
+      "p2": "Answering it required something no inventory system stores: that year's weather, grape condition, decisions made in the moment, lab results, notes that lived only in someone's memory.",
+      "p3": "That is when we understood PROOF could not be inventory software. It had to be operational memory for production.",
+      "quote": "\"What information will I be glad I saved 20 years from now to understand why this product turned out this way?\""
+    },
+    "beliefs": {
+      "eyebrow": "// what we believe",
+      "title": "Craft deserves better tools.",
+      "body": "Technology should be invisible. Data should build confidence, not complexity. Small businesses deserve enterprise-quality software. Software should feel like a conversation. No one should need a course to understand their own business."
+    },
+    "audience": {
+      "eyebrow": "// who it's for",
+      "title": "For anyone who turns raw materials into something they are proud of.",
+      "p1": "Today we work with wineries, breweries, and distilleries. Tomorrow it might be an artisan cheese maker, coffee roaster, chocolate maker, or olive oil producer.",
+      "p2": "PROOF was not born limited to one industry. It was defined by a type of maker: someone who turns something raw into something finished, and deserves to understand every step."
+    },
+    "cta": {
+      "title": "Start building your production memory.",
+      "button": "Start free"
+    }
+  },
+  "contact": {
+    "meta": {
+      "title": "Contact · PROOF",
+      "description": "Have a question? Write to us. You will hear from someone who knows the product."
+    },
+    "eyebrow": "// let's talk",
+    "title": "Have a question? Write to us.",
+    "subtitle": "No call center, no three-day support ticket. Write to us and someone who actually knows the product will reply.",
+    "emailHint": "You can also email us directly at",
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "message": "How can we help?",
+      "producerType": "Producer type",
+      "optional": "(optional)",
+      "producerPlaceholder": "Select an option",
+      "types": {
+        "winery": "Winery",
+        "brewery": "Brewery",
+        "distillery": "Distillery",
+        "distributor": "Distributor",
+        "other": "Other"
+      },
+      "submit": "Send message",
+      "submitting": "Sending…",
+      "successTitle": "Message sent",
+      "successBody": "Thanks for reaching out. We will reply soon.",
+      "errorDefault": "We could not send your message. Please try again.",
+      "errorUnexpected": "Unexpected error."
+    }
+  },
+  "legal": {
+    "draftBanner": "⚠️ This document is an initial draft. It will be reviewed by legal counsel before public launch.",
+    "lastUpdatedLabel": "Last updated:",
+    "privacy": {
+      "meta": {
+        "title": "Privacy policy · PROOF",
+        "description": "How PROOF collects, uses, and protects your information."
+      },
+      "title": "Privacy policy",
+      "lastUpdated": "June 30, 2026",
+      "sections": [
+        {
+          "title": "1. Information we collect",
+          "paragraphs": [
+            "Account information (name, email, organization).",
+            "Usage information (lots, events, documents you upload to the platform).",
+            "Technical information (IP address, device type, browser)."
+          ]
+        },
+        {
+          "title": "2. How we use your information",
+          "paragraphs": [
+            "To operate and improve PROOF.",
+            "To provide support.",
+            "To send account-related communications (never spam)."
+          ]
+        },
+        {
+          "title": "3. How we protect your information",
+          "paragraphs": [
+            "Encryption in transit and at rest.",
+            "Role-restricted access within your organization.",
+            "Your production data is yours — we never sell it or share it with third parties without your consent."
+          ]
+        },
+        {
+          "title": "4. Who we share information with",
+          "paragraphs": [
+            "Infrastructure providers (hosting, database).",
+            "Never with third parties for marketing purposes."
+          ]
+        },
+        {
+          "title": "5. Your rights",
+          "paragraphs": [
+            "Access, correct, or delete your information.",
+            "Export your data at any time.",
+            "Close your account whenever you want."
+          ]
+        },
+        {
+          "title": "6. Data retention",
+          "paragraphs": [
+            "We keep your information while your account is active.",
+            "If you close your account, we delete your data according to applicable legal timelines."
+          ]
+        },
+        {
+          "title": "7. Changes to this policy",
+          "paragraphs": [
+            "We will email you if we make material changes."
+          ]
+        },
+        {
+          "title": "8. Contact",
+          "paragraphs": [
+            "privacidad@proof.app"
+          ],
+          "isContact": true
+        }
+      ]
+    },
+    "terms": {
+      "meta": {
+        "title": "Terms of service · PROOF",
+        "description": "Terms and conditions for using the PROOF platform."
+      },
+      "title": "Terms of service",
+      "lastUpdated": "June 30, 2026",
+      "lastUpdatedLabel": "Last updated:",
+      "sections": [
+        {
+          "title": "1. Acceptance of terms",
+          "paragraphs": [
+            "By using PROOF, you accept these terms."
+          ]
+        },
+        {
+          "title": "2. Service description",
+          "paragraphs": [
+            "PROOF is an operational management platform for artisan producers (wineries, breweries, distilleries) and their distributors."
+          ]
+        },
+        {
+          "title": "3. Accounts and memberships",
+          "paragraphs": [
+            "You are responsible for keeping your account secure.",
+            "Plans and pricing may change with prior notice.",
+            "You may cancel your subscription at any time."
+          ]
+        },
+        {
+          "title": "4. Acceptable use",
+          "intro": "You may not:",
+          "paragraphs": [
+            "Use PROOF for illegal purposes.",
+            "Attempt to access other organizations' data.",
+            "Resell or redistribute the service without authorization."
+          ]
+        },
+        {
+          "title": "5. Ownership of your data",
+          "paragraphs": [
+            "Everything you upload to PROOF (lots, documents, notes, photos) belongs to you. PROOF only processes it to provide the service."
+          ]
+        },
+        {
+          "title": "6. Intellectual property",
+          "paragraphs": [
+            "PROOF software, design, and brand are owned by PROOF. You may not copy or redistribute the platform."
+          ]
+        },
+        {
+          "title": "7. Service availability",
+          "paragraphs": [
+            "We do our best to keep PROOF available 24/7, but we do not guarantee uninterrupted availability."
+          ]
+        },
+        {
+          "title": "8. Limitation of liability",
+          "paragraphs": [
+            "PROOF is provided \"as is\". We are not liable for indirect losses arising from use of the platform."
+          ]
+        },
+        {
+          "title": "9. Changes to these terms",
+          "paragraphs": [
+            "We will email you if we make material changes."
+          ]
+        },
+        {
+          "title": "10. Governing law",
+          "paragraphs": [
+            "These terms are governed by the laws of Mexico."
+          ]
+        },
+        {
+          "title": "11. Contact",
+          "paragraphs": [
+            "legal@proof.app"
+          ],
+          "isContact": true
+        }
+      ]
+    }
+  },
+  "auth": {
+    "signIn": {
+      "eyebrow": "Operational intelligence",
+      "subtitle": "Sign in to your cellar",
+      "google": "Continue with Google",
+      "googleLoading": "Redirecting…",
+      "divider": "or",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "submitting": "Signing in…",
+      "noAccount": "No account?",
+      "signUp": "Sign up",
+      "loading": "Loading…"
+    },
+    "signUp": {
+      "placeholder": "Sign-up coming soon.",
+      "backToSignIn": "Back to sign in"
+    },
+    "errors": {
+      "authCallback": "Could not sign in. Please try again.",
+      "googleFailed": "Could not sign in with Google.",
+      "googleUnexpected": "Unexpected error connecting to Google",
+      "invalidCredentials": "Incorrect email or password.",
+      "emailNotConfirmed": "Confirm your email before signing in.",
+      "generic": "Something went wrong. Please try again."
+    }
+  },
+  "profileSelect": {
+    "loading": "Loading profiles…",
+    "errorLoad": "We could not load your profiles. Check your connection and try again.",
+    "retry": "Retry",
+    "title": "PROOF",
+    "subtitle": "Which profile do you want to use today?",
+    "addProfile": "Add profile",
+    "profiles": {
+      "brewer": "Brewer",
+      "winemaker": "Winemaker",
+      "distiller": "Distiller",
+      "distributor": "Distributor",
+      "bodega": "Warehouse"
+    }
+  },
+  "onboarding": {
+    "step1": {
+      "title": "I am a…",
+      "titleAdd": "New profile",
+      "subtitle": "Choose your profile type",
+      "subtitleAdd": "Choose the profile type you want to add",
+      "allProfilesTitle": "You already have every profile type",
+      "allProfilesBody": "No more profile types are available to add.",
+      "backToProfiles": "Back to my profiles",
+      "cancelAdd": "← Cancel and back to my profiles"
+    },
+    "step2": {
+      "title": "Your profile",
+      "orgNameWinemaker": "Winery name",
+      "orgNameDefault": "Username",
+      "orgPlaceholderWinemaker": "E.g. Viñas del Tigre",
+      "productNameBrewer": "Your beer name",
+      "productNameWinemaker": "Your wine name",
+      "productNameDistiller": "Your spirit name",
+      "productPlaceholderBrewer": "E.g. Mantis",
+      "productPlaceholderWinemaker": "E.g. El Burro Coyero",
+      "productPlaceholderDistiller": "E.g. London Dry",
+      "style": "Style",
+      "businessName": "Business name",
+      "businessPlaceholder": "E.g. Distribuciones Norte",
+      "categories": "Categories you handle",
+      "categoryLabels": {
+        "cerveza": "Beer",
+        "vino": "Wine",
+        "destilados": "Spirits"
+      },
+      "back": "← Back",
+      "continue": "Continue →"
+    },
+    "step3": {
+      "title": "Enable your camera",
+      "subtitle": "We need camera access to analyze samples with AI",
+      "featureTitle": "Visual fermentation analysis",
+      "featureBody": "Upload sample photos and AI detects turbidity, color, and sediment",
+      "allowCamera": "Allow camera access",
+      "cameraOk": "Camera enabled! ✓",
+      "cameraDenied": "You can enable it later from your browser",
+      "back": "← Back",
+      "saving": "Saving...",
+      "finishAddWinemaker": "Create winery →",
+      "finishAddProfile": "Create profile →",
+      "finish": "Enter PROOF →",
+      "skip": "Skip for now"
+    },
+    "profiles": {
+      "brewer": {
+        "label": "Brewer",
+        "sub": "Craft beer"
+      },
+      "winemaker": {
+        "label": "Winemaker",
+        "sub": "Craft wine"
+      },
+      "distiller": {
+        "label": "Distiller",
+        "sub": "Spirits"
+      },
+      "distributor": {
+        "label": "Distributor",
+        "sub": "Inventory and orders"
+      }
+    },
+    "roles": {
+      "brewer": "Brewer",
+      "winemaker": "Winemaker",
+      "distiller": "Distiller",
+      "distributor": "Distributor"
+    },
+    "errors": {
+      "saveFailed": "Could not save profile",
+      "networkSuffix": " — check your connection and try again"
+    }
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Home",
+      "inventory": "Inventory",
+      "orders": "Orders",
+      "movements": "Movements",
+      "catalog": "Catalog",
+      "clients": "Clients",
+      "credit": "Credit",
+      "producers": "Producers",
+      "receiving": "Receiving",
+      "remissions": "Delivery notes",
+      "distillerPurchases": "Purchases",
+      "distillerLots": "Lots",
+      "distillerProduction": "Production",
+      "distillerCellar": "Cellar",
+      "distillerSales": "Sales",
+      "winemakerLots": "Lots",
+      "winemakerSuppliers": "Suppliers",
+      "winemakerDocuments": "Documents",
+      "winemakerExpenses": "Expenses",
+      "winemakerAgenda": "Agenda",
+      "settings": "Settings"
+    },
+    "pageTitles": {
+      "home": "Home",
+      "inventory": "Inventory",
+      "orders": "Orders",
+      "movements": "Movements",
+      "catalog": "Catalog",
+      "credit": "Credit",
+      "producers": "Producers",
+      "receivingPhoto": "Photo receiving",
+      "remissions": "Delivery notes",
+      "labels": "Labels",
+      "clients": "Clients",
+      "agent": "PROOF",
+      "warehouse": "Warehouse",
+      "lots": "Lots",
+      "bottling": "Bottling",
+      "samples": "Samples",
+      "costs": "Costs",
+      "settings": "Settings",
+      "distillerPurchases": "Purchases",
+      "distillerLots": "Lots",
+      "distillerProduction": "Production",
+      "distillerCellar": "Cellar",
+      "distillerSales": "Sales",
+      "distillerLotDetail": "Lot detail",
+      "winemakerLots": "Lots",
+      "winemakerSuppliers": "Suppliers",
+      "winemakerDocuments": "Documents",
+      "winemakerExpenses": "Expenses",
+      "winemakerAgenda": "Agenda",
+      "team": "My team",
+      "fallback": "PROOF"
+    },
+    "shell": {
+      "homeAria": "PROOF · Home",
+      "brandLabel": "PROOF",
+      "railNav": "Main navigation",
+      "railSettings": "Settings",
+      "askPlaceholder": "Ask PROOF — stock, products, deliveries…",
+      "askPlaceholderCompact": "Ask PROOF…",
+      "askSubmit": "Ask",
+      "uploadPhoto": "Upload photo to PROOF",
+      "personalInfo": "Personal information",
+      "membership": {
+        "basico": "Basic",
+        "profesional": "Professional",
+        "premium": "Premium"
+      },
+      "avatar": {
+        "menu": "Account menu",
+        "switchProfile": "Switch profile",
+        "billingData": "Billing details",
+        "settings": "Settings",
+        "signOut": "Sign out"
+      }
+    },
+    "mobileNav": {
+      "main": "Main navigation",
+      "more": "More",
+      "moreSections": "More sections",
+      "closeMenu": "Close menu",
+      "settings": "Settings"
+    },
+    "bottomNav": {
+      "main": "Main navigation",
+      "closeMenu": "Close menu",
+      "moreSections": "More sections",
+      "capture": "Capture",
+      "closeCapture": "Close capture",
+      "items": {
+        "inicio": "Home",
+        "lotes": "Lots",
+        "agenda": "Agenda",
+        "chat": "Chat",
+        "tareas": "Tasks",
+        "mas": "More"
+      },
+      "mas": {
+        "equipo": "Team",
+        "agenda": "Agenda",
+        "proveedores": "Suppliers",
+        "documentos": "Documents",
+        "gastos": "Expenses",
+        "ajustes": "Settings"
+      }
+    },
+    "settings": {
+      "title": "Settings",
+      "subtitle": "User account and, when applicable, your winemaker organization settings",
+      "switchProfile": "Switch profile",
+      "loading": "Loading...",
+      "language": {
+        "title": "Language",
+        "description": "Choose the interface language. Saved on this device."
+      },
+      "org": {
+        "title": "Winery · organization",
+        "description": "Winemaker tenant data. The slug is permanent.",
+        "name": "Winery name",
+        "slug": "Slug (read-only)",
+        "plan": "Plan",
+        "planStatus": "Plan status",
+        "save": "Save winery",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "readOnlyHint": "Only owner or admin can edit the winery name.",
+        "loadError": "Could not load winery",
+        "saveError": "Could not save"
+      },
+      "billing": {
+        "title": "Billing",
+        "currentPlan": "Current plan:",
+        "freeLimits": "Free: up to {lots} lots, {docs} documents/month",
+        "proLimits": "Pro: unlimited lots and documents + invite team",
+        "upgrade": "Upgrade to Pro",
+        "manage": "Manage subscription",
+        "success": "Subscription activated. It may take a few seconds to update.",
+        "canceled": "Checkout canceled.",
+        "checkoutError": "Could not start checkout",
+        "portalError": "Could not open portal",
+        "genericError": "Billing error"
+      },
+      "plans": {
+        "free": "Free",
+        "pro": "Pro",
+        "enterprise": "Enterprise"
+      },
+      "planStatus": {
+        "active": "Active",
+        "trialing": "Trial",
+        "past_due": "Past due",
+        "canceled": "Canceled"
+      },
+      "profiles": {
+        "title": "My profiles",
+        "count": "My profiles ({count}/5)",
+        "legacyNote": "Legacy profiles (distiller, distributor, brewer). Winemaker via org above.",
+        "empty": "You have no profiles yet. Create your first from onboarding.",
+        "active": "Active",
+        "super": "Super",
+        "deleting": "Deleting...",
+        "activeProfile": "Active profile",
+        "delete": "Delete profile",
+        "deleteConfirm": "Delete profile \"{label}\"? This cannot be undone.",
+        "cannotDeleteActive": "You cannot delete the active profile. Switch profiles first."
+      },
+      "profileTypes": {
+        "brewer": "Brewer",
+        "winemaker": "Winemaker",
+        "distiller": "Distiller",
+        "distributor": "Distributor",
+        "bodega": "Warehouse"
+      },
+      "activeProfile": {
+        "title": "Active profile · {type}",
+        "hint": "Editing the active profile. Switch profiles to edit another.",
+        "username": "Username",
+        "email": "Email",
+        "profileType": "Profile type",
+        "identifier": "Identifier",
+        "usernamePlaceholder": "Your name"
+      },
+      "payment": {
+        "title": "Billing details",
+        "hint": "Also available from the account menu on the canvas (copy account and tax certificate).",
+        "holder": "Account holder",
+        "holderPlaceholder": "Name as shown at the bank",
+        "bank": "Bank",
+        "bankPlaceholder": "BBVA, Santander…",
+        "account": "Account / CLABE",
+        "accountPlaceholder": "012345678901234567"
+      },
+      "superUser": {
+        "title": "Super user",
+        "masterEmail": "Your email matches the master super-user: this mode will always activate on save.",
+        "hint": "Enable to let this profile see every sidebar module.",
+        "toggle": "Toggle super user"
+      },
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saved": "Saved"
+    },
+    "equipo": {
+      "title": "👥 My team",
+      "description": "Members of {org}. Owner and admin can invite with admin, member, or viewer role.",
+      "invite": "+ Invite person",
+      "readOnlyHint": "Only owner or admin can invite members. Your role is read-only or standard member.",
+      "loading": "Loading…",
+      "loadingMembers": "Loading members…",
+      "empty": "No members in your organization yet.",
+      "loadError": "Could not load team",
+      "inviteError": "Could not send invitation",
+      "email": "Email",
+      "name": "Name",
+      "role": "Role in winery",
+      "emailPlaceholder": "person@winery.com",
+      "namePlaceholder": "Full name",
+      "roles": {
+        "admin": "Admin — manages team and data",
+        "member": "Member — can record and edit",
+        "viewer": "Viewer — read only"
+      },
+      "orgRoles": {
+        "owner": "👑 Owner",
+        "admin": "Admin",
+        "member": "Member",
+        "viewer": "Viewer (read only)"
+      },
+      "status": {
+        "active": "Active",
+        "invited": "Invited",
+        "suspended": "Suspended"
+      },
+      "noName": "No name",
+      "submit": "Send invitation",
+      "submitting": "Sending…",
+      "cancel": "Cancel"
+    }
+  },
+  "distributor": {
+    "common": {
+      "loading": "Loading…",
+      "clientFallback": "Client",
+      "dash": "—",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving…",
+      "saveChanges": "Save changes",
+      "receivingPhoto": "Photo receiving",
+      "analyzeWithProof": "Analyze with PROOF",
+      "askProof": "Ask PROOF",
+      "edit": "Edit",
+      "margin": "Margin"
+    },
+    "pedidoEstado": {
+      "borrador": "Draft",
+      "confirmado": "Confirmed",
+      "preparando": "Preparing",
+      "en_ruta": "En route",
+      "entregado": "Delivered",
+      "parcial": "Partial",
+      "cancelado": "Canceled"
+    },
+    "proofBar": {
+      "analyzing": "PROOF analyzing your operation…"
+    },
+    "remisiones": {
+      "title": "Delivery notes",
+      "subtitle": "Confirmed receipts with evidence — inbound history.",
+      "empty": "No delivery notes yet. Confirm a receipt in <link>Photo receiving</link>.",
+      "receivingLink": "Photo receiving",
+      "bottlesUnit": "btl",
+      "discrepancy": "{count, plural, one {# discrepancy} other {# discrepancies}}",
+      "photoBadge": "PHOTO",
+      "withDiscrepanciesBadge": "W/ DISC.",
+      "aiFallback": "Delivery notes reflect confirmed receipts with evidence in Storage."
+    },
+    "pedidos": {
+      "title": "Orders",
+      "subtitle": "Field order taking · delivery and deposit",
+      "newOrder": "Take order",
+      "empty": "No orders yet.",
+      "createFirst": "Create the first one",
+      "delivery": "Delivery {date}",
+      "orderUnits": {
+        "latas": "cans",
+        "botellas": "bottles",
+        "cajas": "cases"
+      },
+      "nuevo": {
+        "back": "← Orders",
+        "title": "Take order",
+        "subtitle": "Client, products with quantity and unit, entry date and deposit. When finished, orders appear below (last {max}).",
+        "client": "Client",
+        "clientPlaceholder": "E.g. Vinos Pijoan, Agua Mala…",
+        "productLine": "Label / product",
+        "productPlaceholder": "Silvana, Mantis…",
+        "removeLine": "Remove line",
+        "addLine": "+ Another product line",
+        "deliveryDate": "Order entry date",
+        "advance": "Deposit",
+        "advanceAmount": "Deposit amount",
+        "finalize": "Finalize order",
+        "emptyStack": "Finalized orders appear here below.",
+        "errors": {
+          "save": "Could not save order",
+          "connection": "{message} — check connection or reload the page"
+        }
+      },
+      "detail": {
+        "loading": "Loading composer…",
+        "notFound": "Order not found.",
+        "back": "Back",
+        "backList": "← Orders",
+        "composer": "Composer",
+        "clientFallback": "Client",
+        "delivery": "Delivery",
+        "addSku": "Add SKU",
+        "selectProduct": "Product…",
+        "productOption": "{name} · {avail} avail.",
+        "emptyItems": "No items in order.",
+        "available": "Avail. {count} bts",
+        "noStock": "NO STOCK",
+        "bottlesShort": "{count} bts",
+        "total": "Total",
+        "saveDraft": "Save draft",
+        "confirmOrder": "Confirm order",
+        "confirming": "Confirming…",
+        "viewInventory": "View inventory",
+        "errors": {
+          "load": "Error loading",
+          "save": "Error saving",
+          "confirm": "Could not confirm"
+        },
+        "aiOverstock": "Some items lack sufficient stock. Adjust quantities or wait for intake before confirming.",
+        "aiEmpty": "Add bottles to the order. Stock is reserved only when you confirm.",
+        "aiReady": "Ready to confirm · {bottles} bottles · {total}"
+      },
+      "tomaDetalle": {
+        "back": "← Take order",
+        "delivery": "Delivery",
+        "advance": "Deposit",
+        "productsOrdered": "Ordered products",
+        "labelOnlyNote": "Order recorded by label. When you link SKUs in inventory, stock will be reserved on confirm from catalog.",
+        "anotherOrder": "+ Another order",
+        "viewAll": "View all"
+      },
+      "resumenCard": {
+        "delivery": "Delivery",
+        "advance": "Deposit",
+        "byLabel": "Recorded by label",
+        "catalogLines": "{count} catalog line(s)"
+      }
+    },
+    "productores": {
+      "title": "Producers",
+      "subtitle": "Suppliers from your PROOF catalog and outstanding payables.",
+      "empty": "No producers in catalog. Sync SKUs or assign producer field in inventory.",
+      "skuCount": "{count, plural, one {# active SKU} other {# active SKUs}}",
+      "ocPending": "{count, plural, one {# open PO} other {# open POs}}",
+      "dueDate": "due {date}",
+      "current": "Current",
+      "footer": "New purchase orders in <createOc>Create PO</createOc> · <canvas>Pending on canvas</canvas>. Payments in <credito>Credit → I owe them</credito>.",
+      "createOc": "Create PO",
+      "canvasPending": "Pending on canvas",
+      "creditoLink": "Credit → I owe them",
+      "aiFallbackWithDebt": "{count, plural, one {# producer with outstanding debt — prioritize due dates.} other {# producers with outstanding debt — prioritize due dates.}}",
+      "aiFallbackCurrent": "Producers are current on recorded debts.",
+      "detail": {
+        "back": "← Producers",
+        "summary": "{count, plural, one {# SKU} other {# SKUs}} · Debt {debt}",
+        "debtCurrent": "current",
+        "sections": {
+          "skus": "SKUs in catalog",
+          "debts": "Active debts",
+          "openOrders": "Open purchase orders"
+        },
+        "emptySkus": "No SKUs for this producer.",
+        "emptyDebts": "No outstanding debts.",
+        "emptyOrders": "No open POs for this producer.",
+        "available": "{count} avail.",
+        "dueLine": "{status} · due {date}",
+        "expected": "Expected {date}",
+        "noExpectedDate": "No expected date"
+      }
+    },
+    "home": {
+      "loading": "Loading PROOF…",
+      "incompatibleProfile": "Profile not compatible with the PROOF canvas.",
+      "ticketSaveError": "Could not save ticket",
+      "readOnly": "Your role is read-only",
+      "deleteError": "Could not delete"
+    },
+    "clientes": {
+      "title": "Clients",
+      "subtitle": "Commercial portfolio · credit and outstanding balances",
+      "cancel": "Cancel",
+      "newClient": "+ New client",
+      "formTitle": "New client",
+      "loadError": "Error loading clients",
+      "saveError": "Could not save client",
+      "saving": "Saving…",
+      "save": "Save client",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Trade name",
+        "phone": "Phone",
+        "phonePlaceholder": "55 1234 5678",
+        "email": "Email",
+        "emailPlaceholder": "contact@client.com",
+        "address": "Address",
+        "addressPlaceholder": "Street, neighborhood, city",
+        "creditDays": "Credit days",
+        "notes": "Notes",
+        "notesPlaceholder": "Terms, preferences..."
+      },
+      "creditTerms": {
+        "cash": "Cash",
+        "days": "{days} days"
+      },
+      "sections": {
+        "summary": "Summary",
+        "withBalance": "With balance",
+        "current": "Current",
+        "clientCount": "{count, plural, one {# client} other {# clients}}",
+        "kpiClients": "Clients",
+        "kpiPortfolio": "Outstanding portfolio",
+        "kpiOverdue": "With overdue balance",
+        "emptyWithBalance": "No clients with outstanding balance.",
+        "emptyNoClients": "No clients yet. Add the first one with \"+ New client\".",
+        "emptyAllHaveBalance": "All clients have outstanding balance."
+      },
+      "rail": {
+        "overdue": "Overdue",
+        "noPhone": "No phone",
+        "noBalance": "No balance"
+      },
+      "detail": {
+        "back": "← Clients",
+        "notFound": "Client not found.",
+        "loadError": "Error loading client",
+        "saveError": "Could not save",
+        "edit": "Edit",
+        "editTitle": "Edit client",
+        "balance": " · Balance {amount}",
+        "current": " · Current",
+        "overdueDebt": " · Overdue debt",
+        "sections": {
+          "data": "Details",
+          "orders": "Orders",
+          "debt": "Debt"
+        },
+        "fields": {
+          "phone": "Phone",
+          "email": "Email",
+          "address": "Address",
+          "credit": "Credit",
+          "notes": "Notes"
+        },
+        "emptyOrders": "No orders recorded for this client.",
+        "delivery": " · Delivery {date}",
+        "emptyPayments": "No payments recorded.",
+        "orderRef": "Order {ref}",
+        "due": " · Due {date}",
+        "viewReceipt": "View receipt"
+      }
+    },
+    "canvas": {
+      "placeholder": "Ask PROOF…",
+      "welcome": "Hi, I'm PROOF. What do you need to do today?",
+      "hint": "Or type your question in the field below.",
+      "conversationAria": "Conversation with PROOF",
+      "analyzingShort": "PROOF analyzing…",
+      "analyzingLong": "PROOF analyzing your operation…",
+      "errors": {
+        "timeout": "PROOF took too long. Try again.",
+        "noResponse": "PROOF did not respond. Try again or pick a mode to start.",
+        "general": "PROOF could not process your request. Try again.",
+        "emptyResults": "No results found for that search."
+      },
+      "modes": {
+        "compra": {
+          "label": "Buy from supplier",
+          "description": "Purchase order, tracking, and warehouse intake"
+        },
+        "venta": {
+          "label": "Sell to client",
+          "description": "New order, delivery, and collection"
+        },
+        "bodega": {
+          "label": "Warehouse status",
+          "description": "Stock, pending intake, and payments"
+        }
+      },
+      "compraLens": {
+        "nueva": {
+          "label": "New order",
+          "description": "Create PO with quantity, product, and supplier",
+          "message": "I want to create a purchase order"
+        },
+        "en_curso": {
+          "label": "Open orders",
+          "description": "Purchases not yet closed",
+          "message": "show my pending purchase orders"
+        },
+        "ultima": {
+          "label": "Last received",
+          "description": "Last confirmed warehouse receipt",
+          "message": "what was the last purchase order received in the warehouse"
+        },
+        "pagar": {
+          "label": "Pending payments",
+          "description": "Balance owed to suppliers",
+          "message": "show accounts payable to suppliers"
+        }
+      },
+      "ventaLens": {
+        "nuevo": {
+          "label": "New order",
+          "description": "Quantity, product, and client",
+          "message": "I want to register a new order"
+        },
+        "en_curso": {
+          "label": "Open orders",
+          "description": "Confirmed, preparing, or en route",
+          "message": "show my orders pending delivery"
+        },
+        "cobrar": {
+          "label": "To collect",
+          "description": "Outstanding client balances",
+          "message": "show client accounts receivable"
+        }
+      },
+      "bodegaLens": {
+        "fisica": {
+          "label": "In warehouse",
+          "description": "Units you can sell now",
+          "message": "show warehouse stock"
+        },
+        "ingreso": {
+          "label": "Pending intake",
+          "description": "Ordered purchases not yet received",
+          "message": "show purchases pending intake"
+        },
+        "pagar": {
+          "label": "To pay",
+          "description": "Debt to suppliers",
+          "message": "show accounts payable to suppliers"
+        }
+      }
+    },
+    "liquidCategories": {
+      "cerveza": "Beer",
+      "vino": "Wine",
+      "mezcal": "Mezcal",
+      "gin": "Gin",
+      "destilado": "Spirits",
+      "otro": "Other"
+    },
+    "productCategories": {
+      "cerveza": "Beer",
+      "vino": "Wine",
+      "destilado": "Spirits"
+    },
+    "origins": {
+      "local": "Local",
+      "importado": "Imported"
+    },
+    "units": {
+      "botella": "Bottle",
+      "lata": "Can",
+      "perCase": "{unit} · {count}/case"
+    },
+    "skuStatus": {
+      "sano": "HEALTHY",
+      "bajo": "LOW",
+      "quiebre": "OUT",
+      "muerto": "{days} DAYS",
+      "sobrevendido": "OVERSOLD",
+      "en_transito": "IN TRANSIT",
+      "consignacion": "CONSIGNMENT"
+    },
+    "stockBar": {
+      "bottlesUnit": "btl",
+      "reserved": "{count} reserved",
+      "reservedInOrders": "{reserved} reserved in {orders, plural, one {# order} other {# orders}}"
+    },
+    "inventario": {
+      "title": "Inventory",
+      "subtitle": "Live stock — available vs reserved (SKU table)",
+      "syncBanner": "Sync your catalog to activate PROOF inventory",
+      "syncing": "Syncing…",
+      "syncCatalog": "Sync catalog",
+      "syncError": "Sync error",
+      "newSku": "+ New SKU",
+      "editSku": "Edit SKU",
+      "createSku": "Create SKU",
+      "saveError": "Could not save SKU",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Trade name",
+        "category": "Category",
+        "salePrice": "Sale price"
+      },
+      "sections": {
+        "summary": "Summary",
+        "catalog": "Catalog",
+        "mainWarehouse": "Main warehouse",
+        "inTransit": "In transit",
+        "risk": "Risk",
+        "riskSubtitle": "Capital and critical stock indicators",
+        "skuCount": "{count, plural, one {# SKU in catalog} other {# SKUs in catalog}}",
+        "catalogFiltered": "{filtered} of {total, plural, one {# SKU} other {# SKUs}}",
+        "warehouseCount": "{count, plural, one {# SKU} other {# SKUs}}"
+      },
+      "filters": {
+        "todos": "All",
+        "quiebre": "Out of stock",
+        "sin_rotar": "No rotation",
+        "con_deuda": "With debt",
+        "sobrevendido": "Oversold"
+      },
+      "kpis": {
+        "inventoryValue": "Inventory value",
+        "inShortage": "Out of stock",
+        "noRotation60d": "No rotation +60d",
+        "associatedDebt": "Associated debt"
+      },
+      "risk": {
+        "deadCapital": "Dead capital",
+        "shortages": "Shortages",
+        "oversold": "Oversold",
+        "slowDebt": "Slow-moving debt"
+      },
+      "empty": {
+        "needsSync": "No PROOF SKUs. Sync your catalog above.",
+        "noFilterResults": "No results for this filter.",
+        "mainWarehouse": "No SKUs in main warehouse.",
+        "inTransit": "No SKUs in transit."
+      },
+      "aiFallback": "Inventory valued at {value}. {quiebre, plural, one {# SKU out of stock} other {# SKUs out of stock}}. Dead capital ~{deadCapital}."
+    },
+    "productos": {
+      "title": "Products",
+      "subtitle": "Beer, wine, and spirits catalog for distribution",
+      "newProduct": "+ New product",
+      "formTitle": "New product",
+      "saveProduct": "Save product",
+      "empty": "No products yet. Add the first one with the \"+ New product\" button.",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Product trade name",
+        "category": "Category",
+        "origin": "Origin",
+        "unit": "Unit",
+        "producer": "Producer",
+        "producerPlaceholder": "Producer / manufacturer",
+        "bottlesPerCase": "Bottles per case",
+        "costPerUnit": "Cost per unit",
+        "currency": "Currency",
+        "priceRegular": "Regular price",
+        "priceWholesale": "Wholesale price",
+        "priceSpecial": "Special price",
+        "notes": "Notes",
+        "notesPlaceholder": "ABV, style, appellation, terms..."
+      },
+      "card": {
+        "regularPrice": "Regular price",
+        "wholesaleShort": "WHL",
+        "specialShort": "SPL",
+        "cost": "Cost: {amount}"
+      },
+      "detail": {
+        "back": "My labels",
+        "notFound": "Product not found",
+        "uploadLabel": "Upload label",
+        "uploading": "Uploading...",
+        "uploadAria": "Upload label image",
+        "noLabel": "No label",
+        "lowStock": "⚠ Low stock",
+        "warehouseBottles": "Bottles in warehouse",
+        "pctOfInitial": "{pct}% of initial",
+        "showMore": "Show more",
+        "showLess": "Show less",
+        "costsPrices": "Costs and prices",
+        "hide": "Hide",
+        "stats": {
+          "casesInWarehouse": "Cases in warehouse",
+          "perCase": "{count}/case",
+          "soldBottles": "Bottles sold",
+          "soldCases": "Cases sold",
+          "samples": "Samples",
+          "shrinkage": "Shrinkage",
+          "donations": "Donations"
+        },
+        "costs": "Costs",
+        "initialInvestment": "Initial investment",
+        "costPerBottle": "Cost per bottle",
+        "costPerCase": "Cost per case",
+        "salePrice": "Sale price",
+        "priceTiers": {
+          "regular": "Regular",
+          "wholesale": "Wholesale",
+          "special": "Special"
+        },
+        "perBottle": "per bottle",
+        "recentMovements": "Recent movements",
+        "viewAll": "View all →",
+        "emptyMovements": "No movements for this product yet.",
+        "historyReason": "Reason: {reason}",
+        "goodsEntry": "Goods intake",
+        "bottlesShort": "btl.",
+        "cases": "{count, plural, one {# case} other {# cases}}",
+        "registerMovement": "+ Record movement",
+        "uploadError": "Could not upload image: {message}",
+        "modal": {
+          "available": "{count} bottles available",
+          "close": "Close",
+          "selectClient": "Select client",
+          "clientTier": "{name} — tier {tier}",
+          "insufficientStock": "Only {available} bottles available",
+          "selectClientAlert": "Select a client",
+          "submit": "Record {type} ({count} btl.)"
+        }
+      }
+    },
+    "credito": {
+      "title": "Credit",
+      "subtitle": "Accounts receivable from delivered orders",
+      "noProfile": "No active profile. Select a profile in settings.",
+      "loadError": "Could not load credit: {error}",
+      "fetchError": "Error loading credit",
+      "kpis": {
+        "toCollect": "To collect",
+        "overdueClients": "Overdue clients",
+        "collectedThisMonth": "Collected this month"
+      },
+      "dividerClients": "{count, plural, one {# client with balance} other {# clients with balance}}",
+      "emptyBalances": "No outstanding client balances.",
+      "producerDebts": "Producer payables in <link>Producers</link>.",
+      "detail": {
+        "loading": "Loading details…",
+        "title": "CLIENT DETAIL",
+        "ordersWithBalance": "Orders with balance",
+        "noActiveAccounts": "No active accounts.",
+        "total": "Total {amount}",
+        "due": "due {date}",
+        "delivery": "delivery {date}",
+        "payments": "Recorded payments",
+        "noPayments": "No recorded payments.",
+        "draftCollection": "Draft collection message",
+        "close": "Close"
+      },
+      "collection": {
+        "title": "COLLECTION · {client}",
+        "drafting": "Drafting…",
+        "copy": "Copy",
+        "fallbackMessage": "Hi {name}, I'm reaching out about the outstanding balance of {amount}. Can we coordinate payment this week?"
+      },
+      "aiFallbackOverdue": "{count} client(s) with overdue debt. Collect before delivering more.",
+      "aiFallbackDefault": "Review outstanding balances before confirming more credit orders.",
+      "draftCollection": "Draft collection",
+      "viewDebts": "View debts",
+      "card": {
+        "overdue": "OVERDUE",
+        "current": "CURRENT",
+        "ordersWithBalance": "{count, plural, one {# order with balance} other {# orders with balance}}",
+        "due": "Due {date}"
+      }
+    },
+    "movimientoTipo": {
+      "entrada": "Intake",
+      "venta": "Sale",
+      "donacion": "Donation",
+      "merma": "Shrinkage",
+      "muestra": "Sample"
+    },
+    "mermaReason": {
+      "rota": "Broken",
+      "vencida": "Expired",
+      "dañada": "Damaged",
+      "otro": "Other"
+    },
+    "estadoPago": {
+      "pendiente": "Pending",
+      "pagado": "Paid",
+      "vencido": "Overdue",
+      "pago_parcial": "Partial payment"
+    },
+    "compras": {
+      "back": "← Home",
+      "title": "New purchase order",
+      "subtitle": "Record what you ordered from the producer. When goods arrive, confirm receipt and stock updates.",
+      "fields": {
+        "supplier": "Supplier / Producer",
+        "supplierPlaceholder": "E.g. Silvana, Mezcal Artesanal Oaxaca",
+        "estimatedDate": "Estimated arrival date",
+        "products": "Products",
+        "add": "+ Add",
+        "productLabel": "Product / Label",
+        "productPlaceholder": "Product name",
+        "quantity": "Quantity",
+        "unitCost": "Cost / unit"
+      },
+      "subtotal": "Subtotal: {amount}",
+      "remove": "Remove",
+      "orderTotal": "Order total",
+      "creating": "Creating order…",
+      "create": "Create order",
+      "errors": {
+        "supplier": "Enter supplier or producer",
+        "items": "Add at least one product with valid quantity",
+        "create": "Could not create order"
+      }
+    },
+    "recepcion": {
+      "title": "Photo receiving",
+      "subtitle": "Photograph the pallet, box, or invoice. PROOF identifies what's there.",
+      "steps": {
+        "foto": "Photo",
+        "analiza": "PROOF analyzes",
+        "revisar": "Review",
+        "discrepancias": "Discrepancies",
+        "confirmar": "Confirm"
+      },
+      "defaults": {
+        "producer": "Producer"
+      },
+      "errors": {
+        "analyze": "Analysis error",
+        "save": "Save error",
+        "confirm": "Confirm error"
+      },
+      "fields": {
+        "producerOptional": "Producer (optional)",
+        "fromPo": "From a PO?",
+        "noPo": "No purchase order",
+        "debtOptional": "Debt to record (optional)",
+        "received": "Received"
+      },
+      "poGroups": {
+        "proofPending": "PROOF PO (pending)",
+        "legacy": "Previous POs"
+      },
+      "ocHintCross": "When analyzing, PROOF will cross quantities vs this PO items",
+      "ocHintConfirm": " ({order}). On confirm, updates stock and AP.",
+      "ocHintConfirmLegacy": ".",
+      "footerLinks": "New distributor POs live in PROOF. <createPo>Create purchase order</createPo> · <canvas>Confirm arrival on canvas</canvas>",
+      "createPo": "Create purchase order",
+      "canvasArrival": "Confirm arrival on canvas",
+      "uploadPhoto": "Upload photo / PDF",
+      "analyzing": "PROOF analyzing…",
+      "analysis": "Analysis",
+      "itemLine": "+ {name} · {bottles} btl",
+      "ocLinked": "Linked PO · differences in red",
+      "preConfirmed": "PRE-CONFIRMED",
+      "review": "REVIEW · {pct}%",
+      "noCatalogMatch": "No catalog match",
+      "ocExpected": "PO exp. {expected} / rec.",
+      "deltaBottles": "Δ {delta} btl",
+      "photosSaved": "{count, plural, one {# photo saved in Storage} other {# photos saved in Storage}}",
+      "poDebtNote": "With a PROOF PO, accounts payable is created on confirm from order costs.",
+      "continueDiscrepancies": "Continue to discrepancies",
+      "noDiscrepancies": "No discrepancies detected.",
+      "confirmReception": "Confirm receipt (updates stock)",
+      "confirming": "Confirming…",
+      "successSummary": "{producer} · {bottles} bottles received{debt}{ocUpdated}",
+      "successDebt": " · Debt {amount}",
+      "successOcUpdated": " · PO updated",
+      "newReception": "New receipt",
+      "viewInventory": "View inventory",
+      "aiFallback": "On confirm, I increment stock_total and record debt when applicable."
+    },
+    "movimientos": {
+      "eyebrow": "PROOF · Operations",
+      "title": "Movements",
+      "subtitle": "Warehouse outflows — sales, donations, shrinkage, and samples · {date}",
+      "receivingLink": "Photo receiving →",
+      "kpis": {
+        "soldToday": "Sold today",
+        "unitsOut": "Units out",
+        "unitsShort": "{count} units",
+        "moveHint": "{count} mov.{amount}"
+      },
+      "register": "Record {type}",
+      "fields": {
+        "client": "Client",
+        "selectClient": "Select client",
+        "product": "Product",
+        "selectProduct": "Select product",
+        "productOption": "{name} — {avail} units available",
+        "cases": "Cases",
+        "looseUnits": "Loose units",
+        "unitPrice": "Unit price",
+        "total": "Total",
+        "recipient": "Recipient",
+        "recipientPlaceholder": "Person, organization, or event",
+        "reason": "Reason",
+        "sampleRecipient": "To whom",
+        "sampleRecipientPlaceholder": "Prospect, journalist…",
+        "event": "Event / occasion",
+        "eventPlaceholder": "Tasting, fair, launch…",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional notes"
+      },
+      "submit": "Record {type}",
+      "unitsAvailable": "{units} units · {available} available",
+      "historyTitle": "Today's history",
+      "historyCount": "{count, plural, one {# outflow} other {# outflows}}",
+      "emptyToday": "No outflows recorded today.",
+      "emptyInReceiving": "Inbound is recorded in <link>Photo receiving</link>.",
+      "insufficientStock": "Only {available} units available of {name}",
+      "historyReason": "Reason: {reason}",
+      "aiFallbackLoading": "Loading today's movements…",
+      "aiFallback": "Today: {sold} sold · {units} units out · {count, plural, one {# record} other {# records}}."
+    },
+    "remisionesDetail": {
+      "back": "← Delivery notes",
+      "notFound": "Receipt not found.",
+      "bottlesReceived": "{count} bottles",
+      "photoEvidence": "Photo evidence",
+      "photoError": "Could not load photos",
+      "photoAlt": "Evidence {index}",
+      "itemsReceived": "Items received",
+      "skuFallback": "SKU",
+      "itemLine": "{qty} btl{lot}",
+      "lotSuffix": " · lot {lot}",
+      "emptyItems": "No items recorded.",
+      "discrepancies": "Discrepancies",
+      "emptyDiscrepancies": "No documented discrepancies."
+    }
+  },
+  "winemaker": {
+    "common": {
+      "loading": "Loading…"
+    },
+    "lotStatus": {
+      "fermentation": "Fermentation",
+      "aging": "Aging",
+      "ready": "Ready",
+      "bottling": "Bottling",
+      "bottled": "Bottled",
+      "sold_out": "Sold out",
+      "archived": "Archived"
+    },
+    "supplyKind": {
+      "uva": "Grapes",
+      "corcho": "Cork",
+      "botella": "Bottle",
+      "etiqueta": "Label",
+      "caja": "Case",
+      "tapa": "Cap / capsule",
+      "sulfito": "Sulfite / chemical",
+      "levadura": "Yeast",
+      "clarificante": "Fining agent",
+      "barrica": "Barrel",
+      "energia": "Energy",
+      "mano_obra": "Labor",
+      "analisis": "Lab analysis",
+      "flete": "Freight / shipping",
+      "equipo": "Equipment",
+      "limpieza": "Sanitation",
+      "otro": "Other"
+    },
+    "costCategory": {
+      "uva": "Grapes",
+      "mano_obra": "Labor",
+      "energia": "Energy",
+      "insumo": "Supply",
+      "barrica": "Barrel",
+      "analisis": "Lab analysis",
+      "equipo": "Equipment",
+      "limpieza": "Sanitation",
+      "flete": "Freight",
+      "otro": "Other"
+    },
+    "documentType": {
+      "invoice": "Invoice",
+      "ticket": "Receipt",
+      "xml": "XML",
+      "lab_result": "Lab analysis",
+      "photo": "Photo",
+      "remision": "Delivery note",
+      "other": "Other"
+    },
+    "allocation": {
+      "lot": "Lot",
+      "winery": "Winery"
+    },
+    "lotes": {
+      "title": "Wine lots",
+      "subtitle": "Fermentation, aging, and bottling — each lot with its full history.",
+      "loading": "Loading lots…",
+      "empty": "No lots yet. Ask PROOF on Home or register your first when you upload the harvest.",
+      "noVarietal": "No varietal",
+      "statusCount": "{status}: {count}",
+      "litersUnit": "{amount} L"
+    },
+    "proveedores": {
+      "title": "Suppliers",
+      "subtitle": "Catalog PROOF builds when you upload receipts: grapes, corks, bottles, labels, and more.",
+      "loading": "Loading suppliers…",
+      "empty": "No suppliers yet. Upload a receipt from PROOF and we save the vendor with the detected supply type.",
+      "suppliesLabel": "Supplies: {list}",
+      "noClassifiedLines": "No classified line items yet"
+    },
+    "documentos": {
+      "title": "Documents",
+      "subtitle": "Receipts, invoices, XML, and lab analyses — immutable evidence of your operation.",
+      "loading": "Loading documents…",
+      "empty": "No documents yet. Upload a receipt from PROOF — we classify vendor and supplies (grapes, corks, bottles…)."
+    },
+    "gastos": {
+      "title": "Expenses",
+      "subtitle": "Lot costs and winery overhead (not assigned to a lot).",
+      "totalRegistered": "Total recorded: <strong>{amount}</strong>",
+      "wineryOverhead": "Winery overhead: {amount}",
+      "loading": "Loading expenses…",
+      "empty": "No expenses recorded. Tell PROOF what you paid on a receipt or winery service.",
+      "costLine": "{category} · {allocation}"
+    },
+    "agenda": {
+      "title": "Schedule",
+      "subtitle": "Barrel times, lab samples, and bottling. Events will appear here when you register lots and dates in PROOF.",
+      "backToProof": "← PROOF",
+      "nextStep": "Next step: link <code>wm_events</code> (aging, bottling, lab) to each calendar day."
+    },
+    "stage": {
+      "none": "No stage",
+      "harvest": "Harvest",
+      "fermentation": "Fermentation",
+      "malolactic": "Malolactic",
+      "aging": "Aging",
+      "bottling": "Bottling",
+      "bottled": "Bottled"
+    },
+    "home": {
+      "badge": "🍇 Winemaker",
+      "defaultFirstName": "Aldo",
+      "greeting": {
+        "morning": "Good morning",
+        "afternoon": "Good afternoon",
+        "evening": "Good evening"
+      },
+      "attentionCount": "{count, plural, =0 {0 need attention} one {# needs attention} other {# need attention}}",
+      "loadError": "Could not load data",
+      "noOrganization": "You don't have a linked winery yet. Complete onboarding or contact support.",
+      "noTime": "No time",
+      "noProfile": "No profile",
+      "noDetail": "No details",
+      "unassigned": "Unassigned",
+      "memberFallback": "Member",
+      "completeTask": "Complete",
+      "completeTaskAria": "Complete {title}",
+      "assignedTo": "Assigned to {name}",
+      "sections": {
+        "attention": "Needs attention",
+        "activeLots": "Active lots",
+        "calendar": "Calendar",
+        "pendingTasks": "Pending tasks",
+        "team": "My team today"
+      },
+      "empty": {
+        "attentionOk": "✅ All clear for now",
+        "noActiveLots": "No active lots. Create one from Lots.",
+        "noTasksToday": "No tasks scheduled for today.",
+        "noPendingTasks": "You have no pending tasks.",
+        "noTeam": "No team members yet."
+      },
+      "alerts": {
+        "tempTitle": "🌡️ {code} — temp out of range",
+        "tempSubtext": "{temp}°C · expected {min}–{max}°C",
+        "staleTitle": "🧪 {code} · {days} days without activity",
+        "staleSubtextWithEvent": "Last event {days} days ago",
+        "staleSubtextNoEvent": "No events recorded",
+        "viewLot": "View lot"
+      }
+    },
+    "canvas": {
+      "placeholder": "Ask PROOF…",
+      "welcome": "Hi, I'm PROOF. Pick a mode — receipt, winery, or schedule — or type your question.",
+      "hint": "Upload receipts, check the winery, or review the schedule.",
+      "conversationAria": "Conversation with PROOF",
+      "workspaceAria": "PROOF workspace",
+      "analyzingShort": "PROOF analyzing…",
+      "analyzingLong": "PROOF analyzing your operation…",
+      "ticketUploaded": "Uploaded receipt: {fileName}",
+      "ticketUploadFailed": "Could not upload the receipt. Try again.",
+      "ticketFallbackPrompt": "I want to register this purchase receipt",
+      "errors": {
+        "timeout": "PROOF took too long. Try again.",
+        "noResponse": "PROOF did not respond. Try again or pick a mode to start.",
+        "general": "PROOF could not process your request. Try again.",
+        "emptyResults": "No results found for that search."
+      },
+      "modes": {
+        "ticket": {
+          "label": "Upload receipt",
+          "description": "Photo or PDF of a purchase, invoice, or winery expense"
+        },
+        "bodega": {
+          "label": "Check winery",
+          "description": "Active lots, volume in process, and expenses"
+        },
+        "agenda": {
+          "label": "Review schedule",
+          "description": "Barrel times, bottling, and pending items"
+        }
+      },
+      "hubs": {
+        "wm_ticket": {
+          "title": "Receipts and documents — what do you need?",
+          "aria": "Receipt and expense actions",
+          "back": "← Back to modes"
+        },
+        "wm_bodega": {
+          "title": "Your winery — what do you want to check?",
+          "aria": "Winemaker winery query",
+          "back": "← Back to modes"
+        },
+        "wm_agenda": {
+          "title": "Schedule and timing — what should we review?",
+          "aria": "Winery schedule",
+          "back": "← Back to modes"
+        }
+      },
+      "ticketLens": {
+        "subir": {
+          "label": "Upload photo or PDF",
+          "description": "Supply receipt, invoice, or expense note",
+          "message": "I want to upload a purchase receipt"
+        },
+        "recientes": {
+          "label": "Recent documents",
+          "description": "Latest saved receipts and invoices",
+          "message": "show me my recent documents and receipts"
+        },
+        "sin_lote": {
+          "label": "Expenses without lot",
+          "description": "Winery purchases not yet assigned to a lot",
+          "message": "show me winery expenses without an assigned lot"
+        },
+        "manual": {
+          "label": "Record expense",
+          "description": "Amount and category via chat",
+          "message": "I want to record a manual expense with amount and category"
+        }
+      },
+      "bodegaLens": {
+        "activos": {
+          "label": "Active lots",
+          "description": "Fermentation, barrel, and ready",
+          "message": "show me my active wine lots"
+        },
+        "litros": {
+          "label": "Volume in process",
+          "description": "Total volume in the winery",
+          "message": "how many liters of wine do I have in process?"
+        },
+        "gastos_mes": {
+          "label": "This month's expenses",
+          "description": "Lot costs and winery overhead",
+          "message": "how much have I spent this month at the winery?"
+        },
+        "resumen": {
+          "label": "General summary",
+          "description": "Quick snapshot of the operation",
+          "message": "how am I doing at the winery?"
+        }
+      },
+      "agendaLens": {
+        "semana": {
+          "label": "This week",
+          "description": "Pending items and upcoming milestones",
+          "message": "what do I have pending this week at the winery?"
+        },
+        "barrica": {
+          "label": "In barrel",
+          "description": "Lots aging",
+          "message": "show me lots aging in barrel"
+        },
+        "embotellar": {
+          "label": "Ready to bottle",
+          "description": "Lots that could be bottled soon",
+          "message": "which lots are ready to bottle soon?"
+        },
+        "calendario": {
+          "label": "View calendar",
+          "description": "Monthly view of timing and events",
+          "message": ""
+        }
+      },
+      "quickActions": {
+        "resumen": {
+          "label": "Winery summary",
+          "message": "How am I doing at the winery?"
+        },
+        "gastos": {
+          "label": "This month's expenses",
+          "message": "How much have I spent this month?"
+        },
+        "documentos": {
+          "label": "My documents",
+          "message": "How many receipts and invoices do I have saved?"
+        },
+        "lotes": {
+          "label": "Active lots",
+          "message": "What active wine lots do I have?"
+        }
+      }
+    },
+    "ticketOcr": {
+      "allocationReplies": {
+        "winery": {
+          "label": "Winery overhead",
+          "message": "keep as winery overhead"
+        },
+        "lot": {
+          "label": "Assign to lot",
+          "message": "assign to a lot"
+        }
+      },
+      "allocationDetect": {
+        "lotPhrase": "assign to a lot",
+        "wineryPhrase": "winery overhead"
+      },
+      "upload": {
+        "skippedPdf": "Saved {filename}. PDFs are not read automatically yet — upload a photo or tell me vendor, supplies, and amount.{total}",
+        "skippedPdfAgent": "I just uploaded PDF {filename}, help me register it",
+        "noApiKey": "Saved {filename}, but vision is not configured (ANTHROPIC_API_KEY). Set it up to read receipts automatically.",
+        "noApiKeyAgent": "could not read {filename} automatically, how do I register it?",
+        "visionFailed": "Saved {filename}, but automatic reading failed. Tell me vendor, supplies (grapes, cork, bottles…), and amount to complete it.",
+        "visionFailedAgent": "reading {filename} failed, help me register vendor and supplies",
+        "skippedNotImage": "Saved {filename}. We only read receipt images for now — use a photo or screenshot.",
+        "skippedNotImageAgent": "I just uploaded {filename}, how do I register it?",
+        "unclassified": "Saved {filename}, but I could not extract vendor or supplies. Tell me who sold, what you bought (grapes, cork, bottles…), and the amount.",
+        "unclassifiedAgent": "help me complete receipt {filename} with vendor and supplies",
+        "success": "Read {filename}: {vendor}{summary}.{total} Data saved to your winery. {question}",
+        "successQuestion": "Assign to a lot or keep as winery overhead?",
+        "successAgent": "I just uploaded the invoice from {vendor} ({summary}), how should I register it?",
+        "unnamedVendor": "unnamed vendor"
+      }
+    },
+    "lotDetail": {
+      "back": "← Home",
+      "loading": "Loading lot…",
+      "notFound": "Lot not found",
+      "statusLabel": "Status: {status}",
+      "errors": {
+        "notAuthenticated": "Not authenticated",
+        "noOrganization": "No organization",
+        "loadFailed": "Failed to load lot"
+      }
+    }
+  }
+}

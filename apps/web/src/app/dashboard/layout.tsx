@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserAvatarUrl, getUserInitials } from '@/lib/auth/user'
 import { useProfile } from '@/context/ProfileContext'
+import { useOrganization } from '@/context/OrganizationContext'
 import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
   distillerBlockedFromPath,
@@ -27,9 +28,23 @@ import {
 } from '@/lib/proof/profile-theme'
 import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
 import { useIsMobile } from '@/hooks/useBreakpoint'
+import { useTranslations } from 'next-intl'
+import {
+  NAV_OPERACION_DEFS,
+  pageTitleForPath,
+  visibleNavDefs,
+} from '@/lib/proof/dashboard-nav'
+import {
+  DASHBOARD_CANVAS_HEADER_HEIGHT_PX,
+  DASHBOARD_RAIL_WIDTH_PX,
+  isDashboardNavItemActive,
+  shouldShowDashboardInnerHeader,
+  shouldShowDesktopRail,
+} from '@/lib/proof/dashboard-shell'
 import { MobileBottomNav } from '@/components/proof/MobileBottomNav'
 import { WinemakerMobileNav } from '@/components/proof/WinemakerMobileNav'
 import { ProofDatosCobroSheet } from '@/components/proof/ProofDatosCobroSheet'
+import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 
 type Role = ExtraProfile | 'producer'
 
@@ -38,14 +53,6 @@ interface NavItem {
   label: string
   roles: Role[] | 'all'
   icon: React.ReactNode
-}
-
-const PRODUCERS: ExtraProfile[] = ['brewer', 'winemaker', 'distiller']
-
-const MEMBRESIA_LABEL: Record<DestMembresia, string> = {
-  basico: 'Básico',
-  profesional: 'Profesional',
-  premium: 'Premium',
 }
 
 const ic = (path: React.ReactNode) => (
@@ -120,117 +127,49 @@ const ICONS = {
   ),
 }
 
-const NAV_OPERACION: NavItem[] = [
-  { href: '/dashboard', label: 'Inicio', roles: 'all', icon: ICONS.inicio },
-  { href: '/dashboard/inventario', label: 'Inventario', roles: 'all', icon: ICONS.inventario },
-  { href: '/dashboard/pedidos', label: 'Pedidos', roles: ['distributor'], icon: ICONS.movimientos },
-  { href: '/dashboard/movimientos', label: 'Movimientos', roles: 'all', icon: ICONS.movimientos },
-  { href: '/dashboard/productos', label: 'Catálogo', roles: 'all', icon: ICONS.catalogo },
-]
-
-const NAV_FINANZAS: NavItem[] = [
-  { href: '/dashboard/clientes', label: 'Clientes', roles: ['distributor'], icon: ICONS.clientes },
-  { href: '/dashboard/credito', label: 'Crédito', roles: ['distributor'], icon: ICONS.movimientos },
-  { href: '/dashboard/productores', label: 'Productores', roles: ['distributor'], icon: ICONS.catalogo },
-]
-
-const NAV_RECEPCION: NavItem[] = [
-  { href: '/dashboard/recepcion', label: 'Entrada', roles: ['distributor'], icon: ICONS.camera },
-  { href: '/dashboard/remisiones', label: 'Remisiones', roles: ['distributor'], icon: ICONS.movimientos },
-]
-
-const NAV_DESTILADOR: NavItem[] = [
-  { href: '/dashboard/destilador/compras', label: 'Compras', roles: ['distiller'], icon: ICONS.movimientos },
-  { href: '/dashboard/destilador/lotes', label: 'Lotes', roles: ['distiller'], icon: ICONS.inventario },
-  { href: '/dashboard/destilador/produccion', label: 'Producción', roles: ['distiller'], icon: ICONS.catalogo },
-  { href: '/dashboard/destilador/bodega', label: 'Bodega', roles: ['distiller'], icon: ICONS.inventario },
-  { href: '/dashboard/destilador/ventas', label: 'Ventas', roles: ['distiller'], icon: ICONS.clientes },
-]
-
-const NAV_WINEMAKER: NavItem[] = [
-  { href: '/dashboard/winemaker/lotes', label: 'Lotes', roles: ['winemaker'], icon: ICONS.inventario },
-  { href: '/dashboard/winemaker/proveedores', label: 'Proveedores', roles: ['winemaker'], icon: ICONS.clientes },
-  { href: '/dashboard/winemaker/documentos', label: 'Documentos', roles: ['winemaker'], icon: ICONS.camera },
-  { href: '/dashboard/winemaker/gastos', label: 'Gastos', roles: ['winemaker'], icon: ICONS.movimientos },
-  { href: '/dashboard/winemaker/agenda', label: 'Agenda', roles: ['winemaker'], icon: ICONS.catalogo },
-]
-
-const NAV_LEGACY: NavItem[] = [
-  { href: '/dashboard/clientes', label: 'Clientes', roles: ['producer'], icon: ICONS.clientes },
-]
-
-const NAV: NavItem[] = [
-  ...NAV_OPERACION,
-  ...NAV_FINANZAS,
-  ...NAV_RECEPCION,
-  ...NAV_DESTILADOR,
-  ...NAV_WINEMAKER,
-  ...NAV_LEGACY,
-]
-
-function pageTitleFor(path: string): string {
-  if (path === '/dashboard') return 'Inicio'
-  if (path.startsWith('/dashboard/inventario')) return 'Inventario'
-  if (path.startsWith('/dashboard/pedidos')) return 'Pedidos'
-  if (path.startsWith('/dashboard/movimientos')) return 'Movimientos'
-  if (path.startsWith('/dashboard/productos')) return 'Catálogo'
-  if (path.startsWith('/dashboard/credito')) return 'Crédito'
-  if (path.startsWith('/dashboard/productores')) return 'Productores'
-  if (path.startsWith('/dashboard/recepcion')) return 'Entrada foto'
-  if (path.startsWith('/dashboard/remisiones')) return 'Remisiones'
-  if (path.startsWith('/dashboard/etiquetas')) return 'Etiquetas'
-  if (path.startsWith('/dashboard/clientes')) return 'Clientes'
-  if (path.startsWith('/dashboard/agente')) return 'PROOF'
-  if (path.startsWith('/dashboard/bodega')) return 'Almacén'
-  if (path.startsWith('/dashboard/lotes')) return 'Lotes'
-  if (path.startsWith('/dashboard/embotellado')) return 'Embotellado'
-  if (path.startsWith('/dashboard/muestras')) return 'Muestras'
-  if (path.startsWith('/dashboard/costos')) return 'Costos'
-  if (path.startsWith('/dashboard/settings')) return 'Ajustes'
-  if (path.startsWith('/dashboard/destilador/compras')) return 'Compras'
-  if (path.startsWith('/dashboard/destilador/lotes')) return 'Lotes'
-  if (path.startsWith('/dashboard/destilador/produccion')) return 'Producción'
-  if (path.startsWith('/dashboard/destilador/bodega')) return 'Bodega'
-  if (path.startsWith('/dashboard/destilador/ventas')) return 'Ventas'
-  if (path.startsWith('/dashboard/destilador/lotes/')) return 'Detalle lote'
-  if (path.startsWith('/dashboard/winemaker/lotes')) return 'Lotes'
-  if (path.startsWith('/dashboard/winemaker/proveedores')) return 'Proveedores'
-  if (path.startsWith('/dashboard/winemaker/documentos')) return 'Documentos'
-  if (path.startsWith('/dashboard/winemaker/gastos')) return 'Gastos'
-  if (path.startsWith('/dashboard/winemaker/agenda')) return 'Agenda'
-  if (path.startsWith('/dashboard/equipo')) return 'Mi equipo'
-  return 'PROOF'
+const ICON_BY_HREF: Record<string, React.ReactNode> = {
+  '/dashboard': ICONS.inicio,
+  '/dashboard/inventario': ICONS.inventario,
+  '/dashboard/pedidos': ICONS.movimientos,
+  '/dashboard/movimientos': ICONS.movimientos,
+  '/dashboard/productos': ICONS.catalogo,
+  '/dashboard/clientes': ICONS.clientes,
+  '/dashboard/credito': ICONS.movimientos,
+  '/dashboard/productores': ICONS.catalogo,
+  '/dashboard/recepcion': ICONS.camera,
+  '/dashboard/remisiones': ICONS.movimientos,
+  '/dashboard/destilador/compras': ICONS.movimientos,
+  '/dashboard/destilador/lotes': ICONS.inventario,
+  '/dashboard/destilador/produccion': ICONS.catalogo,
+  '/dashboard/destilador/bodega': ICONS.inventario,
+  '/dashboard/destilador/ventas': ICONS.clientes,
+  '/dashboard/winemaker/lotes': ICONS.inventario,
+  '/dashboard/winemaker/proveedores': ICONS.clientes,
+  '/dashboard/winemaker/documentos': ICONS.camera,
+  '/dashboard/winemaker/gastos': ICONS.movimientos,
+  '/dashboard/winemaker/agenda': ICONS.catalogo,
 }
 
-function visibleNav(active: Profile | null): NavItem[] {
-  if (!active) return NAV_OPERACION
-  if (active.is_super_user) return NAV
-  const isProducer = PRODUCERS.includes(active.profile_type_v2)
-  const isDistiller = active.profile_type_v2 === 'distiller'
-  const isWinemaker = active.profile_type_v2 === 'winemaker'
-  return NAV.filter(n => {
-    if (n.roles === 'all') {
-      if (
-        (isDistiller || isWinemaker) &&
-        (n.href === '/dashboard/inventario' ||
-          n.href === '/dashboard/movimientos' ||
-          n.href === '/dashboard/productos')
-      ) {
-        return false
-      }
-      return true
-    }
-    return n.roles.some(r =>
-      r === 'producer' ? isProducer && !isDistiller && !isWinemaker : r === active.profile_type_v2
-    )
-  })
+function defsToNavItems(
+  defs: typeof NAV_OPERACION_DEFS,
+  t: (key: string) => string
+): NavItem[] {
+  return defs.map(def => ({
+    href: def.href,
+    label: t(def.labelKey),
+    roles: def.roles,
+    icon: ICON_BY_HREF[def.href] ?? ICONS.catalogo,
+  }))
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations('dashboard')
   const path = usePathname()
   const router = useRouter()
   const { user, isLoaded, supabase } = useAuth()
   const { activeProfile, allProfiles, loading, profilesResolved } = useProfile()
+  const { activeOrg, allOrganizations, orgsResolved, loading: orgLoading } =
+    useOrganization()
   const [ask, setAsk] = useState('')
   const [membresia, setMembresia] = useState<DestMembresia>('basico')
   const [datosCobroOpen, setDatosCobroOpen] = useState(false)
@@ -241,13 +180,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isCanvasStyle = isCanvasStylePath(path)
   const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
   const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
-  const isWinemaker = activeProfile?.profile_type_v2 === 'winemaker'
-  const theme = getProfileTheme(activeProfile?.profile_type_v2)
-  const pageTitle = pageTitleFor(path)
+  const isWinemaker =
+    activeProfile?.profile_type_v2 === 'winemaker' || activeOrg?.org_type === 'winemaker'
+  const effectiveProfileType = isWinemaker
+    ? 'winemaker'
+    : activeProfile?.profile_type_v2
+  const theme = getProfileTheme(effectiveProfileType)
+  const pageTitle = pageTitleForPath(path, key => t(key))
   const isMobile = useIsMobile()
   const isWinemakerMobileHome = isWinemaker && isCanvas && isMobile
   const showWinemakerMobileNav = isWinemaker && isMobile
-  const showSidebar = !isCanvas && !isMobile
+  const showSidebar = shouldShowDesktopRail(isMobile)
   const showMobileNav = isMobile && !showWinemakerMobileNav
 
   const initials = getUserInitials(user)
@@ -257,14 +200,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/sign-in')
   }
 
-  const navItems = loading ? NAV_OPERACION : visibleNav(activeProfile)
+  const navItems = loading
+    ? defsToNavItems(NAV_OPERACION_DEFS, t)
+    : defsToNavItems(
+        visibleNavDefs(
+          activeProfile ??
+            (isWinemaker
+              ? ({ profile_type_v2: 'winemaker', is_super_user: false } as Profile)
+              : null)
+        ),
+        t
+      )
 
   useEffect(() => {
-    if (!isLoaded || loading || !profilesResolved) return
+    if (!isLoaded || loading || orgLoading || !profilesResolved || !orgsResolved) return
     if (!user) return
-    if (allProfiles.length > 0) return
+    if (allProfiles.length > 0 || allOrganizations.length > 0) return
     router.replace('/onboarding')
-  }, [isLoaded, loading, profilesResolved, user, allProfiles.length, router])
+  }, [
+    isLoaded,
+    loading,
+    orgLoading,
+    profilesResolved,
+    orgsResolved,
+    user,
+    allProfiles.length,
+    allOrganizations.length,
+    router,
+  ])
 
   useEffect(() => {
     if (loading) return
@@ -342,16 +305,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const datosCobroHeaderExpanded = isCanvas && datosCobroStrip
-  const canvasContentTop =
-    isCanvas && !isWinemakerMobileHome ? 64 + (datosCobroHeaderExpanded ? 88 : 0) : 0
 
-  const showInnerHeader =
-    !isCanvas &&
-    !isCanvasStyle &&
-    !isOnAssistant &&
-    !(isDistributor && (isProducerOnlyPath(path) || isDestiladorPath(path) || isWinemakerPath(path))) &&
-    !(isDistiller && (isProducerOnlyPath(path) || isWinemakerPath(path))) &&
-    !(isWinemaker && (isProducerOnlyPath(path) || isDistributorOnlyPath(path) || isDestiladorPath(path)))
+  const showInnerHeader = shouldShowDashboardInnerHeader({
+    pathname: path,
+    isCanvas,
+    isCanvasStyle,
+    isOnAssistant,
+    profileType: activeProfile?.profile_type_v2,
+    isWinemaker,
+  })
 
   return (
     <div
@@ -376,7 +338,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {showSidebar && (
         <aside
           style={{
-            width: 52,
+            width: DASHBOARD_RAIL_WIDTH_PX,
             flexShrink: 0,
             position: 'sticky',
             top: 0,
@@ -392,7 +354,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <Link
             href="/dashboard"
-            aria-label="PROOF · Inicio"
+            aria-label={t('shell.homeAria')}
             style={{
               textDecoration: 'none',
               display: 'grid',
@@ -421,6 +383,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Link>
 
           <nav
+            aria-label={t('shell.railNav')}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -432,9 +395,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             }}
           >
             {navItems.map((item, index) => {
-              const active =
-                path === item.href ||
-                (item.href !== '/dashboard' && path.startsWith(item.href))
+              const active = isDashboardNavItemActive(path, item.href)
               const iconColor = theme.navText[index % theme.navText.length]!
               return (
                 <SideRailLink
@@ -453,7 +414,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ marginTop: 'auto', width: '100%', padding: '0 8px' }}>
             <SideRailLink
               href="/dashboard/settings"
-              label="Configuración"
+              label={t('nav.settings')}
               icon={ICONS.ajustes}
               active={path.startsWith('/dashboard/settings')}
               iconColor={theme.navText[0]}
@@ -476,21 +437,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {isCanvas && !isWinemakerMobileHome && (
           <header
-            className="proof-canvas-header"
+            className="proof-canvas-header proof-dashboard-header"
             style={{
-              position: 'fixed',
+              position: 'sticky',
               top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 30,
-              height: 64,
-              boxSizing: 'border-box',
+              height: DASHBOARD_CANVAS_HEADER_HEIGHT_PX,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: isMobile ? '14px 16px' : '14px 24px',
-              background: 'var(--ink)',
-              borderBottom: '1px solid var(--hairline)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -502,7 +457,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   color: 'var(--fg-0)',
                 }}
               >
-                PROOF
+                {t('shell.brandLabel')}
               </span>
               <span
                 style={{
@@ -519,6 +474,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 {theme.label.toUpperCase()}
               </span>
+              {isWinemaker && allOrganizations.length > 1 && <OrgSwitcher compact />}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {isDistiller && (
@@ -529,7 +485,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
-                  {MEMBRESIA_LABEL[membresia]}
+                  {t(`shell.membership.${membresia}`)}
                 </span>
               )}
               {isDistributor && (
@@ -537,8 +493,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   type="button"
                   onClick={toggleDatosCobroStrip}
                   aria-expanded={datosCobroStrip}
-                  aria-label="Información personal"
-                  title="Información personal"
+                  aria-label={t('shell.personalInfo')}
+                  title={t('shell.personalInfo')}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -593,13 +549,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {showInnerHeader && (
           <header
+            className="proof-dashboard-header"
             style={{
               position: 'sticky',
               top: 0,
-              zIndex: 15,
-              backdropFilter: 'blur(8px)',
-              background: 'rgba(255, 255, 255, 0.92)',
-              borderBottom: '1px solid var(--hairline)',
               padding: isMobile ? '10px 16px' : '12px 28px',
               display: 'flex',
               flexDirection: 'column',
@@ -628,10 +581,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </span>
                 {!isMobile && (
                   <span
+                    style={{
+                      fontSize: 9,
+                      fontFamily:
+                        'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                      borderRadius: 4,
+                      padding: '3px 8px',
+                      background: theme.badge.bg,
+                      color: theme.badge.color,
+                      border: `0.5px solid ${theme.badge.border}`,
+                      letterSpacing: '0.06em',
+                    }}
+                  >
+                    {theme.label.toUpperCase()}
+                  </span>
+                )}
+                {!isMobile && (
+                  <span
                     aria-hidden
                     className="status-dot ok live"
                     style={{ width: 5, height: 5, background: 'var(--proof-accent)' }}
                   />
+                )}
+                {isWinemaker && allOrganizations.length > 1 && (
+                  <OrgSwitcher compact />
                 )}
               </div>
               {!isMobile && (
@@ -680,7 +653,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{
             flex: 1,
             minHeight: 0,
-            paddingTop: canvasContentTop,
             paddingBottom:
               showWinemakerMobileNav || showMobileNav ? 'var(--proof-bottom-nav)' : 0,
           }}
@@ -705,6 +677,8 @@ function ProofAskForm({
   onCamera: () => void
   compact?: boolean
 }) {
+  const t = useTranslations('dashboard.shell')
+
   return (
     <form
       onSubmit={onSubmit}
@@ -748,7 +722,7 @@ function ProofAskForm({
         type="text"
         value={ask}
         onChange={e => setAsk(e.target.value)}
-        placeholder={compact ? 'Pregunta a PROOF…' : 'Pregúntale a PROOF — stock, productos, entregas…'}
+        placeholder={compact ? t('askPlaceholderCompact') : t('askPlaceholder')}
         style={{
           flex: 1,
           minWidth: 0,
@@ -764,7 +738,7 @@ function ProofAskForm({
       <button
         type="button"
         onClick={onCamera}
-        aria-label="Subir foto a PROOF"
+        aria-label={t('uploadPhoto')}
         style={{
           width: 44,
           height: 44,
@@ -796,7 +770,7 @@ function ProofAskForm({
             borderRadius: 'var(--radius-sm)',
           }}
         >
-          Preguntar
+          {t('askSubmit')}
         </button>
       )}
     </form>
@@ -820,6 +794,7 @@ function AvatarMenu({
   onDatosCobro?: () => void
   onSignOut: () => void
 }) {
+  const t = useTranslations('dashboard.shell.avatar')
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -836,7 +811,7 @@ function AvatarMenu({
     <div ref={rootRef} style={{ position: 'relative' }}>
       <button
         type="button"
-        aria-label="Menú de cuenta"
+        aria-label={t('menu')}
         aria-expanded={open}
         onClick={() => setOpen(v => !v)}
         style={{
@@ -891,7 +866,7 @@ function AvatarMenu({
         >
           {canSwitchProfile && (
             <DropdownItem
-              label="Cambiar perfil"
+              label={t('switchProfile')}
               onClick={() => {
                 setOpen(false)
                 onSwitchProfile()
@@ -900,7 +875,7 @@ function AvatarMenu({
           )}
           {onDatosCobro ? (
             <DropdownItem
-              label="Datos para cobro"
+              label={t('billingData')}
               onClick={() => {
                 setOpen(false)
                 onDatosCobro()
@@ -908,12 +883,12 @@ function AvatarMenu({
             />
           ) : null}
           <DropdownItem
-            label="Configuración"
+            label={t('settings')}
             href="/dashboard/settings"
             onNavigate={() => setOpen(false)}
           />
           <DropdownItem
-            label="Cerrar sesión"
+            label={t('signOut')}
             onClick={() => {
               setOpen(false)
               onSignOut()
@@ -983,7 +958,9 @@ function SideRailLink({
     <Link
       href={href}
       aria-label={label}
+      aria-current={active ? 'page' : undefined}
       title={label}
+      className="proof-dashboard-rail-link"
       style={{
         position: 'relative',
         display: 'grid',

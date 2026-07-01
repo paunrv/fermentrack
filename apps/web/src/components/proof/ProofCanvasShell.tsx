@@ -18,7 +18,8 @@ import {
   type ProofMessage,
   type ProofSuggestedReply,
 } from '@/components/proof/ProofChatThread'
-import { inferTicketAllocationReplies } from '@/lib/proof/winemaker-ticket-vision'
+import { inferTicketAllocationReplies } from '@/lib/proof/winemaker-ticket-copy'
+import { useWinemakerTicketCopy } from '@/hooks/useWinemakerTicketCopy'
 import { ProofComposer, type ProofQuickAction } from '@/components/proof/ProofComposer'
 import { ProofResultsZone, focusResultsZone } from '@/components/proof/ProofResultsZone'
 
@@ -29,6 +30,24 @@ export type { ProofHubLensAction }
 export type { ProofBodegaLensAction } from '@/lib/proof/proof-canvas-copy'
 
 const ANALYZING = ['PROOF analizando…', 'PROOF analizando tu operación…']
+
+export type ProofCanvasCopySet = {
+  placeholder: string
+  welcome: string
+  hint: string
+  conversationAria?: string
+  workspaceAria?: string
+  analyzing: readonly string[]
+  ticketUploaded?: (fileName: string) => string
+  ticketUploadFailed?: string
+  ticketFallbackPrompt?: string
+  errors: {
+    timeout: string
+    noResponse: string
+    general: string
+    emptyResults: string
+  }
+}
 
 export function ProofCanvasShell({
   accent,
@@ -45,6 +64,8 @@ export function ProofCanvasShell({
   hubLenses,
   queryFromUrl,
   suggestedReplies,
+  canvasCopies,
+  hubLensCopy,
 }: {
   accent: string
   profileType: ProfileType
@@ -62,8 +83,13 @@ export function ProofCanvasShell({
   hubLenses?: Partial<Record<ProofSubHub, ProofHubLensAction[]>>
   queryFromUrl?: string | null
   suggestedReplies?: ProofSuggestedReply[] | null
+  canvasCopies?: ProofCanvasCopySet
+  hubLensCopy?: Partial<
+    Record<ProofSubHub, { title: string; aria: string; back: string }>
+  >
 }) {
   const router = useRouter()
+  const ticketCopy = useWinemakerTicketCopy()
   const [messages, setMessages] = useState<ProofMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -74,6 +100,14 @@ export function ProofCanvasShell({
   const agentStartedRef = useRef(false)
   const ticketFileRef = useRef<HTMLInputElement>(null)
   const agentLoading = Boolean(loading)
+  const copies: ProofCanvasCopySet = canvasCopies ?? {
+    placeholder: PROOF_COPIES.placeholder,
+    welcome: PROOF_COPIES.welcome.distributor,
+    hint: PROOF_COPIES.hint.distributor,
+    analyzing: ANALYZING,
+    errors: PROOF_COPIES.errors,
+  }
+  const analyzingTexts = [...ANALYZING, ...copies.analyzing]
 
   const hasUserMessage = messages.some(m => m.role === 'user')
   const showWelcome = !hasUserMessage
@@ -85,7 +119,10 @@ export function ProofCanvasShell({
 
   function repliesForAgentText(text: string): ProofSuggestedReply[] | undefined {
     if (suggestedReplies?.length) return suggestedReplies
-    return inferTicketAllocationReplies(text)
+    if (profileType === 'winemaker') {
+      return inferTicketAllocationReplies(text, ticketCopy)
+    }
+    return undefined
   }
 
   const sendPrompt = useCallback(
@@ -160,14 +197,14 @@ export function ProofCanvasShell({
         {
           id: newProofMessageId(),
           role: 'system',
-          content: PROOF_COPIES.errors.general,
+          content: copies.errors.general,
         },
       ])
       return
     }
 
     const text = chatResponse?.trim()
-    if (!text || ANALYZING.includes(text)) {
+    if (!text || analyzingTexts.includes(text)) {
       setMessages(prev => {
         const last = prev[prev.length - 1]
         if (last?.role === 'agent') return prev
@@ -176,7 +213,7 @@ export function ProofCanvasShell({
           {
             id: newProofMessageId(),
             role: 'system',
-            content: PROOF_COPIES.errors.noResponse,
+            content: copies.errors.noResponse,
           },
         ]
       })
@@ -206,7 +243,7 @@ export function ProofCanvasShell({
       })
     }
     lastQuickActionRef.current = false
-  }, [chatResponse, agentLoading, error, displayCards, suggestedReplies])
+  }, [chatResponse, agentLoading, error, displayCards, suggestedReplies, copies.errors.general, copies.errors.noResponse, analyzingTexts])
 
   useEffect(() => {
     if (!isTyping || pendingSendRef.current === 0) return
@@ -219,12 +256,12 @@ export function ProofCanvasShell({
         {
           id: newProofMessageId(),
           role: 'system',
-          content: PROOF_COPIES.errors.timeout,
+          content: copies.errors.timeout,
         },
       ])
     }, 45_000)
     return () => window.clearTimeout(t)
-  }, [isTyping])
+  }, [isTyping, copies.errors.timeout])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -239,7 +276,7 @@ export function ProofCanvasShell({
     const userMsg: ProofMessage = {
       id: newProofMessageId(),
       role: 'user',
-      content: `Subí ticket: ${file.name}`,
+      content: copies.ticketUploaded?.(file.name) ?? `Subí ticket: ${file.name}`,
     }
     setActiveSubHub(null)
     const nextConversation = [...stripMessageReplies(messages), userMsg]
@@ -255,7 +292,7 @@ export function ProofCanvasShell({
         const detail =
           err instanceof Error && err.message.trim()
             ? err.message.trim()
-            : 'No se pudo subir el ticket. Intenta de nuevo.'
+            : copies.ticketUploadFailed ?? 'No se pudo subir el ticket. Intenta de nuevo.'
         setMessages(prev => [
           ...prev,
           {
@@ -266,7 +303,7 @@ export function ProofCanvasShell({
         ])
       })
     } else {
-      onSend('quiero registrar este ticket de compra', nextConversation)
+      onSend(copies.ticketFallbackPrompt ?? 'quiero registrar este ticket de compra', nextConversation)
     }
   }
 
@@ -295,7 +332,7 @@ export function ProofCanvasShell({
 
       <div
         className="proof-canvas-workspace"
-        aria-label="Espacio de trabajo PROOF"
+        aria-label={copies.workspaceAria ?? 'Espacio de trabajo PROOF'}
         style={{
           flex: 1,
           minHeight: 0,
@@ -320,6 +357,9 @@ export function ProofCanvasShell({
         modeActions={modeActions}
         hubLenses={resolvedHubLenses}
         activeSubHub={activeSubHub}
+        welcomeText={copies.welcome}
+        conversationAria={copies.conversationAria}
+        hubLensCopy={hubLensCopy}
         onModeAction={action => {
           setActiveSubHub(null)
           sendPrompt(action.message, true)
@@ -342,6 +382,8 @@ export function ProofCanvasShell({
         disabled={isTyping}
         showHint={showHint}
         docked={hasUserMessage}
+        placeholder={copies.placeholder}
+        hintText={copies.hint}
       />
     </div>
   )

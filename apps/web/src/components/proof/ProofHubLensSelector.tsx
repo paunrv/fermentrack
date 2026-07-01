@@ -210,6 +210,7 @@ export function ProofHubLensSelector({
   onSelect,
   onBack,
   compact,
+  hubCopy,
 }: {
   accent: string
   hub: ProofSubHub
@@ -218,10 +219,12 @@ export function ProofHubLensSelector({
   onSelect: (action: ProofHubLensAction) => void
   onBack?: () => void
   compact?: boolean
+  hubCopy?: { title: string; aria: string; back?: string }
 }) {
   if (actions.length === 0) return null
 
-  const copy = HUB_COPY[hub]
+  const defaults = HUB_COPY[hub]
+  const copy: { title: string; aria: string; back?: string } = hubCopy ?? defaults
   const columns =
     hub === 'compra' || hub === 'wm_ticket' || hub === 'wm_agenda' ? 2 : 3
 
@@ -348,7 +351,7 @@ export function ProofHubLensSelector({
             fontFamily: 'var(--font-display)',
           }}
         >
-          ← Volver a modos
+          {copy.back ?? '← Volver a modos'}
         </button>
       ) : null}
     </div>
