@@ -11,9 +11,17 @@
       "today": "Hoy es {date}",
       "price": "Desde {price} MXN",
       "backHome": "Volver al inicio"
+    },
+    "site": {
+      "title": "PROOF · Inteligencia operacional para bebidas",
+      "description": "El sistema operativo para bodegas, cervecerías, destilerías y distribuidores. Cada botella cuenta una historia; nosotros guardamos la evidencia."
     }
   },
   "landing": {
+    "meta": {
+      "title": "PROOF · Inteligencia operacional para bebidas",
+      "description": "Memoria operativa para bodegas, cervecerías, destilerías y distribuidores. Menos captura, más evidencia."
+    },
     "nav": {
       "productores": "Productores",
       "distribuidores": "Distribuidores",

@@ -9,12 +9,15 @@ import {
 } from '@/components/proof/landing/landing-page-styles'
 import { LANDING, landingBtnPrimary } from '@/components/proof/landing/landing-theme'
 
+import { createPublicPageMetadata } from '@/lib/i18n/metadata'
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('about.meta')
-  return {
+  return createPublicPageMetadata({
+    pathname: '/nosotros',
     title: t('title'),
     description: t('description'),
-  }
+  })
 }
 
 export default async function NosotrosPage() {

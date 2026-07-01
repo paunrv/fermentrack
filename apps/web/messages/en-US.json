@@ -11,9 +11,17 @@
       "today": "Today is {date}",
       "price": "From {price} MXN",
       "backHome": "Back to home"
+    },
+    "site": {
+      "title": "PROOF · Operational intelligence for beverages",
+      "description": "The operating system for wineries, breweries, distilleries and distributors. Every bottle tells a story; we track the proof."
     }
   },
   "landing": {
+    "meta": {
+      "title": "PROOF · Operational intelligence for beverages",
+      "description": "Operational memory for wineries, breweries, distilleries and distributors. Less data entry, more evidence."
+    },
     "nav": {
       "productores": "Producers",
       "distribuidores": "Distributors",

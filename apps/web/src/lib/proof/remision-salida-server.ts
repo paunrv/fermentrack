@@ -1,4 +1,5 @@
 import { buildRemisionPdfBuffer } from '@/lib/proof/remision-pdf'
+import { getRequestAppLocale } from '@/lib/i18n/request-locale'
 import { remisionStoragePath, signRemisionPdfUrl, uploadRemisionPdf } from '@/lib/proof/storage-remisiones'
 import {
   fetchPedidoWithItems,
@@ -78,6 +79,8 @@ export async function ensureRemisionPdfForPedido(
   const subtotal = lineas.reduce((s, l) => s + l.subtotal, 0)
   const total = Number(pedido.total) || subtotal
 
+  const locale = await getRequestAppLocale()
+
   const pdfBuffer = buildRemisionPdfBuffer({
     numeroRemision: remision.numero_remision,
     numeroPedido: pedido.numero,
@@ -88,6 +91,7 @@ export async function ensureRemisionPdfForPedido(
     subtotal,
     total,
     generadoEn: new Date(),
+    locale,
   })
 
   const { path, signedUrl } = await uploadRemisionPdf(sb, userId, remision.id, pdfBuffer)

@@ -6,12 +6,15 @@ import { LandingEyebrow } from '@/components/proof/landing/LandingEyebrow'
 import { landingBodyStyle } from '@/components/proof/landing/landing-page-styles'
 import { LANDING } from '@/components/proof/landing/landing-theme'
 
+import { createPublicPageMetadata } from '@/lib/i18n/metadata'
+
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('contact.meta')
-  return {
+  return createPublicPageMetadata({
+    pathname: '/contacto',
     title: t('title'),
     description: t('description'),
-  }
+  })
 }
 
 export default async function ContactoPage() {

@@ -1,3 +1,5 @@
+import type { AppLocale } from '@/i18n/routing'
+import { getPdfLabels, pdfLocaleTag, type PdfLabels } from '@/lib/proof/pdf-labels'
 import { jsPDF } from 'jspdf'
 
 export type RemisionPdfLine = {
@@ -17,24 +19,26 @@ export type RemisionPdfInput = {
   subtotal: number
   total: number
   generadoEn: Date
+  locale?: AppLocale
+  labels?: PdfLabels
 }
 
 const TEXT = 'var(--fg-0)'
 const ACCENT = '#C2410C'
 const MARGIN_MM = 14 // ~40px
 
-function fmtMoney(n: number): string {
-  return `$${n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+function fmtMoney(n: number, locale: AppLocale): string {
+  return `$${n.toLocaleString(pdfLocaleTag(locale), { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
 }
 
-function fmtDate(iso: string): string {
+function fmtDate(iso: string, locale: AppLocale): string {
   const d = new Date(iso.includes('T') ? iso : `${iso}T12:00:00`)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
+  return d.toLocaleDateString(pdfLocaleTag(locale), { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function fmtDateTime(d: Date): string {
-  return d.toLocaleString('es-MX', {
+function fmtDateTime(d: Date, locale: AppLocale): string {
+  return d.toLocaleString(pdfLocaleTag(locale), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -53,6 +57,8 @@ function hexToRgb(hex: string): [number, number, number] {
 }
 
 export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
+  const locale = input.locale ?? 'es-MX'
+  const L = input.labels ?? getPdfLabels(locale)
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const pageW = 210
   const contentW = pageW - MARGIN_MM * 2
@@ -69,7 +75,7 @@ export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
   y += 10
   doc.setTextColor(ar, ag, ab)
   doc.setFontSize(13)
-  doc.text('REMISIÓN DE ENTREGA', MARGIN_MM, y)
+  doc.text(L.remisionTitle, MARGIN_MM, y)
 
   y += 3
   doc.setDrawColor(ar, ag, ab)
@@ -80,15 +86,15 @@ export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
   doc.setTextColor(tr, tg, tb)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
-  doc.text(`Número: ${input.numeroRemision}`, MARGIN_MM, y)
-  doc.text(`Folio pedido: ${input.numeroPedido}`, pageW / 2, y)
+  doc.text(`${L.number}: ${input.numeroRemision}`, MARGIN_MM, y)
+  doc.text(`${L.orderFolio}: ${input.numeroPedido}`, pageW / 2, y)
   y += 5
-  doc.text(`Fecha de entrega: ${fmtDate(input.fechaEntrega)}`, MARGIN_MM, y)
+  doc.text(`${L.deliveryDate}: ${fmtDate(input.fechaEntrega, locale)}`, MARGIN_MM, y)
 
   y += 10
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
-  doc.text('Cliente', MARGIN_MM, y)
+  doc.text(L.customer, MARGIN_MM, y)
   y += 5
   doc.setFont('helvetica', 'normal')
   doc.text(input.clienteNombre, MARGIN_MM, y)
@@ -108,10 +114,10 @@ export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(ar, ag, ab)
-  doc.text('Producto', colProd, y)
-  doc.text('Cant.', colQty, y, { align: 'right' })
-  doc.text('P. unit.', colPrice, y, { align: 'right' })
-  doc.text('Subtotal', colSub + contentW * 0.16, y, { align: 'right' })
+  doc.text(L.product, colProd, y)
+  doc.text(L.qty, colQty, y, { align: 'right' })
+  doc.text(L.unitPrice, colPrice, y, { align: 'right' })
+  doc.text(L.subtotal, colSub + contentW * 0.16, y, { align: 'right' })
 
   y += 2
   doc.setDrawColor(200, 200, 200)
@@ -130,8 +136,8 @@ export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
     const prodLines = doc.splitTextToSize(line.producto, contentW * 0.48)
     doc.text(prodLines, colProd, y)
     doc.text(String(line.cantidad), colQty, y, { align: 'right' })
-    doc.text(fmtMoney(line.precioUnitario), colPrice, y, { align: 'right' })
-    doc.text(fmtMoney(line.subtotal), colSub + contentW * 0.16, y, { align: 'right' })
+    doc.text(fmtMoney(line.precioUnitario, locale), colPrice, y, { align: 'right' })
+    doc.text(fmtMoney(line.subtotal, locale), colSub + contentW * 0.16, y, { align: 'right' })
     y += Math.max(5, prodLines.length * 5)
   }
 
@@ -141,19 +147,19 @@ export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
 
   const totalsX = pageW - MARGIN_MM
   doc.setFont('helvetica', 'normal')
-  doc.text('Subtotal', totalsX - 45, y, { align: 'right' })
-  doc.text(fmtMoney(input.subtotal), totalsX, y, { align: 'right' })
+  doc.text(L.subtotal, totalsX - 45, y, { align: 'right' })
+  doc.text(fmtMoney(input.subtotal, locale), totalsX, y, { align: 'right' })
   y += 6
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(ar, ag, ab)
-  doc.text('Total', totalsX - 45, y, { align: 'right' })
-  doc.text(fmtMoney(input.total), totalsX, y, { align: 'right' })
+  doc.text(L.total, totalsX - 45, y, { align: 'right' })
+  doc.text(fmtMoney(input.total, locale), totalsX, y, { align: 'right' })
 
   y += 20
   doc.setTextColor(tr, tg, tb)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
-  doc.text('Recibí conforme:', MARGIN_MM, y)
+  doc.text(L.receivedOk, MARGIN_MM, y)
   y += 12
   doc.setDrawColor(tr, tg, tb)
   doc.line(MARGIN_MM, y, MARGIN_MM + 70, y)
@@ -161,7 +167,7 @@ export function buildRemisionPdfBuffer(input: RemisionPdfInput): Buffer {
   y += 12
   doc.setFontSize(8)
   doc.setTextColor(120, 120, 120)
-  doc.text(`Generado: ${fmtDateTime(input.generadoEn)}`, MARGIN_MM, y)
+  doc.text(`${L.generated}: ${fmtDateTime(input.generadoEn, locale)}`, MARGIN_MM, y)
 
   const arrayBuffer = doc.output('arraybuffer') as ArrayBuffer
   return Buffer.from(arrayBuffer)

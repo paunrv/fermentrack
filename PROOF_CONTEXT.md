@@ -195,6 +195,22 @@ Tablas `ordenes_compra` + `items_orden_compra`. Estados: `borrador` | `enviada` 
 
 Al `confirmar_recepcion` con `orden_compra_id`, la OC pasa a `recibida` o `parcial` si hay diferencias vs ítems esperados.
 
+## Localización (i18n)
+
+Epic cerrado — locales `es-MX` (default) y `en-US`.
+
+| Tema | Ubicación |
+|------|-----------|
+| Guía completa | `docs/I18N.md` |
+| QA smoke | `docs/I18N-QA.md` |
+| Mensajes | `apps/web/messages/{es-MX,en-US}.json` |
+| Routing / cookie | `apps/web/src/i18n/routing.ts` (`NEXT_LOCALE`, sin prefijo en URL) |
+| Metadata pública | `apps/web/src/lib/i18n/metadata.ts`, `sitemap.ts`, `robots.ts` |
+| Agente locale-aware | `apps/web/src/lib/proof/prompts.ts`, `/api/proof/contexto` |
+| PDFs export | `apps/web/src/lib/proof/pdf-labels.ts` |
+
+Cambiar idioma: Ajustes → idioma o `LocaleSwitcher` en landing. No hardcodear copy en JSX salvo prototipos.
+
 ## Monorepo
 
 - **App:** `apps/web` (Next.js 14 + Clerk + Supabase)

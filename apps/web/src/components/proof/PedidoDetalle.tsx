@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocale } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fmtDateOnly, fmtMoney } from '@/lib/proof/format'
@@ -97,6 +99,7 @@ async function fetchWithTimeout<T>(promise: Promise<T>, ms = 12_000): Promise<T>
 
 export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetalleProps) {
   const supabase = useSupabase()
+  const locale = useLocale() as AppLocale
   const { scope } = useProfile()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -249,6 +252,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         lineas: pdfLineas,
         subtotal: subtotal > 0 ? subtotal : displayTotal,
         total: displayTotal,
+        locale,
       })
     } catch (e) {
       setPdfError(e instanceof Error ? e.message : 'No se pudo obtener el PDF')
