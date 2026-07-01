@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -14,8 +16,7 @@ import {
   type ProductOrigin,
   type ProductUnitType,
 } from '@/lib/supabase'
-
-
+import { formatCurrencyMxn } from '@/lib/i18n/format'
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
   cerveza: '#FAC775',
@@ -23,25 +24,9 @@ const CATEGORY_COLORS: Record<ProductCategory, string> = {
   destilado: '#F5C4B3',
 }
 
-const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  cerveza: 'Cerveza',
-  vino: 'Vino',
-  destilado: 'Destilado',
-}
-
-const ORIGIN_LABELS: Record<ProductOrigin, string> = {
-  local: 'Local',
-  importado: 'Importado',
-}
-
 const ORIGIN_BG: Record<ProductOrigin, string> = {
   local: '#C0DD97',
   importado: '#B5D4F4',
-}
-
-const UNIT_LABELS: Record<ProductUnitType, string> = {
-  botella: 'Botella',
-  lata: 'Lata',
 }
 
 const CATEGORIES: ProductCategory[] = ['cerveza', 'vino', 'destilado']
@@ -70,13 +55,21 @@ const input: React.CSSProperties = {
   fontFamily: 'var(--font-display)',
 }
 
-function formatMoney(n: number, currency = 'MXN') {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(n)
-}
-
 export default function ProductosPage() {
+  const t = useTranslations('distributor.productos')
+  const tCommon = useTranslations('distributor.common')
+  const tCat = useTranslations('distributor.productCategories')
+  const tOrigin = useTranslations('distributor.origins')
+  const tUnit = useTranslations('distributor.units')
+  const locale = useLocale() as AppLocale
   const { scope } = useProfile()
   const supabase = useSupabase()
+
+  function formatMoney(n: number, currency = 'MXN') {
+    if (currency === 'MXN') return formatCurrencyMxn(n, locale)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n)
+  }
+
   const [products, setProducts] = useState<DistProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -171,11 +164,9 @@ export default function ProductosPage() {
               marginBottom: 6,
             }}
           >
-            Productos
+            {t('title')}
           </h1>
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-            Catálogo de cervezas, vinos y destilados para distribución
-          </p>
+          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>{t('subtitle')}</p>
         </div>
         <button
           type="button"
@@ -193,7 +184,7 @@ export default function ProductosPage() {
             fontFamily: 'var(--font-display)',
           }}
         >
-          {showForm ? 'Cancelar' : '+ Nuevo producto'}
+          {showForm ? tCommon('cancel') : t('newProduct')}
         </button>
       </div>
 
@@ -216,7 +207,7 @@ export default function ProductosPage() {
               marginBottom: 16,
             }}
           >
-            Nuevo producto
+            {t('formTitle')}
           </div>
           <div
             style={{
@@ -226,18 +217,18 @@ export default function ProductosPage() {
             }}
           >
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Nombre</label>
+              <label style={label}>{t('fields.name')}</label>
               <input
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 style={input}
-                placeholder="Nombre comercial del producto"
+                placeholder={t('fields.namePlaceholder')}
                 required
               />
             </div>
             <div>
-              <label style={label}>Categoría</label>
+              <label style={label}>{t('fields.category')}</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value as ProductCategory)}
@@ -246,13 +237,13 @@ export default function ProductosPage() {
               >
                 {CATEGORIES.map(c => (
                   <option key={c} value={c}>
-                    {CATEGORY_LABELS[c]}
+                    {tCat(c)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={label}>Origen</label>
+              <label style={label}>{t('fields.origin')}</label>
               <select
                 value={origin}
                 onChange={e => setOrigin(e.target.value as ProductOrigin)}
@@ -261,13 +252,13 @@ export default function ProductosPage() {
               >
                 {ORIGINS.map(o => (
                   <option key={o} value={o}>
-                    {ORIGIN_LABELS[o]}
+                    {tOrigin(o)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={label}>Unidad</label>
+              <label style={label}>{t('fields.unit')}</label>
               <select
                 value={unitType}
                 onChange={e => setUnitType(e.target.value as ProductUnitType)}
@@ -276,23 +267,23 @@ export default function ProductosPage() {
               >
                 {UNIT_TYPES.map(u => (
                   <option key={u} value={u}>
-                    {UNIT_LABELS[u]}
+                    {tUnit(u)}
                   </option>
                 ))}
               </select>
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <label style={label}>Productor</label>
+              <label style={label}>{t('fields.producer')}</label>
               <input
                 type="text"
                 value={producer}
                 onChange={e => setProducer(e.target.value)}
                 style={input}
-                placeholder="Casa productora / fabricante"
+                placeholder={t('fields.producerPlaceholder')}
               />
             </div>
             <div>
-              <label style={label}>Botellas por caja</label>
+              <label style={label}>{t('fields.bottlesPerCase')}</label>
               <input
                 type="number"
                 min={1}
@@ -303,7 +294,7 @@ export default function ProductosPage() {
               />
             </div>
             <div>
-              <label style={label}>Costo por unidad</label>
+              <label style={label}>{t('fields.costPerUnit')}</label>
               <input
                 type="number"
                 min={0}
@@ -316,7 +307,7 @@ export default function ProductosPage() {
               />
             </div>
             <div>
-              <label style={label}>Moneda</label>
+              <label style={label}>{t('fields.currency')}</label>
               <input
                 type="text"
                 value={currency}
@@ -328,7 +319,7 @@ export default function ProductosPage() {
               />
             </div>
             <div>
-              <label style={label}>Precio regular</label>
+              <label style={label}>{t('fields.priceRegular')}</label>
               <input
                 type="number"
                 min={0}
@@ -341,7 +332,7 @@ export default function ProductosPage() {
               />
             </div>
             <div>
-              <label style={label}>Precio mayoreo</label>
+              <label style={label}>{t('fields.priceWholesale')}</label>
               <input
                 type="number"
                 min={0}
@@ -353,7 +344,7 @@ export default function ProductosPage() {
               />
             </div>
             <div>
-              <label style={label}>Precio especial</label>
+              <label style={label}>{t('fields.priceSpecial')}</label>
               <input
                 type="number"
                 min={0}
@@ -365,12 +356,12 @@ export default function ProductosPage() {
               />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={label}>Notas</label>
+              <label style={label}>{t('fields.notes')}</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 style={{ ...input, minHeight: 70, resize: 'vertical' }}
-                placeholder="ABV, estilo, denominación de origen, condiciones..."
+                placeholder={t('fields.notesPlaceholder')}
               />
             </div>
           </div>
@@ -392,18 +383,16 @@ export default function ProductosPage() {
               fontFamily: 'var(--font-display)',
             }}
           >
-            {saving ? 'Guardando...' : 'Guardar producto'}
+            {saving ? tCommon('saving') : t('saveProduct')}
           </button>
         </form>
       )}
 
       <div>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+          <p style={{ fontSize: 13, color: '#888' }}>{tCommon('loading')}</p>
         ) : products.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>
-            Aún no hay productos. Agrega el primero con el botón &quot;+ Nuevo producto&quot;.
-          </p>
+          <p style={{ fontSize: 13, color: '#888' }}>{t('empty')}</p>
         ) : (
           <div
             style={{
@@ -474,7 +463,7 @@ export default function ProductosPage() {
                       flexShrink: 0,
                     }}
                   >
-                    {CATEGORY_LABELS[product.category]}
+                    {tCat(product.category)}
                   </span>
                 </div>
 
@@ -491,7 +480,7 @@ export default function ProductosPage() {
                       color: 'var(--fg-0)',
                     }}
                   >
-                    {ORIGIN_LABELS[product.origin]}
+                    {tOrigin(product.origin)}
                   </span>
                   <span
                     style={{
@@ -505,7 +494,10 @@ export default function ProductosPage() {
                       color: 'var(--fg-0)',
                     }}
                   >
-                    {UNIT_LABELS[product.unit_type]} · {product.bottles_per_case}/caja
+                    {tUnit('perCase', {
+                      unit: tUnit(product.unit_type),
+                      count: product.bottles_per_case,
+                    })}
                   </span>
                 </div>
 
@@ -527,7 +519,7 @@ export default function ProductosPage() {
                       marginBottom: 4,
                     }}
                   >
-                    Precio regular
+                    {t('card.regularPrice')}
                   </div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--fg-0)', lineHeight: 1 }}>
                     {formatMoney(Number(product.price_regular), product.currency)}
@@ -544,11 +536,11 @@ export default function ProductosPage() {
                     }}
                   >
                     <span>
-                      <span style={{ opacity: 0.6 }}>MAY </span>
+                      <span style={{ opacity: 0.6 }}>{t('card.wholesaleShort')} </span>
                       {formatMoney(Number(product.price_mayoreo), product.currency)}
                     </span>
                     <span>
-                      <span style={{ opacity: 0.6 }}>ESP </span>
+                      <span style={{ opacity: 0.6 }}>{t('card.specialShort')} </span>
                       {formatMoney(Number(product.price_especial), product.currency)}
                     </span>
                   </div>
@@ -562,7 +554,9 @@ export default function ProductosPage() {
                       textTransform: 'uppercase',
                     }}
                   >
-                    Costo: {formatMoney(Number(product.cost_per_unit), product.currency)}
+                    {t('card.cost', {
+                      amount: formatMoney(Number(product.cost_per_unit), product.currency),
+                    })}
                   </div>
                 </div>
               </Link>

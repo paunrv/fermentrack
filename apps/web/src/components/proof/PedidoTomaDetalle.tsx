@@ -1,9 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { PedidoWithItems, RemisionDistribuidorRow } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
-import { formatLineaToma, type TomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
+import type { TomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import { RemisionPedidoActions } from '@/components/proof/RemisionPedidoActions'
 import { PedidoFulfillmentActions } from '@/components/proof/PedidoFulfillmentActions'
 
@@ -15,8 +16,14 @@ type Props = {
 }
 
 export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props) {
-  const cliente = pedido.clients?.name ?? 'Cliente'
+  const t = useTranslations('distributor.pedidos.tomaDetalle')
+  const tUnits = useTranslations('distributor.pedidos.orderUnits')
+  const tEstado = useTranslations('distributor.pedidoEstado')
+  const tDetail = useTranslations('distributor.pedidos.detail')
+
+  const cliente = pedido.clients?.name ?? tDetail('clientFallback')
   const confirmado = pedido.estado !== 'borrador'
+  const estadoLabel = (tEstado as (key: string) => string)(pedido.estado) || pedido.estado
 
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
@@ -24,7 +31,7 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
         href="/dashboard/pedidos/nuevo"
         style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
       >
-        ← Toma de pedidos
+        {t('back')}
       </Link>
 
       <header style={{ margin: '16px 0 24px' }}>
@@ -35,12 +42,13 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
           {cliente}
         </h1>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)' }}>
-          Entrega {pedido.fecha_entrega}
+          {t('delivery')} {pedido.fecha_entrega}
           {' · '}
-          <span style={{ color: confirmado ? 'var(--ok)' : 'var(--warn)' }}>{pedido.estado}</span>
+          <span style={{ color: confirmado ? 'var(--ok)' : 'var(--warn)' }}>{estadoLabel}</span>
           {toma.anticipo && (
             <span style={{ color: 'var(--warn)', fontWeight: 600 }}>
-              {' · Anticipo'}
+              {' · '}
+              {t('advance')}
               {toma.anticipo_monto != null && toma.anticipo_monto > 0
                 ? ` ${fmtMoney(toma.anticipo_monto)}`
                 : ''}
@@ -62,7 +70,7 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
           className="eyebrow"
           style={{ padding: '12px 16px', borderBottom: '1px solid var(--hairline)' }}
         >
-          Productos pedidos
+          {t('productsOrdered')}
         </div>
         <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
           {toma.lineas.map((l, i) => (
@@ -78,7 +86,7 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
             >
               <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--fg-0)' }}>{l.etiqueta}</span>
               <span className="mono" style={{ fontSize: 13, color: 'var(--fg-2)' }}>
-                {formatLineaToma(l)}
+                {l.cantidad} {tUnits(l.unidad)}
               </span>
             </li>
           ))}
@@ -87,8 +95,7 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
 
       {pedido.items_pedido.length === 0 && (
         <p style={{ fontSize: 13, color: 'var(--fg-3)', marginBottom: 20, lineHeight: 1.5 }}>
-          Pedido registrado por etiqueta. Cuando ligues SKUs en inventario, el stock se reservará al
-          confirmar desde catálogo.
+          {t('labelOnlyNote')}
         </p>
       )}
 
@@ -101,20 +108,19 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
       />
 
       <div style={{ marginTop: 12 }}>
-      <RemisionPedidoActions
-        pedidoId={pedido.id}
-        estado={pedido.estado}
-        initialRemision={
-          remision
-            ? {
-                numero: remision.numero_remision,
-                hasPdf: Boolean(remision.pdf_url?.trim()),
-                downloadUrl: null,
-              }
-            : null
-        }
-      />
-
+        <RemisionPedidoActions
+          pedidoId={pedido.id}
+          estado={pedido.estado}
+          initialRemision={
+            remision
+              ? {
+                  numero: remision.numero_remision,
+                  hasPdf: Boolean(remision.pdf_url?.trim()),
+                  downloadUrl: null,
+                }
+              : null
+          }
+        />
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 20 }}>
@@ -132,7 +138,7 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
             textDecoration: 'none',
           }}
         >
-          + Otro pedido
+          {t('anotherOrder')}
         </Link>
         <Link
           href="/dashboard/pedidos"
@@ -147,7 +153,7 @@ export function PedidoTomaDetalle({ pedido, toma, remision, onEntregado }: Props
             textDecoration: 'none',
           }}
         >
-          Ver todos
+          {t('viewAll')}
         </Link>
       </div>
     </div>

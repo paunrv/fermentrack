@@ -23,4 +23,6 @@ export type AgentContextHints = {
   pantalla?: Record<string, unknown>
   /** Imagen adjunta en base64 (para intents visuales) */
   image?: string | null
+  /** Org winemaker activa (multi-tenant epic #3) */
+  organizationId?: string | null
 }

@@ -133,6 +133,9 @@ export function ProofChatThread({
   onSubHubClose,
   modeActionsDisabled,
   onSuggestedReply,
+  welcomeText: welcomeTextProp,
+  conversationAria,
+  hubLensCopy,
 }: {
   accent: string
   profileType: ProfileType
@@ -148,6 +151,11 @@ export function ProofChatThread({
   onSubHubClose?: () => void
   modeActionsDisabled?: boolean
   onSuggestedReply?: (message: string) => void
+  welcomeText?: string
+  conversationAria?: string
+  hubLensCopy?: Partial<
+    Record<ProofSubHub, { title: string; aria: string; back: string }>
+  >
 }) {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -168,7 +176,7 @@ export function ProofChatThread({
       : profileType === 'winemaker'
         ? 'winemaker'
         : 'distributor'
-  const welcomeText = PROOF_COPIES.welcome[welcomeKey]
+  const welcomeText = welcomeTextProp ?? PROOF_COPIES.welcome[welcomeKey]
   const emptyState = showWelcome && messages.length === 0 && !isTyping
   const showModeSelector =
     emptyState && !activeSubHub && (modeActions?.length ?? 0) > 0 && Boolean(onModeAction)
@@ -192,7 +200,7 @@ export function ProofChatThread({
         ref={scrollRef}
         className="proof-chat-thread"
         aria-live="polite"
-        aria-label="Conversación con PROOF"
+        aria-label={conversationAria ?? 'Conversación con PROOF'}
         style={{
           maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
           margin: '0 auto',
@@ -272,6 +280,7 @@ export function ProofChatThread({
                 disabled={modeActionsDisabled}
                 onSelect={action => onHubLensAction?.(action, activeSubHub)}
                 onBack={onSubHubClose}
+                hubCopy={hubLensCopy?.[activeSubHub]}
               />
             ) : null}
           </>

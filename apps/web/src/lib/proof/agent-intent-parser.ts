@@ -16,6 +16,7 @@ import {
 } from '@/lib/proof/distributor-agent-actions'
 import { tryDistributorQuickAnswer } from '@/lib/proof/distributor-agent-answers'
 import { tryWinemakerQuickAnswer } from '@/lib/proof/winemaker-agent-answers'
+import type { WinemakerTicketCopy } from '@/lib/proof/winemaker-ticket-copy'
 import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 import type { ProfileScope } from '@/lib/supabase'
 
@@ -74,7 +75,8 @@ export function parseIntent(
 export function quickAnswer(
   query: string,
   profileType: AgentProfileType,
-  datos: Record<string, unknown>
+  datos: Record<string, unknown>,
+  options?: { ticketCopy?: WinemakerTicketCopy }
 ): AgentQuickAnswer | null {
   if (profileType === 'distiller') {
     return tryDistillerQuickAnswer(query, datos)
@@ -83,7 +85,11 @@ export function quickAnswer(
     return tryDistributorQuickAnswer(query, datos)
   }
   if (profileType === 'winemaker') {
-    return tryWinemakerQuickAnswer(query, datos as unknown as WinemakerAgentContext)
+    return tryWinemakerQuickAnswer(
+      query,
+      datos as unknown as WinemakerAgentContext,
+      options?.ticketCopy
+    )
   }
   return null
 }

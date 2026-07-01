@@ -4,21 +4,19 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import { fmtBottles } from '@/lib/proof/format'
+import { formatDate } from '@/lib/i18n/format'
 import { fetchRecepcionesRemision, type RecepcionRemisionListRow } from '@/lib/supabase'
 
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
 export default function RemisionesPage() {
+  const t = useTranslations('distributor.remisiones')
+  const tCommon = useTranslations('distributor.common')
+  const locale = useLocale() as AppLocale
   const { scope } = useProfile()
   const supabase = useSupabase()
   const [loading, setLoading] = useState(true)
@@ -40,17 +38,23 @@ export default function RemisionesPage() {
     }
   }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
+  function fmtDateTime(iso: string): string {
+    return formatDate(new Date(iso), locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
       <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-        Remisiones
+        {t('title')}
       </h1>
-      <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--fg-2)' }}>
-        Recepciones confirmadas con evidencia — historial de entradas.
-      </p>
+      <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
 
       {loading ? (
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
       ) : rows.length === 0 ? (
         <div
           style={{
@@ -63,11 +67,13 @@ export default function RemisionesPage() {
             fontSize: 13,
           }}
         >
-          Sin remisiones. Confirma una recepción en{' '}
-          <Link href="/dashboard/recepcion" style={{ color: 'var(--gold)' }}>
-            Entrada foto
-          </Link>
-          .
+          {t.rich('empty', {
+            link: chunks => (
+              <Link href="/dashboard/recepcion" style={{ color: 'var(--gold)' }}>
+                {chunks}
+              </Link>
+            ),
+          })}
         </div>
       ) : (
         <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-card)' }}>
@@ -90,12 +96,11 @@ export default function RemisionesPage() {
                   </div>
                   <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{r.productor}</div>
                   <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 4 }}>
-                    {fmtDateTime(r.fecha_recepcion)} · {fmtBottles(r.botellas_recibidas)} bts
+                    {fmtDateTime(r.fecha_recepcion)} · {fmtBottles(r.botellas_recibidas)} {t('bottlesUnit')}
                     {r.discrepancias_count > 0 && (
                       <span style={{ color: 'var(--warn)' }}>
                         {' '}
-                        · {r.discrepancias_count} discrepancia
-                        {r.discrepancias_count === 1 ? '' : 's'}
+                        · {t('discrepancy', { count: r.discrepancias_count })}
                       </span>
                     )}
                   </div>
@@ -103,12 +108,12 @@ export default function RemisionesPage() {
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   {r.foto_urls?.length > 0 && (
                     <span className="mono" style={{ fontSize: 10, color: 'var(--ok)' }}>
-                      FOTO
+                      {t('photoBadge')}
                     </span>
                   )}
                   {r.estado === 'con_discrepancias' && (
                     <div className="mono" style={{ fontSize: 10, color: 'var(--warn)', marginTop: 4 }}>
-                      CON DISC.
+                      {t('withDiscrepanciesBadge')}
                     </div>
                   )}
                 </div>
@@ -122,9 +127,7 @@ export default function RemisionesPage() {
         pantalla="remisiones"
         profileType="distributor"
         hints={{ pantalla: { count: rows.length } }}
-        fallback={{
-          mensaje: 'Las remisiones reflejan recepciones confirmadas con evidencia en Storage.',
-        }}
+        fallback={{ mensaje: t('aiFallback') }}
       />
     </div>
   )

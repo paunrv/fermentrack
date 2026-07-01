@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { useWinemakerScope } from '@/hooks/useWinemakerScope'
-
-const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
+import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
 
 function buildMonthGrid(year: number, month: number) {
   const first = new Date(year, month, 1)
@@ -19,23 +19,11 @@ function buildMonthGrid(year: number, month: number) {
   return cells
 }
 
-const MONTH_NAMES = [
-  'Enero',
-  'Febrero',
-  'Marzo',
-  'Abril',
-  'Mayo',
-  'Junio',
-  'Julio',
-  'Agosto',
-  'Septiembre',
-  'Octubre',
-  'Noviembre',
-  'Diciembre',
-]
-
 export default function WinemakerAgendaPage() {
-  const { loading: scopeLoading, ok } = useWinemakerScope()
+  const locale = useLocale() as AppLocale
+  const t = useTranslations('winemaker.agenda')
+  const tCommon = useTranslations('winemaker.common')
+  const { loading: scopeLoading, ok } = useWinemakerRouteGuard()
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth()
@@ -43,8 +31,27 @@ export default function WinemakerAgendaPage() {
 
   const cells = useMemo(() => buildMonthGrid(year, month), [year, month])
 
+  const weekdays = useMemo(() => {
+    const monday = new Date(2024, 0, 1)
+    return Array.from({ length: 7 }, (_, i) =>
+      new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(
+        new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
+      )
+    )
+  }, [locale])
+
+  const monthLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(
+        new Date(year, month, 1)
+      ),
+    [locale, year, month]
+  )
+
   if (scopeLoading || !ok) {
-    return <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>Cargando…</div>
+    return (
+      <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>{tCommon('loading')}</div>
+    )
   }
 
   return (
@@ -59,10 +66,9 @@ export default function WinemakerAgendaPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>Agenda</h1>
+          <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
           <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
-            Tiempos de barrica, muestras de laboratorio y embotellado. Los eventos aparecerán aquí
-            cuando registres lotes y fechas en PROOF.
+            {t('subtitle')}
           </p>
         </div>
         <Link
@@ -74,7 +80,7 @@ export default function WinemakerAgendaPage() {
             whiteSpace: 'nowrap',
           }}
         >
-          ← PROOF
+          {t('backToProof')}
         </Link>
       </div>
 
@@ -92,9 +98,10 @@ export default function WinemakerAgendaPage() {
             fontSize: 15,
             fontWeight: 600,
             textAlign: 'center',
+            textTransform: 'capitalize',
           }}
         >
-          {MONTH_NAMES[month]} {year}
+          {monthLabel}
         </p>
 
         <div
@@ -105,7 +112,7 @@ export default function WinemakerAgendaPage() {
             marginBottom: 4,
           }}
         >
-          {WEEKDAYS.map(d => (
+          {weekdays.map(d => (
             <div
               key={d}
               style={{
@@ -164,9 +171,11 @@ export default function WinemakerAgendaPage() {
           color: 'var(--fg-2)',
         }}
       >
-        Próximo paso: enlazar eventos de{' '}
-        <code style={{ fontSize: 12 }}>wm_events</code> (envejecimiento, embotellado, lab) a cada día
-        del calendario.
+        {t.rich('nextStep', {
+          code: chunks => (
+            <code style={{ fontSize: 12 }}>{chunks}</code>
+          ),
+        })}
       </div>
     </div>
   )

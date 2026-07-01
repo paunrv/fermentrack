@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fmtMoney } from '@/lib/proof/format'
@@ -47,6 +48,7 @@ function todayISO() {
 }
 
 export default function NuevaOrdenCompraPage() {
+  const t = useTranslations('distributor.compras')
   const router = useRouter()
   const { scope } = useProfile()
   const supabase = useSupabase()
@@ -81,7 +83,7 @@ export default function NuevaOrdenCompraPage() {
 
     const prov = proveedor.trim()
     if (!prov) {
-      setError('Indica el proveedor o productor')
+      setError(t('errors.supplier'))
       return
     }
 
@@ -94,7 +96,7 @@ export default function NuevaOrdenCompraPage() {
       .filter(it => it.producto_nombre && it.cantidad_ordenada > 0)
 
     if (parsed.length === 0) {
-      setError('Agrega al menos un producto con cantidad válida')
+      setError(t('errors.items'))
       return
     }
 
@@ -108,7 +110,7 @@ export default function NuevaOrdenCompraPage() {
       })
       router.push(`/dashboard?oc=${orden.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear la orden')
+      setError(err instanceof Error ? err.message : t('errors.create'))
     } finally {
       setSubmitting(false)
     }
@@ -120,32 +122,31 @@ export default function NuevaOrdenCompraPage() {
         href="/dashboard"
         style={{ fontSize: 12, color: '#999', textDecoration: 'none', marginBottom: 24, display: 'inline-block' }}
       >
-        ← Inicio
+        {t('back')}
       </Link>
 
       <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 500, color: 'var(--fg-0)' }}>
-        Nueva orden de compra
+        {t('title')}
       </h1>
       <p style={{ margin: '0 0 28px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
-        Registra lo que pediste al productor. Al llegar la mercancía confirmas la recepción y el
-        stock se actualiza.
+        {t('subtitle')}
       </p>
 
       <form onSubmit={e => void handleSubmit(e)}>
         <div style={{ marginBottom: 20 }}>
-          <label style={label}>Proveedor / Productor</label>
+          <label style={label}>{t('fields.supplier')}</label>
           <input
             type="text"
             value={proveedor}
             onChange={e => setProveedor(e.target.value)}
-            placeholder="Ej. Silvana, Mezcal Artesanal Oaxaca"
+            placeholder={t('fields.supplierPlaceholder')}
             style={field}
             required
           />
         </div>
 
         <div style={{ marginBottom: 28 }}>
-          <label style={label}>Fecha estimada de llegada</label>
+          <label style={label}>{t('fields.estimatedDate')}</label>
           <input
             type="date"
             value={fechaEstimada}
@@ -155,7 +156,7 @@ export default function NuevaOrdenCompraPage() {
         </div>
 
         <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ ...label, marginBottom: 0 }}>Productos</span>
+          <span style={{ ...label, marginBottom: 0 }}>{t('fields.products')}</span>
           <button
             type="button"
             onClick={addItem}
@@ -169,11 +170,11 @@ export default function NuevaOrdenCompraPage() {
               color: '#666',
             }}
           >
-            + Agregar
+            {t('fields.add')}
           </button>
         </div>
 
-        {items.map((it, idx) => {
+        {items.map(it => {
           const qty = parseInt(it.cantidad, 10) || 0
           const cost = parseFloat(it.costo) || 0
           const subtotal = qty * cost
@@ -189,18 +190,18 @@ export default function NuevaOrdenCompraPage() {
               }}
             >
               <div style={{ marginBottom: 10 }}>
-                <label style={label}>Producto / Etiqueta</label>
+                <label style={label}>{t('fields.productLabel')}</label>
                 <input
                   type="text"
                   value={it.producto}
                   onChange={e => updateItem(it.key, { producto: e.target.value })}
-                  placeholder="Nombre del producto"
+                  placeholder={t('fields.productPlaceholder')}
                   style={field}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <div>
-                  <label style={label}>Cantidad</label>
+                  <label style={label}>{t('fields.quantity')}</label>
                   <input
                     type="number"
                     min={1}
@@ -211,7 +212,7 @@ export default function NuevaOrdenCompraPage() {
                   />
                 </div>
                 <div>
-                  <label style={label}>Costo / ud</label>
+                  <label style={label}>{t('fields.unitCost')}</label>
                   <input
                     type="number"
                     min={0}
@@ -232,7 +233,7 @@ export default function NuevaOrdenCompraPage() {
                   alignItems: 'center',
                 }}
               >
-                <span>Subtotal: {fmtMoney(subtotal)}</span>
+                <span>{t('subtotal', { amount: fmtMoney(subtotal) })}</span>
                 {items.length > 1 && (
                   <button
                     type="button"
@@ -245,7 +246,7 @@ export default function NuevaOrdenCompraPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    Quitar
+                    {t('remove')}
                   </button>
                 )}
               </div>
@@ -264,7 +265,7 @@ export default function NuevaOrdenCompraPage() {
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 12, color: '#666' }}>Total de la orden</span>
+          <span style={{ fontSize: 12, color: '#666' }}>{t('orderTotal')}</span>
           <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg-0)' }}>{fmtMoney(total)}</span>
         </div>
 
@@ -289,7 +290,7 @@ export default function NuevaOrdenCompraPage() {
             opacity: submitting ? 0.7 : 1,
           }}
         >
-          {submitting ? 'Creando orden…' : 'Crear orden'}
+          {submitting ? t('creating') : t('create')}
         </button>
       </form>
     </div>

@@ -3,9 +3,10 @@ import * as winemaker from '@/lib/supabase/winemaker'
 import { tryWinemakerDocumentAction } from '@/lib/proof/winemaker-agent-actions'
 import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
 
-const TEST_USER_ID = 'cd459e32-718d-46da-9003-5b002c483cfd'
+const TEST_ORG_ID = '00000000-0000-4000-8000-000000000001'
 
-const baseCtx: WinemakerAgentContext = {
+const baseCtx: WinemakerAgentContext & { organization_id: string } = {
+  organization_id: TEST_ORG_ID,
   perfil: 'winemaker',
   proveedores: [],
   resumen: {
@@ -48,7 +49,7 @@ describe('tryWinemakerDocumentAction', () => {
   })
 
   it('returns null for unrelated queries', async () => {
-    const result = await tryWinemakerDocumentAction({} as never, 'c', 'hola', baseCtx)
+    const result = await tryWinemakerDocumentAction({} as never, 'hola', baseCtx)
     expect(result).toBeNull()
   })
 
@@ -61,14 +62,13 @@ describe('tryWinemakerDocumentAction', () => {
 
     const result = await tryWinemakerDocumentAction(
       {} as never,
-      TEST_USER_ID,
       'registra la factura LARSON IRRIGATION DE BAJA CALIFORNIA · Folio 20022 como gasto de bodega sin lote',
       baseCtx
     )
 
     expect(winemaker.registerDocumentOverheadCosts).toHaveBeenCalledWith(
       expect.anything(),
-      TEST_USER_ID,
+      TEST_ORG_ID,
       'doc-larson'
     )
     expect(result?.message).toContain('13')
@@ -84,7 +84,6 @@ describe('tryWinemakerDocumentAction', () => {
 
     const result = await tryWinemakerDocumentAction(
       {} as never,
-      TEST_USER_ID,
       'queda en bodega',
       {
         ...baseCtx,
@@ -110,7 +109,7 @@ describe('tryWinemakerDocumentAction', () => {
 
     expect(winemaker.registerDocumentOverheadCosts).toHaveBeenCalledWith(
       expect.anything(),
-      TEST_USER_ID,
+      TEST_ORG_ID,
       'doc-global'
     )
     expect(result?.message).toContain('9')

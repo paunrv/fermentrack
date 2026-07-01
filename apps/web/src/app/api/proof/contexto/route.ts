@@ -20,6 +20,7 @@ import { buildDistillerDisplayCards } from '@/lib/proof/distiller-display-cards'
 import { buildWinemakerDisplayCards } from '@/lib/proof/winemaker-display-cards'
 import { tryWinemakerDocumentAction } from '@/lib/proof/winemaker-agent-actions'
 import type { WinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
+import { getWinemakerTicketCopy } from '@/lib/i18n/winemaker-ticket-copy-server'
 import { narrowDistributorContextForQuery } from '@/lib/proof/toma-pedido-intent'
 import {
   isDistributorGuidedFlowQuery,
@@ -254,19 +255,14 @@ export async function POST(req: NextRequest) {
             selectedId: refreshEntityId ?? body.hints?.selectedId,
           })
         } else if (profileType === 'winemaker') {
+          const ticketCopy = await getWinemakerTicketCopy()
           datos = await loadIsolatedAgentContext(sb, userId, profileType, {
             ...body.hints,
             query: queryText,
             selectedId: body.hints?.selectedId,
           })
           const wmCtx = datos as unknown as WinemakerAgentContext
-          const docAction = await tryWinemakerDocumentAction(
-            sb,
-            userId,
-            queryText,
-            wmCtx,
-            conversation
-          )
+          const docAction = await tryWinemakerDocumentAction(sb, queryText, wmCtx, conversation)
           if (docAction) {
             console.log('[proof/contexto] winemaker document action', { query: queryText })
             sendAgentDone(send, {
@@ -280,7 +276,7 @@ export async function POST(req: NextRequest) {
             })
             return
           }
-          const quick = quickAnswer(queryText, profileType, datos)
+          const quick = quickAnswer(queryText, profileType, datos, { ticketCopy })
           if (quick) {
             console.log('[proof/contexto] quick answer winemaker', { query: queryText })
             sendAgentDone(send, {
@@ -422,7 +418,12 @@ export async function POST(req: NextRequest) {
             : PROOF_AI_SYSTEM
 
       if (queryText) {
-        const quick = quickAnswer(queryText, profileType, datos)
+        const quick = quickAnswer(
+          queryText,
+          profileType,
+          datos,
+          profileType === 'winemaker' ? { ticketCopy: await getWinemakerTicketCopy() } : undefined
+        )
         if (quick) {
           console.log('[proof/contexto] quick answer (full ctx)', { query: queryText })
           sendAgentDone(send, {

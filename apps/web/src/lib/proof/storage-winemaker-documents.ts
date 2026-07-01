@@ -11,25 +11,26 @@ export function inferWmDocumentType(mime: string, filename: string): WmDocumentT
   return 'other'
 }
 
+/** Path: `{organizationId}/tickets/{documentId}.ext` (legacy: userId folder still readable). */
 export function winemakerDocumentStoragePath(
-  userId: string,
+  organizationId: string,
   documentId: string,
   filename: string
 ): string {
   const base = filename.replace(/[^a-zA-Z0-9._-]/g, '_') || 'documento'
   const dot = base.lastIndexOf('.')
   const ext = dot >= 0 ? base.slice(dot + 1).toLowerCase() : 'bin'
-  return `${userId}/tickets/${documentId}.${ext}`
+  return `${organizationId}/tickets/${documentId}.${ext}`
 }
 
 export async function uploadWinemakerDocument(
   sb: SupabaseClient,
-  userId: string,
+  organizationId: string,
   documentId: string,
   file: Blob,
   opts: { contentType: string; filename: string }
 ): Promise<string> {
-  const path = winemakerDocumentStoragePath(userId, documentId, opts.filename)
+  const path = winemakerDocumentStoragePath(organizationId, documentId, opts.filename)
   const { error } = await sb.storage.from(WINEMAKER_DOCUMENTS_BUCKET).upload(path, file, {
     upsert: false,
     contentType: opts.contentType,
@@ -53,14 +54,14 @@ export async function signedWinemakerDocumentUrl(
 /** Dev/evaluación: borra documento, líneas (cascade) y archivo en storage. */
 export async function deleteWmDocument(
   sb: SupabaseClient,
-  userId: string,
+  organizationId: string,
   documentId: string
 ): Promise<void> {
   const { data: doc, error: findErr } = await sb
     .from('wm_documents')
     .select('id, storage_path')
     .eq('id', documentId)
-    .eq('clerk_id', userId)
+    .eq('organization_id', organizationId)
     .maybeSingle()
 
   if (findErr) throw findErr
@@ -79,7 +80,7 @@ export async function deleteWmDocument(
     .from('wm_documents')
     .delete()
     .eq('id', documentId)
-    .eq('clerk_id', userId)
+    .eq('organization_id', organizationId)
 
   if (delErr) {
     const pg = delErr as { code?: string; message?: string }

@@ -3,23 +3,33 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
+import { formatNumber } from '@/lib/i18n/format'
 import { useSupabase } from '@/hooks/useSupabase'
-import { useWinemakerScope } from '@/hooks/useWinemakerScope'
-import { WM_LOT_STATUS_LABEL, type WmWineLotRow } from '@/lib/proof/winemaker-types'
+import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
+import type { WmWineLotRow, WmWineLotStatus } from '@/lib/proof/winemaker-types'
 import { countWineLotsByStatus, fetchWineLots } from '@/lib/supabase/winemaker'
 
 export default function WinemakerLotesPage() {
+  const locale = useLocale() as AppLocale
+  const t = useTranslations('winemaker.lotes')
+  const tCommon = useTranslations('winemaker.common')
+  const tStatus = useTranslations('winemaker.lotStatus')
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, userId } = useWinemakerScope()
+  const { loading: scopeLoading, ok, organizationId } = useWinemakerRouteGuard()
   const [lotes, setLotes] = useState<WmWineLotRow[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!ok || !userId) return
+    if (!ok || !organizationId) return
     let cancelled = false
     setDataLoading(true)
-    Promise.all([countWineLotsByStatus(supabase, userId), fetchWineLots(supabase, userId)])
+    Promise.all([
+      countWineLotsByStatus(supabase, organizationId),
+      fetchWineLots(supabase, organizationId),
+    ])
       .then(([c, rows]) => {
         if (cancelled) return
         setCounts(c)
@@ -31,20 +41,18 @@ export default function WinemakerLotesPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, userId, supabase])
+  }, [ok, organizationId, supabase])
 
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>Cargando…</div>
+      <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>{tCommon('loading')}</div>
     )
   }
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 960 }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>Lotes de vino</h1>
-      <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14 }}>
-        Fermentación, envejecimiento y embotellado — cada lote con su historial.
-      </p>
+      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
+      <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14 }}>{t('subtitle')}</p>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
         {Object.entries(counts).map(([status, n]) =>
@@ -59,14 +67,17 @@ export default function WinemakerLotesPage() {
                 color: 'var(--fg-1)',
               }}
             >
-              {WM_LOT_STATUS_LABEL[status as keyof typeof WM_LOT_STATUS_LABEL] ?? status}: {n}
+              {t('statusCount', {
+                status: tStatus(status as WmWineLotStatus),
+                count: n,
+              })}
             </span>
           ) : null
         )}
       </div>
 
       {dataLoading ? (
-        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>Cargando lotes…</p>
+        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('loading')}</p>
       ) : lotes.length === 0 ? (
         <div
           style={{
@@ -78,8 +89,7 @@ export default function WinemakerLotesPage() {
             lineHeight: 1.6,
           }}
         >
-          Aún no hay lotes. Pregúntale a PROOF en Inicio o registra el primero cuando subas la
-          cosecha.
+          {t('empty')}
         </div>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
@@ -97,14 +107,16 @@ export default function WinemakerLotesPage() {
                 <div>
                   <strong>{l.name || l.lot_code}</strong>
                   <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
-                    {l.varietal || 'Sin varietal'} · {l.lot_code}
+                    {l.varietal || t('noVarietal')} · {l.lot_code}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: 13 }}>
-                  <div>{WM_LOT_STATUS_LABEL[l.status]}</div>
+                  <div>{tStatus(l.status)}</div>
                   {l.liters_initial != null ? (
                     <div style={{ color: 'var(--fg-2)' }}>
-                      {Number(l.liters_initial).toLocaleString('es-MX')} L
+                      {t('litersUnit', {
+                        amount: formatNumber(Number(l.liters_initial), locale),
+                      })}
                     </div>
                   ) : null}
                 </div>

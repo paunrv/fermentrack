@@ -1,21 +1,27 @@
 import { describe, expect, it } from 'vitest'
+import { inferTicketAllocationReplies } from '@/lib/proof/winemaker-ticket-copy'
+import { getDefaultWinemakerTicketCopy } from '@/lib/proof/winemaker-ticket-copy-default'
 import {
-  inferTicketAllocationReplies,
   parseWmTicketVisionJson,
   resolveTicketContentType,
   WINEMAKER_TICKET_ALLOCATION_REPLIES,
 } from '@/lib/proof/winemaker-ticket-vision'
 
 describe('inferTicketAllocationReplies', () => {
-  it('detects post-upload allocation question', () => {
+  const esCopy = getDefaultWinemakerTicketCopy()
+
+  it('detects post-upload allocation question in es-MX', () => {
     const replies = inferTicketAllocationReplies(
-      'Leí ticket.png: GLOBAL FUENTES — Botella. Total: $9,905. Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?'
+      'Leí ticket.png: GLOBAL FUENTES — Botella. Total: $9,905. Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?',
+      esCopy
     )
     expect(replies).toEqual(WINEMAKER_TICKET_ALLOCATION_REPLIES)
   })
 
   it('returns undefined for unrelated agent text', () => {
-    expect(inferTicketAllocationReplies('Registré $100 como gasto de bodega.')).toBeUndefined()
+    expect(
+      inferTicketAllocationReplies('Registré $100 como gasto de bodega.', esCopy)
+    ).toBeUndefined()
   })
 })
 

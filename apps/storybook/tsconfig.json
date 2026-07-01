@@ -1,0 +1,9 @@
+{
+  "extends": "@fermentrack/typescript-config/react-library.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true
+  },
+  "include": [".storybook/**/*", "stories/**/*"]
+}

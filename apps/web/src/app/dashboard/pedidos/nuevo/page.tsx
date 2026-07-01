@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchClients, fetchClientEtiquetas, fetchSkus, type Client, type SkuRow } from '@/lib/supabase'
 import {
   finalizarTomaPedido,
   type LineaToma,
-  type UnidadPedido,
 } from '@/lib/proof/toma-pedido-client'
 import { PedidoResumenCard } from '@/components/proof/PedidoResumenCard'
 
@@ -20,7 +20,7 @@ type LineaDraft = {
   key: string
   etiqueta: string
   cantidad: string
-  unidad: UnidadPedido
+  unidad: LineaToma['unidad']
 }
 
 type PedidoGuardado = {
@@ -51,6 +51,9 @@ function resolveClientByName(clients: Client[], name: string): Client | null {
 }
 
 export default function NuevoPedidoPage() {
+  const t = useTranslations('distributor.pedidos.nuevo')
+  const tUnits = useTranslations('distributor.pedidos.orderUnits')
+  const tCommon = useTranslations('distributor.common')
   const { scope } = useProfile()
   const supabase = useSupabase()
   const listRef = useRef<HTMLDivElement>(null)
@@ -169,8 +172,8 @@ export default function NuevoPedidoPage() {
       resetForm()
       scrollToBottom()
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'No se pudo guardar el pedido'
-      setError(msg.includes('fetch') ? `${msg} — revisa conexión o recarga la página` : msg)
+      const msg = e instanceof Error ? e.message : t('errors.save')
+      setError(msg.includes('fetch') ? t('errors.connection', { message: msg }) : msg)
     } finally {
       setSubmitting(false)
     }
@@ -198,25 +201,24 @@ export default function NuevoPedidoPage() {
           href="/dashboard/pedidos"
           style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
         >
-          ← Pedidos
+          {t('back')}
         </Link>
         <h1 style={{ margin: '8px 0 4px', fontSize: 22, fontWeight: 800, color: 'var(--fg-0)' }}>
-          Toma de pedidos
+          {t('title')}
         </h1>
         <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--fg-2)' }}>
-          Cliente, productos con cantidad y unidad, fecha de entrada y anticipo. Al finalizar baja a
-          la lista (últimos {MAX_STACK}).
+          {t('subtitle', { max: MAX_STACK })}
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span className="eyebrow">Cliente</span>
+            <span className="eyebrow">{t('client')}</span>
             <input
               type="text"
               list="clientes-datalist"
               value={clienteInput}
               onChange={e => setClienteInput(e.target.value)}
-              placeholder="Ej. Vinos Pijoan, Agua Mala…"
+              placeholder={t('clientPlaceholder')}
               style={inputLarge}
               autoComplete="off"
               autoFocus
@@ -230,7 +232,7 @@ export default function NuevoPedidoPage() {
 
           <div>
             <span className="eyebrow" style={{ display: 'block', marginBottom: 8 }}>
-              Etiqueta / producto
+              {t('productLine')}
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {lineas.map((l, idx) => (
@@ -248,7 +250,7 @@ export default function NuevoPedidoPage() {
                     list={idx === 0 ? 'etiquetas-datalist' : undefined}
                     value={l.etiqueta}
                     onChange={e => updateLinea(l.key, { etiqueta: e.target.value })}
-                    placeholder="Silvana, Mantis…"
+                    placeholder={t('productPlaceholder')}
                     style={inputSmall}
                     autoComplete="off"
                   />
@@ -262,19 +264,19 @@ export default function NuevoPedidoPage() {
                   />
                   <select
                     value={l.unidad}
-                    onChange={e => updateLinea(l.key, { unidad: e.target.value as UnidadPedido })}
+                    onChange={e => updateLinea(l.key, { unidad: e.target.value as LineaToma['unidad'] })}
                     style={inputSmall}
                   >
-                    <option value="latas">Latas</option>
-                    <option value="botellas">Botellas</option>
-                    <option value="cajas">Cajas</option>
+                    <option value="latas">{tUnits('latas')}</option>
+                    <option value="botellas">{tUnits('botellas')}</option>
+                    <option value="cajas">{tUnits('cajas')}</option>
                   </select>
                   <button
                     type="button"
                     onClick={() => removeLinea(l.key)}
                     disabled={lineas.length <= 1}
                     style={btnIcon}
-                    aria-label="Quitar línea"
+                    aria-label={t('removeLine')}
                   >
                     ×
                   </button>
@@ -287,12 +289,12 @@ export default function NuevoPedidoPage() {
               ))}
             </datalist>
             <button type="button" onClick={addLinea} style={btnLink}>
-              + Otra línea de producto
+              {t('addLine')}
             </button>
           </div>
 
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <span className="eyebrow">Fecha de entrada del pedido</span>
+            <span className="eyebrow">{t('deliveryDate')}</span>
             <input
               type="date"
               value={fechaEntrega}
@@ -320,11 +322,11 @@ export default function NuevoPedidoPage() {
                 }}
                 style={{ width: 18, height: 18, accentColor: 'var(--gold)' }}
               />
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)' }}>Anticipo</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)' }}>{t('advance')}</span>
             </label>
             {anticipo && (
               <label style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 28 }}>
-                <span className="eyebrow">Monto del anticipo</span>
+                <span className="eyebrow">{t('advanceAmount')}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className="mono" style={{ fontSize: 16, color: 'var(--fg-2)' }}>
                     $
@@ -354,7 +356,7 @@ export default function NuevoPedidoPage() {
               opacity: submitting || !canSubmit || !scope ? 0.5 : 1,
             }}
           >
-            {submitting ? 'Guardando…' : 'Finalizar pedido'}
+            {submitting ? tCommon('saving') : t('finalize')}
           </button>
         </div>
 
@@ -382,7 +384,7 @@ export default function NuevoPedidoPage() {
               paddingTop: 48,
             }}
           >
-            Los pedidos finalizados aparecen aquí abajo.
+            {t('emptyStack')}
           </p>
         ) : (
           <div

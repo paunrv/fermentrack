@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { requireClerkUserId } from '@/lib/proof/auth-api'
 import { deleteWmDocument } from '@/lib/proof/storage-winemaker-documents'
+import { fetchWinemakerOrganizationIdForUser } from '@/lib/supabase/organization'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 
 export const runtime = 'nodejs'
@@ -22,7 +23,11 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
 
   try {
     const { sb } = await createSupabaseForProofApi()
-    await deleteWmDocument(sb, clerkId, id)
+    const organizationId = await fetchWinemakerOrganizationIdForUser(sb, clerkId)
+    if (!organizationId) {
+      return Response.json({ error: 'Organización winemaker no encontrada' }, { status: 403 })
+    }
+    await deleteWmDocument(sb, organizationId, id)
     return Response.json({ ok: true, documentId: id })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'No se pudo eliminar el documento'

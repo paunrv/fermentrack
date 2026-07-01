@@ -106,9 +106,8 @@ export type WinemakerDocumentActionResult = {
 
 export async function tryWinemakerDocumentAction(
   sb: SupabaseClient,
-  clerkId: string,
   query: string,
-  ctx: WinemakerAgentContext,
+  ctx: WinemakerAgentContext & { organization_id?: string | null },
   conversation?: { role: string; content: string }[]
 ): Promise<WinemakerDocumentActionResult | null> {
   const q = norm(query)
@@ -137,7 +136,19 @@ export async function tryWinemakerDocumentAction(
   }
 
   try {
-    const { total, vendor } = await registerDocumentOverheadCosts(sb, clerkId, documentId)
+    const organizationId = ctx.organization_id
+    if (!organizationId) {
+      return {
+        message: 'No encontré la bodega activa. Recarga la página e intenta de nuevo.',
+        accionLabel: 'Ver documentos',
+        accionHref: '/dashboard/winemaker/documentos',
+      }
+    }
+    const { total, vendor } = await registerDocumentOverheadCosts(
+      sb,
+      organizationId,
+      documentId
+    )
     return {
       message: `Registré ${fmtMoney(total)} de ${vendor} como gasto de bodega (sin lote). Ya aparece en tus gastos.`,
       accionLabel: 'Ver gastos',

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useTranslations } from 'next-intl'
 
 export type BottomNavItemId = 'inicio' | 'lotes' | 'agenda' | 'chat' | 'tareas' | 'mas'
 
@@ -10,14 +11,14 @@ export type BottomNavProfile = 'winemaker' | 'bodega'
 
 export const BOTTOM_NAV_ITEMS: Record<
   BottomNavItemId,
-  { emoji: string; label: string; href: string }
+  { emoji: string; labelKey: BottomNavItemId; href: string }
 > = {
-  inicio: { emoji: '🏠', label: 'Inicio', href: '/dashboard' },
-  lotes: { emoji: '🍷', label: 'Lotes', href: '/dashboard/winemaker/lotes' },
-  agenda: { emoji: '📅', label: 'Agenda', href: '/dashboard/winemaker/agenda' },
-  chat: { emoji: '💬', label: 'Chat', href: '/dashboard/agente' },
-  tareas: { emoji: '✅', label: 'Tareas', href: '/bodega' },
-  mas: { emoji: '⋯', label: 'Más', href: '/dashboard/settings' },
+  inicio: { emoji: '🏠', labelKey: 'inicio', href: '/dashboard' },
+  lotes: { emoji: '🍷', labelKey: 'lotes', href: '/dashboard/winemaker/lotes' },
+  agenda: { emoji: '📅', labelKey: 'agenda', href: '/dashboard/winemaker/agenda' },
+  chat: { emoji: '💬', labelKey: 'chat', href: '/dashboard/agente' },
+  tareas: { emoji: '✅', labelKey: 'tareas', href: '/bodega' },
+  mas: { emoji: '⋯', labelKey: 'mas', href: '/dashboard/settings' },
 }
 
 const DEFAULT_SLOTS: Record<BottomNavProfile, BottomNavItemId[]> = {
@@ -27,22 +28,31 @@ const DEFAULT_SLOTS: Record<BottomNavProfile, BottomNavItemId[]> = {
 
 export type MasMenuItem = {
   emoji: string
-  label: string
+  labelKey: keyof typeof MAS_LABEL_KEYS
   href: string
   ownerOnly?: boolean
 }
 
+const MAS_LABEL_KEYS = {
+  equipo: 'equipo',
+  agenda: 'agenda',
+  proveedores: 'proveedores',
+  documentos: 'documentos',
+  gastos: 'gastos',
+  ajustes: 'ajustes',
+} as const
+
 export const WINEMAKER_MAS_ITEMS: MasMenuItem[] = [
-  { emoji: '👥', label: 'Equipo', href: '/dashboard/equipo', ownerOnly: true },
-  { emoji: '📅', label: 'Agenda', href: '/dashboard/winemaker/agenda' },
-  { emoji: '🤝', label: 'Proveedores', href: '/dashboard/winemaker/proveedores' },
-  { emoji: '📄', label: 'Documentos', href: '/dashboard/winemaker/documentos' },
-  { emoji: '💳', label: 'Gastos', href: '/dashboard/winemaker/gastos' },
-  { emoji: '⚙️', label: 'Ajustes', href: '/dashboard/settings' },
+  { emoji: '👥', labelKey: 'equipo', href: '/dashboard/equipo', ownerOnly: true },
+  { emoji: '📅', labelKey: 'agenda', href: '/dashboard/winemaker/agenda' },
+  { emoji: '🤝', labelKey: 'proveedores', href: '/dashboard/winemaker/proveedores' },
+  { emoji: '📄', labelKey: 'documentos', href: '/dashboard/winemaker/documentos' },
+  { emoji: '💳', labelKey: 'gastos', href: '/dashboard/winemaker/gastos' },
+  { emoji: '⚙️', labelKey: 'ajustes', href: '/dashboard/settings' },
 ]
 
 export const BODEGA_MAS_ITEMS: MasMenuItem[] = [
-  { emoji: '⚙️', label: 'Ajustes', href: '/dashboard/settings' },
+  { emoji: '⚙️', labelKey: 'ajustes', href: '/dashboard/settings' },
 ]
 
 const STORAGE_PREFIX = 'proof_bottom_nav_'
@@ -118,6 +128,9 @@ export function BottomNav({
   fixed?: boolean
   showEquipo?: boolean
 }) {
+  const t = useTranslations('dashboard.bottomNav')
+  const tItems = useTranslations('dashboard.bottomNav.items')
+  const tMas = useTranslations('dashboard.bottomNav.mas')
   const pathname = usePathname()
   const { slots } = useBottomNavSlots(profile)
   const [leftItems, rightItems] = useMemo(() => [slots.slice(0, 2), slots.slice(2, 4)], [slots])
@@ -126,6 +139,7 @@ export function BottomNav({
 
   function renderItem(id: BottomNavItemId) {
     const item = BOTTOM_NAV_ITEMS[id]
+    const label = tItems(id)
     const active =
       id === 'mas' ? isMasActive(pathname, masItems) : isActivePath(pathname, item.href)
     const isMas = id === 'mas'
@@ -154,22 +168,22 @@ export function BottomNav({
         <button
           key={id}
           type="button"
-          aria-label={item.label}
+          aria-label={label}
           aria-expanded={masOpen}
           aria-current={active ? 'page' : undefined}
           onClick={() => setMasOpen(v => !v)}
           style={style}
         >
           <span style={{ fontSize: 18, lineHeight: 1, opacity: active || masOpen ? 1 : 0.72 }}>{item.emoji}</span>
-          <span style={{ lineHeight: 1 }}>{item.label}</span>
+          <span style={{ lineHeight: 1 }}>{label}</span>
         </button>
       )
     }
 
     return (
-      <Link key={id} href={item.href} aria-label={item.label} aria-current={active ? 'page' : undefined} style={style}>
+      <Link key={id} href={item.href} aria-label={label} aria-current={active ? 'page' : undefined} style={style}>
         <span style={{ fontSize: 16, lineHeight: 1, opacity: active ? 1 : 0.72 }}>{item.emoji}</span>
-        <span style={{ lineHeight: 1 }}>{item.label}</span>
+        <span style={{ lineHeight: 1 }}>{label}</span>
       </Link>
     )
   }
@@ -177,7 +191,7 @@ export function BottomNav({
   return (
     <>
     <nav
-      aria-label="Navegación principal"
+      aria-label={t('main')}
       className={`proof-bottom-nav-bar proof-mobile-only${fixed ? ' proof-bottom-nav-bar--fixed' : ''}`}
     >
       {leftItems.map(renderItem)}
@@ -196,7 +210,7 @@ export function BottomNav({
         <button
           type="button"
           className="proof-bottom-nav-fab"
-          aria-label={captureOpen ? 'Cerrar captura' : 'Capturar'}
+          aria-label={captureOpen ? t('closeCapture') : t('capture')}
           aria-expanded={captureOpen}
           onClick={onCaptureToggle}
           style={{
@@ -230,7 +244,7 @@ export function BottomNav({
       <>
         <button
           type="button"
-          aria-label="Cerrar menú"
+          aria-label={t('closeMenu')}
           className="proof-mobile-only"
           onClick={() => setMasOpen(false)}
           style={{
@@ -244,7 +258,7 @@ export function BottomNav({
         />
         <div
           role="dialog"
-          aria-label="Más secciones"
+          aria-label={t('moreSections')}
           className="proof-mobile-only"
           style={{
             position: 'fixed',
@@ -271,7 +285,7 @@ export function BottomNav({
               <span className="proof-bottom-nav-mas-row__emoji" aria-hidden>
                 {item.emoji}
               </span>
-              <span className="proof-bottom-nav-mas-row__label">{item.label}</span>
+              <span className="proof-bottom-nav-mas-row__label">{tMas(item.labelKey)}</span>
             </Link>
           ))}
         </div>

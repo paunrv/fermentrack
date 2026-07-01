@@ -274,81 +274,21 @@ export function isTicketVisionClassified(
   return hasSupplier || hasUsefulLines
 }
 
-export type ProofSuggestedReply = {
-  label: string
-  message: string
-}
+export type { ProofSuggestedReply } from '@/lib/proof/winemaker-ticket-copy'
+import type { ProofSuggestedReply } from '@/lib/proof/winemaker-ticket-copy'
 
+export {
+  buildTicketUploadMessage,
+  createWinemakerTicketCopy,
+  inferTicketAllocationReplies,
+  type WinemakerTicketCopy,
+} from '@/lib/proof/winemaker-ticket-copy'
+
+/** @deprecated Use createWinemakerTicketCopy — kept for legacy tests */
 export const WINEMAKER_TICKET_ALLOCATION_REPLIES: ProofSuggestedReply[] = [
   { label: 'Queda en bodega', message: 'queda en bodega' },
   { label: 'Asignar a lote', message: 'asignar a un lote' },
 ]
-
-export function inferTicketAllocationReplies(content: string): ProofSuggestedReply[] | undefined {
-  const t = content
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-  if (t.includes('asignamos a un lote') && t.includes('queda en bodega')) {
-    return WINEMAKER_TICKET_ALLOCATION_REPLIES
-  }
-  return undefined
-}
-
-export function buildTicketUploadMessage(input: {
-  filename: string
-  contentType: string
-  visionStatus: WmTicketVisionStatus
-  classified: boolean
-  supplierName: string | null
-  summaryLabel: string
-  total?: string
-}): { mensaje: string; agentQuery: string; suggestedReplies?: ProofSuggestedReply[] } {
-  const { filename, contentType, visionStatus, classified, supplierName, summaryLabel, total = '' } =
-    input
-
-  if (visionStatus === 'skipped_pdf' || contentType === 'application/pdf') {
-    return {
-      mensaje: `Guardé ${filename}. Los PDF aún no se leen solos — súbelo como foto o dime proveedor, insumos y monto.${total}`,
-      agentQuery: `acabo de subir el PDF ${filename}, ayúdame a registrarlo`,
-    }
-  }
-
-  if (visionStatus === 'no_api_key') {
-    return {
-      mensaje: `Guardé ${filename}, pero la visión no está configurada (ANTHROPIC_API_KEY). Configúrala para leer tickets automáticamente.`,
-      agentQuery: `no pude leer ${filename} automáticamente, ¿cómo lo registro?`,
-    }
-  }
-
-  if (visionStatus === 'api_error' || visionStatus === 'parse_error') {
-    return {
-      mensaje: `Guardé ${filename}, pero la lectura automática falló. Dime proveedor, insumos (uva, corcho, botella…) y monto para completarlo.`,
-      agentQuery: `la lectura de ${filename} falló, ayúdame a registrar proveedor e insumos`,
-    }
-  }
-
-  if (visionStatus === 'skipped_not_image') {
-    return {
-      mensaje: `Guardé ${filename}. Solo leemos imágenes de tickets por ahora — usa foto o captura de pantalla.`,
-      agentQuery: `acabo de subir ${filename}, ¿cómo lo registro?`,
-    }
-  }
-
-  if (!classified) {
-    return {
-      mensaje: `Guardé ${filename}, pero no extraje proveedor ni insumos. Dime quién vendió, qué compraste (uva, corcho, botella…) y el monto.`,
-      agentQuery: `ayúdame a completar el ticket ${filename} con proveedor e insumos`,
-    }
-  }
-
-  const vendor = supplierName?.trim() || 'proveedor sin nombre'
-  return {
-    mensaje: `Leí ${filename}: ${vendor}${summaryLabel ? ` — ${summaryLabel}` : ''}.${total} Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?`,
-    agentQuery: `acabo de subir la factura de ${vendor} (${summaryLabel}), ¿cómo lo registro?`,
-    suggestedReplies: WINEMAKER_TICKET_ALLOCATION_REPLIES,
-  }
-}
 
 function legacyVisionToResult(parsed: Record<string, unknown>): WmTicketVisionResult | null {
   const vendor = String(parsed.vendor ?? parsed.supplier_name ?? '').trim()

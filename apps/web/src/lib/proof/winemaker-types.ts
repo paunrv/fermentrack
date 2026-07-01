@@ -51,7 +51,7 @@ export type WmEventType =
 
 export type WmWineLotRow = {
   id: string
-  clerk_id: string
+  organization_id: string
   lot_code: string
   name: string
   varietal: string
@@ -65,7 +65,7 @@ export type WmWineLotRow = {
 
 export type WmSupplierRow = {
   id: string
-  clerk_id: string
+  organization_id: string
   name: string
   name_normalized: string
   rfc: string
@@ -80,7 +80,7 @@ export type WmSupplierRow = {
 
 export type WmDocumentLineRow = {
   id: string
-  clerk_id: string
+  organization_id: string
   document_id: string
   supplier_id: string | null
   supply_kind: WmSupplyKind
@@ -100,7 +100,7 @@ export type WmDocumentLineRow = {
 
 export type WmDocumentRow = {
   id: string
-  clerk_id: string
+  organization_id: string
   document_type: WmDocumentType
   storage_path: string | null
   original_filename: string
@@ -128,7 +128,7 @@ export type WmDocumentRow = {
 
 export type WmProductionCostRow = {
   id: string
-  clerk_id: string
+  organization_id: string
   lot_id: string | null
   document_id: string | null
   supplier_id: string | null

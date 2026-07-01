@@ -34,8 +34,8 @@ export function summarizeTicketLines(lines: WmTicketLineVision[]): string {
 
 export async function processTicketUpload(
   sb: SupabaseClient,
-  clerkId: string,
   input: {
+    organizationId: string
     documentId: string
     documentType: WmDocumentRow['document_type']
     storagePath: string
@@ -48,6 +48,7 @@ export async function processTicketUpload(
     documentDate?: string
   }
 ): Promise<ProcessTicketUploadResult> {
+  const { organizationId } = input
   const vision = input.vision
   let supplierName = vision?.supplier_name?.trim() ?? ''
   if (
@@ -58,7 +59,7 @@ export async function processTicketUpload(
     supplierName = ''
   }
   const supplier = supplierName
-    ? await findOrCreateWmSupplier(sb, clerkId, supplierName, {
+    ? await findOrCreateWmSupplier(sb, organizationId, supplierName, {
         rfc: vision?.supplier_rfc,
         email: vision?.supplier_email,
         address: vision?.supplier_address,
@@ -89,7 +90,7 @@ export async function processTicketUpload(
       ? vision.document_date
       : new Date().toISOString().slice(0, 10))
 
-  const doc = await createWmDocument(sb, clerkId, {
+  const doc = await createWmDocument(sb, organizationId, {
     id: input.documentId,
     document_type: input.documentType,
     storage_path: input.storagePath,
@@ -128,7 +129,7 @@ export async function processTicketUpload(
 
   const insertedLines = await insertWmDocumentLines(
     sb,
-    clerkId,
+    organizationId,
     doc.id,
     lines.map((line, index) => ({
       supplier_id: supplier?.id ?? null,
@@ -147,7 +148,7 @@ export async function processTicketUpload(
     }))
   )
 
-  await recordWmEvent(sb, clerkId, {
+  await recordWmEvent(sb, organizationId, {
     event_type: 'document_uploaded',
     document_id: doc.id,
     payload: {

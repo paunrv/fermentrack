@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { LineaToma } from '@/lib/proof/toma-pedido-client'
 import { fmtMoney } from '@/lib/proof/format'
 
@@ -14,12 +15,6 @@ type Props = {
   itemsGuardados: number
 }
 
-const UNIDAD_LABEL: Record<LineaToma['unidad'], string> = {
-  latas: 'latas',
-  botellas: 'botellas',
-  cajas: 'cajas',
-}
-
 export function PedidoResumenCard({
   numero,
   clienteName,
@@ -30,6 +25,12 @@ export function PedidoResumenCard({
   estado,
   itemsGuardados,
 }: Props) {
+  const t = useTranslations('distributor.pedidos.resumenCard')
+  const tUnits = useTranslations('distributor.pedidos.orderUnits')
+  const tEstado = useTranslations('distributor.pedidoEstado')
+
+  const estadoLabel = (tEstado as (key: string) => string)(estado) || estado
+
   return (
     <article
       style={{
@@ -55,10 +56,10 @@ export function PedidoResumenCard({
           </div>
           <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--fg-0)' }}>{clienteName}</div>
           <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 4 }}>
-            Entrega {fechaEntrega}
+            {t('delivery')} {fechaEntrega}
             {anticipo && (
               <span style={{ marginLeft: 8, color: 'var(--warn)', fontWeight: 600 }}>
-                · Anticipo
+                · {t('advance')}
                 {anticipoMonto != null && anticipoMonto > 0 ? ` ${fmtMoney(anticipoMonto)}` : ''}
               </span>
             )}
@@ -73,7 +74,7 @@ export function PedidoResumenCard({
             color: estado === 'confirmado' ? 'var(--ok)' : 'var(--warn)',
           }}
         >
-          {estado}
+          {estadoLabel}
         </span>
       </header>
 
@@ -91,7 +92,7 @@ export function PedidoResumenCard({
           >
             <span style={{ fontWeight: 600, fontSize: 14 }}>{l.etiqueta}</span>
             <span className="mono" style={{ fontSize: 13, color: 'var(--fg-2)' }}>
-              {l.cantidad} {UNIDAD_LABEL[l.unidad]}
+              {l.cantidad} {tUnits(l.unidad)}
             </span>
           </li>
         ))}
@@ -109,10 +110,10 @@ export function PedidoResumenCard({
         }}
       >
         {itemsGuardados === 0 ? (
-          <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>Registrado por etiqueta</span>
+          <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{t('byLabel')}</span>
         ) : (
           <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>
-            {itemsGuardados} línea(s) en catálogo
+            {t('catalogLines', { count: itemsGuardados })}
           </span>
         )}
       </footer>

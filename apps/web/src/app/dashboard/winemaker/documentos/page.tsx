@@ -3,23 +3,39 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
+import { formatCurrencyMxn } from '@/lib/i18n/format'
 import { useSupabase } from '@/hooks/useSupabase'
-import { useWinemakerScope } from '@/hooks/useWinemakerScope'
-import type { WmDocumentRow } from '@/lib/proof/winemaker-types'
-import { formatSupplyLineLabel } from '@/lib/proof/wm-supply-taxonomy'
+import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
+import type { WmSupplyKind } from '@/lib/proof/wm-supply-taxonomy'
+import type { WmDocumentRow, WmDocumentType } from '@/lib/proof/winemaker-types'
 import { fetchDocuments } from '@/lib/supabase/winemaker'
 
 export default function WinemakerDocumentosPage() {
+  const locale = useLocale() as AppLocale
+  const t = useTranslations('winemaker.documentos')
+  const tCommon = useTranslations('winemaker.common')
+  const tSupply = useTranslations('winemaker.supplyKind')
+  const tDocType = useTranslations('winemaker.documentType')
   const supabase = useSupabase()
-  const { loading: scopeLoading, ok, userId } = useWinemakerScope()
+  const { loading: scopeLoading, ok, organizationId } = useWinemakerRouteGuard()
   const [docs, setDocs] = useState<WmDocumentRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
 
+  function supplyLineLabel(kind: WmSupplyKind, varietal?: string): string {
+    const base = tSupply(kind)
+    if (kind === 'uva' && varietal?.trim()) {
+      return `${base} · ${varietal.trim()}`
+    }
+    return base
+  }
+
   useEffect(() => {
-    if (!ok || !userId) return
+    if (!ok || !organizationId) return
     let cancelled = false
     setDataLoading(true)
-    fetchDocuments(supabase, userId, { limit: 100, withLines: true })
+    fetchDocuments(supabase, organizationId, { limit: 100, withLines: true })
       .then(rows => {
         if (!cancelled) setDocs(rows)
       })
@@ -29,23 +45,21 @@ export default function WinemakerDocumentosPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, userId, supabase])
+  }, [ok, organizationId, supabase])
 
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>Cargando…</div>
+      <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>{tCommon('loading')}</div>
     )
   }
 
   return (
     <div style={{ padding: '24px 28px', maxWidth: 960 }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>Documentos</h1>
-      <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14 }}>
-        Tickets, facturas, XML y análisis de laboratorio — evidencia inmutable de tu operación.
-      </p>
+      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
+      <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14 }}>{t('subtitle')}</p>
 
       {dataLoading ? (
-        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>Cargando documentos…</p>
+        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('loading')}</p>
       ) : docs.length === 0 ? (
         <div
           style={{
@@ -57,8 +71,7 @@ export default function WinemakerDocumentosPage() {
             lineHeight: 1.6,
           }}
         >
-          Sin documentos aún. Sube un ticket desde PROOF — clasificamos proveedor e insumos
-          (uva, corchos, botellas…).
+          {t('empty')}
         </div>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
@@ -74,14 +87,14 @@ export default function WinemakerDocumentosPage() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                 <div>
-                  <strong>{d.vendor || d.original_filename || d.document_type}</strong>
+                  <strong>{d.vendor || d.original_filename || tDocType(d.document_type as WmDocumentType)}</strong>
                   <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
-                    {d.document_type}
+                    {tDocType(d.document_type as WmDocumentType)}
                     {typeof d.parsed_json === 'object' &&
                     d.parsed_json &&
                     'total' in d.parsed_json &&
                     d.parsed_json.total != null
-                      ? ` · $${Number(d.parsed_json.total).toLocaleString('es-MX')}`
+                      ? ` · ${formatCurrencyMxn(Number(d.parsed_json.total), locale)}`
                       : ''}
                   </div>
                 </div>
@@ -90,7 +103,7 @@ export default function WinemakerDocumentosPage() {
               {(d.wm_document_lines?.length ?? 0) > 0 ? (
                 <div style={{ fontSize: 12, color: 'var(--fg-2)', marginTop: 8 }}>
                   {d.wm_document_lines!
-                    .map(l => formatSupplyLineLabel(l.supply_kind, l.varietal))
+                    .map(l => supplyLineLabel(l.supply_kind, l.varietal))
                     .join(' · ')}
                 </div>
               ) : null}

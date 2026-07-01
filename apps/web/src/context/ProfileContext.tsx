@@ -71,6 +71,10 @@ function writeStoredType(type: ExtraProfile) {
   localStorage.setItem(STORAGE_KEY, type)
 }
 
+export function persistActiveProfileType(type: ExtraProfile) {
+  writeStoredType(type)
+}
+
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user, isLoaded, isSignedIn } = useAuth()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])

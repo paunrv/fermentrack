@@ -5,23 +5,19 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { refreshRecepcionFotoUrlsAction } from '@/app/actions/recepciones'
 import { fetchRecepcionRemisionDetalle, type RecepcionRemisionDetalle } from '@/lib/supabase'
 import { fmtBottles } from '@/lib/proof/format'
-
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
+import { formatDate } from '@/lib/i18n/format'
 
 export default function RemisionDetallePage() {
+  const t = useTranslations('distributor.remisionesDetail')
+  const tCommon = useTranslations('distributor.common')
+  const locale = useLocale() as AppLocale
   const params = useParams()
   const id = String(params.id ?? '')
   const { scope } = useProfile()
@@ -45,7 +41,7 @@ export default function RemisionDetallePage() {
             if (!cancelled) setFotos(signed)
           } catch (e) {
             if (!cancelled) {
-              setFotoError(e instanceof Error ? e.message : 'No se pudieron cargar fotos')
+              setFotoError(e instanceof Error ? e.message : t('photoError'))
               setFotos(data.foto_urls)
             }
           }
@@ -62,19 +58,29 @@ export default function RemisionDetallePage() {
   const totalBts =
     rec?.items_recepcion?.reduce((a, it) => a + (it.cantidad_recibida || 0), 0) ?? 0
 
+  function fmtDateTime(iso: string): string {
+    return formatDate(new Date(iso), locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
       <Link
         href="/dashboard/remisiones"
         style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
       >
-        ← Remisiones
+        {t('back')}
       </Link>
 
       {loading ? (
-        <p style={{ marginTop: 24, color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</p>
+        <p style={{ marginTop: 24, color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
       ) : !rec ? (
-        <p style={{ marginTop: 24, color: 'var(--crit)', fontSize: 13 }}>Recepción no encontrada.</p>
+        <p style={{ marginTop: 24, color: 'var(--crit)', fontSize: 13 }}>{t('notFound')}</p>
       ) : (
         <>
           <header style={{ margin: '16px 0 24px' }}>
@@ -85,14 +91,15 @@ export default function RemisionDetallePage() {
               {rec.productor}
             </h1>
             <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
-              {fmtDateTime(rec.fecha_recepcion)} · {fmtBottles(totalBts)} botellas · {rec.estado}
+              {fmtDateTime(rec.fecha_recepcion)} · {t('bottlesReceived', { count: fmtBottles(totalBts) })} ·{' '}
+              {rec.estado}
             </p>
           </header>
 
           {fotos.length > 0 && (
             <section style={{ marginBottom: 24 }}>
               <h2 className="eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 10 }}>
-                Evidencia fotográfica
+                {t('photoEvidence')}
               </h2>
               {fotoError && (
                 <p style={{ fontSize: 11, color: 'var(--warn)', marginBottom: 8 }}>{fotoError}</p>
@@ -114,7 +121,7 @@ export default function RemisionDetallePage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={url}
-                      alt={`Evidencia ${i + 1}`}
+                      alt={t('photoAlt', { index: i + 1 })}
                       style={{ width: '100%', maxHeight: 360, objectFit: 'contain', background: '#000' }}
                     />
                   </a>
@@ -123,21 +130,26 @@ export default function RemisionDetallePage() {
             </section>
           )}
 
-          <Block title="Ítems recibidos">
+          <Block title={t('itemsReceived')}>
             {rec.items_recepcion?.length ? (
               rec.items_recepcion.map(it => (
                 <Line
                   key={it.id}
-                  left={it.skus?.nombre || 'SKU'}
-                  right={`${fmtBottles(it.cantidad_recibida)} bts${it.lote ? ` · lote ${it.lote}` : ''}`}
+                  left={it.skus?.nombre || t('skuFallback')}
+                  right={
+                    t('itemLine', {
+                      qty: fmtBottles(it.cantidad_recibida),
+                      lot: it.lote ? t('lotSuffix', { lot: it.lote }) : '',
+                    })
+                  }
                 />
               ))
             ) : (
-              <Empty>Sin ítems registrados.</Empty>
+              <Empty>{t('emptyItems')}</Empty>
             )}
           </Block>
 
-          <Block title="Discrepancias">
+          <Block title={t('discrepancies')}>
             {rec.discrepancias?.length ? (
               rec.discrepancias.map(d => (
                 <div
@@ -155,7 +167,7 @@ export default function RemisionDetallePage() {
                 </div>
               ))
             ) : (
-              <Empty>Sin discrepancias documentadas.</Empty>
+              <Empty>{t('emptyDiscrepancies')}</Empty>
             )}
           </Block>
         </>
@@ -196,7 +208,9 @@ function Line({ left, right }: { left: string; right: string }) {
       }}
     >
       <span style={{ color: 'var(--fg-0)' }}>{left}</span>
-      <span className="mono" style={{ color: 'var(--fg-3)', fontSize: 11 }}>{right}</span>
+      <span className="mono" style={{ color: 'var(--fg-3)', fontSize: 11 }}>
+        {right}
+      </span>
     </div>
   )
 }

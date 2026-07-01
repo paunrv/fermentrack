@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -59,6 +60,8 @@ function CanvasDivider({ label }: { label: string }) {
 }
 
 export default function CreditoPage() {
+  const t = useTranslations('distributor.credito')
+  const tCommon = useTranslations('distributor.common')
   const { scope, profilesResolved, activeProfile, loading: profileLoading } = useProfile()
   const supabase = useSupabase()
   const accent = getProfileTheme(activeProfile?.profile_type_v2).accent
@@ -88,7 +91,7 @@ export default function CreditoPage() {
       setDeudas(d)
     } catch (err) {
       console.error('[credito] fetchCreditoCxCResumen / fetchDeudasPorCliente', err)
-      setLoadError(err instanceof Error ? err.message : 'Error al cargar crédito')
+      setLoadError(err instanceof Error ? err.message : t('fetchError'))
     } finally {
       setLoading(false)
     }
@@ -138,7 +141,10 @@ export default function CreditoPage() {
       console.error('[credito] redactar-cobro', err)
       setCobroModal({
         cliente: nombre,
-        mensaje: `Hola ${nombre}, te escribo por el saldo pendiente de ${fmtMoney(cliente.saldo_pendiente)}. ¿Podemos coordinar pago esta semana?`,
+        mensaje: t('collection.fallbackMessage', {
+          name: nombre,
+          amount: fmtMoney(cliente.saldo_pendiente),
+        }),
         loading: false,
       })
     }
@@ -164,16 +170,14 @@ export default function CreditoPage() {
     <div style={{ paddingBottom: 100, color: 'var(--fg-0)' }}>
       <div style={{ padding: '24px 24px 8px' }}>
         <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--fg-0)' }}>
-          Crédito
+          {t('title')}
         </h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>
-          Cuentas por cobrar desde pedidos entregados
-        </p>
+        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>{t('subtitle')}</p>
       </div>
 
       {profileBlocked && (
         <div style={{ margin: '0 24px 16px', padding: 16, fontSize: 13, color: '#888' }}>
-          No hay perfil activo. Selecciona un perfil en ajustes.
+          {t('noProfile')}
         </div>
       )}
 
@@ -190,7 +194,7 @@ export default function CreditoPage() {
             lineHeight: 1.5,
           }}
         >
-          No pude cargar crédito: {loadError}
+          {t('loadError', { error: loadError })}
         </div>
       )}
 
@@ -219,17 +223,17 @@ export default function CreditoPage() {
         {!showSkeleton && !profileBlocked && resumen && (
           <>
             <KpiCard
-              label="Por cobrar"
+              label={t('kpis.toCollect')}
               value={fmtMoney(resumen.totalPorCobrar)}
               tone={resumen.totalPorCobrar > 0 ? accent : 'var(--fg-0)'}
             />
             <KpiCard
-              label="Clientes vencidos"
+              label={t('kpis.overdueClients')}
               value={String(resumen.clientesVencidos)}
               tone={resumen.clientesVencidos > 0 ? '#E24B4A' : '#4CAF7D'}
             />
             <KpiCard
-              label="Cobrado este mes"
+              label={t('kpis.collectedThisMonth')}
               value={fmtMoney(resumen.cobradoEsteMes)}
               tone="#4CAF7D"
             />
@@ -240,8 +244,8 @@ export default function CreditoPage() {
       <CanvasDivider
         label={
           showSkeleton && !profileBlocked
-            ? 'Cargando…'
-            : `${deudas.length} cliente${deudas.length !== 1 ? 's' : ''} con saldo`
+            ? tCommon('loading')
+            : t('dividerClients', { count: deudas.length })
         }
       />
 
@@ -269,7 +273,7 @@ export default function CreditoPage() {
 
         {!showSkeleton && !profileBlocked && deudas.length === 0 && (
           <p style={{ gridColumn: '1 / -1', color: '#AAA', fontSize: 13, margin: 0 }}>
-            Sin saldos pendientes de clientes.
+            {t('emptyBalances')}
           </p>
         )}
 
@@ -287,11 +291,13 @@ export default function CreditoPage() {
       </div>
 
       <p style={{ padding: '0 24px', margin: 0, fontSize: 11, color: '#AAA' }}>
-        Deudas a productores en{' '}
-        <Link href="/dashboard/productores" style={{ color: accent }}>
-          Productores
-        </Link>
-        .
+        {t.rich('producerDebts', {
+          link: chunks => (
+            <Link href="/dashboard/productores" style={{ color: accent }}>
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
 
       <style>{`
@@ -332,7 +338,7 @@ export default function CreditoPage() {
             onClick={e => e.stopPropagation()}
           >
             {detalleLoading && !detalle ? (
-              <p style={{ color: '#666', fontSize: 13 }}>Cargando detalle…</p>
+              <p style={{ color: '#666', fontSize: 13 }}>{t('detail.loading')}</p>
             ) : detalle ? (
               <>
                 <div
@@ -344,15 +350,15 @@ export default function CreditoPage() {
                     marginBottom: 6,
                   }}
                 >
-                  DETALLE CLIENTE
+                  {t('detail.title')}
                 </div>
                 <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: 'var(--fg-0)' }}>
                   {detalle.cliente_nombre}
                 </h2>
 
-                <SectionLabel>Pedidos con saldo</SectionLabel>
+                <SectionLabel>{t('detail.ordersWithBalance')}</SectionLabel>
                 {detalle.cuentas.length === 0 ? (
-                  <p style={{ fontSize: 12, color: '#666' }}>Sin cuentas activas.</p>
+                  <p style={{ fontSize: 12, color: '#666' }}>{t('detail.noActiveAccounts')}</p>
                 ) : (
                   detalle.cuentas.map(c => (
                     <div
@@ -367,24 +373,26 @@ export default function CreditoPage() {
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                         <span style={{ fontSize: 10, fontFamily: MONO, color: accent }}>
-                          {c.pedidos?.numero ?? '—'}
+                          {c.pedidos?.numero ?? tCommon('dash')}
                         </span>
                         <span style={{ fontSize: 11, fontFamily: MONO, fontWeight: 600 }}>
                           {fmtMoney(Number(c.saldo_pendiente))}
                         </span>
                       </div>
                       <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
-                        Total {fmtMoney(Number(c.monto_total))}
-                        {c.fecha_vencimiento ? ` · vence ${c.fecha_vencimiento}` : ''}
-                        {c.pedidos?.fecha_entrega ? ` · entrega ${c.pedidos.fecha_entrega}` : ''}
+                        {t('detail.total', { amount: fmtMoney(Number(c.monto_total)) })}
+                        {c.fecha_vencimiento ? ` · ${t('detail.due', { date: c.fecha_vencimiento })}` : ''}
+                        {c.pedidos?.fecha_entrega
+                          ? ` · ${t('detail.delivery', { date: c.pedidos.fecha_entrega })}`
+                          : ''}
                       </div>
                     </div>
                   ))
                 )}
 
-                <SectionLabel>Pagos registrados</SectionLabel>
+                <SectionLabel>{t('detail.payments')}</SectionLabel>
                 {detalle.pagos.length === 0 ? (
-                  <p style={{ fontSize: 12, color: '#666' }}>Sin pagos registrados.</p>
+                  <p style={{ fontSize: 12, color: '#666' }}>{t('detail.noPayments')}</p>
                 ) : (
                   detalle.pagos.map(p => (
                     <div
@@ -417,7 +425,7 @@ export default function CreditoPage() {
                     }}
                     style={btnSmall}
                   >
-                    Redactar cobro
+                    {t('detail.draftCollection')}
                   </button>
                   <button
                     type="button"
@@ -427,7 +435,7 @@ export default function CreditoPage() {
                     }}
                     style={btnSmall}
                   >
-                    Cerrar
+                    {t('detail.close')}
                   </button>
                 </div>
               </>
@@ -469,10 +477,10 @@ export default function CreditoPage() {
                 marginBottom: 8,
               }}
             >
-              COBRO · {cobroModal.cliente}
+              {t('collection.title', { client: cobroModal.cliente })}
             </div>
             {cobroModal.loading ? (
-              <p style={{ color: '#666' }}>Redactando…</p>
+              <p style={{ color: '#666' }}>{t('collection.drafting')}</p>
             ) : (
               <>
                 <pre
@@ -491,7 +499,7 @@ export default function CreditoPage() {
                   onClick={() => navigator.clipboard.writeText(cobroModal.mensaje)}
                   style={btnSmall}
                 >
-                  Copiar
+                  {t('collection.copy')}
                 </button>
               </>
             )}
@@ -507,9 +515,9 @@ export default function CreditoPage() {
         fallback={{
           mensaje:
             resumen && resumen.clientesVencidos > 0
-              ? `${resumen.clientesVencidos} cliente(s) con deuda vencida. Cobra antes de entregar.`
-              : 'Revisa saldos pendientes antes de confirmar más pedidos a crédito.',
-          accionLabel: primerVencido ? 'Redactar cobro' : 'Ver deudas',
+              ? t('aiFallbackOverdue', { count: resumen.clientesVencidos })
+              : t('aiFallbackDefault'),
+          accionLabel: primerVencido ? t('draftCollection') : t('viewDebts'),
         }}
         onActionClick={
           primerVencido ? () => void onRedactarCobro(primerVencido) : undefined

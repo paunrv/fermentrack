@@ -5,7 +5,11 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
+import { formatCurrencyMxn } from '@/lib/i18n/format'
+import { useIntlLocaleTag } from '@/lib/i18n/locale'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchClients,
@@ -28,25 +32,9 @@ const CATEGORY_COLORS: Record<ProductCategory, string> = {
   destilado: '#F5C4B3',
 }
 
-const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  cerveza: 'Cerveza',
-  vino: 'Vino',
-  destilado: 'Destilado',
-}
-
-const ORIGIN_LABELS = { local: 'Local', importado: 'Importado' } as const
-
 type SalidaType = 'venta' | 'donacion' | 'merma' | 'muestra'
 
 const SALIDA_TYPES: SalidaType[] = ['venta', 'donacion', 'merma', 'muestra']
-
-const TYPE_LABELS: Record<MovementType, string> = {
-  entrada: 'Entrada',
-  venta: 'Venta',
-  donacion: 'Donación',
-  merma: 'Merma',
-  muestra: 'Muestra',
-}
 
 const TYPE_BADGE: Record<MovementType, string> = {
   venta: '#C0DD97',
@@ -79,10 +67,6 @@ const inputStyle: React.CSSProperties = {
   color: 'var(--fg-0)',
   outline: 'none',
   fontFamily: 'var(--font-display)',
-}
-
-function formatMoney(n: number, currency = 'MXN') {
-  return new Intl.NumberFormat('es-MX', { style: 'currency', currency }).format(n)
 }
 
 function priceForTier(
@@ -176,12 +160,27 @@ const ChevronUp = (
 )
 
 export default function ProductDetailPage() {
+  const t = useTranslations('distributor.productos.detail')
+  const tCommon = useTranslations('distributor.common')
+  const tCat = useTranslations('distributor.productCategories')
+  const tOrigin = useTranslations('distributor.origins')
+  const tUnit = useTranslations('distributor.units')
+  const tTipo = useTranslations('distributor.movimientoTipo')
+  const tMerma = useTranslations('distributor.mermaReason')
+  const tMov = useTranslations('distributor.movimientos')
+  const locale = useLocale() as AppLocale
+  const localeTag = useIntlLocaleTag()
   const params = useParams<{ id: string }>()
   const id = params?.id
   const router = useRouter()
   const { scope } = useProfile()
   const supabase = useSupabase()
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function formatMoney(n: number, currency = 'MXN') {
+    if (currency === 'MXN') return formatCurrencyMxn(n, locale)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n)
+  }
 
   const [product, setProduct] = useState<DistInventoryRow | null>(null)
   const [movements, setMovements] = useState<DistMovementWithRefs[]>([])
@@ -294,7 +293,7 @@ export default function ProductDetailPage() {
 
       await load()
     } catch (err: any) {
-      alert(`No se pudo subir la imagen: ${err?.message || 'error desconocido'}`)
+      alert(t('uploadError', { message: err?.message ?? '' }))
     } finally {
       setUploading(false)
     }
@@ -303,7 +302,7 @@ export default function ProductDetailPage() {
   if (loading) {
     return (
       <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
-        <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+        <p style={{ fontSize: 13, color: '#888' }}>{tCommon('loading')}</p>
       </div>
     )
   }
@@ -329,10 +328,10 @@ export default function ProductDetailPage() {
           }}
         >
           {BackIcon}
-          <span>Mis etiquetas</span>
+          <span>{t('back')}</span>
         </Link>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg-0)' }}>
-          Producto no encontrado
+          {t('notFound')}
         </h1>
       </div>
     )
@@ -388,7 +387,7 @@ export default function ProductDetailPage() {
             }}
           >
             {BackIcon}
-            <span>Mis etiquetas</span>
+            <span>{t('back')}</span>
           </Link>
 
           <button
@@ -413,7 +412,7 @@ export default function ProductDetailPage() {
             }}
           >
             {UploadIcon}
-            <span>{uploading ? 'Subiendo...' : 'Subir etiqueta'}</span>
+            <span>{uploading ? t('uploading') : t('uploadLabel')}</span>
           </button>
         </div>
 
@@ -444,7 +443,7 @@ export default function ProductDetailPage() {
               alignItems: 'center',
               justifyContent: 'center',
             }}
-            aria-label="Subir imagen de etiqueta"
+            aria-label={t('uploadAria')}
           >
             {product.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -478,7 +477,7 @@ export default function ProductDetailPage() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  Sin etiqueta
+                  {t('noLabel')}
                 </span>
               </div>
             )}
@@ -543,8 +542,8 @@ export default function ProductDetailPage() {
                   color: '#888',
                 }}
               >
-                {product.unit_type === 'lata' ? 'Lata' : 'Botella'} ·{' '}
-                {CATEGORY_LABELS[product.category]} · {ORIGIN_LABELS[product.origin]}
+                {tUnit(product.unit_type)} ·{' '}
+                {tCat(product.category)} · {tOrigin(product.origin)}
                 {product.producer ? ` · ${product.producer}` : ''}
               </div>
             </div>
@@ -563,7 +562,7 @@ export default function ProductDetailPage() {
                   flexShrink: 0,
                 }}
               >
-                ⚠ Stock bajo
+                {t('lowStock')}
               </span>
             )}
           </div>
@@ -586,7 +585,7 @@ export default function ProductDetailPage() {
                   color: '#888',
                 }}
               >
-                Botellas en bodega
+                {t('warehouseBottles')}
               </div>
               <div
                 style={{
@@ -597,7 +596,7 @@ export default function ProductDetailPage() {
                   color: '#888',
                 }}
               >
-                {stats?.pct ?? 0}% del inicial
+                {t('pctOfInitial', { pct: stats?.pct ?? 0 })}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
@@ -642,8 +641,8 @@ export default function ProductDetailPage() {
         <Collapsible
           open={showMoreInfo}
           onToggle={() => setShowMoreInfo(v => !v)}
-          labelClosed="Ver más"
-          labelOpen="Ver menos"
+          labelClosed={t('showMore')}
+          labelOpen={t('showLess')}
         >
           {stats && (
             <div
@@ -655,30 +654,30 @@ export default function ProductDetailPage() {
             >
               {[
                 {
-                  label: 'Cajas en bodega',
+                  label: t('stats.casesInWarehouse'),
                   value: `${stats.currentCases}`,
-                  hint: `${product.bottles_per_case}/caja`,
+                  hint: t('stats.perCase', { count: product.bottles_per_case }),
                 },
                 {
-                  label: 'Botellas vendidas',
+                  label: t('stats.soldBottles'),
                   value: `${stats.soldBottles}`,
                 },
                 {
-                  label: 'Cajas vendidas',
+                  label: t('stats.soldCases'),
                   value: `${stats.soldCases}`,
                 },
                 {
-                  label: 'Muestras',
+                  label: t('stats.samples'),
                   value: `${stats.sampleBottles}`,
                 },
                 {
-                  label: 'Mermas',
+                  label: t('stats.shrinkage'),
                   value: `${stats.mermaBottles}`,
                 },
                 ...(stats.donacionBottles > 0
                   ? [
                       {
-                        label: 'Donaciones',
+                        label: t('stats.donations'),
                         value: `${stats.donacionBottles}`,
                       },
                     ]
@@ -694,12 +693,12 @@ export default function ProductDetailPage() {
         <Collapsible
           open={showPrices}
           onToggle={() => setShowPrices(v => !v)}
-          labelClosed="Costos y precios"
-          labelOpen="Ocultar"
+          labelClosed={t('costsPrices')}
+          labelOpen={t('hide')}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <SubHeader text="Costos" />
+              <SubHeader text={t('costs')} />
               <div
                 style={{
                   display: 'grid',
@@ -709,21 +708,21 @@ export default function ProductDetailPage() {
                 }}
               >
                 <StatCard
-                  label="Inversión inicial"
+                  label={t('initialInvestment')}
                   value={formatMoney(
                     stats?.inversionInicial ?? 0,
                     product.currency || 'MXN'
                   )}
                 />
                 <StatCard
-                  label="Costo por botella"
+                  label={t('costPerBottle')}
                   value={formatMoney(
                     Number(product.cost_per_unit || 0),
                     product.currency || 'MXN'
                   )}
                 />
                 <StatCard
-                  label="Costo por caja"
+                  label={t('costPerCase')}
                   value={formatMoney(
                     Number(product.cost_per_unit || 0) * product.bottles_per_case,
                     product.currency || 'MXN'
@@ -732,7 +731,7 @@ export default function ProductDetailPage() {
               </div>
             </div>
             <div>
-              <SubHeader text="Precio de venta" />
+              <SubHeader text={t('salePrice')} />
               <div
                 style={{
                   display: 'grid',
@@ -743,17 +742,17 @@ export default function ProductDetailPage() {
               >
                 {[
                   {
-                    label: 'Regular',
+                    label: t('priceTiers.regular'),
                     bg: '#fff',
                     value: Number(product.price_regular),
                   },
                   {
-                    label: 'Mayoreo',
+                    label: t('priceTiers.wholesale'),
                     bg: '#C0DD97',
                     value: Number(product.price_mayoreo),
                   },
                   {
-                    label: 'Especial',
+                    label: t('priceTiers.special'),
                     bg: '#F4C0D1',
                     value: Number(product.price_especial),
                   },
@@ -791,7 +790,7 @@ export default function ProductDetailPage() {
                         opacity: 0.6,
                       }}
                     >
-                      por botella
+                      {t('perBottle')}
                     </div>
                   </div>
                 ))}
@@ -799,8 +798,6 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </Collapsible>
-
-        {/* Movimientos recientes */}
         <section>
           <div
             style={{
@@ -818,7 +815,7 @@ export default function ProductDetailPage() {
                 textTransform: 'uppercase',
               }}
             >
-              Movimientos recientes
+              {t('recentMovements')}
             </h2>
             <Link
               href="/dashboard/movimientos"
@@ -832,12 +829,12 @@ export default function ProductDetailPage() {
                 borderBottom: '1px solid var(--hairline)',
               }}
             >
-              Ver todos →
+              {t('viewAll')}
             </Link>
           </div>
           {lastFive.length === 0 ? (
             <p style={{ fontSize: 13, color: '#888' }}>
-              Aún no hay movimientos para este producto.
+              {t('emptyMovements')}
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -845,7 +842,7 @@ export default function ProductDetailPage() {
                 const type = m.movement_type
                 const bpc = m.dist_products?.bottles_per_case || product.bottles_per_case
                 const bottles = (m.cases || 0) * bpc + (m.loose_units || 0)
-                const time = new Date(m.created_at).toLocaleString('es-MX', {
+                const time = new Date(m.created_at).toLocaleString(localeTag, {
                   day: '2-digit',
                   month: '2-digit',
                   hour: '2-digit',
@@ -853,14 +850,18 @@ export default function ProductDetailPage() {
                 })
                 const detail =
                   type === 'venta'
-                    ? m.clients?.name || '—'
+                    ? m.clients?.name || tCommon('dash')
                     : type === 'merma'
-                      ? `Motivo: ${m.reason || '—'}`
+                      ? tMov('historyReason', {
+                          reason: m.reason
+                            ? tMerma(m.reason as MermaReason)
+                            : tCommon('dash'),
+                        })
                       : type === 'muestra'
-                        ? [m.recipient, m.event].filter(Boolean).join(' · ') || '—'
+                        ? [m.recipient, m.event].filter(Boolean).join(' · ') || tCommon('dash')
                         : type === 'donacion'
-                          ? m.recipient || '—'
-                          : m.notes || 'Entrada de mercancía'
+                          ? m.recipient || tCommon('dash')
+                          : m.notes || t('goodsEntry')
 
                 return (
                   <div
@@ -889,7 +890,7 @@ export default function ProductDetailPage() {
                         textAlign: 'center',
                       }}
                     >
-                      {TYPE_LABELS[type]}
+                      {tTipo(type)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
@@ -921,8 +922,8 @@ export default function ProductDetailPage() {
                           {type === 'entrada' ? '+' : '−'}
                           {bottles}
                         </span>{' '}
-                        bot.
-                        {(m.cases || 0) > 0 ? ` · ${m.cases} caja${m.cases === 1 ? '' : 's'}` : ''}
+                        {t('bottlesShort')}
+                        {(m.cases || 0) > 0 ? ` · ${t('cases', { count: m.cases || 0 })}` : ''}
                         {type === 'venta' && m.total_amount != null
                           ? ` · ${formatMoney(
                               Number(m.total_amount),
@@ -983,7 +984,7 @@ export default function ProductDetailPage() {
             minWidth: 280,
           }}
         >
-          + Registrar movimiento
+          {t('registerMovement')}
         </button>
       </div>
 
@@ -1146,6 +1147,12 @@ function MovementModal({
   onClose: () => void
   onSaved: () => void | Promise<void>
 }) {
+  const t = useTranslations('distributor.productos.detail')
+  const tCommon = useTranslations('distributor.common')
+  const tMov = useTranslations('distributor.movimientos')
+  const tTipo = useTranslations('distributor.movimientoTipo')
+  const tMerma = useTranslations('distributor.mermaReason')
+  const locale = useLocale() as AppLocale
   const supabase = useSupabase()
   const [type, setType] = useState<SalidaType>('venta')
   const [cases, setCases] = useState('')
@@ -1167,6 +1174,14 @@ function MovementModal({
   const requestedBottles = c * bpc + u
 
   const selectedClient = clients.find(cl => cl.id === clientId) || null
+
+  function formatMoney(n: number, currency = 'MXN') {
+    if (currency === 'MXN') return formatCurrencyMxn(n, locale)
+    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(n)
+  }
+
+  const typeLabel = (movType: SalidaType) => tTipo(movType)
+  const typeLabelLower = (movType: SalidaType) => typeLabel(movType).toLowerCase()
 
   useEffect(() => {
     if (type !== 'venta' || !selectedClient) return
@@ -1192,11 +1207,11 @@ function MovementModal({
     e.preventDefault()
     if (requestedBottles <= 0) return
     if (requestedBottles > available) {
-      alert(`Solo hay ${available} botellas disponibles`)
+      alert(t('modal.insufficientStock', { available }))
       return
     }
     if (type === 'venta' && !clientId) {
-      alert('Selecciona un cliente')
+      alert(t('modal.selectClientAlert'))
       return
     }
 
@@ -1309,7 +1324,7 @@ function MovementModal({
                 textTransform: 'uppercase',
               }}
             >
-              {available} botellas disponibles
+              {t('modal.available', { count: available })}
             </div>
           </div>
           <button
@@ -1325,7 +1340,7 @@ function MovementModal({
               fontWeight: 800,
               fontFamily: 'var(--font-display)',
             }}
-            aria-label="Cerrar"
+            aria-label={t('modal.close')}
           >
             ×
           </button>
@@ -1362,7 +1377,7 @@ function MovementModal({
                   fontFamily: 'var(--font-display)',
                 }}
               >
-                {TYPE_LABELS[t]}
+                {tTipo(t)}
               </button>
             )
           })}
@@ -1379,17 +1394,17 @@ function MovementModal({
         >
           {type === 'venta' && (
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle}>Cliente</label>
+              <label style={labelStyle}>{tMov('fields.client')}</label>
               <select
                 value={clientId}
                 onChange={e => setClientId(e.target.value)}
                 style={inputStyle}
                 required
               >
-                <option value="">Seleccionar cliente</option>
+                <option value="">{tMov('fields.selectClient')}</option>
                 {clients.map(cl => (
                   <option key={cl.id} value={cl.id}>
-                    {cl.name} — tier {cl.price_tier}
+                    {t('modal.clientTier', { name: cl.name, tier: cl.price_tier })}
                   </option>
                 ))}
               </select>
@@ -1397,7 +1412,7 @@ function MovementModal({
           )}
 
           <div>
-            <label style={labelStyle}>Cajas</label>
+            <label style={labelStyle}>{tMov('fields.cases')}</label>
             <input
               type="number"
               min={0}
@@ -1408,7 +1423,7 @@ function MovementModal({
             />
           </div>
           <div>
-            <label style={labelStyle}>Unidades sueltas</label>
+            <label style={labelStyle}>{tMov('fields.looseUnits')}</label>
             <input
               type="number"
               min={0}
@@ -1422,7 +1437,7 @@ function MovementModal({
           {type === 'venta' && (
             <>
               <div>
-                <label style={labelStyle}>Precio unitario</label>
+                <label style={labelStyle}>{tMov('fields.unitPrice')}</label>
                 <input
                   type="number"
                   min={0}
@@ -1435,7 +1450,7 @@ function MovementModal({
                 />
               </div>
               <div>
-                <label style={labelStyle}>Total</label>
+                <label style={labelStyle}>{tMov('fields.total')}</label>
                 <div
                   style={{
                     ...inputStyle,
@@ -1456,7 +1471,7 @@ function MovementModal({
           {(type === 'donacion' || type === 'muestra') && (
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle}>
-                {type === 'donacion' ? 'Destinatario' : 'A quién'}
+                {type === 'donacion' ? tMov('fields.recipient') : tMov('fields.sampleRecipient')}
               </label>
               <input
                 type="text"
@@ -1465,8 +1480,8 @@ function MovementModal({
                 style={inputStyle}
                 placeholder={
                   type === 'donacion'
-                    ? 'Organización, persona, evento'
-                    : 'Cliente potencial, periodista...'
+                    ? tMov('fields.recipientPlaceholder')
+                    : tMov('fields.sampleRecipientPlaceholder')
                 }
               />
             </div>
@@ -1474,20 +1489,20 @@ function MovementModal({
 
           {type === 'muestra' && (
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle}>Evento / ocasión</label>
+              <label style={labelStyle}>{tMov('fields.event')}</label>
               <input
                 type="text"
                 value={event}
                 onChange={e => setEvent(e.target.value)}
                 style={inputStyle}
-                placeholder="Cata, feria, lanzamiento..."
+                placeholder={tMov('fields.eventPlaceholder')}
               />
             </div>
           )}
 
           {type === 'merma' && (
             <div style={{ gridColumn: '1 / -1' }}>
-              <label style={labelStyle}>Motivo</label>
+              <label style={labelStyle}>{tMov('fields.reason')}</label>
               <select
                 value={reason}
                 onChange={e => setReason(e.target.value as MermaReason)}
@@ -1496,7 +1511,7 @@ function MovementModal({
               >
                 {MERMA_REASONS.map(r => (
                   <option key={r} value={r}>
-                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                    {tMerma(r)}
                   </option>
                 ))}
               </select>
@@ -1504,13 +1519,13 @@ function MovementModal({
           )}
 
           <div style={{ gridColumn: '1 / -1' }}>
-            <label style={labelStyle}>Notas</label>
+            <label style={labelStyle}>{tMov('fields.notes')}</label>
             <input
               type="text"
               value={notes}
               onChange={e => setNotes(e.target.value)}
               style={inputStyle}
-              placeholder="Observaciones (opcional)"
+              placeholder={tMov('fields.notesPlaceholder')}
             />
           </div>
 
@@ -1540,7 +1555,7 @@ function MovementModal({
                 fontFamily: 'var(--font-display)',
               }}
             >
-              Cancelar
+              {tCommon('cancel')}
             </button>
             <button
               type="submit"
@@ -1561,8 +1576,11 @@ function MovementModal({
               }}
             >
               {saving
-                ? 'Guardando...'
-                : `Registrar ${TYPE_LABELS[type].toLowerCase()} (${requestedBottles} bot.)`}
+                ? tCommon('saving')
+                : t('modal.submit', {
+                    type: typeLabelLower(type),
+                    count: requestedBottles,
+                  })}
             </button>
           </div>
         </form>

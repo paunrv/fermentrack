@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { crearCliente, obtenerClientes } from '@/app/actions/clientes'
 import type { ClienteConSaldo } from '@/lib/supabase/distribuidor'
@@ -15,15 +16,11 @@ import { ClienteRailCard } from '@/components/proof/ClienteRailCard'
 import { KpiRailChip } from '@/components/proof/KpiRailChip'
 import { CLIENTE_ACCENT } from '@/lib/proof/canvas-accents'
 
-const DIAS_CREDITO_OPTIONS = [
-  { value: 0, label: 'Contado' },
-  { value: 15, label: '15 días' },
-  { value: 30, label: '30 días' },
-  { value: 60, label: '60 días' },
-  { value: 90, label: '90 días' },
-] as const
+const CREDIT_DAY_VALUES = [0, 15, 30, 60, 90] as const
 
 function ClientesDistribuidorPage() {
+  const t = useTranslations('distributor.clientes')
+  const tCommon = useTranslations('distributor.common')
   const { scope } = useProfile()
   const isMobile = useIsMobile()
   const [rows, setRows] = useState<ClienteConSaldo[]>([])
@@ -47,7 +44,7 @@ function ClientesDistribuidorPage() {
       const data = await obtenerClientes({ profile_type_v2: scope.profile_type_v2 })
       setRows(data)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar clientes')
+      setError(e instanceof Error ? e.message : t('loadError'))
     }
   }
 
@@ -92,7 +89,7 @@ function ClientesDistribuidorPage() {
       setShowForm(false)
       await load()
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'No se pudo guardar el cliente')
+      setSaveError(e instanceof Error ? e.message : t('saveError'))
     } finally {
       setSaving(false)
     }
@@ -109,6 +106,15 @@ function ClientesDistribuidorPage() {
     [rows]
   )
 
+  const creditOptions = useMemo(
+    () =>
+      CREDIT_DAY_VALUES.map(value => ({
+        value,
+        label: value === 0 ? t('creditTerms.cash') : t('creditTerms.days', { days: value }),
+      })),
+    [t]
+  )
+
   return (
     <div style={pagePadding({ isMobile })}>
       <header
@@ -123,11 +129,9 @@ function ClientesDistribuidorPage() {
       >
         <div>
           <h1 style={{ margin: '0 0 6px', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: 'var(--fg-0)' }}>
-            Clientes
+            {t('title')}
           </h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-            Cartera comercial · crédito y saldos pendientes
-          </p>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
         </div>
         <button
           type="button"
@@ -145,7 +149,7 @@ function ClientesDistribuidorPage() {
             cursor: 'pointer',
           }}
         >
-          {showForm ? 'Cancelar' : '+ Nuevo cliente'}
+          {showForm ? t('cancel') : t('newClient')}
         </button>
       </header>
 
@@ -164,7 +168,7 @@ function ClientesDistribuidorPage() {
             className="eyebrow"
             style={{ margin: '0 0 16px', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.12em' }}
           >
-            Nuevo cliente
+            {t('formTitle')}
           </h2>
           {saveError && (
             <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
@@ -179,60 +183,60 @@ function ClientesDistribuidorPage() {
               gap: 12,
             }}
           >
-            <Field label="Nombre" span={2}>
+            <Field label={t('fields.name')} span={2}>
               <input
                 type="text"
                 value={nombre}
                 onChange={e => setNombre(e.target.value)}
                 required
-                placeholder="Nombre comercial"
+                placeholder={t('fields.namePlaceholder')}
                 style={inputStyle}
               />
             </Field>
-            <Field label="Teléfono">
+            <Field label={t('fields.phone')}>
               <input
                 type="tel"
                 value={telefono}
                 onChange={e => setTelefono(e.target.value)}
-                placeholder="55 1234 5678"
+                placeholder={t('fields.phonePlaceholder')}
                 style={inputStyle}
               />
             </Field>
-            <Field label="Email">
+            <Field label={t('fields.email')}>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="contacto@cliente.com"
+                placeholder={t('fields.emailPlaceholder')}
                 style={inputStyle}
               />
             </Field>
-            <Field label="Dirección" span={2}>
+            <Field label={t('fields.address')} span={2}>
               <textarea
                 value={direccion}
                 onChange={e => setDireccion(e.target.value)}
-                placeholder="Calle, colonia, ciudad"
+                placeholder={t('fields.addressPlaceholder')}
                 style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }}
               />
             </Field>
-            <Field label="Días de crédito">
+            <Field label={t('fields.creditDays')}>
               <select
                 value={diasCredito}
                 onChange={e => setDiasCredito(Number(e.target.value))}
                 style={inputStyle}
               >
-                {DIAS_CREDITO_OPTIONS.map(o => (
+                {creditOptions.map(o => (
                   <option key={o.value} value={o.value}>
                     {o.label}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Notas" span={2}>
+            <Field label={t('fields.notes')} span={2}>
               <textarea
                 value={notas}
                 onChange={e => setNotas(e.target.value)}
-                placeholder="Condiciones, preferencias..."
+                placeholder={t('fields.notesPlaceholder')}
                 style={{ ...inputStyle, minHeight: 72, resize: 'vertical' }}
               />
             </Field>
@@ -255,7 +259,7 @@ function ClientesDistribuidorPage() {
               opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? 'Guardando…' : 'Guardar cliente'}
+            {saving ? t('saving') : t('save')}
           </button>
         </form>
       )}
@@ -267,16 +271,16 @@ function ClientesDistribuidorPage() {
       <div className="proof-canvas-stack">
         <CanvasHorizontalSection
           accent={CLIENTE_ACCENT}
-          title="Resumen"
-          subtitle={loading ? 'Cargando…' : `${rows.length} cliente${rows.length !== 1 ? 's' : ''}`}
+          title={t('sections.summary')}
+          subtitle={loading ? tCommon('loading') : t('sections.clientCount', { count: rows.length })}
           loading={loading}
           itemWidth={132}
           skeletonCount={3}
         >
-          <KpiRailChip label="Clientes" value={String(rows.length)} />
-          <KpiRailChip label="Cartera pendiente" value={fmtMoney(carteraTotal)} tone={CLIENTE_ACCENT} />
+          <KpiRailChip label={t('sections.kpiClients')} value={String(rows.length)} />
+          <KpiRailChip label={t('sections.kpiPortfolio')} value={fmtMoney(carteraTotal)} tone={CLIENTE_ACCENT} />
           <KpiRailChip
-            label="Con saldo vencido"
+            label={t('sections.kpiOverdue')}
             value={String(vencidos.length)}
             tone={vencidos.length ? 'var(--crit)' : undefined}
           />
@@ -284,9 +288,9 @@ function ClientesDistribuidorPage() {
 
         <CanvasHorizontalSection
           accent={CLIENTE_ACCENT}
-          title="Con saldo"
-          subtitle={`${conSaldo.length} cliente${conSaldo.length !== 1 ? 's' : ''}`}
-          emptyMessage="Ningún cliente con saldo pendiente."
+          title={t('sections.withBalance')}
+          subtitle={t('sections.clientCount', { count: conSaldo.length })}
+          emptyMessage={t('sections.emptyWithBalance')}
           loading={loading}
           itemWidth={172}
         >
@@ -297,9 +301,11 @@ function ClientesDistribuidorPage() {
 
         <CanvasHorizontalSection
           accent={CLIENTE_ACCENT}
-          title="Al corriente"
-          subtitle={`${alCorriente.length} cliente${alCorriente.length !== 1 ? 's' : ''}`}
-          emptyMessage={rows.length === 0 ? 'Sin clientes. Agrega el primero con "+ Nuevo cliente".' : 'Todos tienen saldo pendiente.'}
+          title={t('sections.current')}
+          subtitle={t('sections.clientCount', { count: alCorriente.length })}
+          emptyMessage={
+            rows.length === 0 ? t('sections.emptyNoClients') : t('sections.emptyAllHaveBalance')
+          }
           loading={loading}
           itemWidth={172}
         >

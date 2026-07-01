@@ -18,12 +18,14 @@ begin;
 
 alter table public.organizations disable trigger on_organization_created;
 
-insert into public.organizations (id, name, slug, plan, settings)
+insert into public.organizations (id, name, slug, plan, org_type, plan_status, settings)
 values (
   'a0000000-0000-4000-8000-000000000001',
   'Viñas del Tigre',
   'vinas-del-tigre',
   'free',
+  'winemaker',
+  'active',
   '{}'::jsonb
 );
 

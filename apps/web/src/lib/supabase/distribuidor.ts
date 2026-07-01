@@ -1,3 +1,6 @@
+// ROADMAP — Org tenancy: módulo congelado (epic #3). Ver docs/ORG-TENANCY.md
+// Scope actual: user_id + profile_type_v2. No migrar en PRs de winemaker.
+
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ProfileScope } from '../supabase'
 

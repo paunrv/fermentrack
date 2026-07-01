@@ -5,10 +5,13 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { decodeProductorSlug } from '@/lib/proof/productores'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
+import { formatDate } from '@/lib/i18n/format'
 import {
   fetchDeudasByProductor,
   fetchOrdenesCompraByProductor,
@@ -18,16 +21,11 @@ import {
   type SkuRow,
 } from '@/lib/supabase'
 
-function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso + 'T12:00:00').toLocaleDateString('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
 export default function ProductorDetallePage() {
+  const t = useTranslations('distributor.productores.detail')
+  const tCommon = useTranslations('distributor.common')
+  const tList = useTranslations('distributor.productores')
+  const locale = useLocale() as AppLocale
   const params = useParams()
   const nombre = decodeProductorSlug(String(params.nombre ?? ''))
   const { scope } = useProfile()
@@ -62,13 +60,22 @@ export default function ProductorDetallePage() {
 
   const deudaTotal = deudas.reduce((a, d) => a + Number(d.monto), 0)
 
+  function fmtDate(iso: string | null): string {
+    if (!iso) return tCommon('dash')
+    return formatDate(new Date(iso + 'T12:00:00'), locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
       <Link
         href="/dashboard/productores"
         style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
       >
-        ← Productores
+        {t('back')}
       </Link>
 
       <header style={{ margin: '16px 0 24px' }}>
@@ -76,41 +83,48 @@ export default function ProductorDetallePage() {
           {nombre}
         </h1>
         <p className="mono" style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
-          {skus.length} SKUs · Deuda {deudaTotal > 0 ? fmtMoney(deudaTotal) : 'al corriente'}
+          {t('summary', {
+            count: skus.length,
+            debt: deudaTotal > 0 ? fmtMoney(deudaTotal) : tList('current'),
+          })}
         </p>
       </header>
 
       {loading ? (
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
       ) : (
         <>
-          <Section title="SKUs en catálogo">
+          <Section title={t('sections.skus')}>
             {skus.length === 0 ? (
-              <Empty>Sin SKUs con este productor.</Empty>
+              <Empty>{t('emptySkus')}</Empty>
             ) : (
               skus.map(s => (
-                <Row key={s.id} primary={s.nombre} secondary={`${fmtBottles(s.stock_disponible)} disp.`} />
-              ))
-            )}
-          </Section>
-
-          <Section title="Deudas activas">
-            {deudas.length === 0 ? (
-              <Empty>Sin deudas pendientes.</Empty>
-            ) : (
-              deudas.map(d => (
                 <Row
-                  key={d.id}
-                  primary={fmtMoney(Number(d.monto))}
-                  secondary={`${d.estado} · vence ${fmtDate(d.fecha_vencimiento)}`}
+                  key={s.id}
+                  primary={s.nombre}
+                  secondary={t('available', { count: fmtBottles(s.stock_disponible) })}
                 />
               ))
             )}
           </Section>
 
-          <Section title="Órdenes de compra abiertas">
+          <Section title={t('sections.debts')}>
+            {deudas.length === 0 ? (
+              <Empty>{t('emptyDebts')}</Empty>
+            ) : (
+              deudas.map(d => (
+                <Row
+                  key={d.id}
+                  primary={fmtMoney(Number(d.monto))}
+                  secondary={t('dueLine', { status: d.estado, date: fmtDate(d.fecha_vencimiento) })}
+                />
+              ))
+            )}
+          </Section>
+
+          <Section title={t('sections.openOrders')}>
             {ordenes.length === 0 ? (
-              <Empty>Sin OC abiertas para este productor.</Empty>
+              <Empty>{t('emptyOrders')}</Empty>
             ) : (
               ordenes.map(o => (
                 <Row
@@ -118,8 +132,8 @@ export default function ProductorDetallePage() {
                   primary={o.estado.toUpperCase()}
                   secondary={
                     o.fecha_esperada
-                      ? `Esperada ${fmtDate(o.fecha_esperada)}`
-                      : 'Sin fecha esperada'
+                      ? t('expected', { date: fmtDate(o.fecha_esperada) })
+                      : t('noExpectedDate')
                   }
                 />
               ))

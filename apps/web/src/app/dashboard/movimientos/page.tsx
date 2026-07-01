@@ -4,8 +4,10 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useIntlLocaleTag } from '@/lib/i18n/locale'
 import {
   fetchClients,
   fetchDistInventory,
@@ -22,13 +24,6 @@ import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 
 type SalidaType = 'venta' | 'donacion' | 'merma' | 'muestra'
 
-const TYPE_LABELS: Record<SalidaType, string> = {
-  venta: 'Venta',
-  donacion: 'Donación',
-  merma: 'Merma',
-  muestra: 'Muestra',
-}
-
 const TYPE_TONE: Record<SalidaType, string> = {
   venta: 'var(--ok)',
   donacion: 'var(--info)',
@@ -41,12 +36,6 @@ const TYPE_SOFT: Record<SalidaType, string> = {
   donacion: 'var(--info-soft)',
   merma: 'var(--crit-soft)',
   muestra: 'var(--warn-soft)',
-}
-
-const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  cerveza: 'Cerveza',
-  vino: 'Vino',
-  destilado: 'Destilado',
 }
 
 const MERMA_REASONS = ['rota', 'vencida', 'dañada', 'otro'] as const
@@ -88,6 +77,12 @@ function totalAvailable(row: DistInventoryRow): number {
 }
 
 export default function MovimientosPage() {
+  const t = useTranslations('distributor.movimientos')
+  const tCommon = useTranslations('distributor.common')
+  const tTipo = useTranslations('distributor.movimientoTipo')
+  const tMerma = useTranslations('distributor.mermaReason')
+  const tCat = useTranslations('distributor.productCategories')
+  const localeTag = useIntlLocaleTag()
   const { scope } = useProfile()
   const supabase = useSupabase()
   const [type, setType] = useState<SalidaType>('venta')
@@ -182,7 +177,7 @@ export default function MovimientosPage() {
     const requested = totalUnits
     const available = totalAvailable(selectedProduct)
     if (requested > available) {
-      alert(`Solo hay ${available} unidades disponibles de ${selectedProduct.name}`)
+      alert(t('insufficientStock', { available, name: selectedProduct.name }))
       return
     }
 
@@ -253,15 +248,15 @@ export default function MovimientosPage() {
     }
     movements.forEach(m => {
       if (m.movement_type === 'entrada') return
-      const t = m.movement_type as SalidaType
+      const movType = m.movement_type as SalidaType
       const bpc = m.dist_products?.bottles_per_case || 0
       const units = (m.cases || 0) * bpc + (m.loose_units || 0)
       totalUnitsMoved += units
-      byType[t].count += 1
-      byType[t].units += units
-      if (t === 'venta' && m.total_amount) {
+      byType[movType].count += 1
+      byType[movType].units += units
+      if (movType === 'venta' && m.total_amount) {
         totalSold += Number(m.total_amount)
-        byType[t].amount += Number(m.total_amount)
+        byType[movType].amount += Number(m.total_amount)
       }
     })
     return { totalSold, totalUnitsMoved, byType }
@@ -275,8 +270,15 @@ export default function MovimientosPage() {
   const ventaProducts = inventory.filter(p => totalAvailable(p) > 0)
 
   const proofMsg = loading
-    ? 'Cargando movimientos del día…'
-    : `Hoy: ${fmtMoney(summary.totalSold)} vendido · ${summary.totalUnitsMoved} uds en salidas · ${salidasHoy.length} registro${salidasHoy.length === 1 ? '' : 's'}.`
+    ? t('aiFallbackLoading')
+    : t('aiFallback', {
+        sold: fmtMoney(summary.totalSold),
+        units: summary.totalUnitsMoved,
+        count: salidasHoy.length,
+      })
+
+  const typeLabel = (movType: SalidaType) => tTipo(movType)
+  const typeLabelLower = (movType: SalidaType) => typeLabel(movType).toLowerCase()
 
   return (
     <div style={{ padding: '28px 28px 100px' }}>
@@ -293,7 +295,7 @@ export default function MovimientosPage() {
         >
           <div>
             <div className="eyebrow" style={{ color: 'var(--gold)', marginBottom: 8 }}>
-              PROOF · Operación
+              {t('eyebrow')}
             </div>
             <h1
               style={{
@@ -304,10 +306,10 @@ export default function MovimientosPage() {
                 letterSpacing: '-0.02em',
               }}
             >
-              Movimientos
+              {t('title')}
             </h1>
             <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-              Salidas de bodega — ventas, donaciones, mermas y muestras · {today}
+              {t('subtitle', { date: today })}
             </p>
           </div>
           <Link
@@ -325,7 +327,7 @@ export default function MovimientosPage() {
               border: '1px solid var(--hairline)',
             }}
           >
-            Entrada foto →
+            {t('receivingLink')}
           </Link>
         </header>
 
@@ -337,36 +339,49 @@ export default function MovimientosPage() {
             marginBottom: 20,
           }}
         >
-          <Kpi label="Vendido hoy" value={loading ? '…' : fmtMoney(summary.totalSold)} tone="var(--gold)" />
-          <Kpi label="Unidades salidas" value={loading ? '…' : String(summary.totalUnitsMoved)} />
-          {SALIDA_TYPES.map(t => (
+          <Kpi
+            label={t('kpis.soldToday')}
+            value={loading ? '…' : fmtMoney(summary.totalSold)}
+            tone="var(--gold)"
+          />
+          <Kpi
+            label={t('kpis.unitsOut')}
+            value={loading ? '…' : String(summary.totalUnitsMoved)}
+          />
+          {SALIDA_TYPES.map(movType => (
             <Kpi
-              key={t}
-              label={TYPE_LABELS[t]}
-              value={loading ? '…' : `${summary.byType[t].units} uds`}
-              tone={TYPE_TONE[t]}
+              key={movType}
+              label={typeLabel(movType)}
+              value={loading ? '…' : t('kpis.unitsShort', { count: summary.byType[movType].units })}
+              tone={TYPE_TONE[movType]}
               hint={
                 loading
                   ? undefined
-                  : `${summary.byType[t].count} mov.${t === 'venta' && summary.byType[t].amount > 0 ? ` · ${fmtMoney(summary.byType[t].amount)}` : ''}`
+                  : t('kpis.moveHint', {
+                      count: summary.byType[movType].count,
+                      amount:
+                        movType === 'venta' && summary.byType[movType].amount > 0
+                          ? ` · ${fmtMoney(summary.byType[movType].amount)}`
+                          : '',
+                    })
               }
             />
           ))}
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          {SALIDA_TYPES.map(t => (
+          {SALIDA_TYPES.map(movType => (
             <Tab
-              key={t}
-              active={type === t}
-              tone={TYPE_TONE[t]}
-              soft={TYPE_SOFT[t]}
+              key={movType}
+              active={type === movType}
+              tone={TYPE_TONE[movType]}
+              soft={TYPE_SOFT[movType]}
               onClick={() => {
-                setType(t)
+                setType(movType)
                 resetForm()
               }}
             >
-              {TYPE_LABELS[t]}
+              {typeLabel(movType)}
             </Tab>
           ))}
         </div>
@@ -382,7 +397,7 @@ export default function MovimientosPage() {
           }}
         >
           <div className="eyebrow" style={{ marginBottom: 16, color: 'var(--fg-2)' }}>
-            Registrar {TYPE_LABELS[type].toLowerCase()}
+            {t('register', { type: typeLabelLower(type) })}
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -390,7 +405,7 @@ export default function MovimientosPage() {
               {type === 'venta' && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="eyebrow" style={labelStyle}>
-                    Cliente
+                    {t('fields.client')}
                   </label>
                   <select
                     value={clientId}
@@ -398,7 +413,7 @@ export default function MovimientosPage() {
                     style={inputStyle}
                     required
                   >
-                    <option value="">Seleccionar cliente</option>
+                    <option value="">{t('fields.selectClient')}</option>
                     {clients.map(c => (
                       <option key={c.id} value={c.id}>
                         {c.name} — {c.price_tier}
@@ -410,7 +425,7 @@ export default function MovimientosPage() {
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="eyebrow" style={labelStyle}>
-                  Producto
+                  {t('fields.product')}
                 </label>
                 <select
                   value={productId}
@@ -418,12 +433,12 @@ export default function MovimientosPage() {
                   style={inputStyle}
                   required
                 >
-                  <option value="">Seleccionar producto</option>
+                  <option value="">{t('fields.selectProduct')}</option>
                   {(type === 'venta' ? ventaProducts : inventory).map(p => {
                     const avail = totalAvailable(p)
                     return (
                       <option key={p.id} value={p.id} disabled={avail <= 0}>
-                        {p.name} — {avail} uds disponibles
+                        {t('fields.productOption', { name: p.name, avail })}
                       </option>
                     )
                   })}
@@ -432,7 +447,7 @@ export default function MovimientosPage() {
 
               <div>
                 <label className="eyebrow" style={labelStyle}>
-                  Cajas
+                  {t('fields.cases')}
                 </label>
                 <input
                   type="number"
@@ -445,7 +460,7 @@ export default function MovimientosPage() {
               </div>
               <div>
                 <label className="eyebrow" style={labelStyle}>
-                  Unidades sueltas
+                  {t('fields.looseUnits')}
                 </label>
                 <input
                   type="number"
@@ -461,7 +476,7 @@ export default function MovimientosPage() {
                 <>
                   <div>
                     <label className="eyebrow" style={labelStyle}>
-                      Precio unitario
+                      {t('fields.unitPrice')}
                     </label>
                     <input
                       type="number"
@@ -476,7 +491,7 @@ export default function MovimientosPage() {
                   </div>
                   <div>
                     <label className="eyebrow" style={labelStyle}>
-                      Total
+                      {t('fields.total')}
                     </label>
                     <div
                       className="mono"
@@ -500,14 +515,14 @@ export default function MovimientosPage() {
               {type === 'donacion' && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="eyebrow" style={labelStyle}>
-                    Destinatario
+                    {t('fields.recipient')}
                   </label>
                   <input
                     type="text"
                     value={recipient}
                     onChange={e => setRecipient(e.target.value)}
                     style={inputStyle}
-                    placeholder="Persona, organización o evento"
+                    placeholder={t('fields.recipientPlaceholder')}
                   />
                 </div>
               )}
@@ -515,7 +530,7 @@ export default function MovimientosPage() {
               {type === 'merma' && (
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label className="eyebrow" style={labelStyle}>
-                    Motivo
+                    {t('fields.reason')}
                   </label>
                   <select
                     value={reason}
@@ -525,7 +540,7 @@ export default function MovimientosPage() {
                   >
                     {MERMA_REASONS.map(r => (
                       <option key={r} value={r}>
-                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                        {tMerma(r)}
                       </option>
                     ))}
                   </select>
@@ -536,26 +551,26 @@ export default function MovimientosPage() {
                 <>
                   <div>
                     <label className="eyebrow" style={labelStyle}>
-                      A quién
+                      {t('fields.sampleRecipient')}
                     </label>
                     <input
                       type="text"
                       value={recipient}
                       onChange={e => setRecipient(e.target.value)}
                       style={inputStyle}
-                      placeholder="Cliente potencial, periodista…"
+                      placeholder={t('fields.sampleRecipientPlaceholder')}
                     />
                   </div>
                   <div>
                     <label className="eyebrow" style={labelStyle}>
-                      Evento / ocasión
+                      {t('fields.event')}
                     </label>
                     <input
                       type="text"
                       value={event}
                       onChange={e => setEvent(e.target.value)}
                       style={inputStyle}
-                      placeholder="Cata, feria, lanzamiento…"
+                      placeholder={t('fields.eventPlaceholder')}
                     />
                   </div>
                 </>
@@ -563,14 +578,14 @@ export default function MovimientosPage() {
 
               <div style={{ gridColumn: '1 / -1' }}>
                 <label className="eyebrow" style={labelStyle}>
-                  Notas
+                  {t('fields.notes')}
                 </label>
                 <input
                   type="text"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   style={inputStyle}
-                  placeholder="Observaciones opcionales"
+                  placeholder={t('fields.notesPlaceholder')}
                 />
               </div>
             </div>
@@ -601,11 +616,16 @@ export default function MovimientosPage() {
                   opacity: saving || !selectedProduct || totalUnits <= 0 ? 0.5 : 1,
                 }}
               >
-                {saving ? 'Guardando…' : `Registrar ${TYPE_LABELS[type].toLowerCase()}`}
+                {saving
+                  ? tCommon('saving')
+                  : t('submit', { type: typeLabelLower(type) })}
               </button>
               {selectedProduct && (
                 <span className="mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>
-                  {totalUnits} uds · {totalAvailable(selectedProduct)} disponibles
+                  {t('unitsAvailable', {
+                    units: totalUnits,
+                    available: totalAvailable(selectedProduct),
+                  })}
                 </span>
               )}
             </div>
@@ -630,10 +650,10 @@ export default function MovimientosPage() {
                 color: 'var(--fg-0)',
               }}
             >
-              Historial de hoy
+              {t('historyTitle')}
             </h2>
             <span className="mono" style={{ fontSize: 10, color: 'var(--fg-4)' }}>
-              {salidasHoy.length} salida{salidasHoy.length === 1 ? '' : 's'}
+              {t('historyCount', { count: salidasHoy.length })}
             </span>
           </div>
 
@@ -646,37 +666,41 @@ export default function MovimientosPage() {
             }}
           >
             {loading ? (
-              <div style={{ padding: 32, color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</div>
+              <div style={{ padding: 32, color: 'var(--fg-3)', fontSize: 13 }}>
+                {tCommon('loading')}
+              </div>
             ) : salidasHoy.length === 0 ? (
               <div style={{ padding: 32, textAlign: 'center' }}>
                 <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-                  Sin salidas registradas hoy.
+                  {t('emptyToday')}
                 </p>
                 <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>
-                  Las entradas se registran en{' '}
-                  <Link href="/dashboard/recepcion" style={{ color: 'var(--gold)' }}>
-                    Entrada foto
-                  </Link>
-                  .
+                  {t.rich('emptyInReceiving', {
+                    link: chunks => (
+                      <Link href="/dashboard/recepcion" style={{ color: 'var(--gold)' }}>
+                        {chunks}
+                      </Link>
+                    ),
+                  })}
                 </p>
               </div>
             ) : (
               salidasHoy.map((m, i) => {
-                const t = m.movement_type as SalidaType
+                const movType = m.movement_type as SalidaType
                 const product = m.dist_products
                 const bpc = product?.bottles_per_case || 0
                 const units = (m.cases || 0) * bpc + (m.loose_units || 0)
-                const time = new Date(m.created_at).toLocaleTimeString('es-MX', {
+                const time = new Date(m.created_at).toLocaleTimeString(localeTag, {
                   hour: '2-digit',
                   minute: '2-digit',
                 })
                 const who =
-                  t === 'venta'
-                    ? m.clients?.name || '—'
-                    : t === 'merma'
-                      ? `Motivo: ${m.reason || '—'}`
-                      : m.recipient || '—'
-                const eventInfo = t === 'muestra' && m.event ? ` · ${m.event}` : ''
+                  movType === 'venta'
+                    ? m.clients?.name || tCommon('dash')
+                    : movType === 'merma'
+                      ? t('historyReason', { reason: m.reason ? tMerma(m.reason as MermaReason) : tCommon('dash') })
+                      : m.recipient || tCommon('dash')
+                const eventInfo = movType === 'muestra' && m.event ? ` · ${m.event}` : ''
 
                 return (
                   <div
@@ -699,12 +723,12 @@ export default function MovimientosPage() {
                         textTransform: 'uppercase',
                         padding: '6px 8px',
                         borderRadius: 'var(--radius-sm)',
-                        background: TYPE_SOFT[t],
-                        color: TYPE_TONE[t],
+                        background: TYPE_SOFT[movType],
+                        color: TYPE_TONE[movType],
                         textAlign: 'center',
                       }}
                     >
-                      {TYPE_LABELS[t]}
+                      {typeLabel(movType)}
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div
@@ -723,16 +747,16 @@ export default function MovimientosPage() {
                         {who}
                         {eventInfo}
                         {product?.category
-                          ? ` · ${CATEGORY_LABELS[product.category]}`
+                          ? ` · ${tCat(product.category as ProductCategory)}`
                           : ''}
                         {m.notes ? ` · ${m.notes}` : ''}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div className="mono" style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)' }}>
-                        {units} uds
+                        {t('kpis.unitsShort', { count: units })}
                       </div>
-                      {t === 'venta' && m.total_amount != null && (
+                      {movType === 'venta' && m.total_amount != null && (
                         <div className="mono" style={{ fontSize: 12, color: 'var(--gold)', marginTop: 2 }}>
                           {fmtMoney(Number(m.total_amount), m.currency || product?.currency || 'MXN')}
                         </div>
@@ -754,7 +778,7 @@ export default function MovimientosPage() {
         vista={type}
         profileType="distributor"
         hints={{ pantalla: { summary, salidasCount: salidasHoy.length, today } }}
-        fallback={{ mensaje: proofMsg, accionLabel: 'Preguntar a PROOF' }}
+        fallback={{ mensaje: proofMsg, accionLabel: tCommon('askProof') }}
       />
     </div>
   )
@@ -780,7 +804,8 @@ function Kpi({
         borderRadius: 'var(--radius-md)',
       }}
     >
-      <div className="mono" style={{ fontSize: 9, color: 'var(--fg-3)', letterSpacing: '0.1em', marginBottom: 6 }}>
+      <div className="mono" style={{ fontSize: 9, color: 'var(--fg-3)', letterSpacing: '0.1em', marginBottom: 6 }}
+      >
         {label}
       </div>
       <div className="mono" style={{ fontSize: 18, fontWeight: 600, color: tone || 'var(--fg-0)' }}>
@@ -813,7 +838,7 @@ function Tab({
       type="button"
       onClick={onClick}
       style={{
-        padding: '8px 14px',
+        padding: '10px 14px',
         fontSize: 12,
         fontWeight: active ? 600 : 400,
         color: active ? tone : 'var(--fg-2)',

@@ -3,11 +3,23 @@
 export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { Button, FormField, Input } from '@fermentrack/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserEmail, getUserFirstName } from '@/lib/auth/user'
 import { useProfile } from '@/context/ProfileContext'
+import { useOrganization } from '@/context/OrganizationContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { useIntlLocaleTag } from '@/lib/i18n/locale'
+import {
+  fetchOrganizationSettings,
+  updateOrganizationName,
+  type OrganizationSettings,
+} from '@/app/actions/organization'
+import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
+import { SettingsLanguageSection } from '@/components/proof/SettingsLanguageSection'
+import { WINEMAKER_PLAN_LIMITS } from '@/lib/billing/winemaker-plans'
 import {
   upsertProfile,
   deleteProfile,
@@ -20,15 +32,14 @@ import {
 
 const PROFILE_META: Record<
   ExtraProfile,
-  { emoji: string; label: string; color: string }
+  { emoji: string; color: string }
 > = {
-  brewer: { emoji: '🍺', label: 'Brewer', color: '#FAC775' },
-  winemaker: { emoji: '🍷', label: 'Winemaker', color: '#9FE1CB' },
-  distiller: { emoji: '🥃', label: 'Distiller', color: '#F5C4B3' },
-  distributor: { emoji: '📦', label: 'Distribuidor', color: '#B5D4F4' },
+  brewer: { emoji: '🍺', color: '#FAC775' },
+  winemaker: { emoji: '🍷', color: '#9FE1CB' },
+  distiller: { emoji: '🥃', color: '#F5C4B3' },
+  distributor: { emoji: '📦', color: '#B5D4F4' },
   bodega: {
     emoji: '📦',
-    label: 'Bodega',
     color: '#2F5F8F',
   },
 }
@@ -56,9 +67,12 @@ const input: React.CSSProperties = {
 }
 
 export default function SettingsPage() {
+  const t = useTranslations('dashboard.settings')
+  const localeTag = useIntlLocaleTag()
   const { user, isLoaded } = useAuth()
   const router = useRouter()
   const { allProfiles, activeProfile, reload, loading } = useProfile()
+  const { activeOrg, reload: reloadOrganizations } = useOrganization()
   const supabase = useSupabase()
 
   const [saving, setSaving] = useState(false)
@@ -71,8 +85,22 @@ export default function SettingsPage() {
   const [bancoDeposito, setBancoDeposito] = useState('')
   const [titularCuenta, setTitularCuenta] = useState('')
 
+  const [orgSettings, setOrgSettings] = useState<OrganizationSettings | null>(null)
+  const [orgName, setOrgName] = useState('')
+  const [orgSaving, setOrgSaving] = useState(false)
+  const [orgSavedAt, setOrgSavedAt] = useState<Date | null>(null)
+  const [orgError, setOrgError] = useState<string | null>(null)
+  const [billingLoading, setBillingLoading] = useState(false)
+  const [billingError, setBillingError] = useState<string | null>(null)
+  const [billingNotice, setBillingNotice] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+
   const email = getUserEmail(user)
   const isSuperEmail = email.toLowerCase() === SUPER_USER_EMAIL.toLowerCase()
+
+  function profileTypeLabel(type: ExtraProfile): string {
+    return t(`profileTypes.${type}`)
+  }
 
   useEffect(() => {
     if (!activeProfile) {
@@ -86,6 +114,97 @@ export default function SettingsPage() {
     setBancoDeposito(activeProfile.banco_deposito ?? '')
     setTitularCuenta(activeProfile.titular_cuenta ?? '')
   }, [activeProfile, user, isSuperEmail])
+
+  useEffect(() => {
+    if (!activeOrg?.id) {
+      setOrgSettings(null)
+      return
+    }
+    let cancelled = false
+    fetchOrganizationSettings(activeOrg.id)
+      .then(data => {
+        if (cancelled) return
+        setOrgSettings(data)
+        setOrgName(data?.name ?? activeOrg.name)
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setOrgError(err instanceof Error ? err.message : t('org.loadError'))
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeOrg?.id, activeOrg?.name])
+
+  useEffect(() => {
+    const billing = searchParams.get('billing')
+    if (billing === 'success') {
+      setBillingNotice(t('billing.success'))
+      void reloadOrganizations({ silent: true })
+      if (activeOrg?.id) {
+        fetchOrganizationSettings(activeOrg.id).then(setOrgSettings).catch(() => {})
+      }
+      router.replace('/dashboard/settings', { scroll: false })
+    } else if (billing === 'canceled') {
+      setBillingNotice(t('billing.canceled'))
+      router.replace('/dashboard/settings', { scroll: false })
+    }
+  }, [searchParams, router, reloadOrganizations, activeOrg?.id])
+
+  async function startCheckout() {
+    if (!activeOrg?.id) return
+    setBillingLoading(true)
+    setBillingError(null)
+    try {
+      const res = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: activeOrg.id }),
+      })
+      const body = (await res.json()) as { url?: string; error?: string }
+      if (!res.ok || !body.url) throw new Error(body.error || t('billing.checkoutError'))
+      window.location.href = body.url
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : t('billing.genericError'))
+      setBillingLoading(false)
+    }
+  }
+
+  async function openBillingPortal() {
+    if (!activeOrg?.id) return
+    setBillingLoading(true)
+    setBillingError(null)
+    try {
+      const res = await fetch('/api/billing/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: activeOrg.id }),
+      })
+      const body = (await res.json()) as { url?: string; error?: string }
+      if (!res.ok || !body.url) throw new Error(body.error || t('billing.portalError'))
+      window.location.href = body.url
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : t('billing.genericError'))
+      setBillingLoading(false)
+    }
+  }
+
+  async function handleOrgSave(e: React.FormEvent) {
+    e.preventDefault()
+    if (!activeOrg?.id || !orgSettings?.canManage) return
+    setOrgSaving(true)
+    setOrgError(null)
+    try {
+      await updateOrganizationName({ organizationId: activeOrg.id, name: orgName })
+      await reloadOrganizations({ silent: true })
+      setOrgSavedAt(new Date())
+    } catch (err) {
+      setOrgError(err instanceof Error ? err.message : t('org.saveError'))
+    } finally {
+      setOrgSaving(false)
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -117,11 +236,11 @@ export default function SettingsPage() {
   async function handleDelete(profile: Profile) {
     if (!user) return
     if (profile.profile_type_v2 === activeProfile?.profile_type_v2) {
-      alert('No puedes eliminar el perfil activo. Cambia de perfil primero.')
+      alert(t('profiles.cannotDeleteActive'))
       return
     }
-    const meta = PROFILE_META[profile.profile_type_v2]
-    if (!confirm(`¿Eliminar el perfil "${meta.label}"? Esta acción no se puede deshacer.`)) {
+    const typeLabel = profileTypeLabel(profile.profile_type_v2)
+    if (!confirm(t('profiles.deleteConfirm', { label: typeLabel }))) {
       return
     }
     setDeletingType(profile.profile_type_v2)
@@ -136,7 +255,7 @@ export default function SettingsPage() {
   if (!isLoaded || loading) {
     return (
       <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
-        <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+        <p style={{ fontSize: 13, color: '#888' }}>{t('loading')}</p>
       </div>
     )
   }
@@ -164,13 +283,15 @@ export default function SettingsPage() {
               marginBottom: 6,
             }}
           >
-            Settings
+            {t('title')}
           </h1>
           <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-            Configuración del perfil activo y gestión de todos tus perfiles
+            {t('subtitle')}
           </p>
         </div>
-        <button
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {activeOrg && <OrgSwitcher />}
+          <button
           type="button"
           onClick={() => router.push('/profile-select')}
           style={{
@@ -186,9 +307,225 @@ export default function SettingsPage() {
             fontFamily: 'var(--font-display)',
           }}
         >
-          Cambiar perfil
+          {t('switchProfile')}
         </button>
+        </div>
       </div>
+
+      <SettingsLanguageSection />
+
+      {activeOrg && orgSettings && (
+        <section
+          style={{
+            border: '1px solid var(--hairline)',
+            padding: 24,
+            marginBottom: 24,
+            background: '#fff',
+            maxWidth: 800,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '.1em',
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}
+          >
+            {t('org.title')}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: '#888',
+              fontWeight: 500,
+              marginBottom: 20,
+              lineHeight: 1.45,
+            }}
+          >
+            {t('org.description')}
+          </div>
+
+          <form onSubmit={handleOrgSave} style={{ display: 'grid', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={label}>{t('org.name')}</label>
+                <input
+                  type="text"
+                  value={orgName}
+                  onChange={e => setOrgName(e.target.value)}
+                  readOnly={!orgSettings.canManage}
+                  style={{
+                    ...input,
+                    ...(!orgSettings.canManage
+                      ? { background: '#f4f4f4', color: '#666', cursor: 'not-allowed' }
+                      : {}),
+                  }}
+                  required
+                />
+              </div>
+              <div>
+                <label style={label}>{t('org.slug')}</label>
+                <input
+                  type="text"
+                  value={orgSettings.slug}
+                  readOnly
+                  style={{
+                    ...input,
+                    background: '#f4f4f4',
+                    color: '#666',
+                    cursor: 'not-allowed',
+                    fontFamily: 'ui-monospace, monospace',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={label}>{t('org.plan')}</label>
+                <input
+                  type="text"
+                  value={t(`plans.${orgSettings.plan}` as 'plans.free')}
+                  readOnly
+                  style={{
+                    ...input,
+                    background: '#f4f4f4',
+                    color: '#666',
+                    cursor: 'not-allowed',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={label}>{t('org.planStatus')}</label>
+                <input
+                  type="text"
+                  value={t(`planStatus.${orgSettings.plan_status}` as 'planStatus.active')}
+                  readOnly
+                  style={{
+                    ...input,
+                    background: '#f4f4f4',
+                    color: '#666',
+                    cursor: 'not-allowed',
+                  }}
+                />
+              </div>
+            </div>
+
+            {orgError && (
+              <p style={{ margin: 0, color: 'var(--red)', fontSize: 13 }}>{orgError}</p>
+            )}
+
+            {orgSettings.canManage ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <Button type="submit" loading={orgSaving}>
+                  {orgSaving ? t('org.saving') : t('org.save')}
+                </Button>
+                {orgSavedAt && !orgSaving && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#888' }}>
+                    {t('org.saved')}{' '}
+                    {orgSavedAt.toLocaleTimeString(localeTag, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <p style={{ margin: 0, fontSize: 12, color: '#888' }}>
+                {t('org.readOnlyHint')}
+              </p>
+            )}
+          </form>
+        </section>
+      )}
+
+      {activeOrg && orgSettings?.isOwner && (
+        <section
+          style={{
+            border: '1px solid var(--hairline)',
+            padding: 24,
+            marginBottom: 24,
+            background: '#fff',
+            maxWidth: 800,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '.1em',
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}
+          >
+            {t('billing.title')} · {activeOrg.name}
+          </div>
+          <p
+            style={{
+              margin: '0 0 16px',
+              fontSize: 12,
+              color: '#888',
+              lineHeight: 1.5,
+            }}
+          >
+            {t('billing.currentPlan')}{' '}
+            <strong>{t(`plans.${orgSettings.plan}` as 'plans.free')}</strong>
+            {' · '}
+            {t(`planStatus.${orgSettings.plan_status}` as 'planStatus.active')}
+          </p>
+          <ul
+            style={{
+              margin: '0 0 20px',
+              paddingLeft: 18,
+              fontSize: 12,
+              color: '#666',
+              lineHeight: 1.6,
+            }}
+          >
+            <li>
+              {t('billing.freeLimits', {
+                lots: WINEMAKER_PLAN_LIMITS.free.maxLots,
+                docs: WINEMAKER_PLAN_LIMITS.free.maxDocumentsPerMonth,
+              })}
+            </li>
+            <li>{t('billing.proLimits')}</li>
+          </ul>
+
+          {billingNotice && (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--fg-1)' }}>{billingNotice}</p>
+          )}
+          {billingError && (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--red)' }}>{billingError}</p>
+          )}
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {(orgSettings.plan === 'free' || orgSettings.plan_status === 'canceled') && (
+              <Button type="button" loading={billingLoading} onClick={() => void startCheckout()}>
+                {t('billing.upgrade')}
+              </Button>
+            )}
+            {orgSettings.hasStripeCustomer &&
+              orgSettings.plan !== 'free' &&
+              orgSettings.plan_status !== 'canceled' && (
+                <button
+                  type="button"
+                  disabled={billingLoading}
+                  onClick={() => void openBillingPortal()}
+                  style={{
+                    padding: '10px 16px',
+                    border: '1px solid var(--hairline)',
+                    background: '#fff',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: billingLoading ? 'wait' : 'pointer',
+                    fontFamily: 'var(--font-display)',
+                  }}
+                >
+                  {t('billing.manage')}
+                </button>
+              )}
+          </div>
+        </section>
+      )}
 
       <section
         style={{
@@ -208,12 +545,22 @@ export default function SettingsPage() {
             marginBottom: 16,
           }}
         >
-          Mis perfiles ({allProfiles.length}/5)
-        </div>
+            {t('profiles.count', { count: allProfiles.length })}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: '#888',
+              fontWeight: 500,
+              marginBottom: 16,
+            }}
+          >
+            {t('profiles.legacyNote')}
+          </div>
 
         {allProfiles.length === 0 ? (
           <p style={{ fontSize: 13, color: '#888' }}>
-            No tienes perfiles aún. Crea el primero desde el onboarding.
+            {t('profiles.empty')}
           </p>
         ) : (
           <div
@@ -260,7 +607,7 @@ export default function SettingsPage() {
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        {p.username || meta.label}
+                        {p.username || profileTypeLabel(p.profile_type_v2)}
                       </div>
                       <div
                         style={{
@@ -273,7 +620,7 @@ export default function SettingsPage() {
                           marginTop: 2,
                         }}
                       >
-                        {meta.label}
+                        {profileTypeLabel(p.profile_type_v2)}
                       </div>
                     </div>
                   </div>
@@ -291,7 +638,7 @@ export default function SettingsPage() {
                           color: '#fff',
                         }}
                       >
-                        Activo
+                        {t('profiles.active')}
                       </span>
                     )}
                     {p.is_super_user && (
@@ -307,7 +654,7 @@ export default function SettingsPage() {
                           color: 'var(--fg-0)',
                         }}
                       >
-                        Super
+                        {t('profiles.super')}
                       </span>
                     )}
                   </div>
@@ -331,10 +678,10 @@ export default function SettingsPage() {
                     }}
                   >
                     {isDeleting
-                      ? 'Eliminando...'
+                      ? t('profiles.deleting')
                       : isActive
-                        ? 'Perfil activo'
-                        : 'Eliminar perfil'}
+                        ? t('profiles.activeProfile')
+                        : t('profiles.delete')}
                   </button>
                 </div>
               )
@@ -364,7 +711,9 @@ export default function SettingsPage() {
                 marginBottom: 4,
               }}
             >
-              Perfil activo · {PROFILE_META[activeProfile.profile_type_v2].label}
+              {t('activeProfile.title', {
+                type: profileTypeLabel(activeProfile.profile_type_v2),
+              })}
             </div>
             <div
               style={{
@@ -374,7 +723,7 @@ export default function SettingsPage() {
                 marginBottom: 20,
               }}
             >
-              Editando datos del perfil activo. Para editar otro, cámbialo primero.
+              {t('activeProfile.hint')}
             </div>
 
             <div
@@ -385,18 +734,18 @@ export default function SettingsPage() {
               }}
             >
               <div>
-                <label style={label}>Username</label>
+                <label style={label}>{t('activeProfile.username')}</label>
                 <input
                   type="text"
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   style={input}
-                  placeholder="Tu nombre"
+                  placeholder={t('activeProfile.usernamePlaceholder')}
                   required
                 />
               </div>
               <div>
-                <label style={label}>Correo (Clerk)</label>
+                <label style={label}>{t('activeProfile.email')}</label>
                 <input
                   type="email"
                   value={email}
@@ -410,7 +759,7 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label style={label}>Tipo de perfil</label>
+                <label style={label}>{t('activeProfile.profileType')}</label>
                 <div
                   style={{
                     ...input,
@@ -427,11 +776,11 @@ export default function SettingsPage() {
                   <span style={{ fontSize: 18 }}>
                     {PROFILE_META[activeProfile.profile_type_v2].emoji}
                   </span>
-                  {PROFILE_META[activeProfile.profile_type_v2].label}
+                  {profileTypeLabel(activeProfile.profile_type_v2)}
                 </div>
               </div>
               <div>
-                <label style={label}>Identificador</label>
+                <label style={label}>{t('activeProfile.identifier')}</label>
                 <input
                   type="text"
                   value={activeProfile.profile_type_v2}
@@ -463,7 +812,7 @@ export default function SettingsPage() {
                 marginBottom: 4,
               }}
             >
-              Datos para cobro
+              {t('payment.title')}
             </div>
             <div
               style={{
@@ -474,40 +823,38 @@ export default function SettingsPage() {
                 lineHeight: 1.45,
               }}
             >
-              También disponibles desde el menú de cuenta en el canvas (copiar cuenta y constancia).
+              {t('payment.hint')}
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
-              <div>
-                <label style={label}>Titular de la cuenta</label>
-                <input
+              <FormField label={t('payment.holder')} htmlFor="titular-cuenta">
+                <Input
+                  id="titular-cuenta"
                   type="text"
                   value={titularCuenta}
                   onChange={e => setTitularCuenta(e.target.value)}
-                  style={input}
-                  placeholder="Nombre como aparece en el banco"
+                  placeholder={t('payment.holderPlaceholder')}
                 />
-              </div>
+              </FormField>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={label}>Banco</label>
-                <input
-                  type="text"
-                  value={bancoDeposito}
-                  onChange={e => setBancoDeposito(e.target.value)}
-                  style={input}
-                  placeholder="BBVA, Santander…"
-                />
-              </div>
-              <div>
-                <label style={label}>Cuenta / CLABE</label>
-                <input
-                  type="text"
-                  value={cuentaDeposito}
-                  onChange={e => setCuentaDeposito(e.target.value)}
-                  style={{ ...input, fontFamily: 'ui-monospace, monospace' }}
-                  placeholder="012345678901234567"
-                />
-              </div>
+                <FormField label={t('payment.bank')} htmlFor="banco-deposito">
+                  <Input
+                    id="banco-deposito"
+                    type="text"
+                    value={bancoDeposito}
+                    onChange={e => setBancoDeposito(e.target.value)}
+                    placeholder={t('payment.bankPlaceholder')}
+                  />
+                </FormField>
+                <FormField label={t('payment.account')} htmlFor="cuenta-deposito">
+                  <Input
+                    id="cuenta-deposito"
+                    type="text"
+                    value={cuentaDeposito}
+                    onChange={e => setCuentaDeposito(e.target.value)}
+                    placeholder={t('payment.accountPlaceholder')}
+                    style={{ fontFamily: 'ui-monospace, monospace' }}
+                  />
+                </FormField>
               </div>
             </div>
           </section>
@@ -538,7 +885,7 @@ export default function SettingsPage() {
                     marginBottom: 6,
                   }}
                 >
-                  Super usuario
+                  {t('superUser.title')}
                 </div>
                 <div
                   style={{
@@ -548,9 +895,7 @@ export default function SettingsPage() {
                     lineHeight: 1.4,
                   }}
                 >
-                  {isSuperEmail
-                    ? 'Tu correo coincide con el super-usuario maestro: este modo siempre se activará al guardar.'
-                    : 'Activa este modo para que este perfil vea todos los módulos del sidebar.'}
+                  {isSuperEmail ? t('superUser.masterEmail') : t('superUser.hint')}
                 </div>
               </div>
               <button
@@ -567,7 +912,7 @@ export default function SettingsPage() {
                   cursor: isSuperEmail ? 'not-allowed' : 'pointer',
                   flexShrink: 0,
                 }}
-                aria-label="Toggle super usuario"
+                aria-label={t('superUser.toggle')}
               >
                 <span
                   style={{
@@ -592,25 +937,9 @@ export default function SettingsPage() {
               flexWrap: 'wrap',
             }}
           >
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                padding: '14px 24px',
-                background: 'var(--fg-0)',
-                color: '#fff',
-                border: '1px solid var(--hairline)',
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: '.08em',
-                textTransform: 'uppercase',
-                cursor: saving ? 'wait' : 'pointer',
-                opacity: saving ? 0.5 : 1,
-                fontFamily: 'var(--font-display)',
-              }}
-            >
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
+            <Button type="submit" loading={saving}>
+              {saving ? t('saving') : t('save')}
+            </Button>
             {savedAt && !saving && (
               <span
                 style={{
@@ -621,8 +950,8 @@ export default function SettingsPage() {
                   color: '#888',
                 }}
               >
-                Guardado{' '}
-                {savedAt.toLocaleTimeString('es-MX', {
+                {t('saved')}{' '}
+                {savedAt.toLocaleTimeString(localeTag, {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

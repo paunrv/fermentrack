@@ -3,7 +3,9 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
+import { translateAuthError } from '@/lib/i18n/auth-errors'
 
 function GoogleIcon() {
   return (
@@ -29,6 +31,8 @@ function GoogleIcon() {
 }
 
 function SignInFormInner() {
+  const t = useTranslations('auth.signIn')
+  const tErrors = useTranslations('auth.errors')
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/dashboard'
@@ -38,7 +42,7 @@ function SignInFormInner() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState<'google' | 'email' | null>(null)
   const [error, setError] = useState<string | null>(
-    authError ? 'No se pudo iniciar sesión. Intenta de nuevo.' : null
+    authError ? tErrors('authCallback') : null
   )
 
   const handleGoogleLogin = async () => {
@@ -55,7 +59,7 @@ function SignInFormInner() {
 
       if (oauthError) {
         console.error(oauthError)
-        setError(oauthError.message)
+        setError(translateAuthError(oauthError.message, key => tErrors(key)))
         setLoading(null)
         return
       }
@@ -65,11 +69,12 @@ function SignInFormInner() {
         return
       }
 
-      setError('No se pudo iniciar sesión con Google.')
+      setError(tErrors('googleFailed'))
       setLoading(null)
     } catch (err) {
       console.error(err)
-      const message = err instanceof Error ? err.message : 'Error inesperado al conectar con Google'
+      const message =
+        err instanceof Error ? err.message : tErrors('googleUnexpected')
       setError(message)
       setLoading(null)
     }
@@ -87,7 +92,7 @@ function SignInFormInner() {
     })
 
     if (signInError) {
-      setError(signInError.message)
+      setError(translateAuthError(signInError.message, key => tErrors(key)))
       setLoading(null)
       return
     }
@@ -111,11 +116,8 @@ function SignInFormInner() {
       }}
     >
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div
-          className="eyebrow"
-          style={{ color: 'var(--copper)', marginBottom: 10 }}
-        >
-          Operational intelligence
+        <div className="eyebrow" style={{ color: 'var(--copper)', marginBottom: 10 }}>
+          {t('eyebrow')}
         </div>
         <h1
           style={{
@@ -128,9 +130,7 @@ function SignInFormInner() {
         >
           PR<span style={{ color: 'var(--copper)' }}>O</span>OF
         </h1>
-        <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>
-          Inicia sesión en tu bodega
-        </p>
+        <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
       </div>
 
       {error ? (
@@ -172,7 +172,7 @@ function SignInFormInner() {
         }}
       >
         <GoogleIcon />
-        {loading === 'google' ? 'Redirigiendo…' : 'Continuar con Google'}
+        {loading === 'google' ? t('googleLoading') : t('google')}
       </button>
 
       <div
@@ -188,7 +188,7 @@ function SignInFormInner() {
         }}
       >
         <span style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
-        o
+        {t('divider')}
         <span style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
       </div>
 
@@ -203,7 +203,7 @@ function SignInFormInner() {
               color: 'var(--fg-2)',
             }}
           >
-            Email
+            {t('email')}
           </span>
           <input
             type="email"
@@ -235,7 +235,7 @@ function SignInFormInner() {
               color: 'var(--fg-2)',
             }}
           >
-            Contraseña
+            {t('password')}
           </span>
           <input
             type="password"
@@ -276,7 +276,7 @@ function SignInFormInner() {
             opacity: disabled && loading !== 'email' ? 0.6 : 1,
           }}
         >
-          {loading === 'email' ? 'Entrando…' : 'Entrar'}
+          {loading === 'email' ? t('submitting') : t('submit')}
         </button>
       </form>
 
@@ -288,9 +288,9 @@ function SignInFormInner() {
           color: 'var(--fg-3)',
         }}
       >
-        ¿Sin cuenta?{' '}
+        {t('noAccount')}{' '}
         <Link href="/sign-up" style={{ color: 'var(--copper)', textDecoration: 'none' }}>
-          Regístrate
+          {t('signUp')}
         </Link>
       </p>
     </div>
@@ -298,12 +298,10 @@ function SignInFormInner() {
 }
 
 export function SignInForm() {
+  const t = useTranslations('auth.signIn')
+
   return (
-    <Suspense
-      fallback={
-        <div style={{ color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</div>
-      }
-    >
+    <Suspense fallback={<div style={{ color: 'var(--fg-3)', fontSize: 13 }}>{t('loading')}</div>}>
       <SignInFormInner />
     </Suspense>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useLandingLanguage } from './LandingLanguageContext'
+import { useTranslations } from 'next-intl'
 import { HeroMockup } from './HeroMockup'
 import { LANDING, landingBtnPrimary, landingBtnSecondary } from './landing-theme'
 
@@ -18,7 +18,12 @@ function HighlightText({ text, highlight }: { text: string; highlight: string })
 }
 
 export function HeroSection() {
-  const { copy } = useLandingLanguage()
+  const t = useTranslations('landing.hero')
+  const alerts = t.raw('mockup.alerts') as {
+    tone: 'warn' | 'info' | 'ok'
+    title: string
+    meta: string
+  }[]
 
   return (
     <section style={{ padding: '80px 24px 96px', maxWidth: 1120, margin: '0 auto' }}>
@@ -41,7 +46,7 @@ export function HeroSection() {
                 letterSpacing: '0.02em',
               }}
             >
-              {copy.hero.tag}
+              {t('tag')}
             </span>
             <span
               aria-hidden
@@ -66,9 +71,9 @@ export function HeroSection() {
               color: LANDING.text,
             }}
           >
-            {copy.hero.headlineLine1}
+            {t('headlineLine1')}
             <br />
-            {copy.hero.headlineLine2}
+            {t('headlineLine2')}
           </h1>
 
           <h2
@@ -81,9 +86,9 @@ export function HeroSection() {
               color: LANDING.textSecondary,
             }}
           >
-            {copy.hero.subtitleLine1}
+            {t('subtitleLine1')}
             <br />
-            <HighlightText text={copy.hero.subtitleLine2} highlight={copy.hero.subtitleHighlight} />
+            <HighlightText text={t('subtitleLine2')} highlight={t('subtitleHighlight')} />
           </h2>
 
           <p
@@ -95,24 +100,24 @@ export function HeroSection() {
               maxWidth: 520,
             }}
           >
-            {copy.hero.body}
+            {t('body')}
           </p>
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <a href="#demo" style={landingBtnSecondary}>
-              {copy.hero.ctaDemo}
+              {t('ctaDemo')}
             </a>
             <Link href="/sign-in?mode=signup" style={landingBtnPrimary}>
-              {copy.hero.ctaStart}
+              {t('ctaStart')}
               <span aria-hidden>→</span>
             </Link>
           </div>
         </div>
 
         <HeroMockup
-          userLabel={copy.hero.mockup.userLabel}
-          liveLabel={copy.hero.mockup.liveLabel}
-          alerts={copy.hero.mockup.alerts}
+          userLabel={t('mockup.userLabel')}
+          liveLabel={t('mockup.liveLabel')}
+          alerts={alerts}
         />
       </div>
     </section>

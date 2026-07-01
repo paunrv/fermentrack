@@ -1,5 +1,7 @@
 import type { ExtraProfile } from '@/lib/supabase'
 
+// Guardas de ruta por perfil. Winemaker → org tenancy v1 (epic #3). Ver docs/ORG-TENANCY.md
+
 /** Subpáginas con estilo canvas (fondo claro, sin topbar oscuro). */
 export const CANVAS_STYLE_PREFIXES = ['/dashboard/credito'] as const
 

@@ -2,14 +2,19 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { AlertCard } from '@/components/proof/AlertCard'
 import { CollapsibleSection } from '@/components/proof/CollapsibleSection'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import {
+  useWinemakerOwnerCopy,
+  type WinemakerOwnerCopy,
+} from '@/hooks/useWinemakerOwnerCopy'
+import { buildOwnerAlertDescriptors } from '@/lib/proof/winemaker-owner-alerts'
 import { getProfileTheme, proofAccentCssVars } from '@/lib/proof/profile-theme'
 import type { AlertaOperativa } from '@/lib/proof/types'
 import {
-  buildOwnerAlerts,
   completeTask,
   fetchActiveLots,
   fetchLotEvents,
@@ -18,10 +23,7 @@ import {
   fetchProfileFirstName,
   fetchTasksToday,
   fetchTeamMembers,
-  formatTaskTime,
   memberInitial,
-  profileBadgeLabel,
-  stageLabel,
   type OwnerLotRow,
   type OwnerTaskRow,
   type OwnerTeamMember,
@@ -33,9 +35,10 @@ function EmptyMessage({ children }: { children: React.ReactNode }) {
   )
 }
 
-function LotRow({ lot }: { lot: OwnerLotRow }) {
+function LotRow({ lot, copy }: { lot: OwnerLotRow; copy: WinemakerOwnerCopy }) {
   const router = useRouter()
-  const meta = [stageLabel(lot.current_stage), lot.varietal].filter(Boolean).join(' · ')
+  const tHome = useTranslations('winemaker.home')
+  const meta = [copy.stageLabel(lot.current_stage), lot.varietal].filter(Boolean).join(' · ')
 
   return (
     <button
@@ -49,7 +52,7 @@ function LotRow({ lot }: { lot: OwnerLotRow }) {
       </span>
       <div style={{ minWidth: 0 }}>
         <p className="proof-task-row__title">{lot.code}</p>
-        <p className="proof-task-row__meta">{meta || 'Sin detalle'}</p>
+        <p className="proof-task-row__meta">{meta || tHome('noDetail')}</p>
       </div>
     </button>
   )
@@ -59,23 +62,27 @@ function CalendarTaskRow({
   task,
   onComplete,
   completing,
+  copy,
 }: {
   task: OwnerTaskRow
   onComplete: (id: string) => void
   completing: string | null
+  copy: WinemakerOwnerCopy
 }) {
+  const tHome = useTranslations('winemaker.home')
+
   return (
     <div className="proof-task-row">
       <input
         type="checkbox"
-        aria-label={`Completar ${task.title}`}
+        aria-label={tHome('completeTaskAria', { title: task.title })}
         disabled={completing === task.id}
         onChange={() => onComplete(task.id)}
         style={{ marginTop: 2, accentColor: 'var(--proof-accent)' }}
       />
       <div style={{ minWidth: 0, flex: 1 }}>
         <p className="proof-task-row__title">{task.title}</p>
-        <p className="proof-task-row__meta">{formatTaskTime(task.due_at)}</p>
+        <p className="proof-task-row__meta">{copy.formatTaskTime(task.due_at)}</p>
       </div>
     </div>
   )
@@ -85,18 +92,21 @@ function PendingTaskRow({
   task,
   onComplete,
   completing,
+  copy,
 }: {
   task: OwnerTaskRow
   onComplete: (id: string) => void
   completing: string | null
+  copy: WinemakerOwnerCopy
 }) {
-  const assignee = task.assigneeName?.trim() || 'Sin asignar'
+  const tHome = useTranslations('winemaker.home')
+  const assignee = task.assigneeName?.trim() || tHome('unassigned')
 
   return (
     <div className="proof-task-row">
       <div style={{ minWidth: 0, flex: 1 }}>
         <p className="proof-task-row__title">{task.title}</p>
-        <p className="proof-task-row__meta">Asignado a {assignee}</p>
+        <p className="proof-task-row__meta">{tHome('assignedTo', { name: assignee })}</p>
       </div>
       <button
         type="button"
@@ -114,15 +124,16 @@ function PendingTaskRow({
           cursor: completing === task.id ? 'wait' : 'pointer',
         }}
       >
-        {completing === task.id ? '…' : 'Completar'}
+        {completing === task.id ? '…' : tHome('completeTask')}
       </button>
     </div>
   )
 }
 
-function TeamMemberRow({ member }: { member: OwnerTeamMember }) {
+function TeamMemberRow({ member, copy }: { member: OwnerTeamMember; copy: WinemakerOwnerCopy }) {
+  const tHome = useTranslations('winemaker.home')
   const theme = member.profileType ? getProfileTheme(member.profileType) : null
-  const name = member.fullName?.trim() || 'Miembro'
+  const name = member.fullName?.trim() || tHome('memberFallback')
 
   return (
     <div className="proof-task-row">
@@ -146,7 +157,7 @@ function TeamMemberRow({ member }: { member: OwnerTeamMember }) {
       </span>
       <div style={{ minWidth: 0, flex: 1 }}>
         <p className="proof-task-row__title">{name}</p>
-        <p className="proof-task-row__meta">{member.orgRole}</p>
+        <p className="proof-task-row__meta">{copy.orgRoleLabel(member.orgRole)}</p>
       </div>
       {theme ? (
         <span
@@ -161,7 +172,7 @@ function TeamMemberRow({ member }: { member: OwnerTeamMember }) {
             flexShrink: 0,
           }}
         >
-          {profileBadgeLabel(member.profileType)}
+          {copy.profileBadgeLabel(member.profileType)}
         </span>
       ) : null}
     </div>
@@ -173,10 +184,13 @@ export function WinemakerMobileHome() {
   const supabase = useSupabase()
   const { scope } = useProfile()
   const userId = scope?.user_id
+  const copy = useWinemakerOwnerCopy()
+  const tCommon = useTranslations('winemaker.common')
+  const tHome = useTranslations('winemaker.home')
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [firstName, setFirstName] = useState('Aldo')
+  const [firstName, setFirstName] = useState('')
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [lots, setLots] = useState<OwnerLotRow[]>([])
   const [alerts, setAlerts] = useState<AlertaOperativa[]>([])
@@ -184,14 +198,8 @@ export function WinemakerMobileHome() {
   const [pendingTasks, setPendingTasks] = useState<OwnerTaskRow[]>([])
   const [team, setTeam] = useState<OwnerTeamMember[]>([])
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
-  const [saludo, setSaludo] = useState('Hola')
 
-  useEffect(() => {
-    const hora = new Date().getHours()
-    if (hora >= 5 && hora < 12) setSaludo('Buenos días')
-    else if (hora >= 12 && hora < 18) setSaludo('Buenas tardes')
-    else setSaludo('Buenas noches')
-  }, [])
+  const displayName = firstName || copy.defaultFirstName
 
   const load = useCallback(async () => {
     if (!userId) return
@@ -224,7 +232,7 @@ export function WinemakerMobileHome() {
 
       const lotIds = activeLots.map(l => l.id)
       const events = await fetchLotEvents(supabase, orgId, lotIds)
-      const computedAlerts = buildOwnerAlerts(activeLots, events)
+      const computedAlerts = copy.mapAlerts(buildOwnerAlertDescriptors(activeLots, events))
 
       setLots(activeLots)
       setAlerts(computedAlerts)
@@ -232,12 +240,12 @@ export function WinemakerMobileHome() {
       setPendingTasks(pending)
       setTeam(members)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudieron cargar los datos'
+      const msg = err instanceof Error ? err.message : tHome('loadError')
       setError(msg)
     } finally {
       setLoading(false)
     }
-  }, [supabase, userId])
+  }, [supabase, userId, copy, tHome])
 
   useEffect(() => {
     void load()
@@ -266,7 +274,7 @@ export function WinemakerMobileHome() {
           className="proof-mobile-home-scroll proof-mobile-home-scroll--with-shell-nav"
           style={{ display: 'grid', placeItems: 'center', color: 'var(--fg-3)', fontSize: 14 }}
         >
-          Cargando…
+          {tCommon('loading')}
         </div>
       </div>
     )
@@ -284,15 +292,13 @@ export function WinemakerMobileHome() {
               border: '1px solid rgba(105, 64, 165, 0.2)',
             }}
           >
-            🍇 Winemaker
+            {tHome('badge')}
           </span>
           <h1 className="proof-mobile-home-title" suppressHydrationWarning>
-            {saludo}, {firstName}
+            {copy.greeting()}, {displayName}
           </h1>
           <p className="proof-mobile-home-subtitle" style={{ color: 'var(--fg-3)' }}>
-            {alerts.length > 0
-              ? `${alerts.length} requieren atención`
-              : '0 requieren atención'}
+            {copy.attentionCount(alerts.length)}
           </p>
         </header>
 
@@ -313,14 +319,17 @@ export function WinemakerMobileHome() {
         ) : null}
 
         {!organizationId ? (
-          <EmptyMessage>
-            Aún no tienes una bodega vinculada. Completa el onboarding o contacta soporte.
-          </EmptyMessage>
+          <EmptyMessage>{tHome('noOrganization')}</EmptyMessage>
         ) : (
           <>
-            <CollapsibleSection emoji="🔴" title="Atención ahora" defaultOpen badge={alerts.length || undefined}>
+            <CollapsibleSection
+              emoji="🔴"
+              title={tHome('sections.attention')}
+              defaultOpen
+              badge={alerts.length || undefined}
+            >
               {alerts.length === 0 ? (
-                <EmptyMessage>✅ Todo en orden por ahora</EmptyMessage>
+                <EmptyMessage>{tHome('empty.attentionOk')}</EmptyMessage>
               ) : (
                 alerts.map(alerta => <AlertCard key={alerta.id} alerta={alerta} fullWidth />)
               )}
@@ -328,25 +337,25 @@ export function WinemakerMobileHome() {
 
             <CollapsibleSection
               emoji="🍷"
-              title="Lotes activos"
+              title={tHome('sections.activeLots')}
               defaultOpen={false}
               badge={lots.length || undefined}
             >
               {lots.length === 0 ? (
-                <EmptyMessage>No hay lotes activos. Crea uno desde Lotes.</EmptyMessage>
+                <EmptyMessage>{tHome('empty.noActiveLots')}</EmptyMessage>
               ) : (
-                lots.map(lot => <LotRow key={lot.id} lot={lot} />)
+                lots.map(lot => <LotRow key={lot.id} lot={lot} copy={copy} />)
               )}
             </CollapsibleSection>
 
             <CollapsibleSection
               emoji="📅"
-              title="Calendario"
+              title={tHome('sections.calendar')}
               defaultOpen={false}
               badge={tasksToday.length || undefined}
             >
               {tasksToday.length === 0 ? (
-                <EmptyMessage>No hay tareas programadas para hoy.</EmptyMessage>
+                <EmptyMessage>{tHome('empty.noTasksToday')}</EmptyMessage>
               ) : (
                 tasksToday.map(task => (
                   <CalendarTaskRow
@@ -354,6 +363,7 @@ export function WinemakerMobileHome() {
                     task={task}
                     completing={completingTaskId}
                     onComplete={handleCompleteTask}
+                    copy={copy}
                   />
                 ))
               )}
@@ -361,12 +371,12 @@ export function WinemakerMobileHome() {
 
             <CollapsibleSection
               emoji="✅"
-              title="Tareas pendientes"
+              title={tHome('sections.pendingTasks')}
               defaultOpen={false}
               badge={pendingTasks.length || undefined}
             >
               {pendingTasks.length === 0 ? (
-                <EmptyMessage>No tienes tareas pendientes.</EmptyMessage>
+                <EmptyMessage>{tHome('empty.noPendingTasks')}</EmptyMessage>
               ) : (
                 pendingTasks.map(task => (
                   <PendingTaskRow
@@ -374,6 +384,7 @@ export function WinemakerMobileHome() {
                     task={task}
                     completing={completingTaskId}
                     onComplete={handleCompleteTask}
+                    copy={copy}
                   />
                 ))
               )}
@@ -381,14 +392,14 @@ export function WinemakerMobileHome() {
 
             <CollapsibleSection
               emoji="👥"
-              title="Mi equipo hoy"
+              title={tHome('sections.team')}
               defaultOpen={false}
               badge={team.length || undefined}
             >
               {team.length === 0 ? (
-                <EmptyMessage>Aún no hay miembros en tu equipo.</EmptyMessage>
+                <EmptyMessage>{tHome('empty.noTeam')}</EmptyMessage>
               ) : (
-                team.map(member => <TeamMemberRow key={member.id} member={member} />)
+                team.map(member => <TeamMemberRow key={member.id} member={member} copy={copy} />)
               )}
             </CollapsibleSection>
           </>

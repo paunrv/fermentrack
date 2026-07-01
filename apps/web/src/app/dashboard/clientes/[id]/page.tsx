@@ -5,41 +5,20 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { editarCliente, obtenerCliente } from '@/app/actions/clientes'
 import type { ClienteDetalle, EstadoPago } from '@/lib/supabase/distribuidor'
 import { fmtDateOnly, fmtMoney } from '@/lib/proof/format'
 
-const DIAS_CREDITO_OPTIONS = [
-  { value: 0, label: 'Contado' },
-  { value: 15, label: '15 días' },
-  { value: 30, label: '30 días' },
-  { value: 60, label: '60 días' },
-  { value: 90, label: '90 días' },
-] as const
-
-const ESTADO_PEDIDO_LABEL: Record<string, string> = {
-  borrador: 'Borrador',
-  confirmado: 'Confirmado',
-  preparando: 'Preparando',
-  en_ruta: 'En ruta',
-  entregado: 'Entregado',
-  parcial: 'Parcial',
-  cancelado: 'Cancelado',
-}
-
-const ESTADO_PAGO_LABEL: Record<EstadoPago, string> = {
-  pendiente: 'Pendiente',
-  pagado: 'Pagado',
-  vencido: 'Vencido',
-  pago_parcial: 'Pago parcial',
-}
-
-function creditoLabel(dias: number): string {
-  return dias === 0 ? 'Contado' : `${dias} días`
-}
+const DIAS_CREDITO_VALUES = [0, 15, 30, 60, 90] as const
 
 export default function ClienteDetallePage() {
+  const t = useTranslations('distributor.clientes.detail')
+  const tList = useTranslations('distributor.clientes')
+  const tEstado = useTranslations('distributor.pedidoEstado')
+  const tPago = useTranslations('distributor.estadoPago')
+  const tCommon = useTranslations('distributor.common')
   const params = useParams()
   const clienteId = String(params.id ?? '')
   const { scope } = useProfile()
@@ -58,6 +37,10 @@ export default function ClienteDetallePage() {
   const [diasCredito, setDiasCredito] = useState(0)
   const [notas, setNotas] = useState('')
 
+  function creditoLabel(dias: number): string {
+    return dias === 0 ? tList('creditTerms.cash') : tList('creditTerms.days', { days: dias })
+  }
+
   async function load() {
     if (!scope || !clienteId) return
     setError(null)
@@ -73,7 +56,7 @@ export default function ClienteDetallePage() {
         setNotas(data.notas || '')
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar cliente')
+      setError(e instanceof Error ? e.message : t('loadError'))
     }
   }
 
@@ -108,7 +91,7 @@ export default function ClienteDetallePage() {
       setEditing(false)
       await load()
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'No se pudo guardar')
+      setSaveError(e instanceof Error ? e.message : t('saveError'))
     } finally {
       setSaving(false)
     }
@@ -117,7 +100,7 @@ export default function ClienteDetallePage() {
   if (loading) {
     return (
       <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
       </div>
     )
   }
@@ -129,10 +112,10 @@ export default function ClienteDetallePage() {
           href="/dashboard/clientes"
           style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
         >
-          ← Clientes
+          {t('back')}
         </Link>
         <p style={{ marginTop: 16, color: 'var(--fg-2)' }}>
-          {error || 'Cliente no encontrado.'}
+          {error || t('notFound')}
         </p>
       </div>
     )
@@ -144,7 +127,7 @@ export default function ClienteDetallePage() {
         href="/dashboard/clientes"
         style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
       >
-        ← Clientes
+        {t('back')}
       </Link>
 
       <header
@@ -163,8 +146,10 @@ export default function ClienteDetallePage() {
           </h1>
           <p className="mono" style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
             {creditoLabel(cliente.dias_credito)}
-            {cliente.saldo_pendiente > 0 ? ` · Saldo ${fmtMoney(cliente.saldo_pendiente)}` : ' · Al corriente'}
-            {cliente.tiene_deuda_vencida ? ' · Deuda vencida' : ''}
+            {cliente.saldo_pendiente > 0
+              ? t('balance', { amount: fmtMoney(cliente.saldo_pendiente) })
+              : t('current')}
+            {cliente.tiene_deuda_vencida ? t('overdueDebt') : ''}
           </p>
         </div>
         {!editing && (
@@ -184,7 +169,7 @@ export default function ClienteDetallePage() {
               cursor: 'pointer',
             }}
           >
-            Editar
+            {t('edit')}
           </button>
         )}
       </header>
@@ -204,7 +189,7 @@ export default function ClienteDetallePage() {
             className="eyebrow"
             style={{ margin: '0 0 16px', fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.12em' }}
           >
-            Editar cliente
+            {t('editTitle')}
           </h2>
           {saveError && (
             <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
@@ -212,7 +197,7 @@ export default function ClienteDetallePage() {
             </p>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-            <Field label="Nombre" span={2}>
+            <Field label={tList('fields.name')} span={2}>
               <input
                 type="text"
                 value={nombre}
@@ -221,7 +206,7 @@ export default function ClienteDetallePage() {
                 style={inputStyle}
               />
             </Field>
-            <Field label="Teléfono">
+            <Field label={t('fields.phone')}>
               <input
                 type="tel"
                 value={telefono}
@@ -229,7 +214,7 @@ export default function ClienteDetallePage() {
                 style={inputStyle}
               />
             </Field>
-            <Field label="Email">
+            <Field label={t('fields.email')}>
               <input
                 type="email"
                 value={email}
@@ -237,28 +222,28 @@ export default function ClienteDetallePage() {
                 style={inputStyle}
               />
             </Field>
-            <Field label="Dirección" span={2}>
+            <Field label={t('fields.address')} span={2}>
               <textarea
                 value={direccion}
                 onChange={e => setDireccion(e.target.value)}
-                placeholder="Calle, colonia, ciudad"
+                placeholder={tList('fields.addressPlaceholder')}
                 style={{ ...inputStyle, minHeight: 56, resize: 'vertical' }}
               />
             </Field>
-            <Field label="Días de crédito">
+            <Field label={tList('fields.creditDays')}>
               <select
                 value={diasCredito}
                 onChange={e => setDiasCredito(Number(e.target.value))}
                 style={inputStyle}
               >
-                {DIAS_CREDITO_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
+                {DIAS_CREDITO_VALUES.map(value => (
+                  <option key={value} value={value}>
+                    {creditoLabel(value)}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Notas" span={2}>
+            <Field label={t('fields.notes')} span={2}>
               <textarea
                 value={notas}
                 onChange={e => setNotas(e.target.value)}
@@ -272,7 +257,7 @@ export default function ClienteDetallePage() {
               disabled={saving || !nombre.trim()}
               style={ctaStyle}
             >
-              {saving ? 'Guardando…' : 'Guardar'}
+              {saving ? tList('saving') : tCommon('save')}
             </button>
             <button
               type="button"
@@ -292,23 +277,23 @@ export default function ClienteDetallePage() {
                 border: '1px solid var(--hairline)',
               }}
             >
-              Cancelar
+              {tList('cancel')}
             </button>
           </div>
         </form>
       ) : (
-        <Section title="Datos">
-          <DataRow label="Teléfono" value={cliente.telefono || '—'} />
-          <DataRow label="Email" value={cliente.email || '—'} />
-          <DataRow label="Dirección" value={cliente.direccion || '—'} />
-          <DataRow label="Crédito" value={creditoLabel(cliente.dias_credito)} />
-          <DataRow label="Notas" value={cliente.notas || '—'} />
+        <Section title={t('sections.data')}>
+          <DataRow label={t('fields.phone')} value={cliente.telefono || tCommon('dash')} />
+          <DataRow label={t('fields.email')} value={cliente.email || tCommon('dash')} />
+          <DataRow label={t('fields.address')} value={cliente.direccion || tCommon('dash')} />
+          <DataRow label={t('fields.credit')} value={creditoLabel(cliente.dias_credito)} />
+          <DataRow label={t('fields.notes')} value={cliente.notas || tCommon('dash')} />
         </Section>
       )}
 
-      <Section title="Pedidos">
+      <Section title={t('sections.orders')}>
         {cliente.pedidos.length === 0 ? (
-          <Empty>Sin pedidos registrados para este cliente.</Empty>
+          <Empty>{t('emptyOrders')}</Empty>
         ) : (
           cliente.pedidos.map((p, i) => (
             <Link
@@ -329,8 +314,8 @@ export default function ClienteDetallePage() {
                   {p.numero}
                 </span>
                 <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
-                  {ESTADO_PEDIDO_LABEL[p.estado] ?? p.estado}
-                  {p.fecha_entrega ? ` · Entrega ${fmtDateOnly(p.fecha_entrega)}` : ''}
+                  {(tEstado as (key: string) => string)(p.estado) || p.estado}
+                  {p.fecha_entrega ? t('delivery', { date: fmtDateOnly(p.fecha_entrega) }) : ''}
                 </div>
               </div>
               <span className="mono" style={{ fontWeight: 600, color: 'var(--fg-0)', fontSize: 13 }}>
@@ -362,7 +347,7 @@ export default function ClienteDetallePage() {
             className="eyebrow"
             style={{ margin: 0, fontSize: 10, color: 'var(--fg-3)', letterSpacing: '0.12em' }}
           >
-            Deuda
+            {t('sections.debt')}
             {cliente.pagos.length > 0 && (
               <span style={{ marginLeft: 8, color: 'var(--fg-2)' }}>
                 ({cliente.pagos.length})
@@ -382,7 +367,7 @@ export default function ClienteDetallePage() {
             }}
           >
             {cliente.pagos.length === 0 ? (
-              <Empty>Sin pagos registrados.</Empty>
+              <Empty>{t('emptyPayments')}</Empty>
             ) : (
               cliente.pagos.map((p, i) => {
                 const pedidoLabel =
@@ -390,7 +375,8 @@ export default function ClienteDetallePage() {
                     ? p.pedidos_vinculados
                         .map(v => v.pedido_numero || v.pedido_id.slice(0, 8))
                         .join(', ')
-                    : '—'
+                    : tCommon('dash')
+                const pagoEstado = (tPago as (key: EstadoPago) => string)(p.estado) || p.estado
                 return (
                   <div
                     key={p.id}
@@ -428,13 +414,13 @@ export default function ClienteDetallePage() {
                               border: '1px solid var(--hairline)',
                             }}
                           >
-                            {ESTADO_PAGO_LABEL[p.estado]}
+                            {pagoEstado}
                           </span>
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 4 }}>
-                          Pedido {pedidoLabel}
+                          {t('orderRef', { ref: pedidoLabel })}
                           {p.fecha_vencimiento
-                            ? ` · Vence ${fmtDateOnly(p.fecha_vencimiento)}`
+                            ? t('due', { date: fmtDateOnly(p.fecha_vencimiento) })
                             : ''}
                         </div>
                       </div>
@@ -453,7 +439,7 @@ export default function ClienteDetallePage() {
                             whiteSpace: 'nowrap',
                           }}
                         >
-                          Ver comprobante
+                          {t('viewReceipt')}
                         </a>
                       )}
                     </div>

@@ -1,20 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PROOF_PROFILES_TABLE, type ExtraProfile } from '@/lib/supabase'
-import type { AlertaOperativa } from '@/lib/proof/types'
 
-const TEMP_MIN = 15
-const TEMP_MAX = 17
-const STALE_DAYS = 3
-const EVENT_WINDOW_DAYS = 7
+// Winemaker owner home — parcialmente org-aware. Epic #3: docs/ORG-TENANCY.md
 
-const STAGE_LABELS: Record<string, string> = {
-  harvest: 'Cosecha',
-  fermentation: 'Fermentación',
-  malolactic: 'Maloláctica',
-  aging: 'Crianza',
-  bottling: 'Embotellado',
-  bottled: 'Embotellado',
-}
+export type GreetingPeriod = 'morning' | 'afternoon' | 'evening'
 
 export type OwnerLotRow = {
   id: string
@@ -76,27 +65,11 @@ export function varietalNamesFromInputs(inputs: unknown): string[] {
   return names
 }
 
-export function greetingForHour(date = new Date()): string {
+export function greetingPeriod(date = new Date()): GreetingPeriod {
   const hour = date.getHours()
-  if (hour >= 5 && hour < 12) return 'Buenos días'
-  if (hour >= 12 && hour < 18) return 'Buenas tardes'
-  return 'Buenas noches'
-}
-
-export function stageLabel(stage: string | null): string {
-  if (!stage) return 'Sin etapa'
-  return STAGE_LABELS[stage] ?? stage
-}
-
-function parseTemp(payload: unknown): number | null {
-  if (!payload || typeof payload !== 'object') return null
-  const temp = (payload as Record<string, unknown>).temp_c
-  if (typeof temp === 'number' && Number.isFinite(temp)) return temp
-  if (typeof temp === 'string') {
-    const n = parseFloat(temp)
-    return Number.isFinite(n) ? n : null
-  }
-  return null
+  if (hour >= 5 && hour < 12) return 'morning'
+  if (hour >= 12 && hour < 18) return 'afternoon'
+  return 'evening'
 }
 
 function startOfToday(): Date {
@@ -140,7 +113,7 @@ export async function fetchProfileFirstName(
 
   if (error) throw error
   const fullName = data?.full_name?.trim()
-  if (!fullName) return 'Aldo'
+  if (!fullName) return ''
   return fullName.split(/\s+/)[0] || fullName
 }
 
@@ -190,56 +163,6 @@ export async function fetchLotEvents(
 
   if (error) throw error
   return (data ?? []) as EventRow[]
-}
-
-export function buildOwnerAlerts(lots: OwnerLotRow[], events: EventRow[]): AlertaOperativa[] {
-  const alerts: AlertaOperativa[] = []
-  const lotById = new Map(lots.map(l => [l.id, l]))
-  const now = Date.now()
-  const windowStart = now - EVENT_WINDOW_DAYS * 24 * 60 * 60 * 1000
-
-  for (const ev of events) {
-    if (ev.event_type !== 'FERMENTATION_MONITORING' || !ev.lot_id) continue
-    if (new Date(ev.occurred_at).getTime() < windowStart) continue
-    const temp = parseTemp(ev.payload)
-    if (temp == null || (temp >= TEMP_MIN && temp <= TEMP_MAX)) continue
-    const lot = lotById.get(ev.lot_id)
-    if (!lot) continue
-    alerts.push({
-      id: `temp-${ev.id}`,
-      nivel: 'P1',
-      condicion: 'quiebre_inminente',
-      titulo: `🌡️ ${lot.code} — temp fuera de rango`,
-      subtexto: `${temp}°C · esperado 15–17°C`,
-      color: 'rojo',
-      acciones: [{ label: 'Ver lote', href: `/dashboard/lotes/${lot.id}` }],
-    })
-  }
-
-  const lastEventByLot = new Map<string, string>()
-  for (const ev of events) {
-    if (!ev.lot_id) continue
-    const prev = lastEventByLot.get(ev.lot_id)
-    if (!prev || ev.occurred_at > prev) lastEventByLot.set(ev.lot_id, ev.occurred_at)
-  }
-
-  for (const lot of lots) {
-    const last = lastEventByLot.get(lot.id)
-    const reference = last ? new Date(last).getTime() : new Date(lot.created_at).getTime()
-    const daysSince = Math.floor((now - reference) / (24 * 60 * 60 * 1000))
-    if (daysSince <= STALE_DAYS) continue
-    alerts.push({
-      id: `stale-${lot.id}`,
-      nivel: 'P2',
-      condicion: 'sku_sin_rotar',
-      titulo: `🧪 ${lot.code} · ${daysSince} días sin registro`,
-      subtexto: last ? `Último evento hace ${daysSince} días` : 'Sin eventos registrados',
-      color: 'amarillo',
-      acciones: [{ label: 'Ver lote', href: `/dashboard/lotes/${lot.id}` }],
-    })
-  }
-
-  return alerts
 }
 
 export async function fetchTasksToday(
@@ -363,28 +286,7 @@ export async function completeTask(sb: SupabaseClient, taskId: string): Promise<
   if (error) throw error
 }
 
-export function formatTaskTime(dueAt: string | null): string {
-  if (!dueAt) return 'Sin hora'
-  return new Date(dueAt).toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export function memberInitial(name: string | null, userId: string): string {
   const base = name?.trim() || userId
   return base.charAt(0).toUpperCase()
-}
-
-const PROFILE_BADGE_LABELS: Partial<Record<ExtraProfile, string>> = {
-  winemaker: 'Winemaker',
-  bodega: 'Bodega',
-  distiller: 'Destilador',
-  distributor: 'Distribuidor',
-  brewer: 'Brewer',
-}
-
-export function profileBadgeLabel(profileType: ExtraProfile | null): string {
-  if (!profileType) return 'Sin perfil'
-  return PROFILE_BADGE_LABELS[profileType] ?? profileType
 }

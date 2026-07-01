@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { crearSku, editarSku } from '@/app/actions/skus'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
@@ -27,15 +28,12 @@ import type { SKU } from '@/lib/proof/types'
 
 type Filtro = 'todos' | 'quiebre' | 'sin_rotar' | 'con_deuda' | 'sobrevendido'
 
-const FILTRO_OPTIONS = [
-  { id: 'todos' as const, label: 'Todos' },
-  { id: 'quiebre' as const, label: 'Quiebre' },
-  { id: 'sin_rotar' as const, label: 'Sin rotar' },
-  { id: 'con_deuda' as const, label: 'Con deuda' },
-  { id: 'sobrevendido' as const, label: 'Sobrevendido' },
-]
+const FILTRO_IDS: Filtro[] = ['todos', 'quiebre', 'sin_rotar', 'con_deuda', 'sobrevendido']
 
 export default function InventarioPage() {
+  const t = useTranslations('distributor.inventario')
+  const tCommon = useTranslations('distributor.common')
+  const tCat = useTranslations('distributor.liquidCategories')
   const { scope } = useProfile()
   const supabase = useSupabase()
   const isMobile = useIsMobile()
@@ -106,7 +104,7 @@ export default function InventarioPage() {
       setShowForm(false)
       await loadSkus()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'No se pudo guardar el SKU')
+      setSaveError(err instanceof Error ? err.message : t('saveError'))
     } finally {
       setSaving(false)
     }
@@ -139,7 +137,7 @@ export default function InventarioPage() {
       await loadSkus()
     } catch (e) {
       console.error(e)
-      alert(e instanceof Error ? e.message : 'Error al sincronizar')
+      alert(e instanceof Error ? e.message : t('syncError'))
     } finally {
       setSyncing(false)
     }
@@ -173,7 +171,16 @@ export default function InventarioPage() {
   const bodegaTransito = useMemo(() => skus.filter(s => s.estado === 'en_transito'), [skus])
   const sobrevendidos = useMemo(() => skus.filter(s => s.estado === 'sobrevendido').length, [skus])
 
-  const proofMsg = `Inventario valorado en ${fmtMoney(kpis.valor)}. ${kpis.quiebre} SKU${kpis.quiebre === 1 ? '' : 's'} en quiebre. Capital inmovilizado ~${fmtMoney(kpis.muertoCapital)}.`
+  const filtroOptions = useMemo(
+    () => FILTRO_IDS.map(id => ({ id, label: t(`filters.${id}`) })),
+    [t]
+  )
+
+  const proofMsg = t('aiFallback', {
+    value: fmtMoney(kpis.valor),
+    quiebre: kpis.quiebre,
+    deadCapital: fmtMoney(kpis.muertoCapital),
+  })
 
   return (
     <div style={pagePadding({ withAiBar: true, isMobile })}>
@@ -189,7 +196,7 @@ export default function InventarioPage() {
             }}
           >
             <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--fg-0)', lineHeight: 1.5 }}>
-              Sincroniza tu catálogo para activar el inventario PROOF
+              {t('syncBanner')}
             </p>
             <button
               type="button"
@@ -206,7 +213,7 @@ export default function InventarioPage() {
                 cursor: syncing ? 'wait' : 'pointer',
               }}
             >
-              {syncing ? 'Sincronizando…' : 'Sincronizar catálogo'}
+              {syncing ? t('syncing') : t('syncCatalog')}
             </button>
           </div>
         )}
@@ -231,11 +238,9 @@ export default function InventarioPage() {
                 letterSpacing: '-0.02em',
               }}
             >
-              Inventario
+              {t('title')}
             </h1>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-              Stock vivo — disponible vs reservado (tabla skus)
-            </p>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
@@ -254,7 +259,7 @@ export default function InventarioPage() {
                 cursor: 'pointer',
               }}
             >
-              {showForm ? 'Cancelar' : '+ Nuevo SKU'}
+              {showForm ? tCommon('cancel') : t('newSku')}
             </button>
             <Link
               href="/dashboard/recepcion"
@@ -270,7 +275,7 @@ export default function InventarioPage() {
                 borderRadius: 'var(--radius-sm)',
               }}
             >
-              Entrada foto
+              {tCommon('receivingPhoto')}
             </Link>
           </div>
         </header>
@@ -296,7 +301,7 @@ export default function InventarioPage() {
                 letterSpacing: '0.12em',
               }}
             >
-              {editingId ? 'Editar SKU' : 'Nuevo SKU'}
+              {editingId ? t('editSku') : t('newSku').replace(/^\+\s*/, '')}
             </h2>
             {saveError && (
               <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
@@ -311,17 +316,17 @@ export default function InventarioPage() {
                 gap: 12,
               }}
             >
-              <SkuField label="Nombre" span={2}>
+              <SkuField label={t('fields.name')} span={2}>
                 <input
                   type="text"
                   value={nombre}
                   onChange={e => setNombre(e.target.value)}
                   required
-                  placeholder="Nombre comercial"
+                  placeholder={t('fields.namePlaceholder')}
                   style={inputStyle}
                 />
               </SkuField>
-              <SkuField label="Categoría">
+              <SkuField label={t('fields.category')}>
                 <select
                   value={categoriaLiquido}
                   onChange={e => setCategoriaLiquido(e.target.value as CategoriaLiquido)}
@@ -330,12 +335,12 @@ export default function InventarioPage() {
                 >
                   {CATEGORIA_LIQUIDO_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>
-                      {o.label}
+                      {tCat(o.value)}
                     </option>
                   ))}
                 </select>
               </SkuField>
-              <SkuField label="Precio venta">
+              <SkuField label={t('fields.salePrice')}>
                 <input
                   type="number"
                   min={0}
@@ -364,7 +369,7 @@ export default function InventarioPage() {
                   opacity: saving || !nombre.trim() ? 0.6 : 1,
                 }}
               >
-                {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Crear SKU'}
+                {saving ? tCommon('saving') : editingId ? tCommon('saveChanges') : t('createSku')}
               </button>
               <button
                 type="button"
@@ -382,7 +387,7 @@ export default function InventarioPage() {
                   cursor: 'pointer',
                 }}
               >
-                Cancelar
+                {tCommon('cancel')}
               </button>
             </div>
           </form>
@@ -391,34 +396,30 @@ export default function InventarioPage() {
         <div className="proof-canvas-stack">
           <CanvasHorizontalSection
             accent={INVENTARIO_ACCENT}
-            title="Resumen"
-            subtitle={loading ? 'Cargando…' : `${skus.length} SKU${skus.length !== 1 ? 's' : ''} en catálogo`}
+            title={t('sections.summary')}
+            subtitle={loading ? tCommon('loading') : t('sections.skuCount', { count: skus.length })}
             loading={loading}
             itemWidth={132}
             skeletonCount={4}
           >
-            <KpiRailChip label="Valor inventario" value={fmtMoney(kpis.valor)} />
+            <KpiRailChip label={t('kpis.inventoryValue')} value={fmtMoney(kpis.valor)} />
             <KpiRailChip
-              label="En quiebre"
+              label={t('kpis.inShortage')}
               value={String(kpis.quiebre)}
               tone={kpis.quiebre ? 'var(--crit)' : undefined}
             />
-            <KpiRailChip label="Sin rotar +60d" value={String(kpis.sinRotar)} />
-            <KpiRailChip label="Deuda asociada" value={fmtMoney(kpis.deuda)} />
+            <KpiRailChip label={t('kpis.noRotation60d')} value={String(kpis.sinRotar)} />
+            <KpiRailChip label={t('kpis.associatedDebt')} value={fmtMoney(kpis.deuda)} />
           </CanvasHorizontalSection>
 
           <CanvasHorizontalSection
             accent={INVENTARIO_ACCENT}
-            title="Catálogo"
-            subtitle={`${filtered.length} de ${skus.length} SKU${skus.length !== 1 ? 's' : ''}`}
+            title={t('sections.catalog')}
+            subtitle={t('sections.catalogFiltered', { filtered: filtered.length, total: skus.length })}
             toolbar={
-              <HorizontalChipRail options={FILTRO_OPTIONS} value={filtro} onChange={setFiltro} />
+              <HorizontalChipRail options={filtroOptions} value={filtro} onChange={setFiltro} />
             }
-            emptyMessage={
-              needsSync
-                ? 'Sin SKUs PROOF. Sincroniza tu catálogo arriba.'
-                : 'Sin resultados para este filtro.'
-            }
+            emptyMessage={needsSync ? t('empty.needsSync') : t('empty.noFilterResults')}
             loading={loading}
             itemWidth={176}
             skeletonCount={3}
@@ -436,9 +437,9 @@ export default function InventarioPage() {
 
           <CanvasHorizontalSection
             accent={INVENTARIO_ACCENT}
-            title="Bodega principal"
-            subtitle={`${bodegaPrincipal.length} SKU${bodegaPrincipal.length !== 1 ? 's' : ''}`}
-            emptyMessage="Sin SKUs en bodega principal."
+            title={t('sections.mainWarehouse')}
+            subtitle={t('sections.warehouseCount', { count: bodegaPrincipal.length })}
+            emptyMessage={t('empty.mainWarehouse')}
             loading={loading}
             itemWidth={160}
           >
@@ -449,9 +450,9 @@ export default function InventarioPage() {
 
           <CanvasHorizontalSection
             accent={INVENTARIO_ACCENT}
-            title="En tránsito"
-            subtitle={`${bodegaTransito.length} SKU${bodegaTransito.length !== 1 ? 's' : ''}`}
-            emptyMessage="Sin SKUs en tránsito."
+            title={t('sections.inTransit')}
+            subtitle={t('sections.warehouseCount', { count: bodegaTransito.length })}
+            emptyMessage={t('empty.inTransit')}
             loading={loading}
             itemWidth={160}
           >
@@ -462,16 +463,16 @@ export default function InventarioPage() {
 
           <CanvasHorizontalSection
             accent={INVENTARIO_ACCENT}
-            title="Riesgo"
-            subtitle="Indicadores de capital y stock crítico"
+            title={t('sections.risk')}
+            subtitle={t('sections.riskSubtitle')}
             loading={loading}
             itemWidth={148}
             skeletonCount={4}
           >
-            <RiesgoRailChip title="Capital inmovilizado" value={fmtMoney(kpis.muertoCapital)} tone="var(--fg-2)" />
-            <RiesgoRailChip title="Quiebres" value={String(kpis.quiebre)} tone="var(--crit)" />
-            <RiesgoRailChip title="Sobrevendidos" value={String(sobrevendidos)} tone="var(--purple)" />
-            <RiesgoRailChip title="Deuda en lento" value={fmtMoney(kpis.deuda)} tone="var(--warn)" />
+            <RiesgoRailChip title={t('risk.deadCapital')} value={fmtMoney(kpis.muertoCapital)} tone="var(--fg-2)" />
+            <RiesgoRailChip title={t('risk.shortages')} value={String(kpis.quiebre)} tone="var(--crit)" />
+            <RiesgoRailChip title={t('risk.oversold')} value={String(sobrevendidos)} tone="var(--purple)" />
+            <RiesgoRailChip title={t('risk.slowDebt')} value={fmtMoney(kpis.deuda)} tone="var(--warn)" />
           </CanvasHorizontalSection>
         </div>
       </div>
@@ -480,19 +481,20 @@ export default function InventarioPage() {
         pantalla="inventario"
         profileType="distributor"
         hints={{ pantalla: { kpis, skuCount: skus.length, filtro, needsSync } }}
-        fallback={{ mensaje: proofMsg, accionLabel: 'Analizar con PROOF' }}
+        fallback={{ mensaje: proofMsg, accionLabel: tCommon('analyzeWithProof') }}
       />
     </div>
   )
 }
 
 function BodegaSkuRailCard({ sku }: { sku: SKU }) {
+  const t = useTranslations('distributor.stockBar')
   return (
     <div className="proof-rail-card">
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)', lineHeight: 1.3 }}>{sku.nombre}</div>
       <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>{sku.bodega}</div>
       <div className="mono" style={{ marginTop: 'auto', fontSize: 14, fontWeight: 600, color: 'var(--fg-0)' }}>
-        {fmtBottles(sku.stockDisponible)} bts
+        {fmtBottles(sku.stockDisponible)} {t('bottlesUnit')}
       </div>
     </div>
   )

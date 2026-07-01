@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { categoriaLiquidoLabel } from '@/lib/proof/categoria-liquido'
+import { useTranslations } from 'next-intl'
+import type { CategoriaLiquido } from '@/lib/proof/types'
 import type { SKU, EstadoSKU } from '@/lib/proof/types'
 import { StatusBadge } from '@/components/proof/StatusBadge'
 import { StockBar } from '@/components/proof/StockBar'
@@ -14,6 +15,15 @@ type Props = {
 }
 
 export function InventarioSkuRailCard({ sku, href, canEdit, onEdit }: Props) {
+  const t = useTranslations('distributor.common')
+  const tCat = useTranslations('distributor.liquidCategories')
+
+  function categoryLabel(value: CategoriaLiquido | string | null | undefined): string {
+    const keys = ['cerveza', 'vino', 'mezcal', 'gin', 'destilado', 'otro'] as const
+    const key = keys.includes(value as (typeof keys)[number]) ? (value as (typeof keys)[number]) : 'otro'
+    return tCat(key)
+  }
+
   return (
     <div className="proof-rail-card">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
@@ -38,7 +48,7 @@ export function InventarioSkuRailCard({ sku, href, canEdit, onEdit }: Props) {
             </div>
           )}
           <div style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4 }}>
-            {categoriaLiquidoLabel(sku.categoriaLiquido)}
+            {categoryLabel(sku.categoriaLiquido)}
           </div>
         </div>
         <StatusBadge estado={sku.estado as EstadoSKU} diasSinMovimiento={sku.diasSinMovimiento} />
@@ -63,7 +73,7 @@ export function InventarioSkuRailCard({ sku, href, canEdit, onEdit }: Props) {
         }}
       >
         <span>
-          Margen{' '}
+          {t('margin')}{' '}
           <strong className="mono" style={{ color: 'var(--gold)' }}>
             {sku.margenPorcentaje}%
           </strong>
@@ -82,7 +92,7 @@ export function InventarioSkuRailCard({ sku, href, canEdit, onEdit }: Props) {
               textDecoration: 'underline',
             }}
           >
-            Editar
+            {t('edit')}
           </button>
         )}
       </div>

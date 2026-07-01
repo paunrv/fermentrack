@@ -1,3 +1,6 @@
+// ROADMAP — Org tenancy: módulo congelado (epic #3). Ver docs/ORG-TENANCY.md
+// Scope actual: clerk_id + proof.destilador_row_owned. No migrar en PRs de winemaker.
+
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PROOF_PROFILES_TABLE } from '@/lib/supabase'
 import type {

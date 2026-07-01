@@ -2,57 +2,14 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
-import { type LandingLang } from '@/lib/proof/landing-copy'
-import { useLandingLanguage } from './LandingLanguageContext'
+import { LandingLocaleToggle } from './LandingLocaleToggle'
 import { ProofLogo } from './ProofLogo'
 import { LANDING, landingBtnPrimary, landingBtnLogIn } from './landing-theme'
 
-function LangToggle({
-  langs,
-  current,
-  onChange,
-}: {
-  langs: LandingLang[]
-  current: LandingLang
-  onChange: (lang: LandingLang) => void
-}) {
-  return (
-    <div
-      style={{
-        display: 'inline-flex',
-        border: `1px solid ${LANDING.border}`,
-        borderRadius: 'var(--radius-sm)',
-        overflow: 'hidden',
-      }}
-    >
-      {langs.map(code => (
-        <button
-          key={code}
-          type="button"
-          onClick={() => onChange(code)}
-          aria-pressed={current === code}
-          style={{
-            padding: '4px 8px',
-            border: 'none',
-            background: current === code ? LANDING.bgDark : 'transparent',
-            color: current === code ? LANDING.textOnDark : LANDING.textSecondary,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-          }}
-        >
-          {code}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 export function LandingNav() {
-  const { lang, setLang, copy } = useLandingLanguage()
+  const t = useTranslations('landing.nav')
   const [hasSession, setHasSession] = useState(false)
   const [sessionChecked, setSessionChecked] = useState(false)
 
@@ -107,37 +64,37 @@ export function LandingNav() {
         <ProofLogo />
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1 }}>
-          <a href="#productores" style={navLinkStyle}>
-            {copy.nav.productores}
+          <a href="/#productores" style={navLinkStyle}>
+            {t('productores')}
           </a>
-          <a href="#distribuidores" style={navLinkStyle}>
-            {copy.nav.distribuidores}
+          <a href="/#distribuidores" style={navLinkStyle}>
+            {t('distribuidores')}
           </a>
-          <a href="#precios" style={navLinkStyle}>
-            {copy.nav.precios}
+          <a href="/#precios" style={navLinkStyle}>
+            {t('precios')}
           </a>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <LangToggle langs={['es', 'en']} current={lang} onChange={setLang} />
+          <LandingLocaleToggle />
 
           {sessionChecked && (
             <>
               {hasSession ? (
                 <Link href="/dashboard" style={{ ...landingBtnPrimary, padding: '8px 14px', fontSize: 12 }}>
-                  {copy.nav.goDashboard}
+                  {t('goDashboard')}
                   <span aria-hidden>→</span>
                 </Link>
               ) : (
                 <>
                   <Link href="/sign-in" style={landingBtnLogIn}>
-                    {copy.nav.logIn}
+                    {t('logIn')}
                   </Link>
                   <Link
                     href="/sign-in?mode=signup"
                     style={{ ...landingBtnPrimary, padding: '8px 14px', fontSize: 12 }}
                   >
-                    {copy.nav.startFree}
+                    {t('startFree')}
                     <span aria-hidden>→</span>
                   </Link>
                 </>

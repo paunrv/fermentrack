@@ -2,6 +2,7 @@ node_modules
 dist
 .next
 .turbo
+storybook-static
 *.tsbuildinfo
 # Environment — never commit secrets
 .env

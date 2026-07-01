@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 export const MOBILE_BOTTOM_NAV_HEIGHT = 56
 
@@ -23,11 +24,13 @@ export function MobileBottomNav({
   settingsHref?: string
   settingsIcon: React.ReactNode
 }) {
+  const t = useTranslations('dashboard.mobileNav')
   const path = usePathname()
   const [sheetOpen, setSheetOpen] = useState(false)
 
   const tabs = primaryItems.slice(0, 4)
   const hasMore = overflowItems.length > 0
+  const settingsLabel = t('settings')
 
   function isActive(href: string) {
     return path === href || (href !== '/dashboard' && path.startsWith(href))
@@ -36,7 +39,7 @@ export function MobileBottomNav({
   return (
     <>
       <nav
-        aria-label="Navegación principal"
+        aria-label={t('main')}
         className="proof-mobile-bottom-nav"
         style={{
           position: 'fixed',
@@ -86,7 +89,7 @@ export function MobileBottomNav({
         {hasMore ? (
           <button
             type="button"
-            aria-label="Más secciones"
+            aria-label={t('moreSections')}
             aria-expanded={sheetOpen}
             onClick={() => setSheetOpen(v => !v)}
             style={{
@@ -111,12 +114,12 @@ export function MobileBottomNav({
               <circle cx="12" cy="12" r="2" />
               <circle cx="19" cy="12" r="2" />
             </svg>
-            <span>Más</span>
+            <span>{t('more')}</span>
           </button>
         ) : (
           <Link
             href={settingsHref}
-            aria-label="Configuración"
+            aria-label={settingsLabel}
             style={{
               flex: 1,
               display: 'flex',
@@ -133,7 +136,7 @@ export function MobileBottomNav({
             }}
           >
             {settingsIcon}
-            <span>Ajustes</span>
+            <span>{settingsLabel}</span>
           </Link>
         )}
       </nav>
@@ -142,7 +145,7 @@ export function MobileBottomNav({
         <>
           <button
             type="button"
-            aria-label="Cerrar menú"
+            aria-label={t('closeMenu')}
             onClick={() => setSheetOpen(false)}
             style={{
               position: 'fixed',
@@ -155,7 +158,7 @@ export function MobileBottomNav({
           />
           <div
             role="dialog"
-            aria-label="Más secciones"
+            aria-label={t('moreSections')}
             style={{
               position: 'fixed',
               left: 0,
@@ -171,7 +174,7 @@ export function MobileBottomNav({
               overflowY: 'auto',
             }}
           >
-            {[...overflowItems, { href: settingsHref, label: 'Configuración', icon: settingsIcon }].map(
+            {[...overflowItems, { href: settingsHref, label: settingsLabel, icon: settingsIcon }].map(
               item => (
                 <Link
                   key={item.href}

@@ -4,7 +4,11 @@ export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
+import { useWinemakerAccess } from '@/hooks/useWinemakerAccess'
+import { useDistributorCanvasCopy } from '@/hooks/useDistributorCanvasCopy'
+import { useWinemakerCanvasCopy } from '@/hooks/useWinemakerCanvasCopy'
 import { useProofContextBar } from '@/hooks/useProofContextBar'
 import {
   ProofCanvasShell,
@@ -16,32 +20,31 @@ import { fetchTeamAccess } from '@/app/actions/equipo'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
-import type { ProofSubHub } from '@/lib/proof/proof-canvas-copy'
-import {
-  DISTILLER_QUICK_ACTIONS,
-  DISTRIBUTOR_MODE_ACTIONS,
-  DISTRIBUTOR_BODEGA_LENS_ACTIONS,
-  DISTRIBUTOR_COMPRA_LENS_ACTIONS,
-  DISTRIBUTOR_VENTA_LENS_ACTIONS,
-  WINEMAKER_MODE_ACTIONS,
-  WINEMAKER_TICKET_LENS_ACTIONS,
-  WINEMAKER_BODEGA_LENS_ACTIONS,
-  WINEMAKER_AGENDA_LENS_ACTIONS,
-} from '@/lib/proof/proof-canvas-copy'
+import type { ProofSubHub, ProofHubLensAction } from '@/lib/proof/proof-canvas-copy'
+import { DISTILLER_QUICK_ACTIONS } from '@/lib/proof/proof-canvas-copy'
 
 export default function DashboardPage() {
+  const tHome = useTranslations('distributor.home')
+  const distributorCanvas = useDistributorCanvasCopy()
+  const winemakerCanvas = useWinemakerCanvasCopy()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { scope, activeProfile, loading: profileLoading, reload: reloadProfile } = useProfile()
+  const { scope, activeProfile, reload: reloadProfile } = useProfile()
+  const {
+    isWinemaker,
+    effectiveProfileType,
+    userId,
+    activeOrg,
+    canWrite,
+    loading: winemakerAccessLoading,
+  } = useWinemakerAccess()
 
-  const agentProfileType = toAgentProfileType(activeProfile?.profile_type_v2)
-  const profileType = profileTypeFromV2(activeProfile?.profile_type_v2)
-  const theme = getProfileTheme(activeProfile?.profile_type_v2)
+  const agentProfileType = toAgentProfileType(effectiveProfileType ?? undefined)
+  const profileType = profileTypeFromV2(effectiveProfileType ?? undefined)
+  const theme = getProfileTheme(effectiveProfileType ?? undefined)
   const accent = theme.accent
-  const userId = scope?.user_id
   const isDistiller = profileType === 'distiller'
   const isDistributor = profileType === 'distributor'
-  const isWinemaker = profileType === 'winemaker'
 
   const [userQuery, setUserQuery] = useState<string | null>(null)
   const [urlQuery, setUrlQuery] = useState<string | null>(null)
@@ -65,8 +68,9 @@ export default function DashboardPage() {
           content: m.content,
         })),
       ...(winemakerPantalla ? { pantalla: winemakerPantalla } : {}),
+      ...(activeOrg?.id ? { organizationId: activeOrg.id } : {}),
     }),
-    [userQuery, agentConversation, winemakerPantalla]
+    [userQuery, agentConversation, winemakerPantalla, activeOrg?.id]
   )
 
   const {
@@ -93,27 +97,31 @@ export default function DashboardPage() {
     fallback: { mensaje: '' },
   })
 
-  const quickActionsForProfile = isDistiller ? [...DISTILLER_QUICK_ACTIONS] : []
-  const modeActionsForProfile = isDistributor
-    ? [...DISTRIBUTOR_MODE_ACTIONS]
+  const quickActionsForProfile = isDistiller
+    ? [...DISTILLER_QUICK_ACTIONS]
     : isWinemaker
-      ? [...WINEMAKER_MODE_ACTIONS]
+      ? winemakerCanvas.quickActions
+      : []
+  const modeActionsForProfile = isDistributor
+    ? distributorCanvas.modeActions
+    : isWinemaker
+      ? winemakerCanvas.modeActions
       : []
 
-  const hubLensesForProfile: Partial<Record<ProofSubHub, typeof DISTRIBUTOR_COMPRA_LENS_ACTIONS>> =
+  const hubLensesForProfile: Partial<Record<ProofSubHub, ProofHubLensAction[]>> =
     isDistributor
-      ? {
-          compra: [...DISTRIBUTOR_COMPRA_LENS_ACTIONS],
-          venta: [...DISTRIBUTOR_VENTA_LENS_ACTIONS],
-          bodega: [...DISTRIBUTOR_BODEGA_LENS_ACTIONS],
-        }
+      ? distributorCanvas.hubLenses
       : isWinemaker
-        ? {
-            wm_ticket: [...WINEMAKER_TICKET_LENS_ACTIONS],
-            wm_bodega: [...WINEMAKER_BODEGA_LENS_ACTIONS],
-            wm_agenda: [...WINEMAKER_AGENDA_LENS_ACTIONS],
-          }
+        ? winemakerCanvas.hubLenses
         : {}
+
+  const canvasCopiesForProfile = isDistributor
+    ? distributorCanvas.copies
+    : isWinemaker
+      ? winemakerCanvas.copies
+      : undefined
+
+  const hubLensCopyForProfile = isWinemaker ? winemakerCanvas.hubLensCopy : undefined
 
   useEffect(() => {
     const q = searchParams.get('q')?.trim()
@@ -143,18 +151,18 @@ export default function DashboardPage() {
   }, [refreshProfile, isDistributor])
 
   useEffect(() => {
-    if (profileLoading || !isWinemaker || !userId) {
+    if (winemakerAccessLoading || !isWinemaker || !activeOrg?.id) {
       setIsWinemakerOwner(null)
       return
     }
     let cancelled = false
-    void fetchTeamAccess().then(access => {
+    void fetchTeamAccess(activeOrg.id).then(access => {
       if (!cancelled) setIsWinemakerOwner(access.isOwner)
     })
     return () => {
       cancelled = true
     }
-  }, [profileLoading, isWinemaker, userId])
+  }, [winemakerAccessLoading, isWinemaker, activeOrg?.id])
 
   const handleAgentSend = useCallback((message: string, conversation: ProofMessage[]) => {
     setAgentConversation(conversation)
@@ -167,6 +175,7 @@ export default function DashboardPage() {
       setAgentConversation(conversation)
       const form = new FormData()
       form.append('file', file)
+      if (activeOrg?.id) form.append('organizationId', activeOrg.id)
 
       const res = await fetch('/api/winemaker/documentos', {
         method: 'POST',
@@ -182,7 +191,7 @@ export default function DashboardPage() {
       }
 
       if (!res.ok) {
-        throw new Error(body.error || 'No se pudo guardar el ticket')
+        throw new Error(body.error || tHome('ticketSaveError'))
       }
 
       setWinemakerPantalla({
@@ -192,28 +201,31 @@ export default function DashboardPage() {
       setUserQuery(body.agentQuery ?? `Ticket guardado: ${file.name}`)
       setAgentRequestId(n => n + 1)
     },
-    []
+    [activeOrg?.id, tHome]
   )
 
   const handleDeleteCard = useCallback(
     async (itemId: string) => {
+      if (!canWrite) {
+        throw new Error(tHome('readOnly'))
+      }
       const res = await fetch(`/api/winemaker/documentos/${itemId}`, {
         method: 'DELETE',
         credentials: 'same-origin',
       })
       const body = (await res.json().catch(() => ({}))) as { error?: string }
       if (!res.ok) {
-        throw new Error(body.error || 'No se pudo eliminar')
+        throw new Error(body.error || tHome('deleteError'))
       }
       dismissDisplayCard(itemId)
       setWinemakerPantalla(prev =>
         prev && prev.documentId === itemId ? null : prev
       )
     },
-    [dismissDisplayCard]
+    [dismissDisplayCard, canWrite, tHome]
   )
 
-  if (profileLoading) {
+  if (winemakerAccessLoading) {
     return (
       <div
         style={{
@@ -225,7 +237,7 @@ export default function DashboardPage() {
           fontSize: 14,
         }}
       >
-        Cargando PROOF…
+        {tHome('loading')}
       </div>
     )
   }
@@ -242,7 +254,7 @@ export default function DashboardPage() {
           fontSize: 14,
         }}
       >
-        Perfil no compatible con el canvas PROOF.
+        {tHome('incompatibleProfile')}
       </div>
     )
   }
@@ -260,7 +272,7 @@ export default function DashboardPage() {
             fontSize: 14,
           }}
         >
-          Cargando PROOF…
+          {tHome('loading')}
         </div>
       )
     }
@@ -294,6 +306,8 @@ export default function DashboardPage() {
       />
       <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <ProofCanvasShell
+          canvasCopies={canvasCopiesForProfile}
+          hubLensCopy={hubLensCopyForProfile}
           accent={accent}
           profileType={profileType}
           chatResponse={userQuery ? chatResponse : undefined}
@@ -301,8 +315,8 @@ export default function DashboardPage() {
           loading={agentLoading}
           error={agentError}
           onSend={handleAgentSend}
-          onTicketFile={isWinemaker ? handleTicketFile : undefined}
-          onDeleteCard={isWinemaker ? handleDeleteCard : undefined}
+          onTicketFile={isWinemaker && canWrite ? handleTicketFile : undefined}
+          onDeleteCard={isWinemaker && canWrite ? handleDeleteCard : undefined}
           quickActions={quickActionsForProfile}
           modeActions={modeActionsForProfile}
           hubLenses={hubLensesForProfile}

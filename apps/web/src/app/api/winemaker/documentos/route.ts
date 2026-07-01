@@ -6,16 +6,18 @@ import {
   uploadWinemakerDocument,
 } from '@/lib/proof/storage-winemaker-documents'
 import { processTicketUpload } from '@/lib/proof/winemaker-ticket-process'
+import { getWinemakerTicketCopy } from '@/lib/i18n/winemaker-ticket-copy-server'
 import {
   analyzeWinemakerTicketImage,
-  buildTicketUploadMessage,
   isTicketImageContentType,
   isTicketVisionClassified,
   resolveTicketContentType,
   type WmTicketVisionStatus,
 } from '@/lib/proof/winemaker-ticket-vision'
+import { buildTicketUploadMessage } from '@/lib/proof/winemaker-ticket-copy'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 import { fetchActiveProfile } from '@/lib/supabase'
+import { fetchWinemakerOrganizationIdForUser } from '@/lib/supabase/organization'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -57,11 +59,20 @@ export async function POST(req: NextRequest) {
 
   try {
     const { sb } = await createSupabaseForProofApi()
+    const preferredOrgId = form.get('organizationId')
+    const organizationId = await fetchWinemakerOrganizationIdForUser(
+      sb,
+      clerkId,
+      typeof preferredOrgId === 'string' ? preferredOrgId : null
+    )
+    if (!organizationId) {
+      return Response.json({ error: 'Organización winemaker no encontrada' }, { status: 403 })
+    }
     const profile = await fetchActiveProfile(sb, clerkId, 'winemaker').catch(() => null)
     const wineryName = profile?.username?.trim() || null
     const buffer = await file.arrayBuffer()
 
-    const storagePath = await uploadWinemakerDocument(sb, clerkId, documentId, file, {
+    const storagePath = await uploadWinemakerDocument(sb, organizationId, documentId, file, {
       contentType,
       filename: file.name,
     })
@@ -94,7 +105,8 @@ export async function POST(req: NextRequest) {
       visionStatus = 'skipped_not_image'
     }
 
-    const result = await processTicketUpload(sb, clerkId, {
+    const result = await processTicketUpload(sb, {
+      organizationId,
       documentId,
       documentType,
       storagePath,
@@ -120,15 +132,20 @@ export async function POST(req: NextRequest) {
       (isTicketVisionClassified(vision, result.supplier?.id ?? null) ||
         isUploadClassified(result.supplier?.id ?? null, result.lines))
 
-    const { mensaje, agentQuery } = buildTicketUploadMessage({
-      filename: file.name,
-      contentType,
-      visionStatus,
-      classified,
-      supplierName: result.supplier?.name ?? vision?.supplier_name ?? null,
-      summaryLabel: result.summaryLabel,
-      total,
-    })
+    const ticketCopy = await getWinemakerTicketCopy()
+
+    const { mensaje, agentQuery, suggestedReplies } = buildTicketUploadMessage(
+      {
+        filename: file.name,
+        contentType,
+        visionStatus,
+        classified,
+        supplierName: result.supplier?.name ?? vision?.supplier_name ?? null,
+        summaryLabel: result.summaryLabel,
+        total,
+      },
+      ticketCopy
+    )
 
     return Response.json({
       documentId: result.document.id,
@@ -140,6 +157,7 @@ export async function POST(req: NextRequest) {
       classified,
       mensaje,
       agentQuery,
+      suggestedReplies,
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error al guardar documento'

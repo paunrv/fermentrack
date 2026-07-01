@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
@@ -26,9 +27,11 @@ import {
 } from '@/lib/supabase'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 
-const STEPS = ['Foto', 'PROOF analiza', 'Revisar', 'Discrepancias', 'Confirmar'] as const
+const STEP_IDS = ['foto', 'analiza', 'revisar', 'discrepancias', 'confirmar'] as const
 
 export default function RecepcionPage() {
+  const t = useTranslations('distributor.recepcion')
+  const tCommon = useTranslations('distributor.common')
   const router = useRouter()
   const { scope, activeProfile } = useProfile()
   const supabase = useSupabase()
@@ -154,7 +157,7 @@ export default function RecepcionPage() {
 
       setStep(2)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al analizar')
+      setError(err instanceof Error ? err.message : t('errors.analyze'))
       setStep(0)
     } finally {
       setAnalyzing(false)
@@ -185,7 +188,7 @@ export default function RecepcionPage() {
       const disc = buildDiscrepanciasFromItems(items)
       const rec = await createRecepcionFromAnalysisAction({
         recepcion_id: recepcionId,
-        productor: productor || 'Productor',
+        productor: productor || t('defaults.producer'),
         orden_compra_id: ocVinculo?.source === 'legacy' ? ocVinculo.id : null,
         orden_compra_distribuidor_id:
           ocVinculo?.source === 'distribuidor' ? ocVinculo.id : null,
@@ -204,7 +207,7 @@ export default function RecepcionPage() {
       setRecepcionId(rec.id)
       setStep(3)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : t('errors.save'))
     } finally {
       setSaving(false)
     }
@@ -223,7 +226,7 @@ export default function RecepcionPage() {
       setCodigoConfirmado(rec.codigo)
       setStep(4)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al confirmar')
+      setError(e instanceof Error ? e.message : t('errors.confirm'))
     } finally {
       setSaving(false)
     }
@@ -243,17 +246,17 @@ export default function RecepcionPage() {
     <div style={{ padding: '28px 28px 100px', maxWidth: 720, margin: '0 auto' }}>
       <header style={{ marginBottom: 28 }}>
         <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-          Entrada foto
+          {t('title')}
         </h1>
         <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-          Fotografía el pallet, la caja o la factura. PROOF identifica lo que hay.
+          {t('subtitle')}
         </p>
       </header>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-        {STEPS.map((label, i) => (
+        {STEP_IDS.map((stepId, i) => (
           <span
-            key={label}
+            key={stepId}
             className="mono"
             style={{
               fontSize: 10,
@@ -264,7 +267,7 @@ export default function RecepcionPage() {
               color: i <= step ? 'var(--gold)' : 'var(--fg-4)',
             }}
           >
-            {i + 1}. {label}
+            {i + 1}. {t(`steps.${stepId}`)}
           </span>
         ))}
       </div>
@@ -272,21 +275,21 @@ export default function RecepcionPage() {
       {step === 0 && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <input
-            placeholder="Productor (opcional)"
+            placeholder={t('fields.producerOptional')}
             value={productor}
             onChange={e => setProductor(e.target.value)}
             style={fieldStyle}
           />
           <label style={{ fontSize: 12, color: 'var(--fg-2)' }}>
-            ¿Viene de una OC?
+            {t('fields.fromPo')}
             <select
               value={ocVinculoValue}
               onChange={e => setOcVinculoValue(e.target.value)}
               style={{ ...fieldStyle, marginTop: 6 }}
             >
-              <option value="">Sin orden de compra</option>
+              <option value="">{t('fields.noPo')}</option>
               {ordenesDistribuidor.length > 0 && (
-                <optgroup label="OC PROOF (pendientes)">
+                <optgroup label={t('poGroups.proofPending')}>
                   {ordenesDistribuidor.map(oc => (
                     <option
                       key={oc.id}
@@ -299,7 +302,7 @@ export default function RecepcionPage() {
                 </optgroup>
               )}
               {ordenesLegacy.length > 0 && (
-                <optgroup label="OC anteriores">
+                <optgroup label={t('poGroups.legacy')}>
                   {ordenesLegacy.map(oc => (
                     <option key={oc.id} value={encodeOcRecepcionValue('legacy', oc.id)}>
                       {oc.productor_id || 'OC'} · {oc.estado}
@@ -312,21 +315,25 @@ export default function RecepcionPage() {
           </label>
           {(ocSeleccionadaDistribuidor || ocSeleccionadaLegacy) && (
             <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
-              Al analizar, PROOF cruzará cantidades vs ítems de esta OC
+              {t('ocHintCross')}
               {ocSeleccionadaDistribuidor
-                ? ` (${ocSeleccionadaDistribuidor.numero_orden}). Al confirmar, actualiza stock y CxP.`
-                : '.'}
+                ? t('ocHintConfirm', { order: ocSeleccionadaDistribuidor.numero_orden })
+                : t('ocHintConfirmLegacy')}
             </p>
           )}
           <p style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.5 }}>
-            Las OC nuevas del distribuidor viven en PROOF.{' '}
-            <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
-              Crear orden de compra
-            </Link>
-            {' · '}
-            <Link href="/dashboard" style={{ color: 'var(--gold)' }}>
-              Confirmar llegada en canvas
-            </Link>
+            {t.rich('footerLinks', {
+              createPo: chunks => (
+                <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
+                  {chunks}
+                </Link>
+              ),
+              canvas: chunks => (
+                <Link href="/dashboard" style={{ color: 'var(--gold)' }}>
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
           <div
             style={{
@@ -338,7 +345,7 @@ export default function RecepcionPage() {
             }}
           >
             <button type="button" onClick={() => fileRef.current?.click()} style={ctaPrimary}>
-              Subir foto / PDF
+              {t('uploadPhoto')}
             </button>
             <input
               ref={fileRef}
@@ -355,7 +362,7 @@ export default function RecepcionPage() {
       {step === 1 && (
         <section style={{ padding: 24, background: 'var(--panel)', borderRadius: 'var(--radius-card)' }}>
           <div className="eyebrow" style={{ marginBottom: 12, color: 'var(--gold)' }}>
-            {analyzing ? 'PROOF analiza…' : 'Análisis'}
+            {analyzing ? t('analyzing') : t('analysis')}
           </div>
           {progress.map((p, i) => (
             <div key={i} style={{ fontSize: 13, color: 'var(--fg-1)', marginBottom: 8 }}>
@@ -364,7 +371,7 @@ export default function RecepcionPage() {
           ))}
           {items.map((it, i) => (
             <div key={i} className="fade-up" style={{ fontSize: 12, color: 'var(--fg-2)', marginTop: 6 }}>
-              + {it.nombre} · {fmtBottles(it.cantidadRecibida)} bts
+              {t('itemLine', { name: it.nombre, bottles: fmtBottles(it.cantidadRecibida) })}
             </div>
           ))}
         </section>
@@ -374,12 +381,16 @@ export default function RecepcionPage() {
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {ocVinculo && (
             <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
-              OC vinculada · diferencias en rojo
+              {t('ocLinked')}
             </p>
           )}
           {items.map((it, i) => {
             const preConfirmed = !it.lowConfidence && it.productoEncontradoEnCatalogo
             const diffOc = it.diferenciaVsOc != null && it.diferenciaVsOc !== 0
+            const deltaStr =
+              it.diferenciaVsOc != null
+                ? `${it.diferenciaVsOc > 0 ? '+' : ''}${it.diferenciaVsOc}`
+                : ''
             return (
               <div
                 key={i}
@@ -395,29 +406,28 @@ export default function RecepcionPage() {
                   <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{it.nombre}</div>
                   {preConfirmed && (
                     <span className="mono" style={{ fontSize: 10, color: 'var(--ok)' }}>
-                      PRE-CONFIRMADO
+                      {t('preConfirmed')}
                     </span>
                   )}
                   {it.lowConfidence && (
                     <span className="mono" style={{ fontSize: 10, color: 'var(--warn)' }}>
-                      REVISAR · {(it.confianza * 100).toFixed(0)}%
+                      {t('review', { pct: (it.confianza * 100).toFixed(0) })}
                     </span>
                   )}
                 </div>
                 <div className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 8 }}>
-                  {it.productoEncontradoEnCatalogo ? it.skuId?.slice(0, 8) : 'Sin match catálogo'}
+                  {it.productoEncontradoEnCatalogo ? it.skuId?.slice(0, 8) : t('noCatalogMatch')}
                   {it.cantidadEsperada > 0 &&
-                    ` · OC esp. ${fmtBottles(it.cantidadEsperada)} / rec. `}
+                    ` · ${t('ocExpected', { expected: fmtBottles(it.cantidadEsperada) })}`}
                   {diffOc && (
                     <span style={{ color: 'var(--crit)' }}>
                       {' '}
-                      · Δ {it.diferenciaVsOc! > 0 ? '+' : ''}
-                      {it.diferenciaVsOc} bts
+                      · {t('deltaBottles', { delta: deltaStr })}
                     </span>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <label style={{ fontSize: 11, color: 'var(--fg-2)' }}>Recibido</label>
+                  <label style={{ fontSize: 11, color: 'var(--fg-2)' }}>{t('fields.received')}</label>
                   <input
                     type="number"
                     min={0}
@@ -439,26 +449,25 @@ export default function RecepcionPage() {
           })}
           {fotoUrls.length > 0 && (
             <p className="mono" style={{ margin: 0, fontSize: 10, color: 'var(--ok)' }}>
-              {fotoUrls.length} foto{fotoUrls.length === 1 ? '' : 's'} guardada
-              {fotoUrls.length === 1 ? '' : 's'} en Storage
+              {t('photosSaved', { count: fotoUrls.length })}
             </p>
           )}
           {!vinculoOcDistribuidor && (
-          <label style={{ fontSize: 12, color: 'var(--fg-2)' }}>
-            Deuda a registrar (opcional)
-            <input
-              type="number"
-              min={0}
-              value={deudaRegistrada || ''}
-              onChange={e => setDeudaRegistrada(Number(e.target.value) || 0)}
-              style={{ ...fieldStyle, marginTop: 6 }}
-              className="mono"
-            />
-          </label>
+            <label style={{ fontSize: 12, color: 'var(--fg-2)' }}>
+              {t('fields.debtOptional')}
+              <input
+                type="number"
+                min={0}
+                value={deudaRegistrada || ''}
+                onChange={e => setDeudaRegistrada(Number(e.target.value) || 0)}
+                style={{ ...fieldStyle, marginTop: 6 }}
+                className="mono"
+              />
+            </label>
           )}
           {vinculoOcDistribuidor && (
             <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
-              Con OC PROOF, la cuenta por pagar se genera al confirmar según costos de la orden.
+              {t('poDebtNote')}
             </p>
           )}
           <button
@@ -467,7 +476,7 @@ export default function RecepcionPage() {
             onClick={guardarYContinuar}
             style={{ ...ctaPrimary, width: '100%' }}
           >
-            {saving ? 'Guardando…' : 'Continuar a discrepancias'}
+            {saving ? tCommon('saving') : t('continueDiscrepancies')}
           </button>
         </section>
       )}
@@ -475,7 +484,7 @@ export default function RecepcionPage() {
       {step === 3 && (
         <section>
           {discrepancias.length === 0 ? (
-            <p style={{ color: 'var(--fg-2)', marginBottom: 16 }}>Sin discrepancias detectadas.</p>
+            <p style={{ color: 'var(--fg-2)', marginBottom: 16 }}>{t('noDiscrepancies')}</p>
           ) : (
             discrepancias.map((d, i) => (
               <div
@@ -501,7 +510,7 @@ export default function RecepcionPage() {
             onClick={confirmarFinal}
             style={{ ...ctaPrimary, width: '100%' }}
           >
-            {saving ? 'Confirmando…' : 'Confirmar recepción (sube stock)'}
+            {saving ? t('confirming') : t('confirmReception')}
           </button>
         </section>
       )}
@@ -519,16 +528,22 @@ export default function RecepcionPage() {
             {codigoConfirmado}
           </div>
           <p style={{ margin: '0 0 16px', fontSize: 14, color: 'var(--fg-1)', lineHeight: 1.6 }}>
-            {productor} · {fmtBottles(totalBotellas)} botellas recibidas
-            {deudaRegistrada > 0 && !vinculoOcDistribuidor ? ` · Deuda ${fmtMoney(deudaRegistrada)}` : ''}
-            {ocVinculo ? ' · OC actualizada' : ''}
+            {t('successSummary', {
+              producer: productor,
+              bottles: fmtBottles(totalBotellas),
+              debt:
+                deudaRegistrada > 0 && !vinculoOcDistribuidor
+                  ? t('successDebt', { amount: fmtMoney(deudaRegistrada) })
+                  : '',
+              ocUpdated: ocVinculo ? t('successOcUpdated') : '',
+            })}
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={() => window.location.reload()} style={ctaSecondary}>
-              Nueva recepción
+              {t('newReception')}
             </button>
             <button type="button" onClick={() => router.push('/dashboard/inventario')} style={ctaPrimary}>
-              Ver inventario
+              {t('viewInventory')}
             </button>
           </div>
         </section>
@@ -538,7 +553,7 @@ export default function RecepcionPage() {
 
       <ConnectedProofAIBar
         pantalla="recepcion"
-        vista={STEPS[step]}
+        vista={STEP_IDS[step]}
         profileType="distributor"
         hints={{
           pantalla: {
@@ -552,8 +567,8 @@ export default function RecepcionPage() {
           },
         }}
         fallback={{
-          mensaje: 'Al confirmar, incremento stock_total y registro deuda si aplica.',
-          accionLabel: 'Preguntar a PROOF',
+          mensaje: t('aiFallback'),
+          accionLabel: tCommon('askProof'),
         }}
       />
     </div>

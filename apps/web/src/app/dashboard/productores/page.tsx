@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
@@ -13,6 +15,7 @@ import {
   type ProductorResumen,
 } from '@/lib/proof/productores'
 import { fmtMoney } from '@/lib/proof/format'
+import { formatDate } from '@/lib/i18n/format'
 import {
   fetchDeudasProductores,
   fetchOrdenesCompraAbiertas,
@@ -20,16 +23,10 @@ import {
   fetchSkus,
 } from '@/lib/supabase'
 
-function fmtDate(iso: string | null): string {
-  if (!iso) return '—'
-  return new Date(iso + 'T12:00:00').toLocaleDateString('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
 export default function ProductoresPage() {
+  const t = useTranslations('distributor.productores')
+  const tCommon = useTranslations('distributor.common')
+  const locale = useLocale() as AppLocale
   const { scope } = useProfile()
   const supabase = useSupabase()
   const [loading, setLoading] = useState(true)
@@ -59,19 +56,26 @@ export default function ProductoresPage() {
 
   const conDeuda = useMemo(() => rows.filter(r => r.deudaTotal > 0).length, [rows])
 
+  function fmtDate(iso: string | null): string {
+    if (!iso) return tCommon('dash')
+    return formatDate(new Date(iso + 'T12:00:00'), locale, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
       <header style={{ marginBottom: 24 }}>
         <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-          Productores
+          {t('title')}
         </h1>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-          Proveedores desde tu catálogo PROOF y deudas pendientes.
-        </p>
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
       </header>
 
       {loading ? (
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>Cargando…</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
       ) : rows.length === 0 ? (
         <div
           style={{
@@ -83,7 +87,7 @@ export default function ProductoresPage() {
             fontSize: 13,
           }}
         >
-          Sin productores en catálogo. Sincroniza SKUs o asigna campo productor en inventario.
+          {t('empty')}
         </div>
       ) : (
         <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-card)' }}>
@@ -105,11 +109,9 @@ export default function ProductoresPage() {
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{p.nombre}</div>
                 <div className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4 }}>
-                  {p.skuCount} SKU{p.skuCount === 1 ? '' : 's'} activos
-                  {p.ocPendientes > 0
-                    ? ` · ${p.ocPendientes} OC pendiente${p.ocPendientes === 1 ? '' : 's'}`
-                    : ''}
-                  {p.proximoVencimiento ? ` · vence ${fmtDate(p.proximoVencimiento)}` : ''}
+                  {t('skuCount', { count: p.skuCount })}
+                  {p.ocPendientes > 0 ? ` · ${t('ocPending', { count: p.ocPendientes })}` : ''}
+                  {p.proximoVencimiento ? ` · ${t('dueDate', { date: fmtDate(p.proximoVencimiento) })}` : ''}
                 </div>
               </div>
               <span
@@ -120,7 +122,7 @@ export default function ProductoresPage() {
                   flexShrink: 0,
                 }}
               >
-                {p.deudaTotal > 0 ? fmtMoney(p.deudaTotal) : 'Al corriente'}
+                {p.deudaTotal > 0 ? fmtMoney(p.deudaTotal) : t('current')}
               </span>
             </Link>
           ))}
@@ -128,19 +130,23 @@ export default function ProductoresPage() {
       )}
 
       <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
-        Nuevas órdenes de compra en{' '}
-        <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
-          Crear OC
-        </Link>
-        {' · '}
-        <Link href="/dashboard" style={{ color: 'var(--gold)' }}>
-          Pendientes en canvas
-        </Link>
-        . Pagos en{' '}
-        <Link href="/dashboard/credito" style={{ color: 'var(--gold)' }}>
-          Crédito → Les debo
-        </Link>
-        .
+        {t.rich('footer', {
+          createOc: chunks => (
+            <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
+              {chunks}
+            </Link>
+          ),
+          canvas: chunks => (
+            <Link href="/dashboard" style={{ color: 'var(--gold)' }}>
+              {chunks}
+            </Link>
+          ),
+          credito: chunks => (
+            <Link href="/dashboard/credito" style={{ color: 'var(--gold)' }}>
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
 
       <ConnectedProofAIBar
@@ -149,9 +155,7 @@ export default function ProductoresPage() {
         hints={{ pantalla: { total: rows.length, conDeuda } }}
         fallback={{
           mensaje:
-            conDeuda > 0
-              ? `${conDeuda} productor${conDeuda === 1 ? '' : 'es'} con deuda pendiente — prioriza vencimientos.`
-              : 'Productores al corriente en deudas registradas.',
+            conDeuda > 0 ? t('aiFallbackWithDebt', { count: conDeuda }) : t('aiFallbackCurrent'),
         }}
       />
     </div>

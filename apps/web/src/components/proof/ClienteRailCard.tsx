@@ -1,20 +1,22 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { ClienteConSaldo } from '@/lib/supabase/distribuidor'
 import { fmtMoney } from '@/lib/proof/format'
 import { CLIENTE_ACCENT } from '@/lib/proof/canvas-accents'
-
-function creditoLabel(dias: number): string {
-  return dias === 0 ? 'Contado' : `${dias} días`
-}
 
 type Props = {
   cliente: ClienteConSaldo
 }
 
 export function ClienteRailCard({ cliente }: Props) {
+  const t = useTranslations('distributor.clientes')
   const saldo = cliente.saldo_pendiente
+
+  function creditoLabel(dias: number): string {
+    return dias === 0 ? t('creditTerms.cash') : t('creditTerms.days', { days: dias })
+  }
 
   return (
     <Link
@@ -57,12 +59,14 @@ export function ClienteRailCard({ cliente }: Props) {
               border: '1px solid rgba(180, 40, 40, 0.25)',
             }}
           >
-            Vencido
+            {t('rail.overdue')}
           </span>
         )}
       </div>
 
-      <div style={{ fontSize: 12, color: 'var(--fg-2)' }}>{cliente.telefono || 'Sin teléfono'}</div>
+      <div style={{ fontSize: 12, color: 'var(--fg-2)' }}>
+        {cliente.telefono || t('rail.noPhone')}
+      </div>
 
       <div
         style={{
@@ -95,7 +99,7 @@ export function ClienteRailCard({ cliente }: Props) {
             color: saldo > 0 ? CLIENTE_ACCENT : 'var(--fg-3)',
           }}
         >
-          {saldo > 0 ? fmtMoney(saldo) : 'Sin saldo'}
+          {saldo > 0 ? fmtMoney(saldo) : t('rail.noBalance')}
         </span>
       </div>
     </Link>

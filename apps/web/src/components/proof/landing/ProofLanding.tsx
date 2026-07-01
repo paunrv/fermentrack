@@ -3,54 +3,16 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, type CSSProperties, type FormEvent } from 'react'
-import { LandingLanguageProvider, useLandingLanguage } from './LandingLanguageContext'
+import { useTranslations } from 'next-intl'
 import { LandingNav } from './LandingNav'
 import { ProducerTabsSection } from './ProducerTabsSection'
 import { HeroSection } from './HeroSection'
-import { type LandingLang } from '@/lib/proof/landing-copy'
 import { LANDING, landingBtnPrimary, landingBtnSecondary } from './landing-theme'
-import { ProofLogoWordmark } from './ProofLogo'
-
-function LangToggleFooter({
-  langs,
-  current,
-  onChange,
-}: {
-  langs: LandingLang[]
-  current: LandingLang
-  onChange: (lang: LandingLang) => void
-}) {
-  return (
-    <div style={{ display: 'inline-flex', gap: 4 }}>
-      {langs.map(code => (
-        <button
-          key={code}
-          type="button"
-          onClick={() => onChange(code)}
-          aria-pressed={current === code}
-          style={{
-            padding: '4px 8px',
-            border: 'none',
-            background: current === code ? 'rgba(255,255,255,0.12)' : 'transparent',
-            color: current === code ? LANDING.textOnDark : LANDING.textOnDarkMuted,
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            borderRadius: 'var(--radius-sm)',
-            cursor: 'pointer',
-          }}
-        >
-          {code}
-        </button>
-      ))}
-    </div>
-  )
-}
+import { LandingFooter } from './LandingFooter'
 
 function FinalCtaForm() {
   const router = useRouter()
-  const { copy } = useLandingLanguage()
+  const t = useTranslations('landing.finalCta')
   const [email, setEmail] = useState('')
 
   function handleSubmit(e: FormEvent) {
@@ -76,8 +38,8 @@ function FinalCtaForm() {
         type="email"
         value={email}
         onChange={e => setEmail(e.target.value)}
-        placeholder={copy.finalCta.inputPlaceholder}
-        aria-label={copy.finalCta.inputPlaceholder}
+        placeholder={t('inputPlaceholder')}
+        aria-label={t('inputPlaceholder')}
         style={{
           flex: '1 1 220px',
           minWidth: 0,
@@ -104,14 +66,31 @@ function FinalCtaForm() {
           whiteSpace: 'nowrap',
         }}
       >
-        {copy.finalCta.cta}
+        {t('cta')}
       </button>
     </form>
   )
 }
 
-function ProofLandingContent() {
-  const { lang, setLang, copy } = useLandingLanguage()
+export function ProofLanding() {
+  const tContrast = useTranslations('landing.contrast')
+  const tDist = useTranslations('landing.distribuidores')
+  const tUpload = useTranslations('landing.upload')
+  const tPricing = useTranslations('landing.pricing')
+  const tFinal = useTranslations('landing.finalCta')
+
+  const contrastCards = tContrast.raw('cards') as { title: string; body: string }[]
+  const distBullets = tDist.raw('bullets') as string[]
+  const uploadItems = tUpload.raw('items') as string[]
+  const plans = tPricing.raw('plans') as {
+    name: string
+    price: string
+    period: string
+    description: string
+    features: string[]
+    cta: string
+    highlighted?: boolean
+  }[]
 
   return (
     <div
@@ -125,10 +104,8 @@ function ProofLandingContent() {
       }
     >
       <LandingNav />
-
       <HeroSection />
 
-      {/* Dark contrast section */}
       <section style={{ background: LANDING.bgDark, color: LANDING.textOnDark, padding: '80px 24px' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto' }}>
           <h2
@@ -139,10 +116,10 @@ function ProofLandingContent() {
               letterSpacing: '-0.02em',
             }}
           >
-            {copy.contrast.title}
+            {tContrast('title')}
           </h2>
           <p style={{ margin: '0 0 48px', fontSize: 16, color: LANDING.textOnDarkMuted, maxWidth: 560 }}>
-            {copy.contrast.subtitle}
+            {tContrast('subtitle')}
           </p>
           <div
             style={{
@@ -151,7 +128,7 @@ function ProofLandingContent() {
               gap: 20,
             }}
           >
-            {copy.contrast.cards.map(card => (
+            {contrastCards.map(card => (
               <div
                 key={card.title}
                 style={{
@@ -175,7 +152,6 @@ function ProofLandingContent() {
         <ProducerTabsSection />
       </div>
 
-      {/* Distributors — dark */}
       <section id="distribuidores" style={{ background: LANDING.bgDark, color: LANDING.textOnDark, padding: '80px 24px' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto' }}>
           <div
@@ -188,7 +164,7 @@ function ProofLandingContent() {
               color: LANDING.textOnDarkMuted,
             }}
           >
-            {copy.distribuidores.eyebrow}
+            {tDist('eyebrow')}
           </div>
           <h2
             style={{
@@ -199,10 +175,10 @@ function ProofLandingContent() {
               maxWidth: 640,
             }}
           >
-            {copy.distribuidores.title}
+            {tDist('title')}
           </h2>
           <p style={{ margin: '0 0 40px', fontSize: 16, color: LANDING.textOnDarkMuted, maxWidth: 560 }}>
-            {copy.distribuidores.subtitle}
+            {tDist('subtitle')}
           </p>
           <ul
             style={{
@@ -214,7 +190,7 @@ function ProofLandingContent() {
               gap: 20,
             }}
           >
-            {copy.distribuidores.bullets.map(bullet => (
+            {distBullets.map(bullet => (
               <li
                 key={bullet}
                 style={{
@@ -234,7 +210,6 @@ function ProofLandingContent() {
         </div>
       </section>
 
-      {/* Upload anything */}
       <section style={{ padding: '80px 24px', background: LANDING.bg }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', textAlign: 'center' }}>
           <div
@@ -247,7 +222,7 @@ function ProofLandingContent() {
               color: LANDING.textSecondary,
             }}
           >
-            {copy.upload.eyebrow}
+            {tUpload('eyebrow')}
           </div>
           <h2
             style={{
@@ -258,10 +233,10 @@ function ProofLandingContent() {
               color: LANDING.text,
             }}
           >
-            {copy.upload.title}
+            {tUpload('title')}
           </h2>
           <p style={{ margin: '0 auto 48px', fontSize: 16, color: LANDING.textSecondary, maxWidth: 520 }}>
-            {copy.upload.subtitle}
+            {tUpload('subtitle')}
           </p>
           <div
             style={{
@@ -271,7 +246,7 @@ function ProofLandingContent() {
               textAlign: 'left',
             }}
           >
-            {copy.upload.items.map(item => (
+            {uploadItems.map(item => (
               <div
                 key={item}
                 style={{
@@ -291,7 +266,6 @@ function ProofLandingContent() {
         </div>
       </section>
 
-      {/* Pricing */}
       <section id="precios" style={{ padding: '80px 24px', background: LANDING.bg, borderTop: `1px solid ${LANDING.border}` }}>
         <div style={{ maxWidth: 1120, margin: '0 auto' }}>
           <div
@@ -304,7 +278,7 @@ function ProofLandingContent() {
               color: LANDING.textSecondary,
             }}
           >
-            {copy.pricing.eyebrow}
+            {tPricing('eyebrow')}
           </div>
           <h2
             style={{
@@ -315,7 +289,7 @@ function ProofLandingContent() {
               color: LANDING.text,
             }}
           >
-            {copy.pricing.title}
+            {tPricing('title')}
           </h2>
           <div
             style={{
@@ -325,7 +299,7 @@ function ProofLandingContent() {
               alignItems: 'stretch',
             }}
           >
-            {copy.pricing.plans.map(plan => (
+            {plans.map(plan => (
               <div
                 key={plan.name}
                 style={{
@@ -398,7 +372,6 @@ function ProofLandingContent() {
         </div>
       </section>
 
-      {/* Final CTA */}
       <section style={{ padding: '80px 24px', background: LANDING.bgDark, color: LANDING.textOnDark, textAlign: 'center' }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <h2
@@ -409,122 +382,16 @@ function ProofLandingContent() {
               letterSpacing: '-0.02em',
             }}
           >
-            {copy.finalCta.title}
+            {tFinal('title')}
           </h2>
           <p style={{ margin: '0 0 32px', fontSize: 16, color: LANDING.textOnDarkMuted }}>
-            {copy.finalCta.subtitle}
+            {tFinal('subtitle')}
           </p>
           <FinalCtaForm />
         </div>
       </section>
 
-      {/* Footer */}
-      <footer style={{ background: LANDING.bgDark, color: LANDING.textOnDark, padding: '48px 24px 32px' }}>
-        <div style={{ maxWidth: 1120, margin: '0 auto' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'flex-start',
-              flexWrap: 'wrap',
-              gap: 32,
-              marginBottom: 40,
-            }}
-          >
-            <div>
-              <ProofLogoWordmark variant="dark" />
-              <p style={{ margin: '12px 0 0', fontSize: 13, color: LANDING.textOnDarkMuted, maxWidth: 280 }}>
-                {copy.footer.tagline}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: LANDING.textOnDarkMuted,
-                    marginBottom: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  {copy.footer.product}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                  <a href="#productores" style={{ color: LANDING.footerLink, textDecoration: 'none' }}>
-                    {copy.nav.productores}
-                  </a>
-                  <a href="#distribuidores" style={{ color: LANDING.footerLink, textDecoration: 'none' }}>
-                    {copy.nav.distribuidores}
-                  </a>
-                  <a href="#precios" style={{ color: LANDING.footerLink, textDecoration: 'none' }}>
-                    {copy.nav.precios}
-                  </a>
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: LANDING.textOnDarkMuted,
-                    marginBottom: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  {copy.footer.company}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                  <span style={{ color: LANDING.footerLink }}>About</span>
-                  <span style={{ color: LANDING.footerLink }}>Contact</span>
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: LANDING.textOnDarkMuted,
-                    marginBottom: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  {copy.footer.legal}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
-                  <span style={{ color: LANDING.footerLink }}>Privacy</span>
-                  <span style={{ color: LANDING.footerLink }}>Terms</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: 16,
-              paddingTop: 24,
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            <span style={{ fontSize: 12, color: LANDING.textOnDarkMuted }}>{copy.footer.copyright}</span>
-            <LangToggleFooter langs={['es', 'en', 'fr', 'it']} current={lang} onChange={setLang} />
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
-  )
-}
-
-export function ProofLanding() {
-  return (
-    <LandingLanguageProvider>
-      <ProofLandingContent />
-    </LandingLanguageProvider>
   )
 }

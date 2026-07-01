@@ -43,6 +43,8 @@ export function ProofComposer({
   disabled,
   showHint,
   docked = false,
+  placeholder: placeholderProp,
+  hintText: hintTextProp,
 }: {
   accent: string
   profileType: ProfileType
@@ -55,6 +57,8 @@ export function ProofComposer({
   showHint: boolean
   /** Hilo activo encima: une visualmente chat + composer en un panel de 720px */
   docked?: boolean
+  placeholder?: string
+  hintText?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const hintKey =
@@ -86,7 +90,7 @@ export function ProofComposer({
             fontFamily: 'var(--font-display)',
           }}
         >
-          {PROOF_COPIES.hint[hintKey]}
+          {hintTextProp ?? PROOF_COPIES.hint[hintKey]}
         </p>
       ) : null}
 
@@ -131,7 +135,7 @@ export function ProofComposer({
           type="text"
           value={inputValue}
           onChange={e => onInputChange(e.target.value)}
-          placeholder={PROOF_COPIES.placeholder}
+          placeholder={placeholderProp ?? PROOF_COPIES.placeholder}
           disabled={disabled}
           style={{
             flex: 1,

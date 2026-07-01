@@ -4,23 +4,16 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useOrganization } from '@/context/OrganizationContext'
 import {
   fetchTeamAccess,
   fetchTeamMembers,
   inviteTeamMember,
   type TeamMemberRow,
 } from '@/app/actions/equipo'
-
-const PROFILE_LABEL: Record<string, string> = {
-  winemaker: '🍇 Winemaker',
-  bodega: '📦 Bodega',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  active: 'Activo',
-  invited: 'Invitado',
-  suspended: 'Suspendido',
-}
+import type { OrgMemberRole } from '@/lib/supabase/organization'
+import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -45,9 +38,14 @@ const input: React.CSSProperties = {
 }
 
 export default function EquipoPage() {
+  const t = useTranslations('dashboard.equipo')
   const router = useRouter()
+  const { activeOrg, loading: orgLoading } = useOrganization()
+  const organizationId = activeOrg?.id ?? null
+
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<TeamMemberRow[]>([])
+  const [canManage, setCanManage] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -55,78 +53,112 @@ export default function EquipoPage() {
 
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const [profileType, setProfileType] = useState<'winemaker' | 'bodega'>('winemaker')
+  const [orgRole, setOrgRole] = useState<Exclude<OrgMemberRole, 'owner'>>('member')
 
   async function loadMembers() {
+    if (!organizationId) return
     setLoading(true)
     setError(null)
     try {
-      const access = await fetchTeamAccess()
-      if (!access.isOwner) {
+      const access = await fetchTeamAccess(organizationId)
+      if (!access.organizationId) {
         router.replace('/dashboard')
         return
       }
-      const rows = await fetchTeamMembers()
+      setCanManage(access.canManage)
+      const rows = await fetchTeamMembers(organizationId)
       setMembers(rows)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo cargar el equipo')
+      setError(err instanceof Error ? err.message : t('loadError'))
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
+    if (orgLoading) return
+    if (!organizationId) {
+      router.replace('/dashboard')
+      return
+    }
     void loadMembers()
-  }, [router])
+  }, [organizationId, orgLoading, router])
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
+    if (!organizationId) return
     setSaving(true)
     setSaveError(null)
     try {
-      await inviteTeamMember({ email, name, profileType })
+      await inviteTeamMember({ organizationId, email, name, orgRole })
       setEmail('')
       setName('')
-      setProfileType('winemaker')
+      setOrgRole('member')
       setShowForm(false)
       await loadMembers()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'No se pudo enviar la invitación')
+      setSaveError(err instanceof Error ? err.message : t('inviteError'))
     } finally {
       setSaving(false)
     }
   }
 
+  if (orgLoading || !organizationId) {
+    return (
+      <div style={{ padding: 32, color: 'var(--fg-2)', fontSize: 14 }}>{t('loading')}</div>
+    )
+  }
+
   return (
     <div style={{ padding: '20px 16px 24px', maxWidth: 560, margin: '0 auto' }}>
       <header style={{ marginBottom: 20 }}>
-        <h1 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 600 }}>👥 Mi equipo</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
+          <OrgSwitcher compact />
+        </div>
         <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
-          Invita a tu equipo y asigna acceso de winemaker o bodega.
+          {t('description', { org: activeOrg?.name ?? '' })}
         </p>
       </header>
 
-      <button
-        type="button"
-        onClick={() => setShowForm(v => !v)}
-        style={{
-          width: '100%',
-          marginBottom: 20,
-          padding: '12px 14px',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--hairline)',
-          background: 'var(--panel)',
-          color: 'var(--fg-0)',
-          fontSize: 14,
-          fontWeight: 600,
-          cursor: 'pointer',
-          fontFamily: 'var(--font-display)',
-        }}
-      >
-        + Invitar persona
-      </button>
+      {canManage ? (
+        <button
+          type="button"
+          onClick={() => setShowForm(v => !v)}
+          style={{
+            width: '100%',
+            marginBottom: 20,
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--hairline)',
+            background: 'var(--panel)',
+            color: 'var(--fg-0)',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-display)',
+          }}
+        >
+          {t('invite')}
+        </button>
+      ) : (
+        <p
+          style={{
+            margin: '0 0 20px',
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--hairline)',
+            background: 'var(--bg-1)',
+            color: 'var(--fg-2)',
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}
+        >
+          {t('readOnlyHint')}
+        </p>
+      )}
 
-      {showForm && (
+      {showForm && canManage && (
         <form
           onSubmit={handleInvite}
           style={{
@@ -139,7 +171,7 @@ export default function EquipoPage() {
         >
           <div style={{ marginBottom: 14 }}>
             <label htmlFor="equipo-email" style={label}>
-              Email
+              {t('email')}
             </label>
             <input
               id="equipo-email"
@@ -148,13 +180,13 @@ export default function EquipoPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               style={input}
-              placeholder="persona@bodega.com"
+              placeholder={t('emailPlaceholder')}
             />
           </div>
 
           <div style={{ marginBottom: 14 }}>
             <label htmlFor="equipo-name" style={label}>
-              Nombre
+              {t('name')}
             </label>
             <input
               id="equipo-name"
@@ -163,22 +195,23 @@ export default function EquipoPage() {
               value={name}
               onChange={e => setName(e.target.value)}
               style={input}
-              placeholder="Nombre completo"
+              placeholder={t('namePlaceholder')}
             />
           </div>
 
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="equipo-role" style={label}>
-              Rol
+              {t('role')}
             </label>
             <select
               id="equipo-role"
-              value={profileType}
-              onChange={e => setProfileType(e.target.value as 'winemaker' | 'bodega')}
+              value={orgRole}
+              onChange={e => setOrgRole(e.target.value as Exclude<OrgMemberRole, 'owner'>)}
               style={input}
             >
-              <option value="winemaker">🍇 Winemaker</option>
-              <option value="bodega">📦 Bodega</option>
+              <option value="admin">{t('roles.admin')}</option>
+              <option value="member">{t('roles.member')}</option>
+              <option value="viewer">{t('roles.viewer')}</option>
             </select>
           </div>
 
@@ -203,7 +236,7 @@ export default function EquipoPage() {
                 opacity: saving ? 0.7 : 1,
               }}
             >
-              {saving ? 'Enviando…' : 'Enviar invitación'}
+              {saving ? t('submitting') : t('submit')}
             </button>
             <button
               type="button"
@@ -218,18 +251,18 @@ export default function EquipoPage() {
                 cursor: 'pointer',
               }}
             >
-              Cancelar
+              {t('cancel')}
             </button>
           </div>
         </form>
       )}
 
       {loading ? (
-        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>Cargando miembros…</p>
+        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('loadingMembers')}</p>
       ) : error ? (
         <p style={{ color: 'var(--red)', fontSize: 14 }}>{error}</p>
       ) : members.length === 0 ? (
-        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>Aún no hay miembros en tu organización.</p>
+        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('empty')}</p>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
           {members.map(member => (
@@ -245,17 +278,13 @@ export default function EquipoPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: 'var(--fg-0)' }}>
-                    {member.fullName || member.email || 'Sin nombre'}
+                    {member.fullName || member.email || t('noName')}
                   </p>
                   {member.email && (
                     <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--fg-2)' }}>{member.email}</p>
                   )}
                   <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
-                    {member.profileType
-                      ? PROFILE_LABEL[member.profileType] ?? member.profileType
-                      : member.orgRole === 'owner'
-                        ? '👑 Owner'
-                        : 'Miembro'}
+                    {t(`orgRoles.${member.orgRole}` as 'orgRoles.owner')}
                   </p>
                 </div>
                 <span
@@ -269,7 +298,7 @@ export default function EquipoPage() {
                     color: 'var(--fg-1)',
                   }}
                 >
-                  {STATUS_LABEL[member.status] ?? member.status}
+                  {t(`status.${member.status}` as 'status.active')}
                 </span>
               </div>
             </li>

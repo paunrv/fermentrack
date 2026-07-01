@@ -222,19 +222,46 @@ export async function loadIsolatedAgentContext(
   }
 
   if (profileType === 'winemaker') {
+    const { fetchWinemakerOrganizationIdForUser } = await import(
+      '@/lib/supabase/organization'
+    )
+    const organizationId = await fetchWinemakerOrganizationIdForUser(
+      sb,
+      userId,
+      typeof hints?.organizationId === 'string' ? hints.organizationId : null
+    )
+    const emptySummary = {
+      lotesTotal: 0,
+      lotesActivos: 0,
+      documentosTotal: 0,
+      gastosMesMxn: 0,
+      gastosBodegaMxn: 0,
+      litrosEnProceso: 0,
+    }
+    if (!organizationId) {
+      const datos = buildWinemakerAgentContext([], [], [], [], emptySummary, {
+        selectedId,
+        query,
+        selectedDocumentId:
+          typeof hints?.pantalla?.documentId === 'string'
+            ? hints.pantalla.documentId
+            : null,
+      })
+      return {
+        ...datos,
+        user_id: userId,
+        organization_id: null,
+        profile_type: 'winemaker',
+        ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
+      }
+    }
+
     const [lotes, documents, costs, suppliers, summary] = await Promise.all([
-      fetchWineLots(sb, userId, { limit: 500 }).catch(() => []),
-      fetchDocuments(sb, userId, { limit: 100, withLines: true }).catch(() => []),
-      fetchProductionCosts(sb, userId, { limit: 100 }).catch(() => []),
-      fetchSuppliers(sb, userId, { limit: 200 }).catch(() => []),
-      fetchWinemakerSummary(sb, userId).catch(() => ({
-        lotesTotal: 0,
-        lotesActivos: 0,
-        documentosTotal: 0,
-        gastosMesMxn: 0,
-        gastosBodegaMxn: 0,
-        litrosEnProceso: 0,
-      })),
+      fetchWineLots(sb, organizationId, { limit: 500 }).catch(() => []),
+      fetchDocuments(sb, organizationId, { limit: 100, withLines: true }).catch(() => []),
+      fetchProductionCosts(sb, organizationId, { limit: 100 }).catch(() => []),
+      fetchSuppliers(sb, organizationId, { limit: 200 }).catch(() => []),
+      fetchWinemakerSummary(sb, organizationId).catch(() => emptySummary),
     ])
     const datos = buildWinemakerAgentContext(lotes, documents, costs, suppliers, summary, {
       selectedId,
@@ -247,6 +274,7 @@ export async function loadIsolatedAgentContext(
     return {
       ...datos,
       user_id: userId,
+      organization_id: organizationId,
       profile_type: 'winemaker',
       ...(hints?.pantalla ? { pantalla: hints.pantalla } : {}),
     }

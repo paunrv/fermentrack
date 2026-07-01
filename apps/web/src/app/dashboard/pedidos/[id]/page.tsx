@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -42,6 +43,9 @@ function priceForTier(
 }
 
 export default function PedidoComposerPage() {
+  const t = useTranslations('distributor.pedidos.detail')
+  const tEstado = useTranslations('distributor.pedidoEstado')
+  const tCommon = useTranslations('distributor.common')
   const params = useParams()
   const router = useRouter()
   const pedidoId = params.id as string
@@ -92,7 +96,7 @@ export default function PedidoComposerPage() {
     setLoading(true)
     setError(null)
     load()
-      .catch(e => setError(e instanceof Error ? e.message : 'Error al cargar'))
+      .catch(e => setError(e instanceof Error ? e.message : t('errors.load')))
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
@@ -133,12 +137,13 @@ export default function PedidoComposerPage() {
 
   const hasOverstock = linesWithStock.some(l => l.over)
   const total = linesWithStock.reduce((a, l) => a + l.cantidad * l.precio_unitario, 0)
+  const totalBottles = lines.reduce((a, l) => a + l.cantidad, 0)
 
   const proofMessage = hasOverstock
-    ? 'Hay ítems sin stock suficiente. Ajusta cantidades o espera entrada antes de confirmar.'
+    ? t('aiOverstock')
     : lines.length === 0
-      ? 'Agrega botellas al pedido. El stock se reserva solo al confirmar.'
-      : `Listo para confirmar · ${fmtBottles(lines.reduce((a, l) => a + l.cantidad, 0))} botellas · ${fmtMoney(total)}`
+      ? t('aiEmpty')
+      : t('aiReady', { bottles: fmtBottles(totalBottles), total: fmtMoney(total) })
 
   function addLine() {
     const sku = skuMap.get(addSkuId)
@@ -188,7 +193,7 @@ export default function PedidoComposerPage() {
       await replacePedidoItems(supabase, pedidoId, lines)
       await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : t('errors.save'))
     } finally {
       setSaving(false)
     }
@@ -204,7 +209,7 @@ export default function PedidoComposerPage() {
       setPedido(prev => (prev ? { ...prev, ...updated, estado: updated.estado as EstadoPedido } : prev))
       router.refresh()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo confirmar')
+      setError(e instanceof Error ? e.message : t('errors.confirm'))
     } finally {
       setConfirming(false)
     }
@@ -212,15 +217,15 @@ export default function PedidoComposerPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: 48, color: 'var(--fg-3)' }}>Cargando compositor…</div>
+      <div style={{ padding: 48, color: 'var(--fg-3)' }}>{t('loading')}</div>
     )
   }
 
   if (!pedido) {
     return (
       <div style={{ padding: 48 }}>
-        <p>Pedido no encontrado.</p>
-        <Link href="/dashboard/pedidos">Volver</Link>
+        <p>{t('notFound')}</p>
+        <Link href="/dashboard/pedidos">{t('back')}</Link>
       </div>
     )
   }
@@ -237,10 +242,12 @@ export default function PedidoComposerPage() {
     )
   }
 
+  const estadoLabel = (tEstado as (key: string) => string)(pedido.estado) || pedido.estado
+
   return (
     <div style={{ padding: '28px 28px 100px', maxWidth: 720, margin: '0 auto' }}>
       <Link href="/dashboard/pedidos" style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}>
-        ← Pedidos
+        {t('backList')}
       </Link>
 
       <header style={{ margin: '16px 0 24px' }}>
@@ -248,14 +255,14 @@ export default function PedidoComposerPage() {
           {pedido.numero}
         </div>
         <h1 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 800, color: 'var(--fg-0)' }}>
-          Compositor
+          {t('composer')}
         </h1>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)' }}>
-          {pedido.clients?.name || 'Cliente'}
-          {pedido.etiqueta_nombre ? ` · ${pedido.etiqueta_nombre}` : ''} · Entrega{' '}
+          {pedido.clients?.name || t('clientFallback')}
+          {pedido.etiqueta_nombre ? ` · ${pedido.etiqueta_nombre}` : ''} · {t('delivery')}{' '}
           {pedido.fecha_entrega} ·{' '}
           <span style={{ color: pedido.estado === 'borrador' ? 'var(--warn)' : 'var(--ok)' }}>
-            {pedido.estado}
+            {estadoLabel}
           </span>
         </p>
       </header>
@@ -271,14 +278,14 @@ export default function PedidoComposerPage() {
           }}
         >
           <div className="eyebrow" style={{ marginBottom: 12 }}>
-            Agregar SKU
+            {t('addSku')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px auto', gap: 8 }}>
             <select value={addSkuId} onChange={e => setAddSkuId(e.target.value)} style={fieldStyle}>
-              <option value="">Producto…</option>
+              <option value="">{t('selectProduct')}</option>
               {skus.map(s => (
                 <option key={s.id} value={s.id}>
-                  {s.nombre} · {fmtBottles(s.stock_disponible)} disp.
+                  {t('productOption', { name: s.nombre, avail: fmtBottles(s.stock_disponible) })}
                 </option>
               ))}
             </select>
@@ -299,7 +306,7 @@ export default function PedidoComposerPage() {
 
       <section style={{ marginBottom: 20 }}>
         {linesWithStock.length === 0 ? (
-          <p style={{ color: 'var(--fg-3)', fontSize: 14 }}>Sin ítems en el pedido.</p>
+          <p style={{ color: 'var(--fg-3)', fontSize: 14 }}>{t('emptyItems')}</p>
         ) : (
           <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-card)' }}>
             {linesWithStock.map((line, i) => (
@@ -317,9 +324,9 @@ export default function PedidoComposerPage() {
                   <div>
                     <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{line.nombre}</div>
                     <div className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4 }}>
-                      Disp. {fmtBottles(line.disponible)} bts
+                      {t('available', { count: fmtBottles(line.disponible) })}
                       {line.over && (
-                        <span style={{ color: 'var(--crit)', marginLeft: 8 }}>SIN STOCK</span>
+                        <span style={{ color: 'var(--crit)', marginLeft: 8 }}>{t('noStock')}</span>
                       )}
                     </div>
                   </div>
@@ -348,7 +355,7 @@ export default function PedidoComposerPage() {
                     </div>
                   ) : (
                     <span className="mono" style={{ fontWeight: 600 }}>
-                      {line.cantidad} bts
+                      {t('bottlesShort', { count: line.cantidad })}
                     </span>
                   )}
                 </div>
@@ -377,7 +384,7 @@ export default function PedidoComposerPage() {
           marginBottom: 16,
         }}
       >
-        <span style={{ fontSize: 14, color: 'var(--fg-2)' }}>Total</span>
+        <span style={{ fontSize: 14, color: 'var(--fg-2)' }}>{t('total')}</span>
         <span className="mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--gold)' }}>
           {fmtMoney(total)}
         </span>
@@ -415,7 +422,7 @@ export default function PedidoComposerPage() {
       {editable && (
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button type="button" onClick={saveDraft} disabled={saving} style={btnSecondary}>
-            {saving ? 'Guardando…' : 'Guardar borrador'}
+            {saving ? tCommon('saving') : t('saveDraft')}
           </button>
           <button
             type="button"
@@ -426,7 +433,7 @@ export default function PedidoComposerPage() {
               opacity: confirming || hasOverstock || lines.length === 0 ? 0.5 : 1,
             }}
           >
-            {confirming ? 'Confirmando…' : 'Confirmar pedido'}
+            {confirming ? t('confirming') : t('confirmOrder')}
           </button>
         </div>
       )}
@@ -446,7 +453,7 @@ export default function PedidoComposerPage() {
         }}
         fallback={{
           mensaje: proofMessage,
-          accionLabel: hasOverstock ? 'Ver inventario' : 'Preguntar a PROOF',
+          accionLabel: hasOverstock ? t('viewInventory') : tCommon('askProof'),
           accionHref: '/dashboard/inventario',
         }}
       />

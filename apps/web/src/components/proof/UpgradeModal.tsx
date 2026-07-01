@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { getLandingCopy } from '@/lib/proof/landing-copy'
+import { useTranslations } from 'next-intl'
 
 interface UpgradeModalContextValue {
   open: () => void
@@ -45,7 +45,7 @@ export function useUpgradeModal() {
 }
 
 function UpgradeModalPanel({ onClose }: { onClose: () => void }) {
-  const copy = getLandingCopy('es').upgradeModal
+  const t = useTranslations('landing.upgradeModal')
 
   return (
     <div
@@ -100,10 +100,10 @@ function UpgradeModalPanel({ onClose }: { onClose: () => void }) {
             lineHeight: 1.3,
           }}
         >
-          {copy.title}
+          {t('title')}
         </h2>
         <p style={{ margin: '0 0 24px', fontSize: 14, lineHeight: 1.55, color: 'var(--fg-2)' }}>
-          {copy.body}
+          {t('body')}
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link
@@ -122,7 +122,7 @@ function UpgradeModalPanel({ onClose }: { onClose: () => void }) {
               textDecoration: 'none',
             }}
           >
-            {copy.seePlans} →
+            {t('seePlans')} →
           </Link>
           <button
             type="button"
@@ -139,7 +139,7 @@ function UpgradeModalPanel({ onClose }: { onClose: () => void }) {
               fontWeight: 600,
             }}
           >
-            {copy.stayBasic}
+            {t('stayBasic')}
           </button>
         </div>
       </div>

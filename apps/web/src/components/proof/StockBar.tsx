@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import { fmtBottles } from '@/lib/proof/format'
 
 export function StockBar({
@@ -11,6 +14,7 @@ export function StockBar({
   reservado?: number
   pedidos?: number
 }) {
+  const t = useTranslations('distributor.stockBar')
   const safeTotal = Math.max(total, 1)
   const pctDisp = Math.min(100, (disponible / safeTotal) * 100)
   const pctRes = Math.min(100 - pctDisp, (reservado / safeTotal) * 100)
@@ -21,12 +25,16 @@ export function StockBar({
         className="mono"
         style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-0)', marginBottom: 4 }}
       >
-        {fmtBottles(disponible)} / {fmtBottles(total)} bts
+        {fmtBottles(disponible)} / {fmtBottles(total)} {t('bottlesUnit')}
       </div>
       {reservado > 0 && (
         <div style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 6 }}>
-          {fmtBottles(reservado)} reservadas
-          {pedidos > 0 ? ` en ${pedidos} pedido${pedidos === 1 ? '' : 's'}` : ''}
+          {pedidos > 0
+            ? t('reservedInOrders', {
+                reserved: fmtBottles(reservado),
+                orders: pedidos,
+              })
+            : t('reserved', { count: fmtBottles(reservado) })}
         </div>
       )}
       <div

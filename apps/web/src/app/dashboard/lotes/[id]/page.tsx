@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
+import { useWinemakerOwnerCopy } from '@/hooks/useWinemakerOwnerCopy'
 import { useSupabase } from '@/hooks/useSupabase'
-import { fetchOwnerOrganizationId, stageLabel, varietalNamesFromInputs } from '@/lib/supabase/winemaker-owner-home'
+import { fetchOwnerOrganizationId, varietalNamesFromInputs } from '@/lib/supabase/winemaker-owner-home'
 
 type LotDetail = {
   id: string
@@ -19,6 +21,9 @@ export default function LoteDetailPage() {
   const params = useParams<{ id: string }>()
   const lotId = params.id
   const supabase = useSupabase()
+  const copy = useWinemakerOwnerCopy()
+  const t = useTranslations('winemaker.lotDetail')
+  const tStatus = useTranslations('winemaker.lotStatus')
   const [lot, setLot] = useState<LotDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,10 +38,10 @@ export default function LoteDetailPage() {
         const {
           data: { user },
         } = await supabase.auth.getUser()
-        if (!user) throw new Error('No autenticado')
+        if (!user) throw new Error('notAuthenticated')
 
         const orgId = await fetchOwnerOrganizationId(supabase, user.id)
-        if (!orgId) throw new Error('Sin organización')
+        if (!orgId) throw new Error('noOrganization')
 
         const { data, error: lotError } = await supabase
           .from('lots')
@@ -46,7 +51,7 @@ export default function LoteDetailPage() {
           .maybeSingle()
 
         if (lotError) throw lotError
-        if (!data) throw new Error('Lote no encontrado')
+        if (!data) throw new Error('notFound')
 
         const varietalNames = varietalNamesFromInputs(data.lot_grape_inputs)
 
@@ -62,7 +67,12 @@ export default function LoteDetailPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error al cargar el lote')
+          const key =
+            err instanceof Error &&
+            ['notAuthenticated', 'noOrganization', 'notFound'].includes(err.message)
+              ? err.message
+              : 'loadFailed'
+          setError(t(`errors.${key}` as 'errors.loadFailed'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -73,7 +83,10 @@ export default function LoteDetailPage() {
     return () => {
       cancelled = true
     }
-  }, [lotId, supabase])
+  }, [lotId, supabase, t])
+
+  const statusLabel =
+    lot && tStatus.has(lot.status) ? tStatus(lot.status) : lot?.status ?? ''
 
   return (
     <div
@@ -88,24 +101,26 @@ export default function LoteDetailPage() {
         href="/dashboard"
         style={{ fontSize: 13, color: 'var(--fg-3)', textDecoration: 'none', fontWeight: 600 }}
       >
-        ← Inicio
+        {t('back')}
       </Link>
 
       {loading ? (
-        <p style={{ marginTop: 24, fontSize: 14, color: 'var(--fg-3)' }}>Cargando lote…</p>
+        <p style={{ marginTop: 24, fontSize: 14, color: 'var(--fg-3)' }}>{t('loading')}</p>
       ) : error || !lot ? (
-        <p style={{ marginTop: 24, fontSize: 14, color: 'var(--crit)' }}>{error ?? 'Lote no encontrado'}</p>
+        <p style={{ marginTop: 24, fontSize: 14, color: 'var(--crit)' }}>
+          {error ?? t('notFound')}
+        </p>
       ) : (
         <div style={{ marginTop: 20 }}>
           <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
             {lot.code}
           </h1>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)' }}>
-            {stageLabel(lot.current_stage)}
+            {copy.stageLabel(lot.current_stage)}
             {lot.varietal ? ` · ${lot.varietal}` : ''}
           </p>
           <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--fg-2)' }}>
-            Estado: {lot.status}
+            {t('statusLabel', { status: statusLabel })}
           </p>
           {lot.notes ? (
             <p style={{ margin: '16px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{lot.notes}</p>

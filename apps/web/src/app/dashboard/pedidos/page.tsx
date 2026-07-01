@@ -4,24 +4,18 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
-import { fetchPedidos, type PedidoRow, type EstadoPedido } from '@/lib/supabase'
+import { fetchPedidos, type PedidoRow } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
 import { useIsMobile } from '@/hooks/useBreakpoint'
 import { pagePadding } from '@/lib/ui/page-shell'
 
-const ESTADO_LABEL: Record<EstadoPedido, string> = {
-  borrador: 'Borrador',
-  confirmado: 'Confirmado',
-  preparando: 'Preparando',
-  en_ruta: 'En ruta',
-  entregado: 'Entregado',
-  parcial: 'Parcial',
-  cancelado: 'Cancelado',
-}
-
 export default function PedidosPage() {
+  const t = useTranslations('distributor.pedidos')
+  const tEstado = useTranslations('distributor.pedidoEstado')
+  const tCommon = useTranslations('distributor.common')
   const { scope } = useProfile()
   const supabase = useSupabase()
   const isMobile = useIsMobile()
@@ -58,11 +52,9 @@ export default function PedidosPage() {
       >
         <div>
           <h1 style={{ margin: '0 0 6px', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: 'var(--fg-0)' }}>
-            Pedidos
+            {t('title')}
           </h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-            Toma de pedidos en campo · entrega y anticipo
-          </p>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
         </div>
         <Link
           href="/dashboard/pedidos/nuevo"
@@ -78,17 +70,17 @@ export default function PedidosPage() {
             textTransform: 'uppercase',
           }}
         >
-          Toma de pedidos
+          {t('newOrder')}
         </Link>
       </header>
 
       {loading ? (
-        <p style={{ color: 'var(--fg-3)' }}>Cargando…</p>
+        <p style={{ color: 'var(--fg-3)' }}>{tCommon('loading')}</p>
       ) : rows.length === 0 ? (
         <p style={{ color: 'var(--fg-2)' }}>
-          Sin pedidos.{' '}
+          {t('empty')}{' '}
           <Link href="/dashboard/pedidos/nuevo" style={{ color: 'var(--gold)' }}>
-            Crear el primero
+            {t('createFirst')}
           </Link>
         </p>
       ) : (
@@ -114,11 +106,11 @@ export default function PedidosPage() {
                   {p.numero}
                 </span>
                 <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4, lineHeight: 1.45 }}>
-                  {(p as PedidoRow & { clients?: { name: string } }).clients?.name ?? 'Cliente'}
+                  {(p as PedidoRow & { clients?: { name: string } }).clients?.name ?? tCommon('clientFallback')}
                   {p.etiqueta_nombre ? ` · ${p.etiqueta_nombre}` : ''}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 4 }}>
-                  Entrega {p.fecha_entrega} · {ESTADO_LABEL[p.estado]}
+                  {t('delivery', { date: p.fecha_entrega })} · {tEstado(p.estado)}
                 </div>
               </div>
               <span

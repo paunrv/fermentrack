@@ -86,6 +86,19 @@ Configurar [Clerk → Supabase JWT template](https://clerk.com/docs/integrations
 
 Super-usuarios: `profiles.is_super_user = true` bypass RLS vía `proof.is_super_user()`.
 
+## Tenancy (organizaciones)
+
+Epic activo: [#3 — Org multi-tenant winemaker](https://github.com/paunrv/fermentrack/issues/3).
+
+| Área | Modelo de aislamiento |
+|------|------------------------|
+| **Winemaker (v1 org)** | `organizations` + `organization_members` + `organization_id` en `wm_*` |
+| Distiller, distributor, brewer | Legacy — sin cambios hasta roadmap; ver `docs/ORG-TENANCY.md` |
+
+Documentación completa: **`docs/ORG-TENANCY.md`** (modelo, convenciones RLS/app, módulos congelados, issues hijos).
+
+**Regla para PRs del epic #3:** no modificar `distribuidor.ts`, `destilador.ts` ni tablas/RPCs fuera de `wm_*` y `organizations`.
+
 ## Modelo de datos (PostgreSQL)
 
 ### `skus`

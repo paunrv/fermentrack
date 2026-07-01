@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { fmtMoney } from '@/lib/proof/format'
 import type { DeudaClienteAgregada } from '@/lib/supabase/distribuidor'
 
@@ -13,6 +14,7 @@ type Props = {
 }
 
 export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: Props) {
+  const t = useTranslations('distributor.credito.card')
   const vencido = deuda.estado === 'vencido'
 
   return (
@@ -47,14 +49,14 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
           letterSpacing: '0.06em',
         }}
       >
-        {vencido ? 'VENCIDO' : 'AL DÍA'}
+        {vencido ? t('overdue') : t('current')}
       </span>
       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)', lineHeight: 1.2 }}>
         {deuda.cliente_nombre}
       </span>
-      <span style={{ fontSize: 11, color: '#666', lineHeight: 1.45, flex: 1 }}>
-        {deuda.cuentas_count} pedido{deuda.cuentas_count !== 1 ? 's' : ''} con saldo
-        {deuda.fecha_vencimiento ? `\nVence ${deuda.fecha_vencimiento}` : ''}
+      <span style={{ fontSize: 11, color: '#666', lineHeight: 1.45, flex: 1, whiteSpace: 'pre-line' }}>
+        {t('ordersWithBalance', { count: deuda.cuentas_count })}
+        {deuda.fecha_vencimiento ? `\n${t('due', { date: deuda.fecha_vencimiento })}` : ''}
       </span>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <span style={{ fontSize: 10, color: '#AAA', fontFamily: MONO }}>

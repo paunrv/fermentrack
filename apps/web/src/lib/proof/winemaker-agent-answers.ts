@@ -9,7 +9,9 @@ import {
   isGastosListQuery,
   parseGastosLookbackDays,
 } from '@/lib/proof/winemaker-gastos-query'
-import { buildTicketUploadMessage } from '@/lib/proof/winemaker-ticket-vision'
+import { buildTicketUploadMessage } from '@/lib/proof/winemaker-ticket-copy'
+import type { WinemakerTicketCopy } from '@/lib/proof/winemaker-ticket-copy'
+import { getDefaultWinemakerTicketCopy } from '@/lib/proof/winemaker-ticket-copy-default'
 import type { WmTicketVisionStatus } from '@/lib/proof/winemaker-ticket-vision'
 
 function norm(s: string): string {
@@ -21,7 +23,8 @@ function norm(s: string): string {
 }
 
 function uploadQuickAnswer(
-  d: NonNullable<WinemakerAgentContext['uploadedDocument']>
+  d: NonNullable<WinemakerAgentContext['uploadedDocument']>,
+  ticketCopy: WinemakerTicketCopy
 ): AgentQuickAnswer {
   const classified =
     Boolean(d.supplier_id) ||
@@ -31,20 +34,23 @@ function uploadQuickAnswer(
     d.lines.length > 0 ? d.lines.map(l => l.supply_label).join(', ') : 'sin líneas clasificadas'
   const total = d.total != null && d.total > 0 ? ` Total: ${fmtMoney(d.total)}.` : ''
 
-  const { mensaje, agentQuery: _agentQuery, suggestedReplies } = buildTicketUploadMessage({
-    filename: d.original_filename || d.vendor || 'documento',
-    contentType:
-      d.vision_status === 'skipped_pdf'
-        ? 'application/pdf'
-        : d.vision_status
-          ? 'image/png'
-          : 'application/octet-stream',
-    visionStatus: (d.vision_status || (classified ? 'ok' : 'parse_error')) as WmTicketVisionStatus,
-    classified,
-    supplierName: d.vendor || null,
-    summaryLabel: lineText,
-    total,
-  })
+  const { mensaje, agentQuery: _agentQuery, suggestedReplies } = buildTicketUploadMessage(
+    {
+      filename: d.original_filename || d.vendor || 'documento',
+      contentType:
+        d.vision_status === 'skipped_pdf'
+          ? 'application/pdf'
+          : d.vision_status
+            ? 'image/png'
+            : 'application/octet-stream',
+      visionStatus: (d.vision_status || (classified ? 'ok' : 'parse_error')) as WmTicketVisionStatus,
+      classified,
+      supplierName: d.vendor || null,
+      summaryLabel: lineText,
+      total,
+    },
+    ticketCopy
+  )
 
   return {
     mensaje,
@@ -56,7 +62,8 @@ function uploadQuickAnswer(
 
 export function tryWinemakerQuickAnswer(
   query: string,
-  ctx: WinemakerAgentContext
+  ctx: WinemakerAgentContext,
+  ticketCopy: WinemakerTicketCopy = getDefaultWinemakerTicketCopy()
 ): AgentQuickAnswer | null {
   const q = norm(query)
   if (!q) return null
@@ -76,7 +83,7 @@ export function tryWinemakerQuickAnswer(
     ctx.uploadedDocument &&
     (q.includes('subi') || q.includes('detectaste') || q.includes('registro') || q.includes('como lo registro'))
   ) {
-    return uploadQuickAnswer(ctx.uploadedDocument)
+    return uploadQuickAnswer(ctx.uploadedDocument, ticketCopy)
   }
 
   if (q.includes('proveedor') && ctx.proveedores.length > 0) {

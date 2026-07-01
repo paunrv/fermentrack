@@ -1,8 +1,9 @@
 'use server'
 
 import { getAuthUserId, createClient } from '@/lib/supabase/server'
-import { PROOF_PROFILES_TABLE, upsertProfile, type ExtraProfile } from '@/lib/supabase'
+import { PROOF_PROFILES_TABLE, type ExtraProfile } from '@/lib/supabase'
 import { createServiceSupabase } from '@/utils/supabase/service'
+import type { OrgMemberRole } from '@/lib/supabase/organization'
 
 export type TeamMemberRow = {
   id: string
@@ -16,33 +17,59 @@ export type TeamMemberRow = {
 }
 
 export type TeamAccess = {
-  isOwner: boolean
   organizationId: string | null
+  role: OrgMemberRole | null
+  isOwner: boolean
+  canManage: boolean
+  canWrite: boolean
 }
 
-type OwnerContext = {
+type ManageContext = {
   userId: string
   organizationId: string
+  role: OrgMemberRole
 }
 
-async function requireOwnerContext(): Promise<OwnerContext> {
+async function requireManageContext(organizationId: string): Promise<ManageContext> {
   const userId = await getAuthUserId()
   if (!userId) throw new Error('No autenticado')
+  if (!organizationId) throw new Error('Organización no especificada')
 
-  const sb = createServiceSupabase()
+  const sb = await createClient()
   const { data, error } = await sb
     .from('organization_members')
-    .select('organization_id, role, status')
+    .select('role, status')
+    .eq('organization_id', organizationId)
     .eq('user_id', userId)
     .eq('status', 'active')
-    .eq('role', 'owner')
-    .limit(1)
     .maybeSingle()
 
   if (error) throw new Error(error.message)
-  if (!data?.organization_id) throw new Error('Solo el owner puede gestionar el equipo')
+  if (!data || !['owner', 'admin'].includes(data.role)) {
+    throw new Error('Solo owner o admin pueden gestionar el equipo')
+  }
 
-  return { userId, organizationId: data.organization_id }
+  return { userId, organizationId, role: data.role as OrgMemberRole }
+}
+
+async function requireMemberContext(organizationId: string): Promise<ManageContext> {
+  const userId = await getAuthUserId()
+  if (!userId) throw new Error('No autenticado')
+  if (!organizationId) throw new Error('Organización no especificada')
+
+  const sb = await createClient()
+  const { data, error } = await sb
+    .from('organization_members')
+    .select('role, status')
+    .eq('organization_id', organizationId)
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error('No tienes acceso a esta organización')
+
+  return { userId, organizationId, role: data.role as OrgMemberRole }
 }
 
 function inviteRedirectUrl(): string {
@@ -70,29 +97,49 @@ async function resolveUserIdByEmail(email: string): Promise<string | null> {
   return null
 }
 
-export async function fetchTeamAccess(): Promise<TeamAccess> {
+function mapTeamAccess(
+  organizationId: string,
+  role: OrgMemberRole | null
+): TeamAccess {
+  const isOwner = role === 'owner'
+  const canManage = role === 'owner' || role === 'admin'
+  const canWrite = canManage || role === 'member'
+  return {
+    organizationId: role ? organizationId : null,
+    role,
+    isOwner,
+    canManage,
+    canWrite,
+  }
+}
+
+export async function fetchTeamAccess(organizationId: string): Promise<TeamAccess> {
   const userId = await getAuthUserId()
-  if (!userId) return { isOwner: false, organizationId: null }
+  if (!userId || !organizationId) {
+    return {
+      organizationId: null,
+      role: null,
+      isOwner: false,
+      canManage: false,
+      canWrite: false,
+    }
+  }
 
   const sb = await createClient()
   const { data, error } = await sb
     .from('organization_members')
-    .select('organization_id, role, status')
+    .select('role, status')
+    .eq('organization_id', organizationId)
     .eq('user_id', userId)
     .eq('status', 'active')
-    .eq('role', 'owner')
-    .limit(1)
     .maybeSingle()
 
   if (error) throw new Error(error.message)
-  return {
-    isOwner: Boolean(data?.organization_id),
-    organizationId: data?.organization_id ?? null,
-  }
+  return mapTeamAccess(organizationId, (data?.role as OrgMemberRole) ?? null)
 }
 
-export async function fetchTeamMembers(): Promise<TeamMemberRow[]> {
-  const { organizationId } = await requireOwnerContext()
+export async function fetchTeamMembers(organizationId: string): Promise<TeamMemberRow[]> {
+  await requireMemberContext(organizationId)
   const sb = createServiceSupabase()
 
   const { data: members, error } = await sb
@@ -145,15 +192,16 @@ export async function fetchTeamMembers(): Promise<TeamMemberRow[]> {
 }
 
 export async function inviteTeamMember(input: {
+  organizationId: string
   email: string
   name: string
-  profileType: 'winemaker' | 'bodega'
+  orgRole: Exclude<OrgMemberRole, 'owner'>
 }): Promise<{ ok: true }> {
-  const { userId: ownerId, organizationId } = await requireOwnerContext()
+  const { userId: ownerId, organizationId } = await requireManageContext(input.organizationId)
 
   const email = input.email.trim().toLowerCase()
   const name = input.name.trim()
-  const profileType = input.profileType
+  const orgRole = input.orgRole
 
   if (!email || !email.includes('@')) throw new Error('Escribe un email válido')
   if (!name) throw new Error('Escribe el nombre de la persona')
@@ -180,19 +228,9 @@ export async function inviteTeamMember(input: {
 
   await sb.from('profiles').update({ full_name: name }).eq('id', invitedUserId)
 
-  await upsertProfile(sb, {
-    user_id: invitedUserId,
-    profile_type_v2: profileType,
-    username: name,
-    onboarding_complete: false,
-    is_super_user: false,
-    extra_profiles: [],
-    email,
-  })
-
   const { data: existingMember, error: existingError } = await sb
     .from('organization_members')
-    .select('id, status')
+    .select('id, status, role')
     .eq('organization_id', organizationId)
     .eq('user_id', invitedUserId)
     .maybeSingle()
@@ -200,12 +238,15 @@ export async function inviteTeamMember(input: {
   if (existingError) throw new Error(existingError.message)
 
   if (existingMember) {
+    if (existingMember.role === 'owner') {
+      throw new Error('Este usuario ya es owner de la organización')
+    }
     const { error: updateError } = await sb
       .from('organization_members')
       .update({
         status: 'invited',
         invited_by: ownerId,
-        role: 'member',
+        role: orgRole,
       })
       .eq('id', existingMember.id)
 
@@ -214,7 +255,7 @@ export async function inviteTeamMember(input: {
     const { error: insertError } = await sb.from('organization_members').insert({
       organization_id: organizationId,
       user_id: invitedUserId,
-      role: 'member',
+      role: orgRole,
       status: 'invited',
       invited_by: ownerId,
     })

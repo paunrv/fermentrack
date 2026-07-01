@@ -1,8 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { PRODUCER_TABS, type ProducerTab } from '@/lib/proof/landing-copy'
-import { useLandingLanguage } from './LandingLanguageContext'
+import { useTranslations } from 'next-intl'
+import {
+  PRODUCER_TABS_ORDER,
+  type ProducerTab,
+  type ProducerTabContent,
+} from '@/lib/proof/landing-copy'
 import { LANDING, LANDING_PROFILE_COLORS } from './landing-theme'
 
 const TAB_COLORS: Record<ProducerTab, string> = {
@@ -18,11 +22,10 @@ function StageIcon({ status }: { status: 'done' | 'active' | 'pending' }) {
 }
 
 export function ProducerTabsSection() {
-  const { lang, copy } = useLandingLanguage()
+  const t = useTranslations('landing.productores')
   const [activeTab, setActiveTab] = useState<ProducerTab>('winemaker')
-  const tabContent = PRODUCER_TABS[activeTab]
+  const tabContent = t.raw(`tabs.${activeTab}`) as ProducerTabContent
   const accent = TAB_COLORS[activeTab]
-  const tabs: ProducerTab[] = ['winemaker', 'brewer', 'distiller']
 
   return (
     <section id="demo" style={{ padding: '80px 24px', background: LANDING.bg }}>
@@ -37,7 +40,7 @@ export function ProducerTabsSection() {
             color: LANDING.textSecondary,
           }}
         >
-          {copy.productores.eyebrow}
+          {t('eyebrow')}
         </div>
         <h2
           style={{
@@ -49,16 +52,17 @@ export function ProducerTabsSection() {
             maxWidth: 640,
           }}
         >
-          {copy.productores.title}
+          {t('title')}
         </h2>
         <p style={{ margin: '0 0 40px', fontSize: 16, color: LANDING.textSecondary, maxWidth: 560 }}>
-          {copy.productores.subtitle}
+          {t('subtitle')}
         </p>
 
         <div style={{ display: 'flex', gap: 8, marginBottom: 32, flexWrap: 'wrap' }}>
-          {tabs.map(tab => {
+          {PRODUCER_TABS_ORDER.map(tab => {
             const isActive = tab === activeTab
             const color = TAB_COLORS[tab]
+            const label = t(`tabs.${tab}.label`)
             return (
               <button
                 key={tab}
@@ -77,7 +81,7 @@ export function ProducerTabsSection() {
                   transition: 'all 150ms var(--ease-out)',
                 }}
               >
-                {PRODUCER_TABS[tab].label[lang]}
+                {label}
               </button>
             )
           })}
@@ -101,7 +105,7 @@ export function ProducerTabsSection() {
               gap: 16,
             }}
           >
-            {tabContent.bullets[lang].map(bullet => (
+            {tabContent.bullets.map(bullet => (
               <li
                 key={bullet}
                 style={{
@@ -135,11 +139,11 @@ export function ProducerTabsSection() {
                 letterSpacing: '0.02em',
               }}
             >
-              {tabContent.timelineTitle[lang]}
+              {tabContent.timelineTitle}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 4px', alignItems: 'center' }}>
               {tabContent.stages.map((stage, i) => (
-                <span key={stage.label.es} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span key={stage.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   {i > 0 && (
                     <span style={{ color: LANDING.border, margin: '0 2px' }} aria-hidden>
                       ·
@@ -157,7 +161,7 @@ export function ProducerTabsSection() {
                             : LANDING.textSecondary,
                     }}
                   >
-                    {stage.label[lang]}
+                    {stage.label}
                   </span>
                   <StageIcon status={stage.status} />
                 </span>
