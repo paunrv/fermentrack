@@ -5,9 +5,11 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtLitros, fmtMoney } from '@/lib/proof/format'
 import type { ConfirmarLlegadaLinea, ProductoViajeRow, ViajeRow } from '@/lib/proof/destilador-types'
 import {
@@ -15,13 +17,6 @@ import {
   fetchProductosForViaje,
   fetchViajeById,
 } from '@/lib/supabase/destilador'
-
-const ESTADO_LABEL: Record<string, string> = {
-  en_negociacion: 'En negociación',
-  confirmado: 'Confirmado',
-  en_transito: 'En tránsito',
-  recibido: 'Recibido',
-}
 
 type LineaForm = ConfirmarLlegadaLinea & { litros_acordados: number }
 
@@ -34,6 +29,9 @@ function mermaTone(pct: number): string {
 export default function DetalleViajePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const t = useTranslations('distiller.compras.detail')
+  const tCommon = useTranslations('distiller.common')
+  const tViaje = useTranslations('distiller.status.viaje')
   const supabase = useSupabase()
   const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [viaje, setViaje] = useState<ViajeRow | null>(null)
@@ -71,7 +69,8 @@ export default function DetalleViajePage() {
       })
       .catch((e: unknown) => {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Error al cargar')
+          const fallback = t('errors.loadFailed')
+          setError(e instanceof Error ? e.message : fallback)
         }
       })
       .finally(() => {
@@ -111,11 +110,13 @@ export default function DetalleViajePage() {
         }))
       )
       setResultado(
-        `Recibido: ${rows.map(r => `${r.numero_lote} (${r.tipo_agave})`).join(', ')}`
+        t('receivedSuccess', {
+          lots: rows.map(r => `${r.numero_lote} (${r.tipo_agave})`).join(', '),
+        })
       )
       router.push('/dashboard')
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'No se pudo confirmar la llegada')
+      setError(e instanceof Error ? e.message : t('errors.confirmFailed'))
     } finally {
       setConfirming(false)
     }
@@ -140,8 +141,8 @@ export default function DetalleViajePage() {
   if (!viaje) {
     return (
       <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
-        <p style={{ color: 'var(--crit)' }}>Viaje no encontrado.</p>
-        <Link href="/dashboard/destilador/compras">← Compras</Link>
+        <p style={{ color: 'var(--crit)' }}>{tCommon('notFound.trip')}</p>
+        <Link href="/dashboard/destilador/compras">{tCommon('backToPurchases')}</Link>
       </div>
     )
   }
@@ -149,15 +150,15 @@ export default function DetalleViajePage() {
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
       <Link href="/dashboard/destilador/compras" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        ← Compras
+        {tCommon('backToPurchases')}
       </Link>
 
       <header style={{ margin: '16px 0 24px' }}>
         <h1 style={{ margin: '0 0 8px', fontSize: 24, color: 'var(--fg-0)' }}>
-          {viaje.palenquero_nombre || 'Viaje'}
+          {viaje.palenquero_nombre || tCommon('trip')}
         </h1>
         <p className="mono" style={{ margin: 0, fontSize: 12, color: 'var(--fg-2)' }}>
-          {viaje.fecha} · {viaje.region} · {ESTADO_LABEL[viaje.estado] ?? viaje.estado}
+          {viaje.fecha} · {viaje.region} · {viajeStatusLabel(tViaje, viaje.estado)}
         </p>
         {viaje.comunidad && (
           <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--fg-3)' }}>{viaje.comunidad}</p>
@@ -165,15 +166,19 @@ export default function DetalleViajePage() {
       </header>
 
       <section style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Resumen</h2>
+        <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t('summary')}</h2>
         <div className="mono" style={{ fontSize: 12, color: 'var(--fg-1)', lineHeight: 1.7 }}>
-          <div>Flete total: {fmtMoney(Number(viaje.costo_flete))}</div>
-          <div>Litros acordados (viaje): {fmtLitros(totalLitrosAcordados)}</div>
+          <div>
+            {t('fleteTotal')} {fmtMoney(Number(viaje.costo_flete))}
+          </div>
+          <div>
+            {t('litrosViaje')} {fmtLitros(totalLitrosAcordados)}
+          </div>
         </div>
       </section>
 
       <section style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Productos</h2>
+        <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t('products')}</h2>
         <div style={{ border: '0.5px solid var(--hairline)' }}>
           {productos.map((p, i) => (
             <div
@@ -185,18 +190,21 @@ export default function DetalleViajePage() {
             >
               <div style={{ fontWeight: 600 }}>{p.tipo_agave}</div>
               <div className="mono" style={{ fontSize: 12, color: 'var(--fg-2)', marginTop: 4 }}>
-                {fmtLitros(Number(p.litros_acordados))} · {fmtMoney(Number(p.precio_por_litro))}/L
-                {' · '}Total {fmtMoney(Number(p.total_acordado))}
-                {' · '}Pend. {fmtMoney(Number(p.saldo_pendiente))}
+                {fmtLitros(Number(p.litros_acordados))} ·{' '}
+                {t('pricePerLiter', { price: fmtMoney(Number(p.precio_por_litro)) })}
+                {' · '}
+                {t('total')} {fmtMoney(Number(p.total_acordado))}
+                {' · '}
+                {t('pending')} {fmtMoney(Number(p.saldo_pendiente))}
               </div>
               {p.flete_proporcional != null && (
                 <div className="mono" style={{ fontSize: 11, color: 'var(--info)', marginTop: 4 }}>
-                  Flete proporcional: {fmtMoney(Number(p.flete_proporcional))}
+                  {t('fleteProporcional')} {fmtMoney(Number(p.flete_proporcional))}
                 </div>
               )}
               {p.merma_litros != null && (
                 <div className="mono" style={{ fontSize: 11, marginTop: 4 }}>
-                  Merma: {fmtLitros(Number(p.merma_litros))}
+                  {t('merma')} {fmtLitros(Number(p.merma_litros))}
                 </div>
               )}
             </div>
@@ -206,19 +214,16 @@ export default function DetalleViajePage() {
 
       {viaje.estado === 'recibido' ? (
         <p style={{ color: 'var(--ok)', fontSize: 14 }}>
-          Viaje recibido. Revisa lotes en{' '}
+          {t('receivedMessage')}{' '}
           <Link href="/dashboard/destilador/lotes" style={{ color: 'var(--gold)' }}>
-            Lotes
+            {t('lotsLink')}
           </Link>
           .
         </p>
       ) : puedeConfirmar ? (
         <section>
-          <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Confirmar llegada</h2>
-          <p style={{ fontSize: 13, color: 'var(--fg-2)', marginBottom: 16 }}>
-            Registra litros de salida y recibidos por agave. Se calcula merma y flete proporcional;
-            se genera un lote por producto.
-          </p>
+          <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{t('confirmTitle')}</h2>
+          <p style={{ fontSize: 13, color: 'var(--fg-2)', marginBottom: 16 }}>{t('confirmDescription')}</p>
 
           {lineas.map((l, i) => {
             const prod = productos.find(p => p.id === l.producto_viaje_id)
@@ -246,7 +251,7 @@ export default function DetalleViajePage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
                     <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
-                      Litros salida
+                      {t('litrosSalida')}
                     </label>
                     <input
                       type="number"
@@ -269,7 +274,7 @@ export default function DetalleViajePage() {
                   </div>
                   <div>
                     <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
-                      Litros recibidos
+                      {t('litrosRecibidos')}
                     </label>
                     <input
                       type="number"
@@ -293,7 +298,7 @@ export default function DetalleViajePage() {
                 </div>
                 <div style={{ marginTop: 10 }}>
                   <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
-                    ABV %
+                    {t('abv')}
                   </label>
                   <input
                     type="number"
@@ -319,14 +324,17 @@ export default function DetalleViajePage() {
                 </div>
                 <div className="mono" style={{ fontSize: 12, marginTop: 10, lineHeight: 1.6 }}>
                   <span style={{ color: mermaTone(mermaPct) }}>
-                    Merma {fmtLitros(merma)} ({mermaPct.toFixed(1)}%)
+                    {t('mermaLine', {
+                      litros: fmtLitros(merma),
+                      pct: mermaPct.toFixed(1),
+                    })}
                   </span>
                   {mermaPct > 8 && (
-                    <span style={{ color: 'var(--crit)', marginLeft: 8 }}>· Alerta &gt;8%</span>
+                    <span style={{ color: 'var(--crit)', marginLeft: 8 }}>{t('mermaAlert')}</span>
                   )}
                   <br />
                   <span style={{ color: 'var(--info)' }}>
-                    Flete est.: {fmtMoney(Math.round(fleteProp * 100) / 100)}
+                    {t('fleteEst')} {fmtMoney(Math.round(fleteProp * 100) / 100)}
                   </span>
                 </div>
               </div>
@@ -352,13 +360,11 @@ export default function DetalleViajePage() {
               cursor: confirming ? 'wait' : 'pointer',
             }}
           >
-            {confirming ? 'Confirmando…' : 'Confirmar llegada y crear lotes'}
+            {confirming ? t('confirming') : t('confirmButton')}
           </button>
         </section>
       ) : (
-        <p style={{ color: 'var(--fg-2)', fontSize: 13 }}>
-          El viaje debe estar confirmado o en tránsito para registrar la llegada.
-        </p>
+        <p style={{ color: 'var(--fg-2)', fontSize: 13 }}>{t('cannotConfirm')}</p>
       )}
     </div>
   )

@@ -5,9 +5,11 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { corridaModoLabel } from '@/lib/proof/distiller-i18n'
 import type { DestCorridaModo, DestFormatoBotella, LoteRow } from '@/lib/proof/destilador-types'
 import {
   estimateBotellas,
@@ -19,6 +21,9 @@ import {
 export default function NuevaCorridaPage() {
   const router = useRouter()
   const search = useSearchParams()
+  const t = useTranslations('distiller.produccion.nueva')
+  const tCommon = useTranslations('distiller.common')
+  const tModo = useTranslations('distiller.status.modo')
   const supabase = useSupabase()
   const { loading, ok, userId } = useDestiladorScope()
   const [lotes, setLotes] = useState<LoteRow[]>([])
@@ -83,7 +88,7 @@ export default function NuevaCorridaPage() {
       })
       router.push(`/dashboard/destilador/produccion/${corridaId}`)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar la corrida')
+      setError(err instanceof Error ? err.message : t('errors.startFailed'))
     } finally {
       setSaving(false)
     }
@@ -100,22 +105,22 @@ export default function NuevaCorridaPage() {
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
       <Link href="/dashboard/destilador/produccion" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        ← Producción
+        {tCommon('backToProduction')}
       </Link>
-      <h1 style={{ margin: '16px 0 24px', fontSize: 24 }}>Nueva corrida</h1>
+      <h1 style={{ margin: '16px 0 24px', fontSize: 24 }}>{t('title')}</h1>
 
       {lotes.length === 0 ? (
         <p style={{ color: 'var(--fg-2)' }}>
-          No hay lotes en bodega crudo.{' '}
+          {t('noLots')}{' '}
           <Link href="/dashboard/destilador/compras" style={{ color: 'var(--gold)' }}>
-            Recibe un viaje primero
+            {t('receiveFirst')}
           </Link>
           .
         </p>
       ) : (
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <label style={lbl}>Lote</label>
+            <label style={lbl}>{t('fields.lote')}</label>
             <select value={loteId} onChange={e => setLoteId(e.target.value)} style={inp}>
               {lotes.map(l => (
                 <option key={l.id} value={l.id}>
@@ -125,7 +130,7 @@ export default function NuevaCorridaPage() {
             </select>
           </div>
           <div>
-            <label style={lbl}>Bodega embotellado</label>
+            <label style={lbl}>{t('fields.bodega')}</label>
             <select value={bodegaId} onChange={e => setBodegaId(e.target.value)} style={inp}>
               {bodegas.map(b => (
                 <option key={b.id} value={b.id}>
@@ -135,7 +140,7 @@ export default function NuevaCorridaPage() {
             </select>
           </div>
           <div>
-            <label style={lbl}>Formato</label>
+            <label style={lbl}>{t('fields.formato')}</label>
             <select
               value={formato}
               onChange={e => setFormato(e.target.value as DestFormatoBotella)}
@@ -147,7 +152,7 @@ export default function NuevaCorridaPage() {
             </select>
           </div>
           <div>
-            <label style={lbl}>Litros a embotellar</label>
+            <label style={lbl}>{t('fields.litros')}</label>
             <input
               type="number"
               step="0.1"
@@ -159,19 +164,19 @@ export default function NuevaCorridaPage() {
               required
             />
             <p className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 6 }}>
-              ~{estimadas} botellas estimadas
+              {t('estimatedBottles', { count: estimadas })}
             </p>
           </div>
           <div>
-            <label style={lbl}>Modo</label>
+            <label style={lbl}>{t('fields.modo')}</label>
             <select value={modo} onChange={e => setModo(e.target.value as DestCorridaModo)} style={inp}>
-              <option value="equipo">Equipo</option>
-              <option value="manual">Manual</option>
+              <option value="equipo">{corridaModoLabel(tModo, 'equipo')}</option>
+              <option value="manual">{corridaModoLabel(tModo, 'manual')}</option>
             </select>
           </div>
           {modo === 'equipo' ? (
             <div>
-              <label style={lbl}>Costo corrida</label>
+              <label style={lbl}>{t('fields.costoCorrida')}</label>
               <input
                 type="number"
                 min={0}
@@ -184,22 +189,22 @@ export default function NuevaCorridaPage() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
-                <label style={lbl}>Personas</label>
+                <label style={lbl}>{t('fields.personas')}</label>
                 <input value={personas} onChange={e => setPersonas(e.target.value)} style={inp} />
               </div>
               <div>
-                <label style={lbl}>Horas est.</label>
+                <label style={lbl}>{t('fields.horasEst')}</label>
                 <input value={horas} onChange={e => setHoras(e.target.value)} style={inp} />
               </div>
               <div>
-                <label style={lbl}>$/hora</label>
+                <label style={lbl}>{t('fields.tarifaHora')}</label>
                 <input value={tarifa} onChange={e => setTarifa(e.target.value)} style={inp} />
               </div>
             </div>
           )}
           {error && <p style={{ color: 'var(--crit)', fontSize: 13 }}>{error}</p>}
           <button type="submit" disabled={saving} style={btn}>
-            {saving ? 'Iniciando…' : 'Iniciar corrida'}
+            {saving ? t('starting') : t('start')}
           </button>
         </form>
       )}

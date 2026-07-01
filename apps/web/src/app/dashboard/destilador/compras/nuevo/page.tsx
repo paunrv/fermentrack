@@ -5,9 +5,11 @@ export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtMoney } from '@/lib/proof/format'
 import type { DestViajeEstado, NuevoProductoViajeInput } from '@/lib/proof/destilador-types'
 import {
@@ -16,7 +18,17 @@ import {
   fetchProductosForViaje,
 } from '@/lib/supabase/destilador'
 
-const AGAVES = ['Espadín', 'Tobalá', 'Mexicano', 'Tepeztate', 'Madrecuixe', 'Arroqueño', 'Otro']
+const AGAVE_OPTIONS = [
+  { value: 'Espadín', key: 'espadin' },
+  { value: 'Tobalá', key: 'tobala' },
+  { value: 'Mexicano', key: 'mexicano' },
+  { value: 'Tepeztate', key: 'tepeztate' },
+  { value: 'Madrecuixe', key: 'madrecuixe' },
+  { value: 'Arroqueño', key: 'arroneno' },
+  { value: 'Otro', key: 'other' },
+] as const
+
+const INVALID_PRODUCTS = '__INVALID_PRODUCTS__'
 
 const field: React.CSSProperties = {
   width: '100%',
@@ -75,7 +87,7 @@ function isPostgrestError(err: unknown): err is {
 
 /** Diagnóstico en consola del navegador (F12 → Console). */
 function logViajeSaveError(err: unknown, context: { userId: string; payload: ViajeSubmitPayload }) {
-  if (err instanceof Error && err.message.includes('Revisa litros')) {
+  if (err instanceof Error && err.message === INVALID_PRODUCTS) {
     console.error('[viaje/nuevo] validación del formulario (antes de Supabase)', {
       message: err.message,
       payload: context.payload,
@@ -116,22 +128,29 @@ function logViajeSaveError(err: unknown, context: { userId: string; payload: Via
   })
 }
 
-function messageFromSaveError(err: unknown): string {
-  if (err instanceof Error && err.message.includes('Revisa litros')) {
-    return err.message
+function messageFromSaveError(
+  err: unknown,
+  t: (key: string) => string
+): string {
+  if (err instanceof Error && err.message === INVALID_PRODUCTS) {
+    return t('errors.invalidProducts')
   }
   if (isPostgrestError(err)) {
     const parts = [err.message, err.code && `[${err.code}]`, err.details, err.hint].filter(
       Boolean
     )
-    return parts.join(' — ') || 'No se pudo guardar el viaje'
+    return parts.join(' — ') || t('errors.saveFailed')
   }
   if (err instanceof Error && err.message) return err.message
-  return 'No se pudo guardar el viaje'
+  return t('errors.saveFailed')
 }
 
 export default function NuevoViajePage() {
   const router = useRouter()
+  const t = useTranslations('distiller.compras.nuevo')
+  const tCommon = useTranslations('distiller.common')
+  const tAgave = useTranslations('distiller.agave')
+  const tViaje = useTranslations('distiller.status.viaje')
   const supabaseAuthed = useSupabase()
   const { loading, ok, userId } = useDestiladorScope()
   const [saving, setSaving] = useState(false)
@@ -178,7 +197,7 @@ export default function NuevoViajePage() {
     e.preventDefault()
     if (!userId) {
       console.error('[viaje/nuevo] submit sin userId — perfil destilador no listo')
-      setError('Sesión destilador no disponible. Recarga la página.')
+      setError(t('errors.sessionUnavailable'))
       return
     }
     setError(null)
@@ -205,7 +224,7 @@ export default function NuevoViajePage() {
     try {
       for (const p of parsed) {
         if (!p.tipo_agave.trim() || p.litros_acordados <= 0 || p.precio_por_litro < 0) {
-          throw new Error('Revisa litros y precio de cada agave')
+          throw new Error(INVALID_PRODUCTS)
         }
       }
 
@@ -241,7 +260,7 @@ export default function NuevoViajePage() {
       router.push(`/dashboard/destilador/compras/${viajeId}`)
     } catch (err: unknown) {
       logViajeSaveError(err, { userId, payload })
-      setError(messageFromSaveError(err))
+      setError(messageFromSaveError(err, t))
     } finally {
       setSaving(false)
     }
@@ -258,44 +277,49 @@ export default function NuevoViajePage() {
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
       <Link href="/dashboard/destilador/compras" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        ← Compras
+        {tCommon('backToPurchases')}
       </Link>
-      <h1 style={{ margin: '16px 0 24px', fontSize: 24, color: 'var(--fg-0)' }}>Nuevo viaje</h1>
+      <h1 style={{ margin: '16px 0 24px', fontSize: 24, color: 'var(--fg-0)' }}>{t('title')}</h1>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label style={label}>Fecha</label>
+            <label style={label}>{t('fields.fecha')}</label>
             <input type="date" value={fecha} onChange={e => setFecha(e.target.value)} style={field} required />
           </div>
           <div>
-            <label style={label}>Estado inicial</label>
+            <label style={label}>{t('fields.estadoInicial')}</label>
             <select value={estado} onChange={e => setEstado(e.target.value as DestViajeEstado)} style={field}>
-              <option value="en_negociacion">En negociación</option>
-              <option value="confirmado">Confirmado</option>
-              <option value="en_transito">En tránsito</option>
+              <option value="en_negociacion">{viajeStatusLabel(tViaje, 'en_negociacion')}</option>
+              <option value="confirmado">{viajeStatusLabel(tViaje, 'confirmado')}</option>
+              <option value="en_transito">{viajeStatusLabel(tViaje, 'en_transito')}</option>
             </select>
           </div>
         </div>
 
         <div>
-          <label style={label}>Región</label>
-          <input value={region} onChange={e => setRegion(e.target.value)} style={field} placeholder="Ej. Oaxaca · Miahuatlán" />
+          <label style={label}>{t('fields.region')}</label>
+          <input
+            value={region}
+            onChange={e => setRegion(e.target.value)}
+            style={field}
+            placeholder={t('regionPlaceholder')}
+          />
         </div>
         <div>
-          <label style={label}>Comunidad</label>
+          <label style={label}>{t('fields.comunidad')}</label>
           <input value={comunidad} onChange={e => setComunidad(e.target.value)} style={field} />
         </div>
         <div>
-          <label style={label}>Palenquero</label>
+          <label style={label}>{t('fields.palenquero')}</label>
           <input value={palenqueroNombre} onChange={e => setPalenqueroNombre(e.target.value)} style={field} required />
         </div>
         <div>
-          <label style={label}>Contacto</label>
+          <label style={label}>{t('fields.contacto')}</label>
           <input value={palenqueroContacto} onChange={e => setPalenqueroContacto(e.target.value)} style={field} />
         </div>
         <div>
-          <label style={label}>Costo flete (total viaje)</label>
+          <label style={label}>{t('fields.costoFlete')}</label>
           <input
             type="number"
             min={0}
@@ -309,7 +333,7 @@ export default function NuevoViajePage() {
 
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>Productos</span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{t('products')}</span>
             <button
               type="button"
               onClick={addProducto}
@@ -322,7 +346,7 @@ export default function NuevoViajePage() {
                 cursor: 'pointer',
               }}
             >
-              + Agave
+              {t('addAgave')}
             </button>
           </div>
 
@@ -340,22 +364,22 @@ export default function NuevoViajePage() {
               >
                 <div style={{ display: 'grid', gap: 10 }}>
                   <div>
-                    <label style={label}>Tipo agave</label>
+                    <label style={label}>{t('fields.tipoAgave')}</label>
                     <select
                       value={p.tipo_agave}
                       onChange={e => updateProducto(i, { tipo_agave: e.target.value })}
                       style={field}
                     >
-                      {AGAVES.map(a => (
-                        <option key={a} value={a}>
-                          {a}
+                      {AGAVE_OPTIONS.map(a => (
+                        <option key={a.value} value={a.value}>
+                          {tAgave(a.key)}
                         </option>
                       ))}
                     </select>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div>
-                      <label style={label}>Litros acordados</label>
+                      <label style={label}>{t('fields.litrosAcordados')}</label>
                       <input
                         type="number"
                         min={0}
@@ -370,7 +394,7 @@ export default function NuevoViajePage() {
                       />
                     </div>
                     <div>
-                      <label style={label}>Precio / litro</label>
+                      <label style={label}>{t('fields.precioLitro')}</label>
                       <input
                         type="number"
                         min={0}
@@ -387,7 +411,7 @@ export default function NuevoViajePage() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div>
-                      <label style={label}>Anticipo</label>
+                      <label style={label}>{t('fields.anticipo')}</label>
                       <input
                         type="number"
                         min={0}
@@ -402,7 +426,7 @@ export default function NuevoViajePage() {
                     </div>
                     <div style={{ alignSelf: 'end' }}>
                       <span className="mono" style={{ fontSize: 13, color: 'var(--fg-2)' }}>
-                        Subtotal {fmtMoney(sub)}
+                        {t('totals.subtotal', { amount: fmtMoney(sub) })}
                       </span>
                     </div>
                   </div>
@@ -420,7 +444,7 @@ export default function NuevoViajePage() {
                       cursor: 'pointer',
                     }}
                   >
-                    Quitar
+                    {t('remove')}
                   </button>
                 )}
               </div>
@@ -437,10 +461,18 @@ export default function NuevoViajePage() {
             color: 'var(--fg-1)',
           }}
         >
-          <div>Litros acordados (no se mezclan en KPI): {totales.litros.toLocaleString('es-MX')} L</div>
-          <div>Total compra: {fmtMoney(totales.total)}</div>
-          <div>Anticipos: {fmtMoney(totales.anticipo)}</div>
-          <div style={{ color: 'var(--warn)' }}>Saldo palenquero: {fmtMoney(totales.saldo)}</div>
+          <div>
+            {t('totals.litrosKpi', { liters: totales.litros.toLocaleString() })}
+          </div>
+          <div>
+            {t('totals.totalCompra')} {fmtMoney(totales.total)}
+          </div>
+          <div>
+            {t('totals.anticipos')} {fmtMoney(totales.anticipo)}
+          </div>
+          <div style={{ color: 'var(--warn)' }}>
+            {t('totals.saldoPalenquero')} {fmtMoney(totales.saldo)}
+          </div>
         </div>
 
         <label
@@ -460,10 +492,7 @@ export default function NuevoViajePage() {
             onChange={e => setRecibirEnBodega(e.target.checked)}
             style={{ marginTop: 3 }}
           />
-          <span>
-            Recibir en bodega ahora (crea el lote en el canvas). Si lo desmarcas, después debes
-            confirmar la llegada en Compras.
-          </span>
+          <span>{t('receiveNow')}</span>
         </label>
 
         {error && <p style={{ color: 'var(--crit)', fontSize: 13 }}>{error}</p>}
@@ -483,11 +512,7 @@ export default function NuevoViajePage() {
             cursor: saving ? 'wait' : 'pointer',
           }}
         >
-          {saving
-            ? 'Guardando…'
-            : recibirEnBodega
-              ? 'Crear y recibir en bodega'
-              : 'Crear viaje'}
+          {saving ? t('saving') : recibirEnBodega ? t('submitReceive') : t('submit')}
         </button>
       </form>
     </div>

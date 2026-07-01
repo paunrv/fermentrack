@@ -1,6 +1,8 @@
 import type { DestLoteEstado } from '@/lib/proof/destilador-types'
 
-/** Mensaje PROOF contextual por estado de lote (spec). */
+/**
+ * @deprecated Use `useDistillerContextMessage` from `@/hooks/useDistillerContextMessage` in client components.
+ */
 export function mensajeContextualLote(
   estado: DestLoteEstado,
   opts?: { diasEnBodega?: number; litrosGranel?: number }

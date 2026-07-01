@@ -3,22 +3,27 @@
 export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { PipelineHeader, DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { loteStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtLitros, fmtMoney } from '@/lib/proof/format'
 import type { DestLoteEstado, LoteRow } from '@/lib/proof/destilador-types'
 import { countLotesByEstado, fetchLotes } from '@/lib/supabase/destilador'
 
-const PIPELINE: { key: DestLoteEstado; label: string }[] = [
-  { key: 'en_bodega_crudo', label: 'En bodega crudo' },
-  { key: 'en_produccion', label: 'En producción' },
-  { key: 'terminado', label: 'Terminado' },
-  { key: 'vendido_parcial', label: 'Vendido parcial' },
+const PIPELINE_KEYS: DestLoteEstado[] = [
+  'en_bodega_crudo',
+  'en_produccion',
+  'terminado',
+  'vendido_parcial',
 ]
 
 export default function DestiladorLotesPage() {
+  const t = useTranslations('distiller.lotes')
+  const tCommon = useTranslations('distiller.common')
+  const tStatus = useTranslations('distiller.status.lote')
   const supabase = useSupabase()
   const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [filter, setFilter] = useState<DestLoteEstado | null>(null)
@@ -30,6 +35,18 @@ export default function DestiladorLotesPage() {
   })
   const [lotes, setLotes] = useState<LoteRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+
+  const pipeline = useMemo(
+    () =>
+      PIPELINE_KEYS.map(key => ({
+        key,
+        label: loteStatusLabel(tStatus, key),
+        count: counts[key],
+        active: filter === key,
+        onClick: () => setFilter(prev => (prev === key ? null : key)),
+      })),
+    [counts, filter, tStatus]
+  )
 
   useEffect(() => {
     if (!ok || !userId) return
@@ -62,39 +79,29 @@ export default function DestiladorLotesPage() {
 
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 20px', fontSize: 26, fontWeight: 700 }}>Lotes</h1>
+      <h1 style={{ margin: '0 0 20px', fontSize: 26, fontWeight: 700 }}>{t('title')}</h1>
       {dataLoading ? (
         <DestiladorSkeleton />
       ) : (
         <>
-          <PipelineHeader
-            stages={PIPELINE.map(p => ({
-              key: p.key,
-              label: p.label,
-              count: counts[p.key],
-              active: filter === p.key,
-              onClick: () => setFilter(prev => (prev === p.key ? null : p.key)),
-            }))}
-          />
+          <PipelineHeader stages={pipeline} />
           <div style={{ border: '0.5px solid var(--hairline)' }}>
             {lotes.length === 0 ? (
-              <p style={{ padding: 16, color: 'var(--fg-2)' }}>Sin lotes en este estado.</p>
+              <p style={{ padding: 16, color: 'var(--fg-2)' }}>{t('empty')}</p>
             ) : (
               lotes.map((l, i) => {
                 const pv = l.productos_viaje
                 const precioL = pv ? Number(pv.precio_por_litro) : 0
                 const flete = pv?.flete_proporcional ? Number(pv.flete_proporcional) : 0
                 const litrosA = pv ? Number(pv.litros_acordados) : Number(l.litros_recibidos)
-                const costoLitro =
-                  litrosA > 0
-                    ? precioL + flete / litrosA
-                    : precioL
+                const costoLitro = litrosA > 0 ? precioL + flete / litrosA : precioL
                 const dias = Math.max(
                   0,
                   Math.floor(
                     (Date.now() - new Date(l.fecha_recepcion).getTime()) / 86400000
                   )
                 )
+                const status = loteStatusLabel(tStatus, l.estado)
                 return (
                   <Link
                     key={l.id}
@@ -114,14 +121,21 @@ export default function DestiladorLotesPage() {
                       {l.tipo_agave}
                     </div>
                     <div className="mono" style={{ fontSize: 12, color: 'var(--fg-2)', marginTop: 6 }}>
-                      {fmtLitros(l.litros_disponibles_granel)} granel ·{' '}
-                      {l.estado.replace(/_/g, ' ')}
+                      {t('listBulkStatus', {
+                        liters: fmtLitros(l.litros_disponibles_granel),
+                        status,
+                      })}
                     </div>
                     {l.estado === 'en_bodega_crudo' && (
                       <div className="mono" style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4 }}>
-                        {fmtMoney(costoLitro)}/L · {dias} d en bodega
+                        {t('costDaysLine', {
+                          cost: fmtMoney(costoLitro),
+                          days: tCommon('daysInCellar', { days: dias }),
+                        })}
                         {dias > 30 && (
-                          <span style={{ color: 'var(--warn)', marginLeft: 6 }}>· &gt;30 d</span>
+                          <span style={{ color: 'var(--warn)', marginLeft: 6 }}>
+                            {tCommon('over30Days')}
+                          </span>
                         )}
                       </div>
                     )}

@@ -1882,5 +1882,236 @@
         "loadFailed": "Failed to load lot"
       }
     }
+  },
+  "distiller": {
+    "common": {
+      "loading": "Loading…",
+      "backToPurchases": "← Purchases",
+      "backToLots": "← Lots",
+      "backToProduction": "← Production",
+      "bulk": "bulk",
+      "merma": "shrinkage",
+      "pendingShort": "{amount} pending",
+      "daysInCellar": "{days} d in cellar",
+      "over30Days": "· >30 d",
+      "noRegion": "No region",
+      "palenquero": "Palenquero",
+      "trip": "Trip",
+      "lot": "Lot",
+      "dash": "—",
+      "notFound": {
+        "trip": "Trip not found.",
+        "lot": "Lot not found.",
+        "run": "Run not found."
+      }
+    },
+    "status": {
+      "viaje": {
+        "en_negociacion": "In negotiation",
+        "confirmado": "Confirmed",
+        "en_transito": "In transit",
+        "recibido": "Received"
+      },
+      "lote": {
+        "en_bodega_crudo": "Raw in cellar",
+        "en_produccion": "In production",
+        "terminado": "Finished",
+        "vendido_parcial": "Partially sold"
+      },
+      "corrida": {
+        "activa": "Active",
+        "completada": "Completed"
+      },
+      "modo": {
+        "equipo": "Team",
+        "manual": "Manual"
+      }
+    },
+    "pipeline": {
+      "enTransito": "In transit",
+      "enBodegaCrudo": "Raw in cellar",
+      "enProduccion": "In production",
+      "terminado": "Finished"
+    },
+    "agave": {
+      "espadin": "Espadín",
+      "tobala": "Tobalá",
+      "mexicano": "Mexicano",
+      "tepeztate": "Tepeztate",
+      "madrecuixe": "Madrecuixe",
+      "arroneno": "Arroqueño",
+      "other": "Other"
+    },
+    "ventas": {
+      "title": "Sales",
+      "placeholder": "Orders, receivables, and box-scan delivery — next iteration."
+    },
+    "bodega": {
+      "title": "Cellar",
+      "placeholder": "Cases per lot, scan audits, and transfers — next iteration."
+    },
+    "compras": {
+      "eyebrow": "Pattern · Oaxaca purchases",
+      "title": "Purchases",
+      "tripsSection": "Trips",
+      "kpi": {
+        "owedToPalenqueros": "Owed to palenqueros",
+        "activeTrips": "Active trips",
+        "avgCostPerLiter": "Avg cost / L"
+      },
+      "empty": "No trips yet. Start with a new Oaxaca trip.",
+      "newTrip": "New trip",
+      "errors": {
+        "loadFailed": "Failed to load purchases",
+        "schemaPending": "Distiller schema pending: apply scripts/destilador-apply-all.sql in Supabase."
+      },
+      "nuevo": {
+        "title": "New trip",
+        "products": "Products",
+        "fields": {
+          "fecha": "Date",
+          "estadoInicial": "Initial status",
+          "region": "Region",
+          "comunidad": "Community",
+          "palenquero": "Palenquero",
+          "contacto": "Contact",
+          "costoFlete": "Freight cost (trip total)",
+          "tipoAgave": "Agave type",
+          "litrosAcordados": "Agreed liters",
+          "precioLitro": "Price / liter",
+          "anticipo": "Advance"
+        },
+        "regionPlaceholder": "e.g. Oaxaca · Miahuatlán",
+        "totals": {
+          "litrosKpi": "Agreed liters (not mixed in KPI): {liters} L",
+          "totalCompra": "Purchase total:",
+          "anticipos": "Advances:",
+          "saldoPalenquero": "Palenquero balance:",
+          "subtotal": "Subtotal {amount}"
+        },
+        "receiveNow": "Receive in cellar now (creates the lot on canvas). If unchecked, confirm arrival later in Purchases.",
+        "addAgave": "+ Agave",
+        "remove": "Remove",
+        "saving": "Saving…",
+        "submitReceive": "Create and receive in cellar",
+        "submit": "Create trip",
+        "errors": {
+          "sessionUnavailable": "Distiller session unavailable. Reload the page.",
+          "invalidProducts": "Check liters and price for each agave",
+          "saveFailed": "Could not save trip"
+        }
+      },
+      "detail": {
+        "summary": "Summary",
+        "products": "Products",
+        "fleteTotal": "Total freight:",
+        "litrosViaje": "Agreed liters (trip):",
+        "total": "Total",
+        "pending": "Pending",
+        "pricePerLiter": "{price}/L",
+        "fleteProporcional": "Proportional freight:",
+        "merma": "Shrinkage:",
+        "receivedMessage": "Trip received. Review lots in",
+        "lotsLink": "Lots",
+        "confirmTitle": "Confirm arrival",
+        "confirmDescription": "Record output and received liters per agave. Shrinkage and proportional freight are calculated; one lot is created per product.",
+        "litrosSalida": "Output liters",
+        "litrosRecibidos": "Received liters",
+        "abv": "ABV %",
+        "mermaLine": "Shrinkage {litros} ({pct}%)",
+        "mermaAlert": "· Alert >8%",
+        "fleteEst": "Est. freight:",
+        "confirming": "Confirming…",
+        "confirmButton": "Confirm arrival and create lots",
+        "cannotConfirm": "Trip must be confirmed or in transit to record arrival.",
+        "receivedSuccess": "Received: {lots}",
+        "errors": {
+          "loadFailed": "Failed to load",
+          "confirmFailed": "Could not confirm arrival"
+        }
+      }
+    },
+    "lotes": {
+      "title": "Lots",
+      "empty": "No lots in this status.",
+      "listBulkStatus": "{liters} bulk · {status}",
+      "costDaysLine": "{cost}/L · {days}",
+      "detail": {
+        "barEmbotellado": "Bottled",
+        "barGranel": "Bulk",
+        "barMerma": "Shrinkage",
+        "embotShort": "Bottled",
+        "granelShort": "Bulk",
+        "mermaShort": "Shrinkage",
+        "received": "Received:",
+        "abv": "ABV:",
+        "costMezcal": "Mezcal cost:",
+        "costPerBottle": "Actual cost / bottle:",
+        "closeActiveRun": "Close active run",
+        "newRun": "New run"
+      },
+      "context": {
+        "enBodegaCrudoStale": "{days} days raw without bottling. Each day is opportunity cost.",
+        "enBodegaCrudoReady": "{liters} L ready — start a run when you have bottles and labels.",
+        "enBodegaCrudoAvailable": "Bulk available — start a run when you have bottles and labels.",
+        "enProduccion": "Active run. Closing calculates actual cost per bottle and marks the lot finished.",
+        "terminado": "Lot bottled. Review cost per bottle before setting sale prices.",
+        "vendidoParcial": "Mixed inventory remains (bulk and/or bottles). Do not mix lots in one order."
+      }
+    },
+    "produccion": {
+      "title": "Production",
+      "newRun": "New run",
+      "activeRuns": "Active runs",
+      "recent": "Recent",
+      "stockCritical": "Critical stock: check empty bottles and labels before bottling.",
+      "bottleStock": "Bottle {format}",
+      "activeRunLine": "{liters} L assigned — close run →",
+      "completedEmpty": "No completed runs.",
+      "completedLine": "{lot} · {bottles} bt · shrinkage {pct}%",
+      "errors": {
+        "loadFailed": "Failed to load",
+        "schemaPending": "Apply scripts/destilador-apply-all.sql (+ close-run migration) in Supabase."
+      },
+      "nueva": {
+        "title": "New run",
+        "noLots": "No lots in raw cellar.",
+        "receiveFirst": "Receive a trip first",
+        "fields": {
+          "lote": "Lot",
+          "bodega": "Bottling cellar",
+          "formato": "Format",
+          "litros": "Liters to bottle",
+          "modo": "Mode",
+          "costoCorrida": "Run cost",
+          "personas": "People",
+          "horasEst": "Est. hours",
+          "tarifaHora": "$/hour"
+        },
+        "estimatedBottles": "~{count} bottles estimated",
+        "starting": "Starting…",
+        "start": "Start run",
+        "errors": {
+          "startFailed": "Could not start run"
+        }
+      },
+      "cerrar": {
+        "title": "Close run",
+        "fields": {
+          "producidas": "Bottles produced",
+          "defectuosas": "Defective bottles"
+        },
+        "mermaEstimated": "Estimated shrinkage: {pct}%",
+        "mermaAlert": "· Alert >8%",
+        "onClose": "On close: deducts empty bottles, creates cases (12 bt), and calculates actual cost per bottle.",
+        "alreadyCompleted": "Run already completed.",
+        "viewLot": "View lot",
+        "closing": "Closing…",
+        "close": "Close run",
+        "errors": {
+          "closeFailed": "Failed to close"
+        }
+      }
+    }
   }
 }

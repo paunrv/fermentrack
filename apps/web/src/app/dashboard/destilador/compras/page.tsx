@@ -4,11 +4,13 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { PipelineHeader, DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtMoney } from '@/lib/proof/format'
-import type { DestViajeEstado, ViajeRow } from '@/lib/proof/destilador-types'
+import type { ViajeRow } from '@/lib/proof/destilador-types'
 import {
   fetchComprasPipelineCounts,
   fetchCostoPromedioLitroUltimasCompras,
@@ -18,14 +20,11 @@ import {
   sumSaldosPalenqueros,
 } from '@/lib/supabase/destilador'
 
-const ESTADO_LABEL: Record<DestViajeEstado, string> = {
-  en_negociacion: 'En negociación',
-  confirmado: 'Confirmado',
-  en_transito: 'En tránsito',
-  recibido: 'Recibido',
-}
-
 export default function DestiladorComprasPage() {
+  const t = useTranslations('distiller.compras')
+  const tCommon = useTranslations('distiller.common')
+  const tPipeline = useTranslations('distiller.pipeline')
+  const tViaje = useTranslations('distiller.status.viaje')
   const supabase = useSupabase()
   const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [viajes, setViajes] = useState<ViajeRow[]>([])
@@ -60,7 +59,8 @@ export default function DestiladorComprasPage() {
       })
       .catch((e: unknown) => {
         if (cancelled) return
-        setError(e instanceof Error ? e.message : 'Error al cargar compras')
+        const fallback = t('errors.loadFailed')
+        setError(e instanceof Error ? e.message : fallback)
       })
       .finally(() => {
         if (!cancelled) setDataLoading(false)
@@ -116,10 +116,10 @@ export default function DestiladorComprasPage() {
     <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
       <header style={{ marginBottom: 20 }}>
         <p className="eyebrow" style={{ margin: '0 0 8px', color: 'var(--fg-3)' }}>
-          Patrón · Compras Oaxaca
+          {t('eyebrow')}
         </p>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--fg-0)' }}>
-          Compras
+          {t('title')}
         </h1>
       </header>
 
@@ -129,10 +129,10 @@ export default function DestiladorComprasPage() {
         <>
           <PipelineHeader
             stages={[
-              { key: 'transito', label: 'En tránsito', count: pipeline.enTransito },
-              { key: 'crudo', label: 'En bodega crudo', count: pipeline.enBodegaCrudo },
-              { key: 'prod', label: 'En producción', count: pipeline.enProduccion },
-              { key: 'term', label: 'Terminado', count: pipeline.terminado },
+              { key: 'transito', label: tPipeline('enTransito'), count: pipeline.enTransito },
+              { key: 'crudo', label: tPipeline('enBodegaCrudo'), count: pipeline.enBodegaCrudo },
+              { key: 'prod', label: tPipeline('enProduccion'), count: pipeline.enProduccion },
+              { key: 'term', label: tPipeline('terminado'), count: pipeline.terminado },
             ]}
           />
 
@@ -144,20 +144,18 @@ export default function DestiladorComprasPage() {
               marginBottom: 28,
             }}
           >
-            <KpiCard label="Debo a palenqueros" value={fmtMoney(deboPalenqueros)} tone="var(--crit)" />
-            <KpiCard label="Viajes activos" value={String(viajesActivos)} mono />
+            <KpiCard label={t('kpi.owedToPalenqueros')} value={fmtMoney(deboPalenqueros)} tone="var(--crit)" />
+            <KpiCard label={t('kpi.activeTrips')} value={String(viajesActivos)} mono />
             <KpiCard
-              label="Costo prom. / L"
-              value={costoPromLitro != null ? fmtMoney(costoPromLitro) : '—'}
+              label={t('kpi.avgCostPerLiter')}
+              value={costoPromLitro != null ? fmtMoney(costoPromLitro) : tCommon('dash')}
               mono
             />
           </div>
 
           {error && (
             <p style={{ color: 'var(--crit)', fontSize: 13, marginBottom: 16 }}>
-              {isDestSchemaMissingError(error)
-                ? 'Esquema Destilador pendiente: aplica scripts/destilador-apply-all.sql en Supabase.'
-                : error}
+              {isDestSchemaMissingError(error) ? t('errors.schemaPending') : error}
             </p>
           )}
 
@@ -172,7 +170,7 @@ export default function DestiladorComprasPage() {
             }}
           >
             <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--fg-1)' }}>
-              Viajes
+              {t('tripsSection')}
             </h2>
             <Link
               href="/dashboard/destilador/compras/nuevo"
@@ -187,14 +185,12 @@ export default function DestiladorComprasPage() {
                 textTransform: 'uppercase',
               }}
             >
-              Nuevo viaje
+              {t('newTrip')}
             </Link>
           </div>
 
           {viajes.length === 0 && !error ? (
-            <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>
-              Sin viajes registrados. Empieza con un nuevo viaje a Oaxaca.
-            </p>
+            <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('empty')}</p>
           ) : (
             <div style={{ border: '0.5px solid var(--hairline)' }}>
               {viajes.map((v, i) => {
@@ -224,10 +220,10 @@ export default function DestiladorComprasPage() {
                           className="mono"
                           style={{ fontSize: 12, color: 'var(--fg-2)' }}
                         >
-                          {v.fecha} · {v.region || 'Sin región'}
+                          {v.fecha} · {v.region || tCommon('noRegion')}
                         </span>
                         <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>
-                          {v.palenquero_nombre || 'Palenquero'}
+                          {v.palenquero_nombre || tCommon('palenquero')}
                         </div>
                         {meta?.agaves.length ? (
                           <div
@@ -239,7 +235,7 @@ export default function DestiladorComprasPage() {
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <span style={{ fontSize: 11, color: 'var(--info)' }}>
-                          {ESTADO_LABEL[v.estado]}
+                          {viajeStatusLabel(tViaje, v.estado)}
                         </span>
                         {meta ? (
                           <div
@@ -250,7 +246,7 @@ export default function DestiladorComprasPage() {
                               color: meta.saldo > 0 ? 'var(--warn)' : 'var(--ok)',
                             }}
                           >
-                            {fmtMoney(meta.saldo)} pend.
+                            {tCommon('pendingShort', { amount: fmtMoney(meta.saldo) })}
                           </div>
                         ) : null}
                       </div>

@@ -1882,5 +1882,236 @@
         "loadFailed": "Error al cargar el lote"
       }
     }
+  },
+  "distiller": {
+    "common": {
+      "loading": "Cargando…",
+      "backToPurchases": "← Compras",
+      "backToLots": "← Lotes",
+      "backToProduction": "← Producción",
+      "bulk": "granel",
+      "merma": "merma",
+      "pendingShort": "{amount} pend.",
+      "daysInCellar": "{days} d en bodega",
+      "over30Days": "· >30 d",
+      "noRegion": "Sin región",
+      "palenquero": "Palenquero",
+      "trip": "Viaje",
+      "lot": "Lote",
+      "dash": "—",
+      "notFound": {
+        "trip": "Viaje no encontrado.",
+        "lot": "Lote no encontrado.",
+        "run": "Corrida no encontrada."
+      }
+    },
+    "status": {
+      "viaje": {
+        "en_negociacion": "En negociación",
+        "confirmado": "Confirmado",
+        "en_transito": "En tránsito",
+        "recibido": "Recibido"
+      },
+      "lote": {
+        "en_bodega_crudo": "En bodega crudo",
+        "en_produccion": "En producción",
+        "terminado": "Terminado",
+        "vendido_parcial": "Vendido parcial"
+      },
+      "corrida": {
+        "activa": "Activa",
+        "completada": "Completada"
+      },
+      "modo": {
+        "equipo": "Equipo",
+        "manual": "Manual"
+      }
+    },
+    "pipeline": {
+      "enTransito": "En tránsito",
+      "enBodegaCrudo": "En bodega crudo",
+      "enProduccion": "En producción",
+      "terminado": "Terminado"
+    },
+    "agave": {
+      "espadin": "Espadín",
+      "tobala": "Tobalá",
+      "mexicano": "Mexicano",
+      "tepeztate": "Tepeztate",
+      "madrecuixe": "Madrecuixe",
+      "arroneno": "Arroqueño",
+      "other": "Otro"
+    },
+    "ventas": {
+      "title": "Ventas",
+      "placeholder": "Pedidos, por cobrar y entrega con escaneo de cajas — siguiente iteración."
+    },
+    "bodega": {
+      "title": "Bodega",
+      "placeholder": "Cajas por lote, auditoría con escaneo y traslados entre bodegas — siguiente iteración."
+    },
+    "compras": {
+      "eyebrow": "Patrón · Compras Oaxaca",
+      "title": "Compras",
+      "tripsSection": "Viajes",
+      "kpi": {
+        "owedToPalenqueros": "Debo a palenqueros",
+        "activeTrips": "Viajes activos",
+        "avgCostPerLiter": "Costo prom. / L"
+      },
+      "empty": "Sin viajes registrados. Empieza con un nuevo viaje a Oaxaca.",
+      "newTrip": "Nuevo viaje",
+      "errors": {
+        "loadFailed": "Error al cargar compras",
+        "schemaPending": "Esquema Destilador pendiente: aplica scripts/destilador-apply-all.sql en Supabase."
+      },
+      "nuevo": {
+        "title": "Nuevo viaje",
+        "products": "Productos",
+        "fields": {
+          "fecha": "Fecha",
+          "estadoInicial": "Estado inicial",
+          "region": "Región",
+          "comunidad": "Comunidad",
+          "palenquero": "Palenquero",
+          "contacto": "Contacto",
+          "costoFlete": "Costo flete (total viaje)",
+          "tipoAgave": "Tipo agave",
+          "litrosAcordados": "Litros acordados",
+          "precioLitro": "Precio / litro",
+          "anticipo": "Anticipo"
+        },
+        "regionPlaceholder": "Ej. Oaxaca · Miahuatlán",
+        "totals": {
+          "litrosKpi": "Litros acordados (no se mezclan en KPI): {liters} L",
+          "totalCompra": "Total compra:",
+          "anticipos": "Anticipos:",
+          "saldoPalenquero": "Saldo palenquero:",
+          "subtotal": "Subtotal {amount}"
+        },
+        "receiveNow": "Recibir en bodega ahora (crea el lote en el canvas). Si lo desmarcas, después debes confirmar la llegada en Compras.",
+        "addAgave": "+ Agave",
+        "remove": "Quitar",
+        "saving": "Guardando…",
+        "submitReceive": "Crear y recibir en bodega",
+        "submit": "Crear viaje",
+        "errors": {
+          "sessionUnavailable": "Sesión destilador no disponible. Recarga la página.",
+          "invalidProducts": "Revisa litros y precio de cada agave",
+          "saveFailed": "No se pudo guardar el viaje"
+        }
+      },
+      "detail": {
+        "summary": "Resumen",
+        "products": "Productos",
+        "fleteTotal": "Flete total:",
+        "litrosViaje": "Litros acordados (viaje):",
+        "total": "Total",
+        "pending": "Pend.",
+        "pricePerLiter": "{price}/L",
+        "fleteProporcional": "Flete proporcional:",
+        "merma": "Merma:",
+        "receivedMessage": "Viaje recibido. Revisa lotes en",
+        "lotsLink": "Lotes",
+        "confirmTitle": "Confirmar llegada",
+        "confirmDescription": "Registra litros de salida y recibidos por agave. Se calcula merma y flete proporcional; se genera un lote por producto.",
+        "litrosSalida": "Litros salida",
+        "litrosRecibidos": "Litros recibidos",
+        "abv": "ABV %",
+        "mermaLine": "Merma {litros} ({pct}%)",
+        "mermaAlert": "· Alerta >8%",
+        "fleteEst": "Flete est.:",
+        "confirming": "Confirmando…",
+        "confirmButton": "Confirmar llegada y crear lotes",
+        "cannotConfirm": "El viaje debe estar confirmado o en tránsito para registrar la llegada.",
+        "receivedSuccess": "Recibido: {lots}",
+        "errors": {
+          "loadFailed": "Error al cargar",
+          "confirmFailed": "No se pudo confirmar la llegada"
+        }
+      }
+    },
+    "lotes": {
+      "title": "Lotes",
+      "empty": "Sin lotes en este estado.",
+      "listBulkStatus": "{liters} granel · {status}",
+      "costDaysLine": "{cost}/L · {days}",
+      "detail": {
+        "barEmbotellado": "Embotellado",
+        "barGranel": "Granel",
+        "barMerma": "Merma",
+        "embotShort": "Embot.",
+        "granelShort": "Granel",
+        "mermaShort": "Merma",
+        "received": "Recibidos:",
+        "abv": "ABV:",
+        "costMezcal": "Costo mezcal:",
+        "costPerBottle": "Costo real / botella:",
+        "closeActiveRun": "Cerrar corrida activa",
+        "newRun": "Nueva corrida"
+      },
+      "context": {
+        "enBodegaCrudoStale": "Lleva {days} días en crudo sin embotellar. Cada día es costo de oportunidad.",
+        "enBodegaCrudoReady": "{liters} L listos — inicia una corrida cuando tengas botellas y etiquetas.",
+        "enBodegaCrudoAvailable": "Granel disponible — inicia una corrida cuando tengas botellas y etiquetas.",
+        "enProduccion": "Corrida activa. Al cerrar se calcula costo real por botella y el lote pasa a terminado.",
+        "terminado": "Lote embotellado. Revisa costo por botella antes de fijar precios de venta.",
+        "vendidoParcial": "Queda inventario mixto (granel y/o botellas). No mezcles lotes en un mismo pedido."
+      }
+    },
+    "produccion": {
+      "title": "Producción",
+      "newRun": "Nueva corrida",
+      "activeRuns": "Corridas activas",
+      "recent": "Recientes",
+      "stockCritical": "Stock crítico: revisa botellas vacías y etiquetas antes de embotellar.",
+      "bottleStock": "Botella {format}",
+      "activeRunLine": "{liters} L asignados — cerrar corrida →",
+      "completedEmpty": "Sin corridas completadas.",
+      "completedLine": "{lot} · {bottles} bt · merma {pct}%",
+      "errors": {
+        "loadFailed": "Error al cargar",
+        "schemaPending": "Aplica scripts/destilador-apply-all.sql (+ migración cerrar corrida) en Supabase."
+      },
+      "nueva": {
+        "title": "Nueva corrida",
+        "noLots": "No hay lotes en bodega crudo.",
+        "receiveFirst": "Recibe un viaje primero",
+        "fields": {
+          "lote": "Lote",
+          "bodega": "Bodega embotellado",
+          "formato": "Formato",
+          "litros": "Litros a embotellar",
+          "modo": "Modo",
+          "costoCorrida": "Costo corrida",
+          "personas": "Personas",
+          "horasEst": "Horas est.",
+          "tarifaHora": "$/hora"
+        },
+        "estimatedBottles": "~{count} botellas estimadas",
+        "starting": "Iniciando…",
+        "start": "Iniciar corrida",
+        "errors": {
+          "startFailed": "No se pudo iniciar la corrida"
+        }
+      },
+      "cerrar": {
+        "title": "Cerrar corrida",
+        "fields": {
+          "producidas": "Botellas producidas",
+          "defectuosas": "Botellas defectuosas"
+        },
+        "mermaEstimated": "Merma estimada: {pct}%",
+        "mermaAlert": "· Alerta >8%",
+        "onClose": "Al cerrar: descuenta botellas vacías, genera cajas (12 bt) y calcula costo real por botella.",
+        "alreadyCompleted": "Corrida ya completada.",
+        "viewLot": "Ver lote",
+        "closing": "Cerrando…",
+        "close": "Cerrar corrida",
+        "errors": {
+          "closeFailed": "Error al cerrar"
+        }
+      }
+    }
   }
 }

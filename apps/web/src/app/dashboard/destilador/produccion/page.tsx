@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
@@ -17,6 +18,8 @@ import {
 } from '@/lib/supabase/destilador'
 
 export default function DestiladorProduccionPage() {
+  const t = useTranslations('distiller.produccion')
+  const tCommon = useTranslations('distiller.common')
   const supabase = useSupabase()
   const { loading: scopeLoading, ok, userId } = useDestiladorScope()
   const [botellas, setBotellas] = useState<StockBotellaRow[]>([])
@@ -43,7 +46,8 @@ export default function DestiladorProduccionPage() {
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Error al cargar')
+        const fallback = t('errors.loadFailed')
+        setError(err instanceof Error ? err.message : fallback)
       })
       .finally(() => {
         if (!cancelled) setDataLoading(false)
@@ -81,7 +85,7 @@ export default function DestiladorProduccionPage() {
           gap: 12,
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700 }}>Producción</h1>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700 }}>{t('title')}</h1>
         <Link
           href="/dashboard/destilador/produccion/nueva"
           style={{
@@ -94,7 +98,7 @@ export default function DestiladorProduccionPage() {
             textTransform: 'uppercase',
           }}
         >
-          Nueva corrida
+          {t('newRun')}
         </Link>
       </header>
 
@@ -104,9 +108,7 @@ export default function DestiladorProduccionPage() {
         <>
           {error && (
             <p style={{ color: 'var(--crit)', fontSize: 13, marginBottom: 16 }}>
-              {isDestSchemaMissingError(error)
-                ? 'Aplica scripts/destilador-apply-all.sql (+ migración cerrar corrida) en Supabase.'
-                : error}
+              {isDestSchemaMissingError(error) ? t('errors.schemaPending') : error}
             </p>
           )}
 
@@ -120,7 +122,7 @@ export default function DestiladorProduccionPage() {
                 fontSize: 13,
               }}
             >
-              Stock crítico: revisa botellas vacías y etiquetas antes de embotellar.
+              {t('stockCritical')}
             </p>
           )}
 
@@ -142,7 +144,7 @@ export default function DestiladorProduccionPage() {
                 }}
               >
                 <div style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
-                  Botella {b.formato}
+                  {t('bottleStock', { format: b.formato })}
                 </div>
                 <div
                   className="mono"
@@ -182,7 +184,7 @@ export default function DestiladorProduccionPage() {
 
           {activas.length > 0 && (
             <section style={{ marginBottom: 24 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Corridas activas</h2>
+              <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>{t('activeRuns')}</h2>
               {activas.map(c => (
                 <Link
                   key={c.id}
@@ -197,20 +199,20 @@ export default function DestiladorProduccionPage() {
                   }}
                 >
                   <span className="mono" style={{ color: 'var(--gold)' }}>
-                    {c.lotes?.numero_lote ?? 'Lote'} · {c.formato_botella}
+                    {c.lotes?.numero_lote ?? tCommon('lot')} · {c.formato_botella}
                   </span>
                   <div style={{ fontSize: 13, marginTop: 4, color: 'var(--fg-2)' }}>
-                    {c.litros_asignados} L asignados — cerrar corrida →
+                    {t('activeRunLine', { liters: c.litros_asignados })}
                   </div>
                 </Link>
               ))}
             </section>
           )}
 
-          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>Recientes</h2>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>{t('recent')}</h2>
           <div style={{ border: '0.5px solid var(--hairline)' }}>
             {corridas.filter(c => c.estado === 'completada').length === 0 ? (
-              <p style={{ padding: 16, color: 'var(--fg-2)' }}>Sin corridas completadas.</p>
+              <p style={{ padding: 16, color: 'var(--fg-2)' }}>{t('completedEmpty')}</p>
             ) : (
               corridas
                 .filter(c => c.estado === 'completada')
@@ -223,8 +225,11 @@ export default function DestiladorProduccionPage() {
                     }}
                   >
                     <span className="mono" style={{ fontSize: 12 }}>
-                      {c.lotes?.numero_lote} · {c.botellas_producidas} bt · merma{' '}
-                      {Number(c.merma_porcentaje).toFixed(1)}%
+                      {t('completedLine', {
+                        lot: c.lotes?.numero_lote ?? tCommon('lot'),
+                        bottles: c.botellas_producidas,
+                        pct: Number(c.merma_porcentaje).toFixed(1),
+                      })}
                     </span>
                     {c.costo_real_por_botella != null && (
                       <span style={{ marginLeft: 10, color: 'var(--gold)', fontSize: 12 }}>

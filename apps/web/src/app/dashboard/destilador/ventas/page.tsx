@@ -2,10 +2,12 @@
 
 export const dynamic = 'force-dynamic'
 
+import { useTranslations } from 'next-intl'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
 
 export default function DestiladorVentasPage() {
+  const t = useTranslations('distiller.ventas')
   const { loading, ok } = useDestiladorScope()
 
   if (loading || !ok) {
@@ -18,10 +20,8 @@ export default function DestiladorVentasPage() {
 
   return (
     <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700 }}>Ventas</h1>
-      <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>
-        Pedidos, por cobrar y entrega con escaneo de cajas — siguiente iteración.
-      </p>
+      <h1 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700 }}>{t('title')}</h1>
+      <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('placeholder')}</p>
     </div>
   )
 }
