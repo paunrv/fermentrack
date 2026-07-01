@@ -9,6 +9,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build --filter=@fermentrack/web",
     "lint": "turbo run lint",
+    "postinstall": "npm run build --workspace=@fermentrack/ui",
     "storybook": "turbo run storybook --filter=@fermentrack/storybook",
     "build-storybook": "turbo run build-storybook --filter=@fermentrack/storybook"
   },

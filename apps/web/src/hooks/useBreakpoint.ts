@@ -1,28 +1,24 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import {
+  MOBILE_MAX,
+  TABLET_MAX,
+  resolveShellBreakpoint,
+  type ShellBreakpoint,
+} from '@/lib/ui/breakpoints'
 
-/** Matches globals.css — mobile-first shell */
-export const MOBILE_MAX = 767
-export const TABLET_MAX = 1023
-
-export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
-
-function resolveBreakpoint(width: number): Breakpoint {
-  if (width <= MOBILE_MAX) return 'mobile'
-  if (width <= TABLET_MAX) return 'tablet'
-  return 'desktop'
-}
+export { MOBILE_MAX, TABLET_MAX }
+export type Breakpoint = ShellBreakpoint
 
 export function useBreakpoint(): Breakpoint {
-  // Primer render idéntico en servidor y cliente; se sincroniza en useEffect.
   const [bp, setBp] = useState<Breakpoint>('desktop')
 
   useEffect(() => {
     const mqMobile = window.matchMedia(`(max-width: ${MOBILE_MAX}px)`)
     const mqTablet = window.matchMedia(`(max-width: ${TABLET_MAX}px)`)
 
-    const sync = () => setBp(resolveBreakpoint(window.innerWidth))
+    const sync = () => setBp(resolveShellBreakpoint(window.innerWidth))
 
     sync()
     mqMobile.addEventListener('change', sync)
@@ -38,4 +34,12 @@ export function useBreakpoint(): Breakpoint {
 
 export function useIsMobile(): boolean {
   return useBreakpoint() === 'mobile'
+}
+
+export function useIsTablet(): boolean {
+  return useBreakpoint() === 'tablet'
+}
+
+export function useIsDesktop(): boolean {
+  return useBreakpoint() === 'desktop'
 }

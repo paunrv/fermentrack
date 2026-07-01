@@ -20,8 +20,9 @@ import {
 } from '@/components/proof/ProofChatThread'
 import { inferTicketAllocationReplies } from '@/lib/proof/winemaker-ticket-copy'
 import { useWinemakerTicketCopy } from '@/hooks/useWinemakerTicketCopy'
-import { ProofComposer, type ProofQuickAction } from '@/components/proof/ProofComposer'
+import { ProofComposer, focusProofInput, type ProofQuickAction } from '@/components/proof/ProofComposer'
 import { ProofResultsZone, focusResultsZone } from '@/components/proof/ProofResultsZone'
+import { useCanvasWideLayout } from '@/hooks/useCanvasWideLayout'
 
 export type { ProofMessage }
 export type { ProofQuickAction }
@@ -100,6 +101,7 @@ export function ProofCanvasShell({
   const agentStartedRef = useRef(false)
   const ticketFileRef = useRef<HTMLInputElement>(null)
   const agentLoading = Boolean(loading)
+  const wideLayout = useCanvasWideLayout()
   const copies: ProofCanvasCopySet = canvasCopies ?? {
     placeholder: PROOF_COPIES.placeholder,
     welcome: PROOF_COPIES.welcome.distributor,
@@ -263,6 +265,31 @@ export function ProofCanvasShell({
     return () => window.clearTimeout(t)
   }, [isTyping, copies.errors.timeout])
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target
+      if (!(target instanceof HTMLElement)) return
+      const inField =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+
+      if (e.key === 'Escape' && activeSubHub) {
+        e.preventDefault()
+        setActiveSubHub(null)
+        return
+      }
+
+      if (e.key === '/' && !inField && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        focusProofInput()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [activeSubHub])
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     sendPrompt(inputValue, false)
@@ -311,7 +338,7 @@ export function ProofCanvasShell({
 
   return (
     <div
-      className="proof-canvas-shell"
+      className={`proof-canvas-shell${wideLayout ? ' proof-canvas-shell--wide' : ''}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -343,48 +370,53 @@ export function ProofCanvasShell({
         <ProofResultsZone
           displayCards={displayCards ?? null}
           loading={isTyping}
+          wideLayout={wideLayout}
           onAction={prompt => sendPrompt(prompt, false)}
           onDeleteCard={onDeleteCard}
         />
       </div>
 
-      <ProofChatThread
-        accent={accent}
-        profileType={profileType}
-        messages={messages}
-        isTyping={isTyping}
-        showWelcome={showWelcome}
-        modeActions={modeActions}
-        hubLenses={resolvedHubLenses}
-        activeSubHub={activeSubHub}
-        welcomeText={copies.welcome}
-        conversationAria={copies.conversationAria}
-        hubLensCopy={hubLensCopy}
-        onModeAction={action => {
-          setActiveSubHub(null)
-          sendPrompt(action.message, true)
-        }}
-        onSubHubOpen={hub => setActiveSubHub(hub)}
-        onSubHubClose={() => setActiveSubHub(null)}
-        onHubLensAction={handleLensAction}
-        modeActionsDisabled={isTyping}
-        onSuggestedReply={msg => sendPrompt(msg, true)}
-      />
+      <div className="proof-canvas-conversation">
+        <ProofChatThread
+          accent={accent}
+          profileType={profileType}
+          messages={messages}
+          isTyping={isTyping}
+          showWelcome={showWelcome}
+          modeActions={modeActions}
+          hubLenses={resolvedHubLenses}
+          activeSubHub={activeSubHub}
+          wideLayout={wideLayout}
+          welcomeText={copies.welcome}
+          conversationAria={copies.conversationAria}
+          hubLensCopy={hubLensCopy}
+          onModeAction={action => {
+            setActiveSubHub(null)
+            sendPrompt(action.message, true)
+          }}
+          onSubHubOpen={hub => setActiveSubHub(hub)}
+          onSubHubClose={() => setActiveSubHub(null)}
+          onHubLensAction={handleLensAction}
+          modeActionsDisabled={isTyping}
+          onSuggestedReply={msg => sendPrompt(msg, true)}
+        />
 
-      <ProofComposer
-        accent={accent}
-        profileType={profileType}
-        inputValue={inputValue}
-        onInputChange={setInputValue}
-        onSubmit={handleSubmit}
-        onQuickAction={msg => sendPrompt(msg, true)}
-        quickActions={quickActions ?? []}
-        disabled={isTyping}
-        showHint={showHint}
-        docked={hasUserMessage}
-        placeholder={copies.placeholder}
-        hintText={copies.hint}
-      />
+        <ProofComposer
+          accent={accent}
+          profileType={profileType}
+          inputValue={inputValue}
+          onInputChange={setInputValue}
+          onSubmit={handleSubmit}
+          onQuickAction={msg => sendPrompt(msg, true)}
+          quickActions={quickActions ?? []}
+          disabled={isTyping}
+          showHint={showHint}
+          docked={hasUserMessage}
+          wideLayout={wideLayout}
+          placeholder={copies.placeholder}
+          hintText={copies.hint}
+        />
+      </div>
     </div>
   )
 }

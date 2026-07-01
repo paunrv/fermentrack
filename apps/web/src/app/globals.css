@@ -333,6 +333,22 @@ select {
   }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  .proof-section-grid {
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+  }
+
+  .proof-canvas-shell:not(.proof-canvas-shell--wide) .proof-canvas-workspace {
+    padding: 16px 20px;
+  }
+
+  .proof-mode-selector__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .proof-dashboard-rail-link:focus-visible {
   outline: 2px solid var(--proof-accent);
   outline-offset: 2px;
@@ -344,6 +360,76 @@ select {
   box-sizing: border-box;
   background: var(--ink);
   border-bottom: 1px solid var(--hairline);
+}
+
+/* Canvas desktop wide layout — issue #32 */
+.proof-canvas-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.proof-canvas-conversation {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  .proof-canvas-shell--wide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    grid-template-rows: 1fr;
+    overflow: hidden;
+  }
+
+  .proof-canvas-shell--wide .proof-canvas-workspace {
+    grid-column: 1;
+    grid-row: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 24px;
+    border-right: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .proof-canvas-shell--wide .proof-canvas-conversation {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    background: var(--color-background-tertiary);
+  }
+
+  .proof-canvas-shell--wide .proof-canvas-conversation .proof-chat-dock {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .proof-canvas-shell--wide .proof-canvas-conversation .proof-chat-thread {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+  }
+
+  .proof-canvas-page--wide .proof-canvas-oc-panel__header,
+  .proof-canvas-page--wide .proof-canvas-oc-panel__grid {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .proof-canvas-page--wide .proof-canvas-oc-panel__grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
 }
 
 /* Canvas home — vertical sections, horizontal item rails */

@@ -22,7 +22,8 @@ import { InventarioSkuRailCard } from '@/components/proof/InventarioSkuRailCard'
 import { KpiRailChip } from '@/components/proof/KpiRailChip'
 import { INVENTARIO_ACCENT } from '@/lib/proof/canvas-accents'
 import type { CategoriaLiquido } from '@/lib/supabase/distribuidor'
-import { useIsMobile } from '@/hooks/useBreakpoint'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
+import { pageTitleFontSize } from '@/lib/ui/breakpoints'
 import { pagePadding } from '@/lib/ui/page-shell'
 import type { SKU } from '@/lib/proof/types'
 
@@ -36,7 +37,7 @@ export default function InventarioPage() {
   const tCat = useTranslations('distributor.liquidCategories')
   const { scope } = useProfile()
   const supabase = useSupabase()
-  const isMobile = useIsMobile()
+  const breakpoint = useBreakpoint()
   const [skuRows, setSkuRows] = useState<Awaited<ReturnType<typeof fetchSkus>>>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
@@ -183,7 +184,7 @@ export default function InventarioPage() {
   })
 
   return (
-    <div style={pagePadding({ withAiBar: true, isMobile })}>
+    <div style={pagePadding({ withAiBar: true, breakpoint })}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {needsSync && (
           <div

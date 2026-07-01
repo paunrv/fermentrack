@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import type { ProofHubLensAction, ProofModeAction, ProofSubHub } from '@/lib/proof/proof-canvas-copy'
 import {
   lensActionsForSubHub,
   subHubForModeAction,
   PROOF_CANVAS_CONTENT_WIDTH,
+  PROOF_CANVAS_CONTENT_WIDTH_TABLET,
   PROOF_CHAT_MAX_HEIGHT,
   PROOF_COPIES,
 } from '@/lib/proof/proof-canvas-copy'
@@ -136,6 +138,7 @@ export function ProofChatThread({
   welcomeText: welcomeTextProp,
   conversationAria,
   hubLensCopy,
+  wideLayout,
 }: {
   accent: string
   profileType: ProfileType
@@ -153,12 +156,14 @@ export function ProofChatThread({
   onSuggestedReply?: (message: string) => void
   welcomeText?: string
   conversationAria?: string
+  wideLayout?: boolean
   hubLensCopy?: Partial<
     Record<ProofSubHub, { title: string; aria: string; back: string }>
   >
 }) {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const breakpoint = useBreakpoint()
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => {
@@ -187,6 +192,18 @@ export function ProofChatThread({
     (hubActions?.length ?? 0) > 0 &&
     Boolean(onHubLensAction)
   const hasConversation = !emptyState
+  const chatMaxHeight = wideLayout
+    ? undefined
+    : breakpoint === 'tablet'
+      ? 'min(280px, 36vh)'
+      : breakpoint === 'mobile'
+        ? `min(${PROOF_CHAT_MAX_HEIGHT}px, 40vh)`
+        : `min(${PROOF_CHAT_MAX_HEIGHT}px, 42vh)`
+  const contentMaxWidth = wideLayout
+    ? undefined
+    : breakpoint === 'tablet'
+      ? PROOF_CANVAS_CONTENT_WIDTH_TABLET
+      : PROOF_CANVAS_CONTENT_WIDTH
 
   return (
     <div
@@ -202,10 +219,12 @@ export function ProofChatThread({
         aria-live="polite"
         aria-label={conversationAria ?? 'Conversación con PROOF'}
         style={{
-          maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
-          margin: '0 auto',
+          maxWidth: contentMaxWidth,
+          margin: wideLayout ? undefined : '0 auto',
           width: '100%',
-          maxHeight: hasConversation ? `min(${PROOF_CHAT_MAX_HEIGHT}px, 40vh)` : undefined,
+          maxHeight: hasConversation ? chatMaxHeight : undefined,
+          flex: wideLayout && hasConversation ? 1 : undefined,
+          minHeight: wideLayout && hasConversation ? 0 : undefined,
           overflowY: hasConversation ? 'auto' : 'visible',
           overflowX: 'hidden',
           padding: hasConversation ? '12px 14px 10px' : '0',

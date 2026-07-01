@@ -18,11 +18,13 @@ export function ProofOrdenCompraPanel({
   initialOrdenId,
   onDismiss,
   onIngresoConfirmado,
+  className,
 }: {
   accent: string
   initialOrdenId?: string | null
   onDismiss?: () => void
   onIngresoConfirmado?: () => void
+  className?: string
 }) {
   const supabase = useSupabase()
   const { scope } = useProfile()
@@ -83,6 +85,7 @@ export function ProofOrdenCompraPanel({
   if (collapsed) {
     return (
       <div
+        className={className ? `${className} proof-canvas-oc-panel` : 'proof-canvas-oc-panel'}
         style={{
           flexShrink: 0,
           padding: '8px 20px',
@@ -112,6 +115,7 @@ export function ProofOrdenCompraPanel({
   if (selectedId && (selected || initialOrdenId === selectedId)) {
     return (
       <div
+        className={className ? `${className} proof-canvas-oc-panel` : 'proof-canvas-oc-panel'}
         style={{
           flexShrink: 0,
           maxHeight: 'min(58vh, 480px)',
@@ -142,6 +146,7 @@ export function ProofOrdenCompraPanel({
   return (
     <section
       aria-label="Órdenes de compra pendientes"
+      className={className ? `${className} proof-canvas-oc-panel` : 'proof-canvas-oc-panel'}
       style={{
         flexShrink: 0,
         padding: '12px 20px',
@@ -150,6 +155,7 @@ export function ProofOrdenCompraPanel({
       }}
     >
       <div
+        className="proof-canvas-oc-panel__header"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -201,6 +207,7 @@ export function ProofOrdenCompraPanel({
         </div>
       </div>
       <div
+        className="proof-canvas-oc-panel__grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',

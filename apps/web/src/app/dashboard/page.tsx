@@ -9,6 +9,7 @@ import { useProfile } from '@/context/ProfileContext'
 import { useWinemakerAccess } from '@/hooks/useWinemakerAccess'
 import { useDistributorCanvasCopy } from '@/hooks/useDistributorCanvasCopy'
 import { useWinemakerCanvasCopy } from '@/hooks/useWinemakerCanvasCopy'
+import { useCanvasWideLayout } from '@/hooks/useCanvasWideLayout'
 import { useProofContextBar } from '@/hooks/useProofContextBar'
 import {
   ProofCanvasShell,
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const tHome = useTranslations('distributor.home')
   const distributorCanvas = useDistributorCanvasCopy()
   const winemakerCanvas = useWinemakerCanvasCopy()
+  const wideLayout = useCanvasWideLayout()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { scope, activeProfile, reload: reloadProfile } = useProfile()
@@ -288,12 +290,8 @@ export default function DashboardPage() {
 
   return (
     <div
+      className={`proof-canvas-page${wideLayout ? ' proof-canvas-page--wide' : ''}`}
       style={{
-        height: '100%',
-        minHeight: 0,
-        overflow: 'hidden',
-        display: 'flex',
-        flexDirection: 'column',
         background: 'var(--color-background-tertiary)',
         color: 'var(--color-text-primary)',
       }}

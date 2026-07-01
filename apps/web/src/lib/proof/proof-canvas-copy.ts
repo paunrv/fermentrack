@@ -1,6 +1,14 @@
 export const PROOF_CANVAS_CONTENT_WIDTH = 720
+/** Ancho mínimo para layout canvas de dos columnas (issue #32). */
+export const   PROOF_CANVAS_WIDE_MIN = 1280
+/** Ancho del contenido canvas en tablet (768–1023). */
+export const PROOF_CANVAS_CONTENT_WIDTH_TABLET = 640
+/** Columna derecha: hilo + compositor en desktop ancho. */
+export const PROOF_CANVAS_CONVERSATION_WIDTH = 420
 /** Altura máxima del hilo de chat activo (panel sobre el composer). */
 export const PROOF_CHAT_MAX_HEIGHT = 320
+/** Altura del hilo en layout ancho (columna dedicada). */
+export const PROOF_CHAT_MAX_HEIGHT_WIDE = 480
 
 export type ProofModeAction = {
   label: string

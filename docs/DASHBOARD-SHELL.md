@@ -7,9 +7,10 @@ Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#31](https:/
 | Rango | Hook | Shell |
 |-------|------|--------|
 | ≤767px | `mobile` | Bottom nav o `WinemakerMobileNav` |
-| ≥768px | `tablet` / `desktop` | Rail 52px + header sticky |
+| 768–1023px | `tablet` | Rail 52px + header (padding 20px) |
+| ≥1024px | `desktop` | Rail 52px + header sticky |
 
-Ver `apps/web/src/hooks/useBreakpoint.ts`.
+Ver `apps/web/src/hooks/useBreakpoint.ts` y `docs/DASHBOARD-BREAKPOINTS.md`.
 
 ## Matriz perfil × ruta
 
@@ -31,6 +32,10 @@ Guards de perfil: `apps/web/src/lib/proof/dashboard-routes.ts`.
 - `isDashboardNavItemActive`
 
 ## QA desktop (1280px)
+
+Checklist completo: **[DESKTOP-QA.md](./DESKTOP-QA.md)** (es-MX + en-US, viewports, teclado, flujos por perfil).
+
+Resumen rápido:
 
 - [ ] Rail visible en `/dashboard` y en inventario — mismo ancho, Inicio activo en canvas
 - [ ] Tab recorre rail → settings → compositor ask

@@ -2,7 +2,8 @@
 
 import { useRef } from 'react'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
-import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import { PROOF_CANVAS_CONTENT_WIDTH, PROOF_CANVAS_CONTENT_WIDTH_TABLET, PROOF_COPIES } from '@/lib/proof/proof-canvas-copy'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 
 export type ProofQuickAction = {
   label: string
@@ -45,6 +46,7 @@ export function ProofComposer({
   docked = false,
   placeholder: placeholderProp,
   hintText: hintTextProp,
+  wideLayout,
 }: {
   accent: string
   profileType: ProfileType
@@ -59,8 +61,15 @@ export function ProofComposer({
   docked?: boolean
   placeholder?: string
   hintText?: string
+  wideLayout?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const breakpoint = useBreakpoint()
+  const contentMaxWidth = wideLayout
+    ? undefined
+    : breakpoint === 'tablet'
+      ? PROOF_CANVAS_CONTENT_WIDTH_TABLET
+      : PROOF_CANVAS_CONTENT_WIDTH
   const hintKey =
     profileType === 'distiller'
       ? 'distiller'
@@ -71,9 +80,10 @@ export function ProofComposer({
 
   return (
     <div
+      className="proof-composer-dock"
       style={{
         flexShrink: 0,
-        padding: docked ? '0 20px 16px' : '12px 20px 16px',
+        padding: docked ? (wideLayout ? '0 16px 16px' : '0 20px 16px') : wideLayout ? '12px 16px 16px' : '12px 20px 16px',
         background: 'var(--color-background-tertiary)',
         borderTop: docked ? 'none' : '0.5px solid var(--color-border-tertiary)',
       }}
@@ -82,7 +92,7 @@ export function ProofComposer({
         <p
           style={{
             margin: '0 auto 10px',
-            maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
+            maxWidth: contentMaxWidth,
             fontSize: 12,
             lineHeight: 1.6,
             color: 'var(--color-text-tertiary)',
@@ -104,8 +114,9 @@ export function ProofComposer({
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
-          margin: '0 auto',
+          maxWidth: contentMaxWidth,
+          margin: wideLayout ? undefined : '0 auto',
+          width: '100%',
           background: 'var(--color-background-primary)',
           border: '0.5px solid var(--color-border-tertiary)',
           borderRadius: docked ? '0 0 10px 10px' : 10,
@@ -178,9 +189,9 @@ export function ProofComposer({
             display: 'flex',
             gap: 8,
             marginTop: 10,
-            maxWidth: PROOF_CANVAS_CONTENT_WIDTH,
-            marginLeft: 'auto',
-            marginRight: 'auto',
+            maxWidth: contentMaxWidth,
+            marginLeft: wideLayout ? undefined : 'auto',
+            marginRight: wideLayout ? undefined : 'auto',
             overflowX: 'auto',
             flexWrap: 'wrap',
             justifyContent: 'center',

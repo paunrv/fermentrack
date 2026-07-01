@@ -1,4 +1,5 @@
 import type { ExtraProfile } from '@/lib/supabase'
+import type { ShellBreakpoint } from '@/lib/ui/breakpoints'
 import {
   isDestiladorPath,
   isDistributorOnlyPath,
@@ -11,8 +12,42 @@ export const DASHBOARD_RAIL_WIDTH_PX = 52
 
 export const DASHBOARD_CANVAS_HEADER_HEIGHT_PX = 64
 
+export function shouldShowDesktopRailForBreakpoint(breakpoint: ShellBreakpoint): boolean {
+  return breakpoint !== 'mobile'
+}
+
+/** @deprecated Prefer shouldShowDesktopRailForBreakpoint */
 export function shouldShowDesktopRail(isMobile: boolean): boolean {
   return !isMobile
+}
+
+export function shouldShowWinemakerMobileNav(
+  breakpoint: ShellBreakpoint,
+  isWinemaker: boolean
+): boolean {
+  return isWinemaker && breakpoint === 'mobile'
+}
+
+export function shouldShowBottomNav(
+  breakpoint: ShellBreakpoint,
+  isWinemaker: boolean
+): boolean {
+  return breakpoint === 'mobile' && !shouldShowWinemakerMobileNav(breakpoint, isWinemaker)
+}
+
+export function shellHorizontalPadding(breakpoint: ShellBreakpoint): number {
+  switch (breakpoint) {
+    case 'mobile':
+      return 16
+    case 'tablet':
+      return 20
+    default:
+      return 28
+  }
+}
+
+export function innerHeaderAskMaxWidth(breakpoint: ShellBreakpoint): number {
+  return breakpoint === 'desktop' ? 560 : 480
 }
 
 export function isDashboardNavItemActive(pathname: string, href: string): boolean {

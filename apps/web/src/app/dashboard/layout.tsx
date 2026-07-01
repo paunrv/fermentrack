@@ -27,7 +27,7 @@ import {
   proofAccentCssVars,
 } from '@/lib/proof/profile-theme'
 import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
-import { useIsMobile } from '@/hooks/useBreakpoint'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTranslations } from 'next-intl'
 import {
   NAV_OPERACION_DEFS,
@@ -39,7 +39,11 @@ import {
   DASHBOARD_RAIL_WIDTH_PX,
   isDashboardNavItemActive,
   shouldShowDashboardInnerHeader,
-  shouldShowDesktopRail,
+  shouldShowDesktopRailForBreakpoint,
+  shouldShowBottomNav,
+  shouldShowWinemakerMobileNav,
+  shellHorizontalPadding,
+  innerHeaderAskMaxWidth,
 } from '@/lib/proof/dashboard-shell'
 import { MobileBottomNav } from '@/components/proof/MobileBottomNav'
 import { WinemakerMobileNav } from '@/components/proof/WinemakerMobileNav'
@@ -187,11 +191,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : activeProfile?.profile_type_v2
   const theme = getProfileTheme(effectiveProfileType)
   const pageTitle = pageTitleForPath(path, key => t(key))
-  const isMobile = useIsMobile()
+  const breakpoint = useBreakpoint()
+  const isMobile = breakpoint === 'mobile'
+  const isTablet = breakpoint === 'tablet'
+  const shellPadX = shellHorizontalPadding(breakpoint)
   const isWinemakerMobileHome = isWinemaker && isCanvas && isMobile
-  const showWinemakerMobileNav = isWinemaker && isMobile
-  const showSidebar = shouldShowDesktopRail(isMobile)
-  const showMobileNav = isMobile && !showWinemakerMobileNav
+  const showWinemakerMobileNav = shouldShowWinemakerMobileNav(breakpoint, isWinemaker)
+  const showSidebar = shouldShowDesktopRailForBreakpoint(breakpoint)
+  const showMobileNav = shouldShowBottomNav(breakpoint, isWinemaker)
 
   const initials = getUserInitials(user)
 
@@ -445,7 +452,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: isMobile ? '14px 16px' : '14px 24px',
+              padding: isMobile ? '14px 16px' : isTablet ? '14px 20px' : '14px 24px',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -553,7 +560,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             style={{
               position: 'sticky',
               top: 0,
-              padding: isMobile ? '10px 16px' : '12px 28px',
+              padding: isMobile ? '10px 16px' : isTablet ? `12px ${shellPadX}px` : '12px 28px',
               display: 'flex',
               flexDirection: 'column',
               gap: 10,
@@ -571,7 +578,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                 <span
                   style={{
-                    fontSize: isMobile ? 15 : 16,
+                    fontSize: isMobile ? 15 : isTablet ? 15 : 16,
                     fontWeight: 600,
                     letterSpacing: '-0.015em',
                     color: 'var(--fg-0)',
@@ -608,7 +615,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </div>
               {!isMobile && (
-                <div style={{ flex: 1, minWidth: 0, maxWidth: 560, margin: '0 auto' }}>
+                <div style={{ flex: 1, minWidth: 0, maxWidth: innerHeaderAskMaxWidth(breakpoint), margin: '0 auto' }}>
                   <ProofAskForm
                     ask={ask}
                     setAsk={setAsk}

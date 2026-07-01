@@ -48,11 +48,13 @@ function TiChevronDown() {
 export function ProofResultsZone({
   displayCards,
   loading,
+  wideLayout,
   onAction,
   onDeleteCard,
 }: {
   displayCards: DisplayCards | null
   loading: boolean
+  wideLayout?: boolean
   onAction: (prompt: string) => void
   onDeleteCard?: (itemId: string) => void | Promise<void>
 }) {
@@ -146,7 +148,7 @@ export function ProofResultsZone({
       aria-live="polite"
       aria-label="Resultados PROOF"
       tabIndex={-1}
-      className="proof-results-zone"
+      className={`proof-results-zone${wideLayout ? ' proof-results-zone--wide' : ''}`}
       style={{
         flexShrink: 0,
         overflow: 'hidden',
@@ -182,6 +184,15 @@ export function ProofResultsZone({
             grid-template-columns: repeat(3, 1fr);
           }
         }
+        .proof-results-zone--wide .proof-results-grid {
+          max-width: none;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+        @media (min-width: 1280px) {
+          .proof-results-zone--wide .proof-results-grid {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          }
+        }
       `}</style>
 
       {showLoading ? (
@@ -197,8 +208,8 @@ export function ProofResultsZone({
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              maxWidth: 720,
-              margin: '0 auto 10px',
+              maxWidth: wideLayout ? undefined : 720,
+              margin: wideLayout ? '0 0 10px' : '0 auto 10px',
               fontSize: 12,
               color: 'var(--color-text-tertiary)',
               fontWeight: 400,
@@ -215,8 +226,8 @@ export function ProofResultsZone({
           {deleteError ? (
             <p
               style={{
-                maxWidth: 720,
-                margin: '0 auto 8px',
+                maxWidth: wideLayout ? undefined : 720,
+                margin: wideLayout ? '0 0 8px' : '0 auto 8px',
                 fontSize: 12,
                 color: 'var(--color-text-danger)',
               }}

@@ -9,7 +9,8 @@ import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchPedidos, type PedidoRow } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
-import { useIsMobile } from '@/hooks/useBreakpoint'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
+import { pageTitleFontSize } from '@/lib/ui/breakpoints'
 import { pagePadding } from '@/lib/ui/page-shell'
 
 export default function PedidosPage() {
@@ -18,7 +19,8 @@ export default function PedidosPage() {
   const tCommon = useTranslations('distributor.common')
   const { scope } = useProfile()
   const supabase = useSupabase()
-  const isMobile = useIsMobile()
+  const breakpoint = useBreakpoint()
+  const isMobile = breakpoint === 'mobile'
   const [rows, setRows] = useState<PedidoRow[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -39,7 +41,7 @@ export default function PedidosPage() {
   }, [scope?.user_id, scope?.profile_type_v2])
 
   return (
-    <div style={pagePadding({ isMobile })}>
+    <div style={pagePadding({ breakpoint })}>
       <header
         style={{
           display: 'flex',
@@ -51,7 +53,7 @@ export default function PedidosPage() {
         }}
       >
         <div>
-          <h1 style={{ margin: '0 0 6px', fontSize: isMobile ? 22 : 28, fontWeight: 700, color: 'var(--fg-0)' }}>
+          <h1 style={{ margin: '0 0 6px', fontSize: pageTitleFontSize(breakpoint), fontWeight: 700, color: 'var(--fg-0)' }}>
             {t('title')}
           </h1>
           <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
