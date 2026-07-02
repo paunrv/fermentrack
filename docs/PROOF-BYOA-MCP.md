@@ -1,143 +1,159 @@
-# PROOF · BYOA + MCP
+# PROOF · BYOA / MCP (Bring Your Own Agent)
 
-Documento de referencia para el epic [#24](https://github.com/paunrv/fermentrack/issues/24).  
-Define el modelo BYOA, alcance por fases, catálogo de tools y criterios de aceptación.
+Epic [#24](https://github.com/paunrv/fermentrack/issues/24) · Phase 0 [#25](https://github.com/paunrv/fermentrack/issues/25).
 
----
+External agents (Claude Desktop, Cursor, etc.) connect to PROOF via the [Model Context Protocol](https://modelcontextprotocol.io/) instead of the hosted Anthropic API in `/api/proof/contexto`.
 
-## Problema
+## Phase 0 spike (implemented)
 
-PROOF trata al agente como navegación, pero **sigue hospedando el LLM** vía `ANTHROPIC_API_KEY` en varios puntos del servidor. Eso implica costo, lock-in con Anthropic, y una arquitectura partida: la mayoría de flujos de valor ya evitan el LLM (parsers determinísticos en español).
+| Piece | Location |
+|-------|----------|
+| MCP route (Streamable HTTP) | `GET/POST/DELETE /api/mcp` → `apps/web/src/app/api/[transport]/route.ts` |
+| OAuth resource metadata (RFC 9728) | `GET /.well-known/oauth-protected-resource` |
+| Auth | Supabase access token (`Authorization: Bearer <jwt>`) |
+| Read tool | `list_skus` — distributor SKUs scoped by RLS |
 
-**Solución:** exponer capacidades operacionales como **servidor MCP**; el usuario conecta su propio agente (Claude Desktop, Cursor, ChatGPT, etc.). PROOF deja de pagar y ejecutar inferencias.
+### Auth flow (spike)
 
----
+1. User signs in to PROOF (Supabase Auth) in the browser.
+2. Obtain a **Supabase access token** (session JWT) from the logged-in session — e.g. DevTools → Application → cookies / or `supabase.auth.getSession()` in console while signed in.
+3. MCP client sends `Authorization: Bearer <access_token>` on each request.
+4. Server validates JWT via `supabase.auth.getUser(token)` and runs tools with a Supabase client that forwards the same token (RLS applies).
 
-## Decisiones de producto
+**OAuth 2.1 metadata:** MCP clients discover the authorization server at `{NEXT_PUBLIC_SUPABASE_URL}/auth/v1` via the protected-resource metadata endpoint. Full OAuth authorization-code flow for headless clients is **Phase 1+**; Phase 0 uses bearer tokens from an existing browser session.
 
-| Tema | Decisión |
-|------|----------|
-| Visión / fotos | El agente externo del usuario extrae datos; empuja JSON estructurado vía MCP write tools |
-| UI in-app | **Connection hub** — URL MCP, OAuth, docs de setup; sin chat conversacional hospedado |
-| Auth | OAuth 2.1 MCP scoped a Clerk user + org activa (ver [ORG-TENANCY.md](./ORG-TENANCY.md)) |
+### Cursor / Claude Desktop config
 
----
+Streamable HTTP (Cursor 2026+):
 
-## Arquitectura
-
+```json
+{
+  "mcpServers": {
+    "proof": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_SUPABASE_ACCESS_TOKEN"
+      }
+    }
+  }
+}
 ```
-Usuario (agente externo + visión propia)
-        │
-        │  OAuth + MCP tools
-        ▼
-PROOF MCP server  ──►  Supabase + RLS
-        ▲
-        │  setup URL + OAuth
-Connection hub UI (dashboard)
+
+Legacy stdio bridge:
+
+```json
+{
+  "mcpServers": {
+    "proof": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:3000/api/mcp", "--header", "Authorization: Bearer YOUR_SUPABASE_ACCESS_TOKEN"]
+    }
+  }
+}
 ```
 
-**Ejemplo — recepción con foto:**
-1. Usuario fotografía remisión en su agente.
-2. Agente extrae `{ proveedor, lineas[], fecha }`.
-3. Agente llama `import_recepcion_draft` o `confirmar_recepcion`.
-4. PROOF valida schema y escribe vía RPCs existentes.
+Replace production URL and rotate tokens; never commit tokens.
 
----
+## Tool catalog (planned mapping)
 
-## Inventario de IA hospedada (a eliminar)
+Future MCP tools map from existing agent actions and Supabase loaders.
 
-| Archivo | Rol |
-|---------|-----|
-| `apps/web/src/app/api/chat/route.ts` | Proxy Anthropic genérico |
-| `apps/web/src/app/api/proof/contexto/route.ts` | Agente SSE — quick answers + fallback LLM |
-| `apps/web/src/app/api/credito/redactar-cobro/route.ts` | Redacción de cobro |
-| `apps/web/src/app/api/recepciones/analizar-foto/route.ts` | Visión recepción |
-| `apps/web/src/lib/proof/winemaker-ticket-vision.ts` | Visión tickets winemaker |
-| `apps/web/src/app/dashboard/agente/page.tsx` | Chat legacy |
-| `apps/web/src/app/dashboard/productos/nueva/page.tsx` | Sugerencias AI en formulario |
-| `apps/web/src/app/dashboard/muestras/page.tsx` | Llamadas Anthropic directas |
+### Distributor (`distributor-agent-actions.ts`)
 
-**Reutilizar (sin LLM):** `agent-context-server.ts`, intent parsers, agent actions, display cards, acceso Supabase con RLS.
+| MCP tool (planned) | Agent action / loader |
+|--------------------|------------------------|
+| `list_skus` | ✅ `fetchSkus` (Phase 0) |
+| `get_sku` | `fetchSkuById` |
+| `update_sku_price` | `actualizar_precio` |
+| `add_sku_note` | `agregar_nota` |
+| `create_sales_order` | `crear_toma_pedido` |
+| `update_order_status` | `actualizar_estado_pedido` |
+| `confirm_delivery` | `confirmar_entrega` |
+| `register_payment` | `registrar_pago` |
+| `create_purchase_order` | `crear_orden_compra` |
+| `confirm_po_arrival` | `confirmar_llegada_distribuidor` |
+| `register_supplier_payment` | `registrar_pago_proveedor` |
+| `generate_delivery_note` | `generar_remision` |
+| `update_deposit_info` | `actualizar_mi_informacion` |
 
----
+### Distiller (`distiller-agent-actions.ts`)
 
-## Catálogo MCP (borrador)
+| MCP tool (planned) | Agent action |
+|--------------------|--------------|
+| `list_lotes` | lot context loaders |
+| `confirm_trip_arrival` | viaje confirm |
+| `update_bottling_date` | lote update |
+| `update_sale_price` | lote pricing |
 
-### Read — Distribuidor
-- `list_skus`
-- `get_inventory_summary`
-- `list_pedidos`
-- `get_credito_resumen`
-- `list_ordenes_compra`
+### Winemaker (`winemaker-agent-actions.ts`)
 
-### Read — Winemaker
-- `list_lotes`
-- `list_documentos`
-- `get_resumen_bodega`
+| MCP tool (planned) | Agent action |
+|--------------------|--------------|
+| `list_lotes` | winemaker context |
+| `assign_document_to_lot` | document actions |
+| `upload_ticket` | ticket OCR flow |
 
-### Read — Destilador
-- `list_corridas`
-- `list_viajes`
-- `list_lotes`
+### Context / read-only (all profiles)
 
-### Write (fase 2)
-- `create_pedido`, `confirmar_entrega`
-- `create_orden_compra`, `confirmar_recepcion`
-- `import_recepcion_draft` — JSON de visión externa
-- `import_winemaker_ticket` — JSON de ticket
-- `registrar_pago_cliente`, `editar_sku`
-- `get_cobro_context` — datos estructurados; el agente redacta el mensaje
+| MCP tool (planned) | Source |
+|--------------------|--------|
+| `get_agent_context` | `loadIsolatedAgentContext` / `loadDistributorAgentContext` |
 
-### Resources
-- Schemas JSON: pedidos, recepciones, tickets
-- Snapshot org/perfil activo
+Write tools require explicit confirmation scopes in Phase 2+.
 
----
+## Implementation notes
 
-## Fases e issues
+- **Package:** `mcp-handler` + `@modelcontextprotocol/sdk` (≥1.26.0) in `apps/web`.
+- **Per-request context:** `AsyncLocalStorage` in `lib/mcp/request-context.ts` carries `userId` + token into tool handlers after `withMcpAuth`.
+- **Profile scope:** Phase 0 `list_skus` uses `resolveDistribuidorScope` (distributor default). Multi-profile users may need an explicit `profile_type` argument in Phase 1.
+- **Deployment:** Same Next.js app on Vercel; route `maxDuration` 60s. No separate MCP process.
 
-| Fase | Issue | Descripción |
-|------|-------|-------------|
-| Epic | [#24](https://github.com/paunrv/fermentrack/issues/24) | BYOA — MCP server (parent) |
-| 0 | [#25](https://github.com/paunrv/fermentrack/issues/25) | Spike: MCP read-only + OAuth |
-| 1 | [#26](https://github.com/paunrv/fermentrack/issues/26) | Read tools + auth org-scoped |
-| 2 | [#27](https://github.com/paunrv/fermentrack/issues/27) | Write tools (paridad agent actions) |
-| 3 | [#28](https://github.com/paunrv/fermentrack/issues/28) | Connection hub UI |
-| 4 | [#29](https://github.com/paunrv/fermentrack/issues/29) | Eliminar API Anthropic |
-| 5 | [#30](https://github.com/paunrv/fermentrack/issues/30) | Hardening + migración |
+## Validation checklist (Phase 0)
 
----
+- [x] `GET /.well-known/oauth-protected-resource` → JSON metadata (`authorization_servers` → Supabase Auth)
+- [x] MCP `tools/list` without token → `401` + `WWW-Authenticate` bearer challenge
+- [x] `listSkusTool` unit test with authenticated MCP context → SKU JSON payload
+- [ ] MCP `list_skus` with valid Supabase JWT in Cursor → manual (see config below)
 
-## Criterios de aceptación (epic)
+Validated locally on 2026-07-02:
 
-- [ ] `ANTHROPIC_API_KEY` no requerida para flujos core
-- [ ] Usuario conecta Claude Desktop o Cursor a MCP staging y lista SKUs de su org
-- [ ] Agente externo puede importar draft de recepción y confirmar vía MCP
-- [ ] Acceso cross-org bloqueado (test con dos orgs)
-- [ ] Dashboard muestra connection hub, no input de chat LLM
-- [ ] `npm run build` pasa; rutas Anthropic eliminadas o 410 con link de migración
+```bash
+curl -s http://localhost:3000/.well-known/oauth-protected-resource
+# {"resource":"http://localhost:3000","authorization_servers":["https://<project>.supabase.co/auth/v1"]}
 
----
+curl -i -X POST http://localhost:3000/api/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+# HTTP/1.1 401 Unauthorized
+```
 
-## Riesgos
+### Cursor config (manual validation)
 
-| Riesgo | Mitigación |
-|--------|------------|
-| Usuarios sin agente externo | Hub con agentes recomendados + formularios manuales |
-| Calidad de visión variable | Validación de schema server-side |
-| OAuth MCP complejo | Spike fase 0; reutilizar Clerk + org scope |
-| Romper chat activo | Fase 4 solo tras paridad write; ventana de deprecación 2 semanas |
+1. Sign in to PROOF in the browser.
+2. In DevTools console: `const { data } = await supabase.auth.getSession(); copy(data.session.access_token)`
+3. Add to Cursor MCP settings (`~/.cursor/mcp.json` or project config):
 
----
+```json
+{
+  "mcpServers": {
+    "proof": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_SUPABASE_ACCESS_TOKEN"
+      }
+    }
+  }
+}
+```
 
-## Implementación recomendada (v1)
+4. Restart MCP in Cursor → `list_skus` should appear; invoke it to list distributor SKUs (RLS applies).
 
-Next.js route `/api/mcp` con `@modelcontextprotocol/sdk`, OAuth siguiendo el patrón [Supabase MCP](https://supabase.com/docs/guides/getting-started/mcp).
+## Next phases
 
----
-
-## Qué NO es MCP
-
-- No reemplaza al LLM — el usuario lo trae
-- No reemplaza canvas, grid, KPIs, formularios manuales
-- MCP es capa delgada sobre RPCs y RLS existentes
+| Phase | Issue | Focus |
+|-------|-------|--------|
+| 1 | #26 | Read tools + org-scoped OAuth |
+| 2 | #27 | Write tools (agent-action parity) |
+| 3 | #28 | Connection hub UI |
+| 4 | #29 | Remove hosted Anthropic API |
+| 5 | #30 | Audit log + hardening |

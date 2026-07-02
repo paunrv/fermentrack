@@ -12,15 +12,18 @@
   },
   "dependencies": {
     "@fermentrack/ui": "*",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.0",
     "jsbarcode": "^3.12.3",
     "jspdf": "^4.2.1",
+    "mcp-handler": "^1.1.0",
     "next": "^14.2.0",
     "next-intl": "^3.26.5",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "stripe": "^17.7.0"
+    "stripe": "^17.7.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@fermentrack/typescript-config": "*",
