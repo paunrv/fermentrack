@@ -2,6 +2,7 @@ import { createMcpHandler, withMcpAuth } from 'mcp-handler'
 import { registerProofMcpTools } from '@/lib/mcp/register-tools'
 import { mcpRequestContext } from '@/lib/mcp/request-context'
 import { verifyMcpBearerToken } from '@/lib/mcp/auth'
+import { checkMcpRateLimit, mcpRateLimitResponse } from '@/lib/mcp/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -30,6 +31,12 @@ const authedHandler = withMcpAuth(
     if (!auth?.token || !auth.clientId) {
       return new Response('Unauthorized', { status: 401 })
     }
+
+    const rate = checkMcpRateLimit(auth.clientId)
+    if (!rate.allowed) {
+      return mcpRateLimitResponse(rate)
+    }
+
     return mcpRequestContext.run(
       { userId: auth.clientId, accessToken: auth.token },
       () => baseHandler(req)

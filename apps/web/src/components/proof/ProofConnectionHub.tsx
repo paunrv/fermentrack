@@ -299,6 +299,15 @@ export function ProofConnectionHub({
           >
             {t('catalogLink')}
           </a>
+          {' · '}
+          <a
+            href="https://github.com/paunrv/fermentrack/blob/main/docs/PROOF-BYOA-MIGRATION.md"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: accent }}
+          >
+            {t('migrationGuide')}
+          </a>
         </p>
       </section>
 

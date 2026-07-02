@@ -240,12 +240,68 @@ All server-side calls to `api.anthropic.com` were removed. Deprecated routes ret
 
 Helper: `apps/web/src/lib/proof/deprecated-hosted-ai.ts`
 
-## Next phases
+## Phase 5 hardening, audit log, migration (implemented — #30)
 
-| Phase | Issue | Focus |
+### Audit log
+
+Table `public.mcp_tool_calls` (migration `20260702160000_mcp_tool_calls.sql`):
+
+| Column | Purpose |
+|--------|---------|
+| `user_id` | Supabase auth user |
+| `organization_id` | Winemaker org when applicable |
+| `profile_type` | distributor / winemaker / distiller |
+| `tool_name` | MCP write tool |
+| `idempotency_key` | Optional client key |
+| `status` | `success` \| `error` \| `replay` |
+
+Inserts via **service role** in `lib/mcp/audit-log.ts`, hooked from `withMcpWriteScope`.
+
+### Rate limits
+
+Per-user sliding window on `/api/mcp` (`lib/mcp/rate-limit.ts`):
+
+- Default: **120 requests / 60s** per `user_id`
+- Override: `MCP_RATE_LIMIT_MAX`, `MCP_RATE_LIMIT_WINDOW_MS`
+- Response: **429** + `Retry-After` + JSON `retry_after_seconds`
+
+> In-memory buckets are per server instance; sufficient for MVP. For multi-region strict limits, back with Redis or DB counts.
+
+### Security notes
+
+| Topic | Mitigation |
+|-------|------------|
+| Tool permissions | RLS on all data paths; winemaker writes require org role owner/admin/member (viewer blocked) |
+| Cross-org access | `resolveMcpScope` rejects `organization_id` not in user memberships |
+| OAuth / JWT lifecycle | Short-lived Supabase access tokens; clients must refresh after logout; metadata at `/.well-known/oauth-protected-resource` |
+| Service role | Audit inserts only — never exposed to browser |
+| Hosted LLM | Removed — no `ANTHROPIC_API_KEY` in app or turbo build env |
+
+### Cross-org penetration test checklist
+
+Manual QA before production cutover:
+
+- [ ] User A (winemaker org 1) cannot pass `organization_id` of org 2 to `list_lotes` / `import_winemaker_ticket`
+- [ ] Viewer membership cannot call any write tool on that org
+- [ ] Distributor JWT cannot read another user's SKUs (RLS `user_id` scope)
+- [ ] MCP without bearer → 401
+- [ ] Expired / forged JWT → 401
+- [ ] Rate limit → 429 with `Retry-After`
+- [ ] Write success appears in `mcp_tool_calls` with correct `user_id` and `tool_name`
+
+### User migration
+
+Published: [PROOF-BYOA-MIGRATION.md](./PROOF-BYOA-MIGRATION.md) (linked from connection hub).
+
+**Operators:** remove `ANTHROPIC_API_KEY` from Vercel production/preview env after deploy.
+
+## Epic complete
+
+| Phase | Issue | Status |
 |-------|-------|--------|
-| 1 | #26 | ✅ Read tools + org-scoped bearer auth |
-| 2 | #27 | ✅ Write tools (agent-action parity) |
-| 3 | #28 | ✅ Connection hub UI |
-| 4 | #29 | ✅ Remove hosted Anthropic API |
-| 5 | #30 | Audit log + hardening |
+| 0 | #25 | ✅ MCP spike |
+| 1 | #26 | ✅ Read tools |
+| 2 | #27 | ✅ Write tools |
+| 3 | #28 | ✅ Connection hub |
+| 4 | #29 | ✅ Remove hosted Anthropic |
+| 5 | #30 | ✅ Hardening + audit + migration |

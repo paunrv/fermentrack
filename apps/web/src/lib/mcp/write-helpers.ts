@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AgentProfileType } from '@/lib/proof/agent-context-types'
+import { logMcpToolCall } from '@/lib/mcp/audit-log'
 import {
   getIdempotentResult,
   saveIdempotentResult,
@@ -45,21 +46,57 @@ export async function withMcpWriteScope<T>(
 ): Promise<McpToolResult> {
   const ctx = requireMcpContext()
   const cached = getIdempotentResult(ctx.userId, toolName, input?.idempotency_key)
-  if (cached) return cached
-
-  const sb = createMcpSupabase(ctx.accessToken)
-  const scope = await resolveMcpScope(sb, ctx.userId, input)
-
-  if (scope.profileType !== requiredProfile) {
-    throw new Error(
-      `This tool requires profile_type=${requiredProfile} (resolved: ${scope.profileType}).`
-    )
+  if (cached) {
+    void logMcpToolCall({
+      userId: ctx.userId,
+      organizationId: input?.organization_id ?? null,
+      profileType: input?.profile_type ?? 'unknown',
+      toolName,
+      status: 'replay',
+      idempotencyKey: input?.idempotency_key,
+    })
+    return cached
   }
 
-  assertMcpWriteAccess(scope)
+  const sb = createMcpSupabase(ctx.accessToken)
+  let scope: ResolvedMcpScope | undefined
 
-  const data = await run({ sb, userId: ctx.userId, scope })
-  const result = mcpJsonResult(data)
-  saveIdempotentResult(ctx.userId, toolName, input?.idempotency_key, result)
-  return result
+  try {
+    scope = await resolveMcpScope(sb, ctx.userId, input)
+
+    if (scope.profileType !== requiredProfile) {
+      throw new Error(
+        `This tool requires profile_type=${requiredProfile} (resolved: ${scope.profileType}).`
+      )
+    }
+
+    assertMcpWriteAccess(scope)
+
+    const data = await run({ sb, userId: ctx.userId, scope })
+    const result = mcpJsonResult(data)
+    saveIdempotentResult(ctx.userId, toolName, input?.idempotency_key, result)
+
+    void logMcpToolCall({
+      userId: ctx.userId,
+      organizationId: scope.organizationId,
+      profileType: scope.profileType,
+      toolName,
+      status: 'success',
+      idempotencyKey: input?.idempotency_key,
+    })
+
+    return result
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error'
+    void logMcpToolCall({
+      userId: ctx.userId,
+      organizationId: scope?.organizationId ?? input?.organization_id ?? null,
+      profileType: scope?.profileType ?? input?.profile_type ?? 'unknown',
+      toolName,
+      status: 'error',
+      idempotencyKey: input?.idempotency_key,
+      errorMessage: message,
+    })
+    throw e
+  }
 }
