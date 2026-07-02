@@ -1,5 +1,9 @@
 'use client'
 
+/**
+ * @deprecated Hosted Anthropic agent bar — dashboard uses BYOA connection hub (#28).
+ * Still referenced by legacy operational pages until fully migrated.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'

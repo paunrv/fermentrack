@@ -5,7 +5,7 @@ import Link from 'next/link'
 export function ProofAIBar({
   message,
   actionLabel = 'Ver más',
-  actionHref = '/dashboard/agente',
+  actionHref = '/dashboard',
   onActionClick,
 }: {
   message: string

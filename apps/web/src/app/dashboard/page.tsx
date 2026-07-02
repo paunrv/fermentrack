@@ -2,26 +2,17 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
+import { useOrganization } from '@/context/OrganizationContext'
 import { useWinemakerAccess } from '@/hooks/useWinemakerAccess'
-import { useDistributorCanvasCopy } from '@/hooks/useDistributorCanvasCopy'
-import { useWinemakerCanvasCopy } from '@/hooks/useWinemakerCanvasCopy'
-import { useCanvasWideLayout } from '@/hooks/useCanvasWideLayout'
-import { useProofContextBar } from '@/hooks/useProofContextBar'
-import {
-  ProofCanvasShell,
-  type ProofMessage,
-} from '@/components/proof/ProofCanvasShell'
+import { ProofConnectionHub } from '@/components/proof/ProofConnectionHub'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
-import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
-import type { ProofSubHub, ProofHubLensAction } from '@/lib/proof/proof-canvas-copy'
-import { DISTILLER_QUICK_ACTIONS } from '@/lib/proof/proof-canvas-copy'
 
 const pageShellStyle: CSSProperties = {
   flex: 1,
@@ -33,134 +24,31 @@ const pageShellStyle: CSSProperties = {
 
 export default function DashboardPage() {
   const tHome = useTranslations('distributor.home')
-  const distributorCanvas = useDistributorCanvasCopy()
-  const winemakerCanvas = useWinemakerCanvasCopy()
-  const wideLayout = useCanvasWideLayout()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { scope, activeProfile, reload: reloadProfile } = useProfile()
+  const { activeProfile } = useProfile()
+  const { activeOrg } = useOrganization()
   const {
     isWinemaker,
     effectiveProfileType,
-    userId,
-    activeOrg,
-    canWrite,
     membership,
     loading: winemakerAccessLoading,
     bootTimedOut,
     bootError,
   } = useWinemakerAccess()
 
-  const agentProfileType = toAgentProfileType(effectiveProfileType ?? undefined)
   const profileType = profileTypeFromV2(effectiveProfileType ?? undefined)
   const theme = getProfileTheme(effectiveProfileType ?? undefined)
   const accent = theme.accent
-  const isDistiller = profileType === 'distiller'
   const isDistributor = profileType === 'distributor'
-
-  const [userQuery, setUserQuery] = useState<string | null>(null)
-  const [urlQuery, setUrlQuery] = useState<string | null>(null)
-  const [ocFromUrl, setOcFromUrl] = useState<string | null>(null)
-  const consumedAskRef = useRef<string | null>(null)
-  const consumedOcRef = useRef<string | null>(null)
-  const [agentConversation, setAgentConversation] = useState<ProofMessage[]>([])
-  const [agentRequestId, setAgentRequestId] = useState(0)
-  const [winemakerPantalla, setWinemakerPantalla] = useState<Record<string, unknown> | null>(
-    null
-  )
   const isWinemakerOwner = isWinemaker && membership?.role === 'owner'
 
-  const agentHints = useMemo(
-    () => ({
-      query: userQuery,
-      conversation: agentConversation
-        .filter(m => m.role === 'user' || m.role === 'agent')
-        .map(m => ({
-          role: m.role as 'user' | 'agent',
-          content: m.content,
-        })),
-      ...(winemakerPantalla ? { pantalla: winemakerPantalla } : {}),
-      ...(activeOrg?.id ? { organizationId: activeOrg.id } : {}),
-    }),
-    [userQuery, agentConversation, winemakerPantalla, activeOrg?.id]
-  )
-
-  const {
-    chatResponse,
-    displayCards,
-    dismissDisplayCard,
-    loading: agentLoading,
-    error: agentError,
-    refreshOcId,
-    refreshProfile,
-    suggestedReplies,
-  } = useProofContextBar({
-    pantalla: 'inicio',
-    vista:
-      agentProfileType === 'distiller'
-        ? 'destilador'
-        : agentProfileType === 'winemaker'
-          ? 'winemaker'
-          : 'distribuidor',
-    profileType: agentProfileType,
-    hints: agentHints,
-    requestId: agentRequestId,
-    enabled: Boolean(userId) && agentProfileType != null,
-    fallback: { mensaje: '' },
-  })
-
-  const quickActionsForProfile = isDistiller
-    ? [...DISTILLER_QUICK_ACTIONS]
-    : isWinemaker
-      ? winemakerCanvas.quickActions
-      : []
-  const modeActionsForProfile = isDistributor
-    ? distributorCanvas.modeActions
-    : isWinemaker
-      ? winemakerCanvas.modeActions
-      : []
-
-  const hubLensesForProfile: Partial<Record<ProofSubHub, ProofHubLensAction[]>> =
-    isDistributor
-      ? distributorCanvas.hubLenses
-      : isWinemaker
-        ? winemakerCanvas.hubLenses
-        : {}
-
-  const canvasCopiesForProfile = isDistributor
-    ? distributorCanvas.copies
-    : isWinemaker
-      ? winemakerCanvas.copies
-      : undefined
-
-  const hubLensCopyForProfile = isWinemaker ? winemakerCanvas.hubLensCopy : undefined
-
-  useEffect(() => {
-    const q = searchParams.get('q')?.trim()
-    if (!q || consumedAskRef.current === q) return
-    consumedAskRef.current = q
-    setUrlQuery(q)
-    router.replace('/dashboard', { scroll: false })
-  }, [searchParams, router])
+  const [ocFromUrl, setOcFromUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const oc = searchParams.get('oc')?.trim()
-    if (!oc || consumedOcRef.current === oc) return
-    consumedOcRef.current = oc
-    setOcFromUrl(oc)
-    router.replace('/dashboard', { scroll: false })
-  }, [searchParams, router])
-
-  useEffect(() => {
-    if (refreshOcId && isDistributor) {
-      setOcFromUrl(refreshOcId)
-    }
-  }, [refreshOcId, isDistributor])
-
-  useEffect(() => {
-    if (!refreshProfile || !isDistributor) return
-    void reloadProfile({ silent: true })
-  }, [refreshProfile, isDistributor])
+    if (oc) setOcFromUrl(oc)
+  }, [searchParams])
 
   useEffect(() => {
     if (winemakerAccessLoading || bootTimedOut) return
@@ -177,67 +65,6 @@ export default function DashboardPage() {
     activeOrg,
     router,
   ])
-
-  const handleAgentSend = useCallback((message: string, conversation: ProofMessage[]) => {
-    setAgentConversation(conversation)
-    setUserQuery(message)
-    setAgentRequestId(n => n + 1)
-  }, [])
-
-  const handleTicketFile = useCallback(
-    async (file: File, conversation: ProofMessage[]) => {
-      setAgentConversation(conversation)
-      const form = new FormData()
-      form.append('file', file)
-      if (activeOrg?.id) form.append('organizationId', activeOrg.id)
-
-      const res = await fetch('/api/winemaker/documentos', {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: form,
-      })
-
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string
-        documentId?: string
-        agentQuery?: string
-        mensaje?: string
-      }
-
-      if (!res.ok) {
-        throw new Error(body.error || tHome('ticketSaveError'))
-      }
-
-      setWinemakerPantalla({
-        hub: 'wm_ticket',
-        documentId: body.documentId,
-      })
-      setUserQuery(body.agentQuery ?? `Ticket guardado: ${file.name}`)
-      setAgentRequestId(n => n + 1)
-    },
-    [activeOrg?.id, tHome]
-  )
-
-  const handleDeleteCard = useCallback(
-    async (itemId: string) => {
-      if (!canWrite) {
-        throw new Error(tHome('readOnly'))
-      }
-      const res = await fetch(`/api/winemaker/documentos/${itemId}`, {
-        method: 'DELETE',
-        credentials: 'same-origin',
-      })
-      const body = (await res.json().catch(() => ({}))) as { error?: string }
-      if (!res.ok) {
-        throw new Error(body.error || tHome('deleteError'))
-      }
-      dismissDisplayCard(itemId)
-      setWinemakerPantalla(prev =>
-        prev && prev.documentId === itemId ? null : prev
-      )
-    },
-    [dismissDisplayCard, canWrite, tHome]
-  )
 
   if (winemakerAccessLoading) {
     return (
@@ -336,7 +163,7 @@ export default function DashboardPage() {
 
   return (
     <div
-      className={`proof-canvas-page${wideLayout ? ' proof-canvas-page--wide' : ''}`}
+      className="proof-canvas-page"
       style={{
         ...pageShellStyle,
         background: 'var(--color-background-tertiary)',
@@ -347,28 +174,8 @@ export default function DashboardPage() {
         accent={accent}
         initialOrdenId={isDistributor ? ocFromUrl : null}
         onDismiss={() => setOcFromUrl(null)}
-        onIngresoConfirmado={() => setAgentRequestId(n => n + 1)}
       />
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <ProofCanvasShell
-          canvasCopies={canvasCopiesForProfile}
-          hubLensCopy={hubLensCopyForProfile}
-          accent={accent}
-          profileType={profileType}
-          chatResponse={userQuery ? chatResponse : undefined}
-          displayCards={displayCards}
-          loading={agentLoading}
-          error={agentError}
-          onSend={handleAgentSend}
-          onTicketFile={isWinemaker && canWrite ? handleTicketFile : undefined}
-          onDeleteCard={isWinemaker && canWrite ? handleDeleteCard : undefined}
-          quickActions={quickActionsForProfile}
-          modeActions={modeActionsForProfile}
-          hubLenses={hubLensesForProfile}
-          queryFromUrl={urlQuery}
-          suggestedReplies={suggestedReplies}
-        />
-      </div>
+      <ProofConnectionHub accent={accent} profileType={profileType} />
     </div>
   )
 }

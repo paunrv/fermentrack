@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 
-export type BottomNavItemId = 'inicio' | 'lotes' | 'agenda' | 'chat' | 'tareas' | 'mas'
+export type BottomNavItemId = 'inicio' | 'lotes' | 'agenda' | 'conectar' | 'tareas' | 'mas'
 
 export type BottomNavProfile = 'winemaker' | 'bodega'
 
@@ -16,14 +16,14 @@ export const BOTTOM_NAV_ITEMS: Record<
   inicio: { emoji: '🏠', labelKey: 'inicio', href: '/dashboard' },
   lotes: { emoji: '🍷', labelKey: 'lotes', href: '/dashboard/winemaker/lotes' },
   agenda: { emoji: '📅', labelKey: 'agenda', href: '/dashboard/winemaker/agenda' },
-  chat: { emoji: '💬', labelKey: 'chat', href: '/dashboard/agente' },
+  conectar: { emoji: '🔗', labelKey: 'conectar', href: '/dashboard' },
   tareas: { emoji: '✅', labelKey: 'tareas', href: '/bodega' },
   mas: { emoji: '⋯', labelKey: 'mas', href: '/dashboard/settings' },
 }
 
 const DEFAULT_SLOTS: Record<BottomNavProfile, BottomNavItemId[]> = {
-  winemaker: ['inicio', 'lotes', 'chat', 'mas'],
-  bodega: ['tareas', 'agenda', 'chat', 'mas'],
+  winemaker: ['inicio', 'lotes', 'conectar', 'mas'],
+  bodega: ['tareas', 'agenda', 'conectar', 'mas'],
 }
 
 export type MasMenuItem = {

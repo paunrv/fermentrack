@@ -204,12 +204,33 @@ Winemaker writes require org role `owner`, `admin`, or `member` — **viewer is 
 
 **Import schemas:** `lib/mcp/schemas/recepcion-draft.ts`, `lib/mcp/schemas/winemaker-ticket.ts`
 
+## Phase 3 connection hub UI (implemented — #28)
+
+The dashboard home (`/dashboard`) is a **connection hub** instead of hosted in-app chat. Users copy the MCP URL and Supabase access token, follow setup cards for Cursor / Claude Desktop / other MCP clients, browse profile-scoped tools, example prompts, and manual form fallbacks.
+
+| Piece | Location |
+|-------|----------|
+| Hub page | `apps/web/src/app/dashboard/page.tsx` → `ProofConnectionHub` |
+| Hub component | `apps/web/src/components/proof/ProofConnectionHub.tsx` |
+| MCP URL + token copy | `apps/web/src/hooks/useMcpConnectionInfo.ts` |
+| Tool / prompt / manual links | `apps/web/src/lib/proof/connection-hub-tools.ts` |
+| i18n | `connectionHub` namespace in `messages/es-MX.json`, `messages/en-US.json` |
+
+**Routing changes:**
+
+- `/dashboard/agente` redirects to `/dashboard` (no separate chat route).
+- Bottom nav item **Conectar** (`bottomNav.items.conectar`) replaces chat; links to `/dashboard`.
+- `ConnectedProofAIBar` / `ProofAIBar` are static CTAs to the hub (no `/api/proof/contexto` calls from the bar).
+- `useProofContextBar` is deprecated; camera / ask submissions on the dashboard layout no longer open the hosted agent.
+
+**UX:** Signed-in users see OAuth metadata link, copy buttons for URL and bearer token, per-profile tool catalog (read/write badges), example prompts, and deep links to manual workflows (pedidos, recepción, inventario, etc.).
+
 ## Next phases
 
 | Phase | Issue | Focus |
 |-------|-------|--------|
 | 1 | #26 | ✅ Read tools + org-scoped bearer auth |
 | 2 | #27 | ✅ Write tools (agent-action parity) |
-| 3 | #28 | Connection hub UI |
+| 3 | #28 | ✅ Connection hub UI |
 | 4 | #29 | Remove hosted Anthropic API |
 | 5 | #30 | Audit log + hardening |

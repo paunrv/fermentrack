@@ -17,7 +17,6 @@ import {
   isDestiladorPath,
   isDistributorOnlyPath,
   isProducerOnlyPath,
-  isProducerProfile,
   isWinemakerPath,
   winemakerBlockedFromPath,
 } from '@/lib/proof/dashboard-routes'
@@ -275,17 +274,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const q = ask.trim()
     if (!q) return
     setAsk('')
-    if (isDistributor) {
-      router.push(`/dashboard?q=${encodeURIComponent(q)}`)
-      return
-    }
-    if (isDistiller || isWinemaker) {
-      router.push(`/dashboard?q=${encodeURIComponent(q)}`)
-      return
-    }
-    if (isProducerProfile(activeProfile?.profile_type_v2)) {
-      router.push(`/dashboard/agente?q=${encodeURIComponent(q)}`)
-    }
+    router.push('/dashboard')
   }
 
   function handleCameraChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -298,7 +287,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.push('/dashboard')
       return
     }
-    router.push('/dashboard/agente')
+    router.push('/dashboard')
   }
 
   function openDatosCobroSheet() {

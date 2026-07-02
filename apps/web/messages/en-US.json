@@ -730,6 +730,7 @@
         "lotes": "Lots",
         "agenda": "Agenda",
         "chat": "Chat",
+        "conectar": "Connect",
         "tareas": "Tasks",
         "mas": "More"
       },
@@ -2120,6 +2121,89 @@
           "closeFailed": "Failed to close"
         }
       }
+    }
+  },
+  "connectionHub": {
+    "eyebrow": "Bring your own agent",
+    "title": "Connect your external agent",
+    "subtitle": "Use Claude Desktop, Cursor, or any MCP client with your PROOF data. In-app chat has been replaced by this secure connection.",
+    "auth": {
+      "checking": "Checking session…",
+      "connected": "Signed in",
+      "disconnected": "Not signed in"
+    },
+    "mcpUrl": "MCP server URL",
+    "copyUrl": "Copy URL",
+    "copyToken": "Copy token",
+    "copied": "Copied",
+    "oauthHint": "OAuth metadata:",
+    "oauthLink": "protected resource",
+    "clients": {
+      "cursor": "Cursor",
+      "cursorHint": "Add to MCP settings (~/.cursor/mcp.json):",
+      "claude": "Claude Desktop",
+      "claudeStep1": "Install mcp-remote or use Streamable HTTP if your build supports it.",
+      "claudeStep2": "Paste the MCP URL and your Supabase token in Authorization.",
+      "claudeStep3": "Restart Claude and confirm PROOF tools appear.",
+      "chatgpt": "ChatGPT / others",
+      "chatgptHint": "Any MCP client with HTTP + Bearer token can use the same URL."
+    },
+    "toolsTitle": "Available tools",
+    "catalogLink": "Full catalog in docs",
+    "promptsTitle": "Example prompts",
+    "manualTitle": "Manual forms",
+    "bar": {
+      "message": "Operate PROOF with your external agent via MCP.",
+      "action": "Connect agent"
+    },
+    "tools": {
+      "get_session_snapshot": "Profile, orgs, and JSON schemas.",
+      "list_skus": "Distributor SKU list.",
+      "get_inventory_summary": "Inventory summary and critical stock.",
+      "list_pedidos": "Recent orders with client name.",
+      "get_credito_resumen": "Accounts receivable totals.",
+      "list_ordenes_compra": "Pending purchase orders.",
+      "list_lotes": "Winery wine lots.",
+      "list_documentos": "Winemaker tickets and invoices.",
+      "get_resumen_bodega": "Winery KPIs.",
+      "list_corridas": "Bottling runs.",
+      "list_viajes": "Agave purchase trips.",
+      "list_lotes_distiller": "Mezcal production lots.",
+      "create_pedido": "Create a sales order.",
+      "confirmar_entrega": "Confirm order delivery.",
+      "create_orden_compra": "Create a purchase order.",
+      "confirmar_recepcion": "Confirm PO arrival.",
+      "import_recepcion_draft": "Import recepción draft (JSON).",
+      "registrar_pago_cliente": "Register client payment.",
+      "editar_sku": "Edit SKU price or category.",
+      "get_cobro_context": "Structured data to draft collection messages.",
+      "import_winemaker_ticket": "Import ticket from extraction JSON."
+    },
+    "prompts": {
+      "distributor": {
+        "inventory": "Which SKUs are out of stock?",
+        "orders": "List confirmed orders pending delivery.",
+        "credit": "Give me overdue accounts receivable summary."
+      },
+      "winemaker": {
+        "summary": "Summarize my winery status this month.",
+        "ticket": "Import this CFDI ticket and classify line items."
+      },
+      "distiller": {
+        "runs": "Which bottling runs are active?",
+        "trips": "List agave trips from the last month."
+      }
+    },
+    "manual": {
+      "newOrder": "New order",
+      "reception": "Receiving",
+      "inventory": "Inventory",
+      "credit": "Credit",
+      "documents": "Documents",
+      "lots": "Lots",
+      "expenses": "Expenses",
+      "purchases": "Purchases",
+      "production": "Production"
     }
   },
   "agent": {
