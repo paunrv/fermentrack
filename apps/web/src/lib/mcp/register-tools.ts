@@ -27,6 +27,8 @@ const scopeFields = {
   organization_id: organizationIdSchema,
 }
 
+import { registerProofMcpWriteTools } from '@/lib/mcp/register-write-tools'
+
 export function registerProofMcpTools(server: McpServer): void {
   server.registerTool(
     'get_session_snapshot',
@@ -173,4 +175,6 @@ export function registerProofMcpTools(server: McpServer): void {
     },
     async input => listLotesDistillerTool(input)
   )
+
+  registerProofMcpWriteTools(server)
 }

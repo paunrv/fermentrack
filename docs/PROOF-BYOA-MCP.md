@@ -184,12 +184,32 @@ Auth remains Supabase bearer JWT (RLS). Tools accept optional `profile_type` and
 
 Call `get_session_snapshot` first, then profile tools with `profile_type` / `organization_id` if needed.
 
+## Phase 2 write tools (implemented — #27)
+
+All write tools accept optional `idempotency_key` (min 8 chars). Duplicate keys return the first result with `idempotent_replay: true`.
+
+Winemaker writes require org role `owner`, `admin`, or `member` — **viewer is blocked**.
+
+| Tool | Profile | Wraps |
+|------|---------|-------|
+| `create_pedido` | distributor | `executeDistributorAgentAction` → `crear_toma_pedido` |
+| `confirmar_entrega` | distributor | `confirmar_entrega` |
+| `create_orden_compra` | distributor | `crear_orden_compra` |
+| `confirmar_recepcion` | distributor | `confirmar_llegada_distribuidor` |
+| `import_recepcion_draft` | distributor | `createRecepcionDraft` + line items (Zod validated) |
+| `registrar_pago_cliente` | distributor | `registrar_pago` |
+| `editar_sku` | distributor | `editar_sku` |
+| `get_cobro_context` | distributor | `fetchDetalleClienteCredito` (structured, no hosted LLM) |
+| `import_winemaker_ticket` | winemaker | `processTicketUpload` from extraction JSON |
+
+**Import schemas:** `lib/mcp/schemas/recepcion-draft.ts`, `lib/mcp/schemas/winemaker-ticket.ts`
+
 ## Next phases
 
 | Phase | Issue | Focus |
 |-------|-------|--------|
 | 1 | #26 | ✅ Read tools + org-scoped bearer auth |
-| 2 | #27 | Write tools (agent-action parity) |
+| 2 | #27 | ✅ Write tools (agent-action parity) |
 | 3 | #28 | Connection hub UI |
 | 4 | #29 | Remove hosted Anthropic API |
 | 5 | #30 | Audit log + hardening |
