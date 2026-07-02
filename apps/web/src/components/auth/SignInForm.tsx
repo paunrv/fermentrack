@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Suspense, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
@@ -33,7 +33,6 @@ function GoogleIcon() {
 function SignInFormInner() {
   const t = useTranslations('auth.signIn')
   const tErrors = useTranslations('auth.errors')
-  const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/dashboard'
   const authError = searchParams.get('error') === 'auth'
@@ -97,8 +96,7 @@ function SignInFormInner() {
       return
     }
 
-    router.push(next)
-    router.refresh()
+    window.location.assign(next)
   }
 
   const disabled = loading !== null

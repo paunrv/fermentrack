@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { AlertCard } from '@/components/proof/AlertCard'
 import { CollapsibleSection } from '@/components/proof/CollapsibleSection'
+import { useAuth } from '@/hooks/useAuth'
+import { useOrganization } from '@/context/OrganizationContext'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -182,8 +184,10 @@ function TeamMemberRow({ member, copy }: { member: OwnerTeamMember; copy: Winema
 export function WinemakerMobileHome() {
   const theme = getProfileTheme('winemaker')
   const supabase = useSupabase()
+  const { user } = useAuth()
+  const { activeOrg } = useOrganization()
   const { scope } = useProfile()
-  const userId = scope?.user_id
+  const userId = scope?.user_id ?? user?.id
   const copy = useWinemakerOwnerCopy()
   const tCommon = useTranslations('winemaker.common')
   const tHome = useTranslations('winemaker.home')
@@ -202,7 +206,10 @@ export function WinemakerMobileHome() {
   const displayName = firstName || copy.defaultFirstName
 
   const load = useCallback(async () => {
-    if (!userId) return
+    if (!userId) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     setError(null)
 
@@ -211,10 +218,11 @@ export function WinemakerMobileHome() {
         fetchOwnerOrganizationId(supabase, userId),
         fetchProfileFirstName(supabase, userId),
       ])
+      const resolvedOrgId = orgId ?? activeOrg?.id ?? null
       setFirstName(name)
-      setOrganizationId(orgId)
+      setOrganizationId(resolvedOrgId)
 
-      if (!orgId) {
+      if (!resolvedOrgId) {
         setLots([])
         setAlerts([])
         setTasksToday([])
@@ -224,14 +232,14 @@ export function WinemakerMobileHome() {
       }
 
       const [activeLots, todayTasks, pending, members] = await Promise.all([
-        fetchActiveLots(supabase, orgId),
-        fetchTasksToday(supabase, orgId, userId),
-        fetchPendingTasks(supabase, orgId, userId),
-        fetchTeamMembers(supabase, orgId),
+        fetchActiveLots(supabase, resolvedOrgId),
+        fetchTasksToday(supabase, resolvedOrgId, userId),
+        fetchPendingTasks(supabase, resolvedOrgId, userId),
+        fetchTeamMembers(supabase, resolvedOrgId),
       ])
 
       const lotIds = activeLots.map(l => l.id)
-      const events = await fetchLotEvents(supabase, orgId, lotIds)
+      const events = await fetchLotEvents(supabase, resolvedOrgId, lotIds)
       const computedAlerts = copy.mapAlerts(buildOwnerAlertDescriptors(activeLots, events))
 
       setLots(activeLots)
@@ -245,7 +253,7 @@ export function WinemakerMobileHome() {
     } finally {
       setLoading(false)
     }
-  }, [supabase, userId, copy, tHome])
+  }, [supabase, userId, activeOrg?.id, copy, tHome])
 
   useEffect(() => {
     void load()

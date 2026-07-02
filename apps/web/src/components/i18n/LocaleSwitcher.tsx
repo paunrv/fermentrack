@@ -22,7 +22,10 @@ export function LocaleSwitcher({ className }: Props) {
         aria-label={t('label')}
         onChange={e => {
           const next = e.target.value as AppLocale
+          const maxAge = 60 * 60 * 24 * 365
+          document.cookie = `NEXT_LOCALE=${next}; path=/; max-age=${maxAge}; SameSite=Lax`
           router.replace(pathname, { locale: next })
+          router.refresh()
         }}
         style={{
           fontSize: 13,

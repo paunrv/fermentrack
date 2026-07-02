@@ -1,12 +1,17 @@
+import { headers, cookies } from 'next/headers'
 import { getRequestConfig } from 'next-intl/server'
-import { routing, type AppLocale } from './routing'
+import {
+  LOCALE_COOKIE,
+  localeFromAcceptLanguage,
+  parseAppLocale,
+} from '@/lib/i18n/request-locale'
 
-export default getRequestConfig(async ({ requestLocale }) => {
-  let locale = await requestLocale
-
-  if (!locale || !routing.locales.includes(locale as AppLocale)) {
-    locale = routing.defaultLocale
-  }
+export default getRequestConfig(async () => {
+  const cookieStore = await cookies()
+  const fromCookie = cookieStore.get(LOCALE_COOKIE)?.value
+  const locale = fromCookie
+    ? parseAppLocale(fromCookie)
+    : localeFromAcceptLanguage((await headers()).get('accept-language'))
 
   return {
     locale,

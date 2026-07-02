@@ -81,10 +81,13 @@ export function LandingNav() {
           {sessionChecked && (
             <>
               {hasSession ? (
-                <Link href="/dashboard" style={{ ...landingBtnPrimary, padding: '8px 14px', fontSize: 12 }}>
+                <a
+                  href="/dashboard"
+                  style={{ ...landingBtnPrimary, padding: '8px 14px', fontSize: 12 }}
+                >
                   {t('goDashboard')}
                   <span aria-hidden>→</span>
-                </Link>
+                </a>
               ) : (
                 <>
                   <Link href="/sign-in" style={landingBtnLogIn}>

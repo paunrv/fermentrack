@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
@@ -17,12 +17,19 @@ import {
 } from '@/components/proof/ProofCanvasShell'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
-import { fetchTeamAccess } from '@/app/actions/equipo'
 import { toAgentProfileType } from '@/lib/proof/agent-context-types'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
 import type { ProofSubHub, ProofHubLensAction } from '@/lib/proof/proof-canvas-copy'
 import { DISTILLER_QUICK_ACTIONS } from '@/lib/proof/proof-canvas-copy'
+
+const pageShellStyle: CSSProperties = {
+  flex: 1,
+  minHeight: 0,
+  width: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+}
 
 export default function DashboardPage() {
   const tHome = useTranslations('distributor.home')
@@ -38,7 +45,10 @@ export default function DashboardPage() {
     userId,
     activeOrg,
     canWrite,
+    membership,
     loading: winemakerAccessLoading,
+    bootTimedOut,
+    bootError,
   } = useWinemakerAccess()
 
   const agentProfileType = toAgentProfileType(effectiveProfileType ?? undefined)
@@ -58,7 +68,7 @@ export default function DashboardPage() {
   const [winemakerPantalla, setWinemakerPantalla] = useState<Record<string, unknown> | null>(
     null
   )
-  const [isWinemakerOwner, setIsWinemakerOwner] = useState<boolean | null>(null)
+  const isWinemakerOwner = isWinemaker && membership?.role === 'owner'
 
   const agentHints = useMemo(
     () => ({
@@ -153,18 +163,20 @@ export default function DashboardPage() {
   }, [refreshProfile, isDistributor])
 
   useEffect(() => {
-    if (winemakerAccessLoading || !isWinemaker || !activeOrg?.id) {
-      setIsWinemakerOwner(null)
-      return
+    if (winemakerAccessLoading || bootTimedOut) return
+    if (effectiveProfileType) return
+    if (!isWinemaker && !activeProfile && !activeOrg) {
+      router.replace('/onboarding')
     }
-    let cancelled = false
-    void fetchTeamAccess(activeOrg.id).then(access => {
-      if (!cancelled) setIsWinemakerOwner(access.isOwner)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [winemakerAccessLoading, isWinemaker, activeOrg?.id])
+  }, [
+    winemakerAccessLoading,
+    bootTimedOut,
+    effectiveProfileType,
+    isWinemaker,
+    activeProfile,
+    activeOrg,
+    router,
+  ])
 
   const handleAgentSend = useCallback((message: string, conversation: ProofMessage[]) => {
     setAgentConversation(conversation)
@@ -231,7 +243,7 @@ export default function DashboardPage() {
     return (
       <div
         style={{
-          height: '100%',
+          ...pageShellStyle,
           background: 'var(--color-background-tertiary)',
           display: 'grid',
           placeItems: 'center',
@@ -244,11 +256,64 @@ export default function DashboardPage() {
     )
   }
 
+  if (bootTimedOut) {
+    return (
+      <div
+        style={{
+          ...pageShellStyle,
+          background: 'var(--canvas)',
+          display: 'grid',
+          placeContent: 'center',
+          gap: 12,
+          padding: 32,
+          textAlign: 'center',
+          color: 'var(--fg-2)',
+          fontSize: 14,
+        }}
+      >
+        <p style={{ margin: 0 }}>
+          {bootError ?? 'No pudimos cargar tu sesión. Recarga la página o vuelve a iniciar sesión.'}
+        </p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--hairline)',
+              background: 'var(--panel)',
+              cursor: 'pointer',
+            }}
+          >
+            Recargar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.assign('/sign-in?next=/dashboard')
+            }}
+            style={{
+              padding: '8px 16px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: 'var(--copper)',
+              color: 'var(--ink)',
+              cursor: 'pointer',
+            }}
+          >
+            Iniciar sesión
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (!profileType) {
     return (
       <div
         style={{
-          height: '100%',
+          ...pageShellStyle,
           background: 'var(--color-background-tertiary)',
           padding: 48,
           textAlign: 'center',
@@ -261,37 +326,19 @@ export default function DashboardPage() {
     )
   }
 
-  if (isWinemaker) {
-    if (isWinemakerOwner === null) {
-      return (
-        <div
-          style={{
-            height: '100%',
-            background: 'var(--canvas)',
-            display: 'grid',
-            placeItems: 'center',
-            color: 'var(--fg-3)',
-            fontSize: 14,
-          }}
-        >
-          {tHome('loading')}
-        </div>
-      )
-    }
-
-    if (isWinemakerOwner) {
-      return (
-        <div style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
-          <WinemakerMobileHome />
-        </div>
-      )
-    }
+  if (isWinemaker && isWinemakerOwner) {
+    return (
+      <div style={{ ...pageShellStyle, overflow: 'hidden' }}>
+        <WinemakerMobileHome />
+      </div>
+    )
   }
 
   return (
     <div
       className={`proof-canvas-page${wideLayout ? ' proof-canvas-page--wide' : ''}`}
       style={{
+        ...pageShellStyle,
         background: 'var(--color-background-tertiary)',
         color: 'var(--color-text-primary)',
       }}
@@ -302,7 +349,7 @@ export default function DashboardPage() {
         onDismiss={() => setOcFromUrl(null)}
         onIngresoConfirmado={() => setAgentRequestId(n => n + 1)}
       />
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <ProofCanvasShell
           canvasCopies={canvasCopiesForProfile}
           hubLensCopy={hubLensCopyForProfile}

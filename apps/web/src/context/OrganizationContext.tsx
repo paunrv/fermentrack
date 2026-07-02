@@ -107,7 +107,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     setAllOrganizations(memberships)
     applyActive(memberships)
     return true
-  }, [user, applyActive])
+  }, [user?.id, applyActive])
 
   useEffect(() => {
     if (!isLoaded) return
@@ -149,6 +149,15 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       cancelled = true
     }
   }, [isLoaded, user?.id, load])
+
+  useEffect(() => {
+    if (isLoaded) return
+    const t = window.setTimeout(() => {
+      setOrgsResolved(true)
+      setLoading(false)
+    }, 3_000)
+    return () => window.clearTimeout(t)
+  }, [isLoaded])
 
   const switchOrganization = useCallback(
     (organizationId: string) => {

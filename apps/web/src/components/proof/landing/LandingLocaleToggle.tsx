@@ -33,7 +33,12 @@ export function LandingLocaleToggle({ variant = 'light' }: { variant?: Variant }
           <button
             key={code}
             type="button"
-            onClick={() => router.replace(pathname, { locale: code })}
+            onClick={() => {
+              const maxAge = 60 * 60 * 24 * 365
+              document.cookie = `NEXT_LOCALE=${code}; path=/; max-age=${maxAge}; SameSite=Lax`
+              router.replace(pathname, { locale: code })
+              router.refresh()
+            }}
             aria-pressed={active}
             aria-label={code}
             style={{

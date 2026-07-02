@@ -76,7 +76,7 @@ export function persistActiveProfileType(type: ExtraProfile) {
 }
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
-  const { user, isLoaded, isSignedIn } = useAuth()
+  const { user, isLoaded } = useAuth()
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -96,9 +96,8 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     const { data, error } = await sb
       .from(PROOF_PROFILES_TABLE)
       .select('*')
-      .eq('user_id', user.id)
+      .or(`user_id.eq.${user.id},clerk_id.eq.${user.id}`)
       .order('created_at', { ascending: true })
-    console.log('[ProfileContext] profiles result:', data, error)
     if (error) throw error
 
     const profiles = (data || []).map(
@@ -133,32 +132,10 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         stored
       )
     }
-    console.log('[ProfileContext] active profile', found.profile_type_v2)
-    let active = found
-    if (found.profile_type_v2 === 'distributor') {
-      try {
-        const scopeId = await resolveDistribuidorScopeClerkId(sb, user.id)
-        const scopeRow = await fetchMiInformacionProfile(sb, scopeId)
-        if (scopeRow) active = mergeMiInformacionIntoProfile(found, scopeRow)
-      } catch (err) {
-        console.warn('[ProfileContext] mi informacion en load', err)
-      }
-    }
-    setActiveProfile(active)
+    setActiveProfile(found)
     writeStoredType(found.profile_type_v2)
     return true
-  }, [user, isLoaded, isSignedIn])
-
-  useEffect(() => {
-    console.log(
-      '[ProfileContext] profilesResolved:',
-      profilesResolved,
-      'allProfiles:',
-      allProfiles.length,
-      'loading:',
-      loading
-    )
-  }, [profilesResolved, allProfiles.length, loading])
+  }, [user?.id])
 
   useEffect(() => {
     if (!isLoaded) return
@@ -220,13 +197,44 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       console.warn('[ProfileContext] Auth no cargó a tiempo — desbloqueando UI')
       setProfilesResolved(true)
       setLoading(false)
-    }, 10_000)
+    }, 3_000)
     return () => window.clearTimeout(t)
   }, [isLoaded])
 
   useEffect(() => {
-    if (!user || !activeProfile) {
+    if (!user || activeProfile?.profile_type_v2 !== 'distributor') return
+
+    let cancelled = false
+    void (async () => {
+      try {
+        const sb = createClient()
+        const scopeId = await resolveDistribuidorScopeClerkId(sb, user.id)
+        const scopeRow = await fetchMiInformacionProfile(sb, scopeId)
+        if (!cancelled && scopeRow) {
+          setActiveProfile(prev =>
+            prev?.profile_type_v2 === 'distributor'
+              ? mergeMiInformacionIntoProfile(prev, scopeRow)
+              : prev
+          )
+        }
+      } catch (err) {
+        console.warn('[ProfileContext] mi informacion', err)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id, activeProfile?.profile_type_v2])
+
+  useEffect(() => {
+    if (!user) {
       setScopeUserId(null)
+      return
+    }
+
+    if (!activeProfile) {
+      setScopeUserId(user.id)
       return
     }
 
@@ -270,8 +278,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   )
 
   const scope = useMemo((): ProfileScope | null => {
-    if (!user || !activeProfile || !scopeUserId) return null
-    return { user_id: scopeUserId, profile_type_v2: activeProfile.profile_type_v2 }
+    if (!user || !scopeUserId) return null
+    if (activeProfile) {
+      return { user_id: scopeUserId, profile_type_v2: activeProfile.profile_type_v2 }
+    }
+    const stored = readStoredType()
+    if (stored) {
+      return { user_id: scopeUserId, profile_type_v2: stored }
+    }
+    return null
   }, [user, activeProfile, scopeUserId])
 
   const contextValue = useMemo(

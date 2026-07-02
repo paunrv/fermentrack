@@ -660,6 +660,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           style={{
             flex: 1,
             minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
             paddingBottom:
               showWinemakerMobileNav || showMobileNav ? 'var(--proof-bottom-nav)' : 0,
           }}

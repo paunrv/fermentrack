@@ -11,11 +11,20 @@ export function useAuth() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
+    let cancelled = false
+
+    void (async () => {
+      const {
+        data: { session: nextSession },
+      } = await supabase.auth.getSession()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+      if (cancelled) return
       setSession(nextSession)
-      setUser(nextSession?.user ?? null)
+      setUser(authUser ?? nextSession?.user ?? null)
       setIsLoaded(true)
-    })
+    })()
 
     const {
       data: { subscription },
@@ -25,7 +34,10 @@ export function useAuth() {
       setIsLoaded(true)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+    }
   }, [supabase])
 
   return {
