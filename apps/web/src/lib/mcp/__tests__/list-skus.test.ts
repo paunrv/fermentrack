@@ -1,6 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mcpRequestContext } from '@/lib/mcp/request-context'
 
+vi.mock('@/lib/mcp/resolve-scope', () => ({
+  resolveMcpScope: vi.fn(async () => ({
+    profileType: 'distributor',
+    organizationId: null,
+    distributorScope: { user_id: 'user-1', profile_type_v2: 'distributor' },
+    availableProfiles: ['distributor'],
+    winemakerOrganizations: [],
+  })),
+}))
+
 vi.mock('@/lib/mcp/auth', () => ({
   createSupabaseForMcpToken: vi.fn(() => ({})),
 }))
@@ -28,11 +38,11 @@ describe('listSkusTool', () => {
   })
 
   it('returns SKU payload for authenticated MCP context', async () => {
-    const { listSkusTool } = await import('@/lib/mcp/tools/list-skus')
+    const { listSkusTool } = await import('@/lib/mcp/tools/distributor')
 
     const result = await mcpRequestContext.run(
       { userId: 'user-1', accessToken: 'test-token' },
-      () => listSkusTool(10)
+      () => listSkusTool({ profile_type: 'distributor', limit: 10 })
     )
 
     const text = result.content[0]?.text
@@ -43,7 +53,7 @@ describe('listSkusTool', () => {
   })
 
   it('throws when MCP context is missing', async () => {
-    const { listSkusTool } = await import('@/lib/mcp/tools/list-skus')
-    await expect(listSkusTool()).rejects.toThrow('Unauthorized')
+    const { listSkusTool } = await import('@/lib/mcp/tools/distributor')
+    await expect(listSkusTool({ profile_type: 'distributor' })).rejects.toThrow('Unauthorized')
   })
 })

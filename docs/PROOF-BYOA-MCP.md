@@ -148,11 +148,47 @@ curl -i -X POST http://localhost:3000/api/mcp \
 
 4. Restart MCP in Cursor → `list_skus` should appear; invoke it to list distributor SKUs (RLS applies).
 
+## Phase 1 read tools (implemented — #26)
+
+Auth remains Supabase bearer JWT (RLS). Tools accept optional `profile_type` and `organization_id` for multi-profile / multi-org users.
+
+| Profile | MCP tool | Loader |
+|---------|----------|--------|
+| All | `get_session_snapshot` | `resolveMcpScope` + schema hints |
+| Distributor | `list_skus` | `fetchSkus` |
+| Distributor | `get_inventory_summary` | `buildDistributorAgentContext().resumen` |
+| Distributor | `list_pedidos` | `fetchPedidos` |
+| Distributor | `get_credito_resumen` | `fetchCreditoCxCResumen` |
+| Distributor | `list_ordenes_compra` | `fetchOrdenesCompraDistribuidorPendientes` |
+| Winemaker | `list_lotes` | `fetchWineLots` (org-scoped) |
+| Winemaker | `list_documentos` | `fetchDocuments` |
+| Winemaker | `get_resumen_bodega` | `fetchWinemakerSummary` + agent context |
+| Distiller | `list_corridas` | `fetchCorridas` |
+| Distiller | `list_viajes` | `fetchViajes` + `fetchProductosViaje` |
+| Distiller | `list_lotes_distiller` | `fetchLotesForAgent` |
+
+**Org scoping:** Winemaker tools resolve `organization_id` via `fetchWinemakerOrganizationIdForUser` (membership required). Cross-org access is rejected at scope resolution.
+
+**Client example (winemaker org):**
+
+```json
+{
+  "mcpServers": {
+    "proof": {
+      "url": "http://localhost:3000/api/mcp",
+      "headers": { "Authorization": "Bearer YOUR_SUPABASE_ACCESS_TOKEN" }
+    }
+  }
+}
+```
+
+Call `get_session_snapshot` first, then profile tools with `profile_type` / `organization_id` if needed.
+
 ## Next phases
 
 | Phase | Issue | Focus |
 |-------|-------|--------|
-| 1 | #26 | Read tools + org-scoped OAuth |
+| 1 | #26 | ✅ Read tools + org-scoped bearer auth |
 | 2 | #27 | Write tools (agent-action parity) |
 | 3 | #28 | Connection hub UI |
 | 4 | #29 | Remove hosted Anthropic API |
