@@ -37,7 +37,7 @@
       "subtitleLine1": "PROOF no es un ERP.",
       "subtitleLine2": "Es la memoria operativa de tu producción.",
       "subtitleHighlight": "memoria operativa",
-      "body": "Sube cualquier documento, foto o nota. PROOF extrae, conecta y hace tu operación inteligente.",
+      "body": "Sube documentos y evidencia en PROOF. Conecta tu agente externo (Claude, Cursor, ChatGPT) vía MCP para extraer, consultar y operar tus datos.",
       "ctaDemo": "Ver demo",
       "ctaStart": "Empieza gratis",
       "mockup": {
@@ -72,7 +72,7 @@
         },
         {
           "title": "Formularios vs. conversación",
-          "body": "Dicta en bodega, sube una foto de ticket o pregunta en español. PROOF estructura la información sin interrumpir tu flujo."
+          "body": "Dicta en bodega, sube tickets o pregunta a tu agente conectado. PROOF estructura la información sin interrumpir tu flujo."
         },
         {
           "title": "Reportes vs. respuestas",
@@ -90,7 +90,7 @@
           "bullets": [
             "🍷 Timeline completo de cada lote — desde la cosecha hasta la botella",
             "📋 Protocolos por estilo — tinto, blanco, espumoso, rosado",
-            "🎙️ Agente de voz — dicta en bodega y PROOF registra",
+            "🔗 Conecta tu agente MCP — opera PROOF desde Claude Desktop o Cursor",
             "💡 \"¿qué lotes están listos para embotellar?\""
           ],
           "timelineTitle": "LOT-2026-001 · Chardonnay · Viñas del Tigre",
@@ -1488,6 +1488,8 @@
       "createPo": "Crear orden de compra",
       "canvasArrival": "Confirmar llegada en canvas",
       "uploadPhoto": "Subir foto / PDF",
+      "emptyItemsHint": "Guardamos la foto como evidencia. Vincula una orden de compra para precargar ítems, conecta tu agente MCP en el dashboard, o usa import_recepcion_draft.",
+      "connectAgent": "Conectar agente externo →",
       "analyzing": "PROOF analiza…",
       "analysis": "Análisis",
       "itemLine": "+ {name} · {bottles} bts",
@@ -1866,7 +1868,7 @@
       "upload": {
         "skippedPdf": "Guardé {filename}. Los PDF aún no se leen solos — súbelo como foto o dime proveedor, insumos y monto.{total}",
         "skippedPdfAgent": "acabo de subir el PDF {filename}, ayúdame a registrarlo",
-        "noApiKey": "Guardé {filename}, pero la visión no está configurada (ANTHROPIC_API_KEY). Configúrala para leer tickets automáticamente.",
+        "noApiKey": "Guardé {filename}. Para leer tickets automáticamente conecta tu agente externo en el dashboard (MCP) o completa proveedor e insumos manualmente.",
         "noApiKeyAgent": "no pude leer {filename} automáticamente, ¿cómo lo registro?",
         "visionFailed": "Guardé {filename}, pero la lectura automática falló. Dime proveedor, insumos (uva, corcho, botella…) y monto para completarlo.",
         "visionFailedAgent": "la lectura de {filename} falló, ayúdame a registrar proveedor e insumos",

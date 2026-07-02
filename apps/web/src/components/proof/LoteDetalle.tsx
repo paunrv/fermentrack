@@ -737,7 +737,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
   const actions = useMemo(() => {
     if (isDistiller) {
       return [
-        { label: 'Venta granel', primary: false, onClick: () => router.push('/dashboard/agente') },
+        { label: 'Venta granel', primary: false, onClick: () => router.push('/dashboard') },
         { label: 'Exportar PDF', primary: false, onClick: () => window.print() },
         {
           label: 'Vender botellas →',

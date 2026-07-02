@@ -2,11 +2,9 @@ import { NextRequest } from 'next/server'
 import { requireClerkUserId } from '@/lib/proof/auth-api'
 import { getAgentApiMessages } from '@/lib/i18n/agent-messages-server'
 import { getLocaleFromRequest } from '@/lib/i18n/request-locale'
-import { getRecepcionVisionSystem } from '@/lib/proof/prompts'
 import type { AppLocale } from '@/i18n/routing'
 import {
-  type AnalisisFotoResponse,
-  enrichDetectedItems,
+  itemsFromExpectedOc,
   type ExpectedOcItem,
 } from '@/lib/proof/recepcion-analysis'
 import {
@@ -35,7 +33,6 @@ type Body = {
   imagenBase64: string
   mediaType?: string
   ordenCompraId?: string
-  /** `distribuidor` (OC PROOF) o `legacy` (ordenes_compra antiguas) */
   ordenCompraSource?: OcRecepcionSource
   productorId?: string
   recepcionId?: string
@@ -56,11 +53,6 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: 'imagenBase64 requerida' }), { status: 400 })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: api.apiKeyMissing }), { status: 500 })
-  }
-
   const profileType = (body.profile_type_v2 || 'distributor') as ExtraProfile
   const sb = createServiceSupabase()
   const skus = await fetchSkus(sb, { user_id: userId, profile_type_v2: profileType })
@@ -75,16 +67,13 @@ export async function POST(req: NextRequest) {
       body.ordenCompraSource ??
       parseOcRecepcionValue(body.ordenCompraId)?.source ??
       'legacy'
-    const ordenId =
-      parseOcRecepcionValue(body.ordenCompraId)?.id ?? body.ordenCompraId
+    const ordenId = parseOcRecepcionValue(body.ordenCompraId)?.id ?? body.ordenCompraId
 
     if (source === 'distribuidor') {
       ordenCompraDistribuidorId = ordenId
       const oc = await fetchOrdenCompraDistribuidorWithItems(sb, ordenId)
       if (oc) {
-        expectedItems = itemsOrdenDistribuidorToExpected(
-          oc.items_orden_compra_distribuidor ?? []
-        )
+        expectedItems = itemsOrdenDistribuidorToExpected(oc.items_orden_compra_distribuidor ?? [])
         if (oc.proveedor_nombre) productorNombre = oc.proveedor_nombre
       }
     } else {
@@ -152,89 +141,36 @@ export async function POST(req: NextRequest) {
   void (async () => {
     try {
       send('progress', { label: 'Foto guardada en evidencia' })
-      await sleep(300)
+      await sleep(200)
 
-      const steps = [
-        'Identificando etiquetas',
-        'Contando cajas y botellas',
-        body.ordenCompraId ? 'Cruzando vs orden de compra' : 'Buscando en catálogo',
-        'Detectando diferencias',
-      ]
-      for (const s of steps) {
-        send('progress', { label: s })
-        await sleep(400)
+      if (expectedItems?.length) {
+        send('progress', { label: 'Ítems cargados desde la orden de compra' })
+        const enriched = itemsFromExpectedOc(expectedItems, skus)
+        for (let i = 0; i < enriched.length; i++) {
+          send('item', { index: i, item: enriched[i] })
+          await sleep(80)
+        }
+        send('done', {
+          recepcionId,
+          fotoUrls,
+          productorDetectado: productorNombre,
+          items: enriched,
+        })
+      } else {
+        send('progress', {
+          label:
+            'Visión automática desactivada — conecta tu agente MCP en el dashboard o captura cantidades manualmente',
+        })
+        send('done', {
+          recepcionId,
+          fotoUrls,
+          productorDetectado: productorNombre,
+          items: [],
+        })
       }
-
-      const userText = [
-        productorNombre !== 'Pendiente' ? `Productor esperado: ${productorNombre}` : '',
-        body.ordenCompraId ? `Orden de compra: ${body.ordenCompraId}` : '',
-        expectedItems?.length
-          ? `Ítems esperados OC: ${JSON.stringify(expectedItems)}`
-          : '',
-        'Analiza la imagen y devuelve el JSON.',
-      ]
-        .filter(Boolean)
-        .join('\n')
-
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 4096,
-          system: getRecepcionVisionSystem(locale),
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: mediaType,
-                    data: rawB64,
-                  },
-                },
-                { type: 'text', text: userText },
-              ],
-            },
-          ],
-        }),
-      })
-
-      if (!res.ok) {
-        const errText = await res.text()
-        send('error', { message: errText || res.statusText })
-        close()
-        return
-      }
-
-      const data = await res.json()
-      const textBlock = data.content?.find((b: { type: string }) => b.type === 'text')
-      const rawText = textBlock?.text || '{}'
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/)
-      const parsed = JSON.parse(jsonMatch?.[0] || '{}') as AnalisisFotoResponse
-
-      const enriched = enrichDetectedItems(parsed.items || [], skus, expectedItems)
-
-      for (let i = 0; i < enriched.length; i++) {
-        send('item', { index: i, item: enriched[i] })
-        await sleep(180)
-      }
-
-      send('done', {
-        recepcionId,
-        fotoUrls,
-        productorDetectado: parsed.productorDetectado || productorNombre || null,
-        items: enriched,
-      })
     } catch (e) {
       send('error', {
-        message: e instanceof Error ? e.message : 'Error al analizar imagen',
+        message: e instanceof Error ? e.message : 'Error al preparar recepción',
       })
     } finally {
       close()

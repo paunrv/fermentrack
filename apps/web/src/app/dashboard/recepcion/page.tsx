@@ -382,6 +382,23 @@ export default function RecepcionPage() {
 
       {step === 2 && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {items.length === 0 ? (
+            <div
+              style={{
+                padding: 20,
+                background: 'var(--panel)',
+                borderRadius: 'var(--radius-card)',
+                border: '1px solid var(--hairline)',
+              }}
+            >
+              <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--fg-1)', lineHeight: 1.55 }}>
+                {t('emptyItemsHint')}
+              </p>
+              <Link href="/dashboard" style={{ fontSize: 13, fontWeight: 600, color: 'var(--gold)' }}>
+                {t('connectAgent')}
+              </Link>
+            </div>
+          ) : null}
           {ocVinculo && (
             <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
               {t('ocLinked')}

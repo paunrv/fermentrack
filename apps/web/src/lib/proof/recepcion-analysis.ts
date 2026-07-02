@@ -66,6 +66,19 @@ export function matchSkuCatalog(
   return { sku: bestScore >= 0.45 ? best : null, score: bestScore }
 }
 
+/** Pre-fill recepción lines from a linked OC (no vision / hosted LLM). */
+export function itemsFromExpectedOc(
+  expected: ExpectedOcItem[],
+  skus: SkuRow[]
+): ItemDetectadoRecepcion[] {
+  const raw: AnalisisItemRaw[] = expected.map(e => ({
+    nombre: e.nombre,
+    cantidadEstimada: e.cantidadEsperada,
+    confianza: 1,
+  }))
+  return enrichDetectedItems(raw, skus, expected)
+}
+
 export function enrichDetectedItems(
   raw: AnalisisItemRaw[],
   skus: SkuRow[],

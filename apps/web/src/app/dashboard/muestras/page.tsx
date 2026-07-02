@@ -78,36 +78,17 @@ export default function MuestrasPage() {
     reader.readAsDataURL(file)
   }
 
-  async function analyze() {
-    const batch = batches.find(b => b.id === form.batchId)
+  async function saveSample() {
+    if (!form.batchId) return
     setAnalyzing(true)
     setAnalysis(null)
-    const content: unknown[] = []
-    if (imgB64) content.push({ type: 'image', source: { type: 'base64', media_type: imgType, data: imgB64 } })
-    content.push({
-      type: 'text',
-      text: `Analiza esta muestra del lote ${form.batchId} (${batch?.name}, ${batch?.type}).
-Tipo: ${form.type}. Notas: ${form.notes || 'ninguna'}.
-${form.ph ? 'pH medido: ' + form.ph : ''} ${form.density ? 'Densidad: ' + form.density : ''}
-Contexto: día ${batch?.day}, densidad actual ${batch?.density}, pH ${batch?.ph}, temp ${batch?.temp}°C.
-Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta etapa, acción recomendada.`,
-    })
+    const note = form.notes.trim()
+    const summary =
+      note ||
+      `Muestra registrada (${form.type})${form.ph ? ` · pH ${form.ph}` : ''}${form.density ? ` · densidad ${form.density}` : ''}`
 
     try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 400,
-          system:
-            'Eres experto en enología y cervecería artesanal. Responde en español, técnico y conciso.',
-          messages: [{ role: 'user', content }],
-        }),
-      })
-      const data = await res.json()
-      const text = data.content?.find((c: { type: string }) => c.type === 'text')?.text || 'Sin análisis.'
-      setAnalysis(text)
+      setAnalysis(summary)
       await createSample(supabase, {
         batch_id: form.batchId,
         type: form.type,
@@ -115,7 +96,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
         ph: form.ph ? parseFloat(form.ph) : null,
         density: form.density ? parseFloat(form.density) : null,
         img_url: imgB64 ? `data:${imgType};base64,${imgB64}` : null,
-        analysis: text,
+        analysis: summary,
         ...(scope
           ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
           : {}),
@@ -130,7 +111,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
         }
         await updateBatch(supabase, form.batchId, updates)
       }
-      await logActivity(supabase, form.batchId, `Muestra analizada — ${form.batchId}`, form.type)
+      await logActivity(supabase, form.batchId, `Muestra registrada — ${form.batchId}`, form.type)
       const [newBatches, newSamples] = await Promise.all([
         fetchBatches(supabase, scope ?? undefined),
         fetchSamples(supabase, scope ?? undefined),
@@ -166,7 +147,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
           Muestras
         </h1>
         <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-          Análisis visual con IA + historial
+          Registro de muestras + historial (sin IA hospedada)
         </p>
       </div>
 
@@ -251,7 +232,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
 
           <button
             type="button"
-            onClick={analyze}
+            onClick={saveSample}
             disabled={analyzing}
             style={{
               width: '100%',
@@ -268,7 +249,7 @@ Análisis técnico conciso (3-4 oraciones): observaciones, normalidad para esta 
               fontFamily: 'var(--font-display)',
             }}
           >
-            {analyzing ? 'Analizando...' : '✦ Analizar con IA y guardar'}
+            {analyzing ? 'Guardando...' : 'Guardar muestra'}
           </button>
         </div>
 

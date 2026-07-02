@@ -225,6 +225,21 @@ The dashboard home (`/dashboard`) is a **connection hub** instead of hosted in-a
 
 **UX:** Signed-in users see OAuth metadata link, copy buttons for URL and bearer token, per-profile tool catalog (read/write badges), example prompts, and deep links to manual workflows (pedidos, recepción, inventario, etc.).
 
+## Phase 4 remove hosted Anthropic API (implemented — #29)
+
+All server-side calls to `api.anthropic.com` were removed. Deprecated routes return **410** with a link to `/dashboard`.
+
+| Former flow | Replacement |
+|-------------|-------------|
+| `/api/proof/contexto` (agent chat) | Connection hub + MCP tools |
+| `/api/chat` (vision proxy) | Manual forms or external MCP agent |
+| `/api/credito/redactar-cobro` | Template message in UI + MCP `get_cobro_context` |
+| `/api/recepciones/analizar-foto` | Photo evidence + OC line prefill; MCP `import_recepcion_draft` |
+| Winemaker ticket vision (`analyzeWinemakerTicketImage`) | MCP `import_winemaker_ticket` or manual document entry |
+| `ANTHROPIC_API_KEY` | Not required — removed from `.env.example` and `turbo.json` |
+
+Helper: `apps/web/src/lib/proof/deprecated-hosted-ai.ts`
+
 ## Next phases
 
 | Phase | Issue | Focus |
@@ -232,5 +247,5 @@ The dashboard home (`/dashboard`) is a **connection hub** instead of hosted in-a
 | 1 | #26 | ✅ Read tools + org-scoped bearer auth |
 | 2 | #27 | ✅ Write tools (agent-action parity) |
 | 3 | #28 | ✅ Connection hub UI |
-| 4 | #29 | Remove hosted Anthropic API |
+| 4 | #29 | ✅ Remove hosted Anthropic API |
 | 5 | #30 | Audit log + hardening |

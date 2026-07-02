@@ -261,64 +261,10 @@ export default function NuevaProductoPage() {
 
   async function analyzePhoto() {
     if (!photo || !photoPreview) return
-    setAnalyzing(true)
-    setAnalyzeError(null)
-    try {
-      const base64 = photoPreview.split(',')[1] || ''
-      const mediaType = photo.type || 'image/jpeg'
-
-      const resp = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 1024,
-          system:
-            'Eres un asistente de PROOF. Analiza esta nota o remisión y extrae en JSON: { name: string, category: cerveza|vino|destilado, quantity_bottles: number, price_per_bottle: number, total_price: number, date: string, producer: string }. Solo responde con el JSON, sin texto adicional.',
-          messages: [
-            {
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  source: {
-                    type: 'base64',
-                    media_type: mediaType,
-                    data: base64,
-                  },
-                },
-                {
-                  type: 'text',
-                  text: 'Analiza esta remisión y extrae los datos en JSON.',
-                },
-              ],
-            },
-          ],
-        }),
-      })
-
-      const json = await resp.json()
-      const text =
-        Array.isArray(json?.content) && json.content[0]?.text
-          ? json.content[0].text
-          : json?.error?.message || ''
-      const extracted = extractJSON(text)
-
-      if (!extracted) {
-        setAnalyzeError(
-          'No pude extraer datos automáticamente. Continúa y llena los campos manualmente.'
-        )
-        setStep(2)
-        return
-      }
-
-      applyExtracted(extracted)
-      setStep(2)
-    } catch (err: any) {
-      setAnalyzeError(`Error al analizar: ${err?.message || 'desconocido'}`)
-    } finally {
-      setAnalyzing(false)
-    }
+    setAnalyzeError(
+      'La lectura automática ahora es con tu agente externo (MCP) en el dashboard. Continúa con captura manual.'
+    )
+    goToManual()
   }
 
   function goToManual() {
@@ -430,7 +376,7 @@ export default function NuevaProductoPage() {
             Nueva etiqueta
           </h1>
           <p style={{ fontSize: 12, color: '#888', fontWeight: 500, marginTop: 2 }}>
-            Sube la remisión para que la IA llene los datos, o ingresa manualmente.
+            Sube la remisión como evidencia o ingresa los datos manualmente. Para lectura automática, conecta tu agente en el dashboard.
           </p>
         </div>
       </div>
@@ -682,7 +628,7 @@ export default function NuevaProductoPage() {
               ) : (
                 <>
                   {SparklesIcon}
-                  <span>Analizar con IA</span>
+                  <span>Continuar manual</span>
                 </>
               )}
             </button>

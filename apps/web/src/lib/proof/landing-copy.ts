@@ -1,7 +1,6 @@
 export type ProducerTab = 'winemaker' | 'brewer' | 'distiller'
 
-/** @deprecated fr/it locales removed in L1 — use next-intl messages under landing.productores.tabs */
-export type LandingLang = 'es' | 'en'
+/** Tab order for landing producer section — copy lives in next-intl `landing.productores.tabs`. */
 
 export type ProducerStageStatus = 'done' | 'active' | 'pending'
 

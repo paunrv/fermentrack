@@ -4,8 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useLocale, useTranslations } from 'next-intl'
-import type { AppLocale } from '@/i18n/routing'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -22,15 +21,6 @@ import { getProfileTheme } from '@/lib/proof/profile-theme'
 import { fmtMoney } from '@/lib/proof/format'
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-
-function diasVencido(fecha: string | null): number {
-  if (!fecha) return 0
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Mexico_City' })
-  if (fecha >= today) return 0
-  const a = new Date(`${fecha}T12:00:00`)
-  const b = new Date(`${today}T12:00:00`)
-  return Math.max(0, Math.floor((b.getTime() - a.getTime()) / 86400000))
-}
 
 function CanvasDivider({ label }: { label: string }) {
   return (
@@ -63,7 +53,6 @@ function CanvasDivider({ label }: { label: string }) {
 export default function CreditoPage() {
   const t = useTranslations('distributor.credito')
   const tCommon = useTranslations('distributor.common')
-  const locale = useLocale() as AppLocale
   const { scope, profilesResolved, activeProfile, loading: profileLoading } = useProfile()
   const supabase = useSupabase()
   const accent = getProfileTheme(activeProfile?.profile_type_v2).accent
@@ -125,32 +114,14 @@ export default function CreditoPage() {
 
   async function onRedactarCobro(cliente: DeudaClienteAgregada) {
     const nombre = cliente.cliente_nombre
-    setCobroModal({ cliente: nombre, mensaje: '', loading: true })
-    try {
-      const res = await fetch('/api/credito/redactar-cobro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clienteNombre: nombre,
-          monto: cliente.saldo_pendiente,
-          diasVencido: diasVencido(cliente.fecha_vencimiento),
-          pedidoNumero: null,
-          locale,
-        }),
-      })
-      const data = await res.json()
-      setCobroModal({ cliente: nombre, mensaje: data.mensaje || '', loading: false })
-    } catch (err) {
-      console.error('[credito] redactar-cobro', err)
-      setCobroModal({
-        cliente: nombre,
-        mensaje: t('collection.fallbackMessage', {
-          name: nombre,
-          amount: fmtMoney(cliente.saldo_pendiente),
-        }),
-        loading: false,
-      })
-    }
+    setCobroModal({
+      cliente: nombre,
+      mensaje: t('collection.fallbackMessage', {
+        name: nombre,
+        amount: fmtMoney(cliente.saldo_pendiente),
+      }),
+      loading: false,
+    })
   }
 
   const proofContext = useMemo(

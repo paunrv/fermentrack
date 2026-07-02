@@ -117,7 +117,7 @@ export function buildTicketUploadMessage(
     }
   }
 
-  if (visionStatus === 'no_api_key') {
+  if (visionStatus === 'no_api_key' || visionStatus === 'vision_disabled') {
     return {
       mensaje: u.noApiKey({ filename }),
       agentQuery: u.noApiKeyAgent({ filename }),

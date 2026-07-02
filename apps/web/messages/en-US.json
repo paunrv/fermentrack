@@ -37,7 +37,7 @@
       "subtitleLine1": "PROOF is not an ERP.",
       "subtitleLine2": "It is the operational memory of your production.",
       "subtitleHighlight": "operational memory",
-      "body": "Upload any document, photo or note. PROOF extracts, connects and makes your operation intelligent.",
+      "body": "Upload documents and evidence in PROOF. Connect your external agent (Claude, Cursor, ChatGPT) via MCP to extract, query, and operate on your data.",
       "ctaDemo": "See demo",
       "ctaStart": "Start free",
       "mockup": {
@@ -72,7 +72,7 @@
         },
         {
           "title": "Forms vs. conversation",
-          "body": "Dictate in the cellar, upload a ticket photo, or ask in plain language. PROOF structures the info without breaking your flow."
+          "body": "Dictate in the cellar, upload tickets, or ask your connected agent. PROOF structures the info without breaking your flow."
         },
         {
           "title": "Reports vs. answers",
@@ -90,7 +90,7 @@
           "bullets": [
             "🍷 Full timeline for every lot — from harvest to bottle",
             "📋 Protocols by style — red, white, sparkling, rosé",
-            "🎙️ Voice agent — dictate in the cellar and PROOF records it",
+            "🔗 Connect your MCP agent — operate PROOF from Claude Desktop or Cursor",
             "💡 \"Which lots are ready to bottle?\""
           ],
           "timelineTitle": "LOT-2026-001 · Chardonnay · Viñas del Tigre",
@@ -1488,6 +1488,8 @@
       "createPo": "Create purchase order",
       "canvasArrival": "Confirm arrival on canvas",
       "uploadPhoto": "Upload photo / PDF",
+      "emptyItemsHint": "We saved the photo as evidence. Link a purchase order to pre-fill lines, connect your MCP agent on the dashboard, or use import_recepcion_draft.",
+      "connectAgent": "Connect external agent →",
       "analyzing": "PROOF analyzing…",
       "analysis": "Analysis",
       "itemLine": "+ {name} · {bottles} btl",
@@ -1866,7 +1868,7 @@
       "upload": {
         "skippedPdf": "Saved {filename}. PDFs are not read automatically yet — upload a photo or tell me vendor, supplies, and amount.{total}",
         "skippedPdfAgent": "I just uploaded PDF {filename}, help me register it",
-        "noApiKey": "Saved {filename}, but vision is not configured (ANTHROPIC_API_KEY). Set it up to read receipts automatically.",
+        "noApiKey": "Saved {filename}. To read tickets automatically, connect your external agent on the dashboard (MCP) or complete supplier and line items manually.",
         "noApiKeyAgent": "could not read {filename} automatically, how do I register it?",
         "visionFailed": "Saved {filename}, but automatic reading failed. Tell me vendor, supplies (grapes, cork, bottles…), and amount to complete it.",
         "visionFailedAgent": "reading {filename} failed, help me register vendor and supplies",

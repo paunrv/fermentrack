@@ -164,6 +164,7 @@ export type WmTicketVisionStatus =
   | 'skipped_pdf'
   | 'skipped_not_image'
   | 'no_api_key'
+  | 'vision_disabled'
   | 'api_error'
   | 'parse_error'
 
@@ -172,8 +173,6 @@ export type WmTicketVisionAttempt = {
   result: WmTicketVisionResult | null
   error?: string
 }
-
-const VISION_MODEL = 'claude-sonnet-4-5'
 
 const EXT_TO_MIME: Record<string, string> = {
   '.png': 'image/png',
@@ -200,66 +199,17 @@ export function isTicketImageContentType(contentType: string): boolean {
   return contentType.startsWith('image/')
 }
 
+/** Hosted vision removed (#29) — use external MCP `import_winemaker_ticket` or manual entry. */
 export async function analyzeWinemakerTicketImage(
-  base64: string,
-  mediaType: string,
-  wineryName?: string | null
+  _base64: string,
+  _mediaType: string,
+  _wineryName?: string | null
 ): Promise<WmTicketVisionAttempt> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return { status: 'no_api_key', result: null, error: 'ANTHROPIC_API_KEY no configurada' }
+  return {
+    status: 'vision_disabled',
+    result: null,
+    error: 'Hosted ticket vision removed; connect an external MCP agent or complete fields manually.',
   }
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: VISION_MODEL,
-      max_tokens: 2048,
-      system: WINEMAKER_TICKET_VISION_SYSTEM,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64 },
-            },
-            {
-              type: 'text',
-              text: buildWinemakerTicketVisionUserText(wineryName),
-            },
-          ],
-        },
-      ],
-    }),
-  })
-
-  if (!res.ok) {
-    const errText = (await res.text()).slice(0, 400)
-    console.error('[winemaker-ticket-vision] API error', res.status, errText)
-    return {
-      status: 'api_error',
-      result: null,
-      error: errText || res.statusText,
-    }
-  }
-
-  const data = (await res.json()) as {
-    content?: { type: string; text?: string }[]
-  }
-  const text = data.content?.find(c => c.type === 'text')?.text ?? ''
-  const result = parseWmTicketVisionJson(text)
-  if (!result) {
-    console.error('[winemaker-ticket-vision] parse failed', text.slice(0, 500))
-    return { status: 'parse_error', result: null, error: 'No se pudo interpretar la respuesta de visión' }
-  }
-
-  return { status: 'ok', result }
 }
 
 export function isTicketVisionClassified(
