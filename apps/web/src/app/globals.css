@@ -3,80 +3,29 @@
 @tailwind utilities;
 
 /* =========================================================================
-   PROOF · Notion-like light theme
-   White surfaces, subtle borders, calm typography.
+   PROOF app extensions — base tokens live in @fermentrack/ui/styles.css
    ========================================================================= */
 
 :root {
-  /* — Surfaces — */
-  --ink: #FFFFFF;
-  --canvas: #F7F6F3;
-  --panel: #FFFFFF;
-  --panel-2: #F1F1EF;
-  --raised: #FFFFFF;
-  --hover: rgba(55, 53, 47, 0.08);
-
-  /* — Borders — */
-  --hairline: rgba(55, 53, 47, 0.09);
-  --line: rgba(55, 53, 47, 0.16);
-  --line-strong: rgba(55, 53, 47, 0.24);
-
-  /* — Text (Notion palette) — */
-  --fg-0: #37352F;
-  --fg-1: #37352F;
-  --fg-2: #787774;
-  --fg-3: #9B9A97;
-  --fg-4: #C3C2C0;
-  --fg-5: #E9E9E7;
-
-  /* — Accent (overridden per profile via proofAccentCssVars) — */
-  --proof-accent: #2383E2;
-  --gold: var(--proof-accent);
-  --gold-soft: color-mix(in srgb, var(--proof-accent) 18%, transparent);
+  /* Profile accent aliases (proofAccentCssVars may override --proof-accent) */
   --copper: var(--proof-accent);
   --copper-soft: var(--proof-accent);
   --copper-glow: color-mix(in srgb, var(--proof-accent) 10%, transparent);
-  --wine: #9B2335;
+  --wine: #9b2335;
   --wine-soft: rgba(155, 35, 53, 0.1);
 
-  /* — Status — */
-  --ok: #0F7B6C;
-  --ok-soft: rgba(15, 123, 108, 0.1);
-  --warn: #D9730D;
-  --warn-soft: rgba(217, 115, 13, 0.1);
-  --crit: #E03E3E;
-  --crit-soft: rgba(224, 62, 62, 0.1);
-  --info: #2383E2;
-  --info-soft: rgba(35, 131, 226, 0.1);
-  --purple: #6940A5;
-  --purple-soft: rgba(105, 64, 165, 0.1);
-
-  /* — Radii — */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-card: 8px;
-
-  /* — Typography — */
-  --font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
-    'Apple Color Emoji', Arial, sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  /* App-only typography */
   --font-voice: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
     'Times New Roman', serif;
 
-  /* — Motion — */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Motion */
   --ease-in-out: cubic-bezier(0.7, 0, 0.3, 1);
 
-  /* — Shadow (Notion-style, very subtle) — */
-  --shadow-sm: 0 1px 2px rgba(15, 15, 15, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 15, 15, 0.06);
-
-  /* — Mobile shell — */
+  /* Mobile shell */
   --proof-bottom-nav: 0px;
   --proof-sidebar: 52px;
 
-  /* — PROOF redesign aliases — */
+  /* PROOF redesign aliases */
   --color-background-tertiary: var(--canvas);
   --color-background-primary: var(--ink);
   --color-background-info: var(--info-soft);

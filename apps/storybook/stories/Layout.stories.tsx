@@ -12,6 +12,7 @@ import {
   PageHeader,
   PageShell,
   Section,
+  Separator,
   Stack,
   Button,
 } from '@fermentrack/ui'
@@ -32,11 +33,24 @@ export const CardExample: StoryObj = {
       </CardHeader>
       <CardContent>
         <p style={{ margin: 0 }}>128 SKUs activos · 4 alertas</p>
+        <Separator style={{ marginBlock: 12 }} />
+        <p style={{ margin: 0, color: 'var(--fg-3)', fontSize: 13 }}>Última sync hace 2 h</p>
       </CardContent>
       <CardFooter>
         <Button variant="secondary">Ver detalle</Button>
       </CardFooter>
     </Card>
+  ),
+}
+
+export const SeparatorExample: StoryObj = {
+  render: () => (
+    <Stack gap={4} style={{ maxWidth: 320 }}>
+      <p style={{ margin: 0 }}>Sección A</p>
+      <Separator />
+      <p style={{ margin: 0 }}>Sección B</p>
+      <Separator orientation="vertical" style={{ height: 48, alignSelf: 'flex-start' }} />
+    </Stack>
   ),
 }
 
