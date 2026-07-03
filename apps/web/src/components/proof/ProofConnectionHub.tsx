@@ -308,6 +308,15 @@ export function ProofConnectionHub({
           >
             {t('migrationGuide')}
           </a>
+          {' · '}
+          <a
+            href="https://github.com/paunrv/fermentrack/blob/main/docs/PROOF-BYOA-CUTOVER-CHECKLIST.md"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: accent }}
+          >
+            {t('cutoverChecklist')}
+          </a>
         </p>
       </section>
 

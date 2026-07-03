@@ -26,5 +26,8 @@ create index if not exists mcp_tool_calls_org_created_idx
 alter table public.mcp_tool_calls enable row level security;
 
 -- No policies: authenticated users cannot read/write via Data API; service role bypasses RLS.
+grant select, insert on public.mcp_tool_calls to service_role;
+
+notify pgrst, 'reload schema';
 
 commit;

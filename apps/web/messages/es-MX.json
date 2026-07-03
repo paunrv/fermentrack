@@ -2153,6 +2153,7 @@
     "toolsTitle": "Tools disponibles",
     "catalogLink": "Ver catálogo completo en docs",
     "migrationGuide": "Guía de migración desde el chat integrado",
+    "cutoverChecklist": "Checklist de cutover producción",
     "promptsTitle": "Ejemplos de prompts",
     "manualTitle": "Formularios manuales",
     "bar": {

@@ -2153,6 +2153,7 @@
     "toolsTitle": "Available tools",
     "catalogLink": "Full catalog in docs",
     "migrationGuide": "Migration guide from in-app chat",
+    "cutoverChecklist": "Production cutover checklist",
     "promptsTitle": "Example prompts",
     "manualTitle": "Manual forms",
     "bar": {

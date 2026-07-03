@@ -57,6 +57,8 @@ Run `get_session_snapshot` first to discover `profile_type`, winemaker `organiza
 - [ ] Confirm MCP works with a fresh Supabase JWT (tokens expire — reconnect client after logout).
 - [ ] Optional: set `MCP_RATE_LIMIT_MAX` / `MCP_RATE_LIMIT_WINDOW_MS` if agents are chatty (defaults: 120 req / 60s per user).
 
+Full cutover steps: [PROOF-BYOA-CUTOVER-CHECKLIST.md](./PROOF-BYOA-CUTOVER-CHECKLIST.md)
+
 ## Idempotency & writes
 
 All write tools accept `idempotency_key` (≥8 chars). Retries with the same key return the first result (`idempotent_replay: true`) and are audited as `replay`.
