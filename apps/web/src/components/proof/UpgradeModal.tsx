@@ -107,7 +107,7 @@ function UpgradeModalPanel({ onClose }: { onClose: () => void }) {
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <Link
-            href="/#precios"
+            href="/dashboard/settings"
             onClick={onClose}
             style={{
               flex: 1,

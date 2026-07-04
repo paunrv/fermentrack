@@ -12,14 +12,17 @@ import { useProfile } from '@/context/ProfileContext'
 import { useOrganization } from '@/context/OrganizationContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useIntlLocaleTag } from '@/lib/i18n/locale'
-import {
-  fetchOrganizationSettings,
+import { fetchOrganizationSettings,
   updateOrganizationName,
   type OrganizationSettings,
 } from '@/app/actions/organization'
+import { fetchPlanBillingStatusAction } from '@/app/actions/plan-billing'
+import type { PlanBillingStatus } from '@/lib/proof/plan-over-limit'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 import { SettingsLanguageSection } from '@/components/proof/SettingsLanguageSection'
-import { WINEMAKER_PLAN_LIMITS } from '@/lib/billing/winemaker-plans'
+import { PLAN_LIMITS_CATALOG } from '@/lib/proof/plan-limits'
+import { trialDaysRemaining } from '@/lib/billing/billing-renewal-anchor'
+import type { BillingCycle } from '@/lib/stripe/server'
 import {
   upsertProfile,
   deleteProfile,
@@ -93,6 +96,8 @@ export default function SettingsPage() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState<string | null>(null)
   const [billingNotice, setBillingNotice] = useState<string | null>(null)
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
+  const [planBilling, setPlanBilling] = useState<PlanBillingStatus | null>(null)
   const searchParams = useSearchParams()
 
   const email = getUserEmail(user)
@@ -138,12 +143,31 @@ export default function SettingsPage() {
   }, [activeOrg?.id, activeOrg?.name])
 
   useEffect(() => {
+    if (!activeOrg?.id || !orgSettings?.isOwner) {
+      setPlanBilling(null)
+      return
+    }
+    let cancelled = false
+    fetchPlanBillingStatusAction(activeOrg.id)
+      .then(status => {
+        if (!cancelled) setPlanBilling(status)
+      })
+      .catch(() => {
+        if (!cancelled) setPlanBilling(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeOrg?.id, orgSettings?.isOwner, orgSettings?.plan, orgSettings?.plan_status])
+
+  useEffect(() => {
     const billing = searchParams.get('billing')
     if (billing === 'success') {
       setBillingNotice(t('billing.success'))
       void reloadOrganizations({ silent: true })
       if (activeOrg?.id) {
         fetchOrganizationSettings(activeOrg.id).then(setOrgSettings).catch(() => {})
+        fetchPlanBillingStatusAction(activeOrg.id).then(setPlanBilling).catch(() => {})
       }
       router.replace('/dashboard/settings', { scroll: false })
     } else if (billing === 'canceled') {
@@ -160,7 +184,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ organizationId: activeOrg.id }),
+        body: JSON.stringify({ organizationId: activeOrg.id, billingCycle }),
       })
       const body = (await res.json()) as { url?: string; error?: string }
       if (!res.ok || !body.url) throw new Error(body.error || t('billing.checkoutError'))
@@ -468,10 +492,71 @@ export default function SettingsPage() {
             }}
           >
             {t('billing.currentPlan')}{' '}
-            <strong>{t(`plans.${orgSettings.plan}` as 'plans.free')}</strong>
+            <strong>{t(`plans.${orgSettings.plan}` as 'plans.trial')}</strong>
             {' · '}
             {t(`planStatus.${orgSettings.plan_status}` as 'planStatus.active')}
+            {planBilling?.trialExpired ? (
+              <>
+                {' · '}
+                <span style={{ color: 'var(--crit, #c0392b)' }}>{t('billing.trialExpired')}</span>
+              </>
+            ) : null}
+            {orgSettings.plan === 'trial' &&
+            orgSettings.trial_ends_at &&
+            !planBilling?.trialExpired ? (
+              <>
+                {' · '}
+                {t('billing.trialRemaining', {
+                  days: trialDaysRemaining(orgSettings.trial_ends_at),
+                })}
+              </>
+            ) : null}
+            {orgSettings.billing_cycle ? (
+              <>
+                {' · '}
+                {t(`billing.cycle.${orgSettings.billing_cycle}` as 'billing.cycle.monthly')}
+              </>
+            ) : null}
           </p>
+          {orgSettings.renewal_anchor && orgSettings.billing_cycle === 'annual' ? (
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+              {t('billing.renewalAnchor', { date: orgSettings.renewal_anchor })}
+            </p>
+          ) : null}
+          {planBilling?.isFoundingMember ? (
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+              {t('billing.foundingMember')}
+            </p>
+          ) : null}
+
+          {planBilling?.showDowngradeNotice ? (
+            <div
+              style={{
+                margin: '0 0 16px',
+                padding: '12px 14px',
+                borderRadius: 10,
+                border: '1px solid var(--hairline)',
+                background: 'var(--warn-soft, #fff8e6)',
+                fontSize: 13,
+                color: 'var(--fg-1)',
+                lineHeight: 1.5,
+              }}
+            >
+              <p style={{ margin: '0 0 8px', fontWeight: 600 }}>{t('billing.downgradeNoticeTitle')}</p>
+              <p style={{ margin: 0 }}>{t('billing.downgradeNoticeBody')}</p>
+              <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                {planBilling.overLimit.items.map(item => (
+                  <li key={item.resource}>
+                    {t(`billing.overLimit.${item.resource}` as 'billing.overLimit.lotes_activos', {
+                      current: item.current,
+                      limit: item.limit,
+                    })}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           <ul
             style={{
               margin: '0 0 20px',
@@ -482,13 +567,62 @@ export default function SettingsPage() {
             }}
           >
             <li>
-              {t('billing.freeLimits', {
-                lots: WINEMAKER_PLAN_LIMITS.free.maxLots,
-                docs: WINEMAKER_PLAN_LIMITS.free.maxDocumentsPerMonth,
+              {t('billing.regularLimits', {
+                lots: PLAN_LIMITS_CATALOG.regular.lotes_activos,
+                labels: PLAN_LIMITS_CATALOG.regular.etiquetas,
+                memory: PLAN_LIMITS_CATALOG.regular.memoria_meses,
               })}
             </li>
             <li>{t('billing.proLimits')}</li>
+            <li>{t('billing.enterpriseLimits')}</li>
           </ul>
+
+          {(orgSettings.plan === 'regular' ||
+            orgSettings.plan === 'trial' ||
+            orgSettings.plan_status === 'canceled') && (
+            <div style={{ marginBottom: 16 }}>
+              <p
+                style={{
+                  margin: '0 0 8px',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: '.08em',
+                  textTransform: 'uppercase',
+                  color: 'var(--fg-0)',
+                }}
+              >
+                {t('billing.cycleLabel')}
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {(['monthly', 'annual'] as const).map(cycle => (
+                  <button
+                    key={cycle}
+                    type="button"
+                    onClick={() => setBillingCycle(cycle)}
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border:
+                        billingCycle === cycle
+                          ? '1px solid var(--proof-accent, #6940A5)'
+                          : '1px solid var(--hairline)',
+                      background: billingCycle === cycle ? 'rgba(105, 64, 165, 0.08)' : '#fff',
+                      fontSize: 13,
+                      fontWeight: billingCycle === cycle ? 600 : 500,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t(`billing.cycle.${cycle}` as 'billing.cycle.monthly')}
+                  </button>
+                ))}
+              </div>
+              {billingCycle === 'annual' ? (
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+                  {t('billing.annualHint')}
+                </p>
+              ) : null}
+            </div>
+          )}
 
           {billingNotice && (
             <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--fg-1)' }}>{billingNotice}</p>
@@ -498,30 +632,38 @@ export default function SettingsPage() {
           )}
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {(orgSettings.plan === 'free' || orgSettings.plan_status === 'canceled') && (
+            {(orgSettings.plan === 'regular' ||
+              orgSettings.plan === 'trial' ||
+              orgSettings.plan_status === 'canceled') && (
               <Button type="button" loading={billingLoading} onClick={() => void startCheckout()}>
                 {t('billing.upgrade')}
               </Button>
             )}
             {orgSettings.hasStripeCustomer &&
-              orgSettings.plan !== 'free' &&
+              orgSettings.plan !== 'regular' &&
+              orgSettings.plan !== 'trial' &&
               orgSettings.plan_status !== 'canceled' && (
-                <button
-                  type="button"
-                  disabled={billingLoading}
-                  onClick={() => void openBillingPortal()}
-                  style={{
-                    padding: '10px 16px',
-                    border: '1px solid var(--hairline)',
-                    background: '#fff',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: billingLoading ? 'wait' : 'pointer',
-                    fontFamily: 'var(--font-display)',
-                  }}
-                >
-                  {t('billing.manage')}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    disabled={billingLoading}
+                    onClick={() => void openBillingPortal()}
+                    style={{
+                      padding: '10px 16px',
+                      border: '1px solid var(--hairline)',
+                      background: '#fff',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: billingLoading ? 'wait' : 'pointer',
+                      fontFamily: 'var(--font-display)',
+                    }}
+                  >
+                    {t('billing.manage')}
+                  </button>
+                  <p style={{ width: '100%', margin: '4px 0 0', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+                    {t('billing.downgradeHint')}
+                  </p>
+                </>
               )}
           </div>
         </section>

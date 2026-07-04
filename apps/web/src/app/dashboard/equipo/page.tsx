@@ -8,12 +8,15 @@ import { useTranslations } from 'next-intl'
 import { useOrganization } from '@/context/OrganizationContext'
 import {
   fetchTeamAccess,
+  fetchTeamInviteStatus,
   fetchTeamMembers,
   inviteTeamMember,
   type TeamMemberRow,
 } from '@/app/actions/equipo'
 import type { OrgMemberRole } from '@/lib/supabase/organization'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
+import { ProFeatureLock } from '@/components/proof/ProFeatureLock'
+import { INVITE_PRO_REQUIRED_CODE } from '@/lib/proof/plan-team-invites'
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -39,6 +42,7 @@ const input: React.CSSProperties = {
 
 export default function EquipoPage() {
   const t = useTranslations('dashboard.equipo')
+  const tLimits = useTranslations('dashboard.limits')
   const router = useRouter()
   const { activeOrg, loading: orgLoading } = useOrganization()
   const organizationId = activeOrg?.id ?? null
@@ -46,6 +50,9 @@ export default function EquipoPage() {
   const [loading, setLoading] = useState(true)
   const [members, setMembers] = useState<TeamMemberRow[]>([])
   const [canManage, setCanManage] = useState(false)
+  const [canInvite, setCanInvite] = useState(true)
+  const [inviteProRequired, setInviteProRequired] = useState(false)
+  const [inviteLimitCode, setInviteLimitCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -66,6 +73,16 @@ export default function EquipoPage() {
         return
       }
       setCanManage(access.canManage)
+      if (access.canManage) {
+        const inviteStatus = await fetchTeamInviteStatus(organizationId)
+        setCanInvite(inviteStatus.canInvite)
+        setInviteProRequired(Boolean(inviteStatus.proRequired))
+        setInviteLimitCode(inviteStatus.limitReachedCode ?? null)
+      } else {
+        setCanInvite(false)
+        setInviteProRequired(false)
+        setInviteLimitCode(null)
+      }
       const rows = await fetchTeamMembers(organizationId)
       setMembers(rows)
     } catch (err) {
@@ -97,7 +114,14 @@ export default function EquipoPage() {
       setShowForm(false)
       await loadMembers()
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : t('inviteError'))
+      const code = err instanceof Error ? err.message : 'inviteError'
+      const msg =
+        code === INVITE_PRO_REQUIRED_CODE
+          ? t('proRequiredBody')
+          : tLimits.has(code as 'limit_reached_usuarios')
+            ? tLimits(code as 'limit_reached_usuarios', { limit: 1 })
+            : t('inviteError')
+      setSaveError(msg)
     } finally {
       setSaving(false)
     }
@@ -122,25 +146,55 @@ export default function EquipoPage() {
       </header>
 
       {canManage ? (
-        <button
-          type="button"
-          onClick={() => setShowForm(v => !v)}
-          style={{
-            width: '100%',
-            marginBottom: 20,
-            padding: '12px 14px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--hairline)',
-            background: 'var(--panel)',
-            color: 'var(--fg-0)',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
-          }}
-        >
-          {t('invite')}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => canInvite && setShowForm(v => !v)}
+            disabled={!canInvite}
+            style={{
+              width: '100%',
+              marginBottom: inviteProRequired || inviteLimitCode ? 8 : 20,
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--hairline)',
+              background: 'var(--panel)',
+              color: canInvite ? 'var(--fg-0)' : 'var(--fg-3)',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: canInvite ? 'pointer' : 'not-allowed',
+              fontFamily: 'var(--font-display)',
+              opacity: canInvite ? 1 : 0.6,
+            }}
+          >
+            {inviteProRequired ? t('invitePro') : t('invite')}
+          </button>
+          {inviteProRequired ? (
+            <ProFeatureLock
+              title={t('proRequiredTitle')}
+              body={t('proRequiredBody')}
+              actionLabel={t('proRequiredAction')}
+            />
+          ) : null}
+          {!canInvite && !inviteProRequired && inviteLimitCode ? (
+            <p
+              style={{
+                margin: '0 0 20px',
+                padding: '12px 14px',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--hairline)',
+                background: 'var(--bg-1)',
+                color: 'var(--fg-2)',
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              {tLimits.has(inviteLimitCode as 'limit_reached_usuarios')
+                ? tLimits(inviteLimitCode as 'limit_reached_usuarios', { limit: 1 })
+                : t('inviteLimitReached')}{' '}
+              {tLimits('upgradeHint')}
+            </p>
+          ) : null}
+        </>
       ) : (
         <p
           style={{
@@ -158,7 +212,7 @@ export default function EquipoPage() {
         </p>
       )}
 
-      {showForm && canManage && (
+      {showForm && canManage && canInvite && (
         <form
           onSubmit={handleInvite}
           style={{
