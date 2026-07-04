@@ -39,7 +39,7 @@
       "subtitleHighlight": "operational memory",
       "body": "Upload documents and evidence in PROOF. Connect your external agent (Claude, Cursor, ChatGPT) via MCP to extract, query, and operate on your data.",
       "ctaDemo": "See demo",
-      "ctaStart": "Start free",
+      "ctaStart": "90 days, no card",
       "mockup": {
         "userLabel": "Aldo · Winemaker",
         "liveLabel": "Live",
@@ -220,31 +220,35 @@
     "pricing": {
       "eyebrow": "Pricing",
       "title": "Plans that grow with your operation",
+      "subtitle": "From $299/mo billed annually · 90-day trial, no card",
+      "trialNote": "90 days, no card · Regular limits",
       "plans": [
         {
-          "name": "Basic",
-          "price": "$0",
+          "name": "Regular",
+          "price": "$399",
           "period": "/mo",
-          "description": "Start giving memory to your operation.",
+          "priceNote": "From $299/mo billed annually ($3,588/yr)",
+          "description": "For a winery getting started. Harvest trial included.",
           "features": [
-            "Lot timeline",
-            "Manual logging and chat",
-            "1 user",
-            "90-day history"
+            "5 active lots",
+            "5 catalog labels",
+            "12 months of memory",
+            "1 user (owner)"
           ],
-          "cta": "Start free"
+          "cta": "90 days, no card"
         },
         {
           "name": "Pro",
-          "price": "$29",
+          "price": "$899",
           "period": "/mo",
+          "priceNote": "$666/mo billed annually ($7,990/yr)",
           "description": "For teams operating in real time.",
           "features": [
-            "Voice agent",
-            "Smart photo",
-            "Unlimited sub-users",
-            "Alerts and protocols",
-            "Full history"
+            "20 active lots",
+            "30 catalog labels",
+            "3 years of memory",
+            "Team: owner + winemaker + workers",
+            "Team chat"
           ],
           "cta": "Start with Pro",
           "highlighted": true
@@ -253,11 +257,13 @@
           "name": "Enterprise",
           "price": "Custom",
           "period": "",
+          "priceNote": "",
           "description": "For groups with multiple sites and integrations.",
           "features": [
-            "Multi-site",
-            "API and integrations",
-            "Dedicated SLA",
+            "Unlimited lots, labels, and memory",
+            "Unlimited users",
+            "Team chat",
+            "Bottle numbering",
             "Custom onboarding"
           ],
           "cta": "Contact us"
@@ -268,7 +274,7 @@
       "title": "Give your operation a memory.",
       "subtitle": "Every bottle tells a story. We track the proof.",
       "inputPlaceholder": "you@email.com",
-      "cta": "Start free"
+      "cta": "90 days, no card"
     },
     "footer": {
       "tagline": "Operational memory for liquid production.",
@@ -283,9 +289,9 @@
     },
     "upgradeModal": {
       "title": "This feature is part of the Pro plan",
-      "body": "Voice agent, smart photo, and sub-users included from $29/mo.",
+      "body": "Team chat, more lots, and extended memory from $899/mo ($666/mo billed annually).",
       "seePlans": "See plans",
-      "stayBasic": "Stay on Basic"
+      "stayBasic": "Stay on Regular"
     }
   },
   "about": {
@@ -650,11 +656,21 @@
       "distillerCellar": "Cellar",
       "distillerSales": "Sales",
       "winemakerLots": "Lots",
+      "winemakerCellar": "Cellar labels",
       "winemakerSuppliers": "Suppliers",
       "winemakerDocuments": "Documents",
       "winemakerExpenses": "Expenses",
       "winemakerAgenda": "Agenda",
+      "team": "My team",
+      "connectAgent": "Connect agent",
       "settings": "Settings"
+    },
+    "rail": {
+      "groups": {
+        "operacion": "Operations",
+        "equipo": "Team",
+        "configuracion": "Settings"
+      }
     },
     "pageTitles": {
       "home": "Home",
@@ -669,6 +685,7 @@
       "labels": "Labels",
       "clients": "Clients",
       "agent": "PROOF",
+      "connect": "Connect agent",
       "warehouse": "Warehouse",
       "lots": "Lots",
       "bottling": "Bottling",
@@ -682,10 +699,12 @@
       "distillerSales": "Sales",
       "distillerLotDetail": "Lot detail",
       "winemakerLots": "Lots",
+      "winemakerCellar": "Cellar labels",
       "winemakerSuppliers": "Suppliers",
       "winemakerDocuments": "Documents",
       "winemakerExpenses": "Expenses",
       "winemakerAgenda": "Agenda",
+      "teamChat": "Team chat",
       "team": "My team",
       "fallback": "PROOF"
     },
@@ -769,17 +788,39 @@
       "billing": {
         "title": "Billing",
         "currentPlan": "Current plan:",
-        "freeLimits": "Free: up to {lots} lots, {docs} documents/month",
-        "proLimits": "Pro: unlimited lots and documents + invite team",
+        "regularLimits": "Regular / trial: {lots} active lots, {labels} labels, {memory} months memory",
+        "proLimits": "Pro: more lots, labels, and memory + invite team + cellar chat",
+        "enterpriseLimits": "Enterprise: unlimited limits + physical bottle numbering",
         "upgrade": "Upgrade to Pro",
         "manage": "Manage subscription",
         "success": "Subscription activated. It may take a few seconds to update.",
         "canceled": "Checkout canceled.",
         "checkoutError": "Could not start checkout",
         "portalError": "Could not open portal",
-        "genericError": "Billing error"
+        "genericError": "Billing error",
+        "cycleLabel": "Billing cycle",
+        "cycle": {
+          "monthly": "Monthly",
+          "annual": "Annual (pre-harvest)"
+        },
+        "annualHint": "The first annual cycle is prorated and renews on August 1 (pre-harvest).",
+        "trialRemaining": "{days, plural, =0 {Trial expired} one {# trial day left} other {# trial days left}}",
+        "trialExpired": "Trial expired",
+        "renewalAnchor": "Annual renewal: {date}",
+        "downgradeHint": "To change or cancel your plan, use the Stripe portal. Your data and history stay accessible — only new creation beyond Regular limits is blocked.",
+        "downgradeNoticeTitle": "Above Regular plan limits",
+        "downgradeNoticeBody": "After downgrade you keep everything created. You cannot add more until you upgrade or reduce usage:",
+        "foundingMember": "Founding cohort — lifetime frozen annual price when billed annually.",
+        "overLimit": {
+          "lotes_activos": "{current} active lots (Regular limit: {limit})",
+          "etiquetas": "{current} labels (Regular limit: {limit})",
+          "usuarios": "{current} members (Regular limit: {limit})",
+          "memoria": "{current} months of memory (Regular limit: {limit})"
+        }
       },
       "plans": {
+        "regular": "Regular",
+        "trial": "Harvest trial",
         "free": "Free",
         "pro": "Pro",
         "enterprise": "Enterprise"
@@ -839,6 +880,21 @@
       "saving": "Saving...",
       "saved": "Saved"
     },
+    "teamChat": {
+      "title": "Team chat",
+      "subtitle": "Winery general channel",
+      "lotThreadTitle": "Lot thread",
+      "lotThreadHint": "Messages anchored to this lot",
+      "loading": "Loading messages…",
+      "empty": "No messages yet. Send the first one.",
+      "placeholder": "Message the team…",
+      "send": "Send",
+      "you": "You",
+      "member": "Member",
+      "toggle": "Show or hide team chat",
+      "unread": "{count, plural, one {# unread message} other {# unread messages}}",
+      "upgradeHint": "Team chat is available on Pro or Enterprise plans."
+    },
     "equipo": {
       "title": "👥 My team",
       "description": "Members of {org}. Owner and admin can invite with admin, member, or viewer role.",
@@ -873,7 +929,19 @@
       "noName": "No name",
       "submit": "Send invitation",
       "submitting": "Sending…",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "inviteLimitReached": "Team member limit reached for your plan.",
+      "invitePro": "🔒 Invite — Available on Pro",
+      "proRequiredTitle": "Available on Pro",
+      "proRequiredBody": "Inviting admins, members, or viewers requires Pro or Enterprise. Your data and history are never deleted.",
+      "proRequiredAction": "View plans and upgrade"
+    },
+    "limits": {
+      "limit_reached_lotes_activos": "You've reached the active lot limit for your plan ({limit}). Upgrade to add more.",
+      "limit_reached_etiquetas": "You've reached the label catalog limit for your plan ({limit}). Upgrade to add more.",
+      "limit_reached_usuarios": "Your plan allows {limit} team member. Upgrade to Pro to invite more people.",
+      "limit_reached_memoria": "Your plan's memory is full ({limit} months). Upgrade to keep recording new events.",
+      "upgradeHint": "Upgrade to Pro or Enterprise for higher limits."
     }
   },
   "distributor": {
@@ -1575,6 +1643,13 @@
     "common": {
       "loading": "Loading…"
     },
+    "salidaTipo": {
+      "venta": "Sale",
+      "degustacion": "Tasting",
+      "autoconsumo": "House use",
+      "merma": "Loss",
+      "ajuste": "Adjustment"
+    },
     "lotStatus": {
       "fermentation": "Fermentation",
       "aging": "Aging",
@@ -1675,6 +1750,14 @@
       "bottling": "Bottling",
       "bottled": "Bottled"
     },
+    "etapa": {
+      "cosecha": "Harvest",
+      "analisis": "Analysis",
+      "fermentacion": "Fermentation",
+      "malolactica": "Malolactic",
+      "crianza": "Aging",
+      "embotellado": "Bottling"
+    },
     "home": {
       "badge": "🍇 Winemaker",
       "defaultFirstName": "Aldo",
@@ -1715,6 +1798,41 @@
         "staleSubtextWithEvent": "Last event {days} days ago",
         "staleSubtextNoEvent": "No events recorded",
         "viewLot": "View lot"
+      },
+      "desktop": {
+        "healthOk": "All clear",
+        "healthAttention": "{count, plural, one {# lot needs attention} other {# lots need attention}}",
+        "agentConnected": "Agent connected",
+        "connectAgent": "Connect agent",
+        "pipelineTitle": "Winery pipeline",
+        "pipelineHint": "{count, plural, =0 {No active lots} one {# active lot} other {# active lots}}",
+        "pipelinePlaceholder": "Pipeline — issue A3",
+        "agentCard": "External agent",
+        "agentDisconnected": "No external agent configured",
+        "tokenExpires": "Token expires {date}",
+        "tokenExpired": "Token expired — renew in Connect agent",
+        "lastToolCall": "Last tool: {tool} · {when}",
+        "noToolCallsYet": "No MCP tool calls recorded yet",
+        "manageConnection": "Manage connection",
+        "moreTasks": "+{count} more"
+      },
+      "planLimits": {
+        "lotesLabel": "Active lots",
+        "memoriaLabel": "Memory",
+        "lotesApproaching": "{current} of {limit} active lots — running low on capacity",
+        "lotesReached": "Active lot limit reached ({current}/{limit}) — close a lot or upgrade",
+        "memoriaApproaching": "Memory {current} of {limit} months — upgrade before it fills up",
+        "memoriaReached": "Memory full ({limit} months) — history stays visible; new events blocked",
+        "upgrade": "View plans"
+      },
+      "pipeline": {
+        "emptyStage": "—",
+        "noContainer": "—",
+        "noMeasurement": "—",
+        "daysSinceRecord": "{days, plural, =0 {Recorded today} one {Last record # day ago} other {Last record # days ago}}",
+        "alertTemp": "Temp",
+        "alertStale": "Stale",
+        "alertBottling": "Bottle"
       }
     },
     "canvas": {
@@ -1891,6 +2009,109 @@
         "notAuthenticated": "Not authenticated",
         "noOrganization": "No organization",
         "loadFailed": "Failed to load lot"
+      },
+      "bottling": {
+        "loading": "Loading bottling form…",
+        "title": "Register bottling",
+        "subtitle": "Close the lot and create the finished-goods stock line.",
+        "etiquetaLegend": "Label",
+        "etiquetaExisting": "Existing",
+        "etiquetaNew": "New",
+        "newEtiquetaLabel": "Label name",
+        "newEtiquetaPlaceholder": "Nebbiolo Reserva",
+        "anadaLabel": "Vintage",
+        "formatoLabel": "Format",
+        "formatoCustom": "Other…",
+        "formatoCustomLabel": "Custom format",
+        "botellasPorCajaLabel": "Bottles per case",
+        "botellasPorCajaOption": "{count} bottles",
+        "botellasProducidasLabel": "Total bottles produced",
+        "preview": "{botellas} bottles · {cajas} cases of {porCaja} + {sueltas} loose",
+        "submit": "Confirm bottling",
+        "completedTitle": "Bottling recorded",
+        "completedBody": "This lot already has cellar stock. Register exits from",
+        "completedLink": "Cellar labels",
+        "notReady": "The lot must be at least in aging before bottling can be registered.",
+        "errors": {
+          "loadFailed": "Could not load the form",
+          "submitFailed": "Could not register bottling",
+          "not_authenticated": "Not authenticated",
+          "no_organization": "No organization",
+          "missing_lot_id": "Missing lot",
+          "missing_etiqueta": "Choose or create a label",
+          "invalid_anada": "Invalid vintage",
+          "invalid_formato": "Format required",
+          "invalid_botellas_por_caja": "Choose 6, 9, or 12 bottles per case",
+          "invalid_botellas_producidas": "Enter how many bottles were produced",
+          "lot_not_found": "Lot not found",
+          "lot_not_active": "Lot is not active",
+          "lot_stage_too_early": "Lot is not ready to bottle yet",
+          "lot_already_bottled": "This lot already has stock registered",
+          "invalid_etiqueta": "Invalid label",
+          "etiqueta_create_failed": "Could not create label",
+          "existencia_create_failed": "Could not create stock line",
+          "event_create_failed": "Could not record bottling event",
+          "limit_reached_etiquetas": "Label catalog limit reached for your plan",
+          "limit_reached_memoria": "Memory limit reached — upgrade to record more events"
+        }
+      }
+    },
+    "bodega": {
+      "title": "Cellar labels",
+      "subtitle": "Finished goods grouped by label — always produced, consumed, and available counts.",
+      "loading": "Loading inventory…",
+      "filterAnada": "Vintage",
+      "filterFormato": "Format",
+      "clearFilters": "Clear filters",
+      "empty": "No stock lines yet. Register bottling from a lot detail page.",
+      "emptyFiltered": "No stock lines match the filters.",
+      "emptyHint": "Go to the pipeline on",
+      "emptyLink": "Home",
+      "groupTotal": "{count} available",
+      "rowMeta": "{anada} · {formato} · {lote}",
+      "progress": "Bottle N° {consumidas} of {producidas} · {disponibles} left",
+      "unitsBotellas": "{count} bottles",
+      "unitsFullCases": "{botellas} bottles · {cajas} cases of {porCaja}",
+      "unitsBrokenCases": "{cajas} cases + {sueltas} loose",
+      "lowStockBadge": "Low stock",
+      "registerSalida": "Register exit",
+      "salida": {
+        "title": "Register exit",
+        "tipoLabel": "Exit type",
+        "unidadLabel": "Unit",
+        "unidadCajas": "Cases",
+        "unidadBotellas": "Bottles",
+        "unidadCajasShort": "cases",
+        "unidadBotellasShort": "bottles",
+        "cantidadLabel": "Quantity",
+        "conversionPreview": "{cantidad} {unidad} of {porCaja} = {botellas} bottles · {quedan} left",
+        "conversionOverStock": "Only {disponibles} bottles available — {cantidad} {unidad} would be {botellas} bottles",
+        "rangoLegend": "Physical numbering",
+        "rangoInicioLabel": "First bottle",
+        "rangoFinLabel": "Last bottle",
+        "rangoHint": "Range {inicio}–{fin} (next available pre-filled)",
+        "submit": "Confirm exit",
+        "cancel": "Cancel",
+        "errors": {
+          "submitFailed": "Could not register exit",
+          "not_authenticated": "Not authenticated",
+          "no_organization": "No organization",
+          "missing_existencia_id": "Missing stock line",
+          "invalid_tipo": "Invalid exit type",
+          "invalid_cantidad": "Invalid quantity",
+          "invalid_unidad": "Invalid unit",
+          "invalid_rango": "Invalid range",
+          "existencia_not_found": "Stock line not found",
+          "insufficient_stock": "Insufficient stock",
+          "rango_not_allowed": "Numbering not available on your plan",
+          "rango_overlap": "Range overlaps a previous exit",
+          "rango_required": "Range required",
+          "salida_create_failed": "Could not create exit"
+        }
+      },
+      "errors": {
+        "loadFailed": "Failed to load inventory",
+        "noOrganization": "No winemaker organization"
       }
     }
   },
@@ -2137,16 +2358,30 @@
     "mcpUrl": "MCP server URL",
     "copyUrl": "Copy URL",
     "copyToken": "Copy token",
+    "downloadToken": "Download token",
+    "tokenDownloaded": "Downloaded",
+    "copyCursorConfig": "Copy Cursor config",
+    "copyClaudeConfig": "Copy Claude config",
     "copied": "Copied",
+    "testConnection": "Test connection",
+    "testing": "Testing…",
+    "tokenExpiry": "Token expires {when}",
+    "tokenExpired": "Token expired — copy a fresh one before connecting",
+    "test": {
+      "ok": "Connection OK — profile {profile}",
+      "error": "Test failed: {detail}",
+      "noProfile": "No active profile to connect."
+    },
     "oauthHint": "OAuth metadata:",
     "oauthLink": "protected resource",
     "clients": {
       "cursor": "Cursor",
       "cursorHint": "Add to MCP settings (~/.cursor/mcp.json):",
       "claude": "Claude Desktop",
-      "claudeStep1": "Install mcp-remote or use Streamable HTTP if your build supports it.",
-      "claudeStep2": "Paste the MCP URL and your Supabase token in Authorization.",
-      "claudeStep3": "Restart Claude and confirm PROOF tools appear.",
+      "claudeStep1": "In PROOF click «Download token» (proof-mcp-token.txt file).",
+      "claudeStep2": "In Terminal: npm run setup:claude-mcp -- --file ~/Downloads/proof-mcp-token.txt",
+      "claudeStep3": "Quit Claude completely (Cmd+Q) and reopen it.",
+      "claudeStep4": "You should see PROOF tools (hammer icon) in chat.",
       "chatgpt": "ChatGPT / others",
       "chatgptHint": "Any MCP client with HTTP + Bearer token can use the same URL."
     },
@@ -2167,9 +2402,11 @@
       "list_pedidos": "Recent orders with client name.",
       "get_credito_resumen": "Accounts receivable totals.",
       "list_ordenes_compra": "Pending purchase orders.",
-      "list_lotes": "Winery wine lots.",
+      "list_lotes": "Active lots with pipeline etapa, dias_sin_registro, and attention flags.",
       "list_documentos": "Winemaker tickets and invoices.",
-      "get_resumen_bodega": "Winery KPIs.",
+      "get_resumen_bodega": "Winery KPIs, health, per-stage counts, and lots needing attention.",
+      "list_etiquetas": "Cellar labels with produced, consumed, and available per stock line.",
+      "list_mensajes": "Team chat messages; filter by lot or timestamp.",
       "list_corridas": "Bottling runs.",
       "list_viajes": "Agave purchase trips.",
       "list_lotes_distiller": "Mezcal production lots.",
@@ -2181,7 +2418,12 @@
       "registrar_pago_cliente": "Register client payment.",
       "editar_sku": "Edit SKU price or category.",
       "get_cobro_context": "Structured data to draft collection messages.",
-      "import_winemaker_ticket": "Import ticket from extraction JSON."
+      "import_winemaker_ticket": "Import ticket from extraction JSON.",
+      "registrar_salida": "Register finished-goods exit (cases or bottles).",
+      "enviar_mensaje": "Post a team chat message (optional lote_id).",
+      "crear_lote": "Create an active pipeline lot (plan lot limit applies).",
+      "registrar_embotellado": "Register bottling and create cellar stock (label + memory limits apply).",
+      "cambiar_etapa_lote": "Move a lot to a new pipeline stage (memory limit applies)."
     },
     "prompts": {
       "distributor": {
@@ -2191,7 +2433,8 @@
       },
       "winemaker": {
         "summary": "Summarize my winery status this month.",
-        "ticket": "Import this CFDI ticket and classify line items."
+        "ticket": "Import this CFDI ticket and classify line items.",
+        "labels": "Which labels do I have available in the cellar?"
       },
       "distiller": {
         "runs": "Which bottling runs are active?",
@@ -2205,9 +2448,18 @@
       "credit": "Credit",
       "documents": "Documents",
       "lots": "Lots",
+      "cellarLabels": "Cellar labels",
       "expenses": "Expenses",
       "purchases": "Purchases",
       "production": "Production"
+    },
+    "ownerCta": {
+      "title": "Connect external agent",
+      "hint": "Use Claude Desktop or Cursor with your PROOF data via MCP.",
+      "action": "Open connection",
+      "connectedTitle": "External agent ready",
+      "connectedHint": "Use Claude Desktop to query your winery. This dashboard stays the same — operate from Claude chat.",
+      "connectedAction": "Refresh token or view tools"
     }
   },
   "agent": {

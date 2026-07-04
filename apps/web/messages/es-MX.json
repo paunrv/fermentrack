@@ -39,7 +39,7 @@
       "subtitleHighlight": "memoria operativa",
       "body": "Sube documentos y evidencia en PROOF. Conecta tu agente externo (Claude, Cursor, ChatGPT) vía MCP para extraer, consultar y operar tus datos.",
       "ctaDemo": "Ver demo",
-      "ctaStart": "Empieza gratis",
+      "ctaStart": "90 días sin tarjeta",
       "mockup": {
         "userLabel": "Aldo · Winemaker",
         "liveLabel": "En vivo",
@@ -220,31 +220,35 @@
     "pricing": {
       "eyebrow": "Precios",
       "title": "Planes que crecen con tu operación",
+      "subtitle": "Desde $299/mes pagando anual · trial 90 días sin tarjeta",
+      "trialNote": "90 días sin tarjeta · límites Regular",
       "plans": [
         {
-          "name": "Básico",
-          "price": "$0",
+          "name": "Regular",
+          "price": "$399",
           "period": "/mes",
-          "description": "Para empezar a dar memoria a tu operación.",
+          "priceNote": "Desde $299/mes pagando anual ($3,588/año)",
+          "description": "Para una bodega en arranque. Trial de vendimia incluido.",
           "features": [
-            "Timeline de lotes",
-            "Registro manual y chat",
-            "1 usuario",
-            "Historial 90 días"
+            "5 lotes activos",
+            "5 etiquetas en catálogo",
+            "12 meses de memoria",
+            "1 usuario (owner)"
           ],
-          "cta": "Empieza gratis"
+          "cta": "90 días sin tarjeta"
         },
         {
           "name": "Pro",
-          "price": "$29",
+          "price": "$899",
           "period": "/mes",
+          "priceNote": "$666/mes pagando anual ($7,990/año)",
           "description": "Para equipos que operan en tiempo real.",
           "features": [
-            "Agente de voz",
-            "Foto inteligente",
-            "Subusuarios ilimitados",
-            "Alertas y protocolos",
-            "Historial completo"
+            "20 lotes activos",
+            "30 etiquetas en catálogo",
+            "3 años de memoria",
+            "Equipo: owner + winemaker + workers",
+            "Chat de equipo"
           ],
           "cta": "Empezar con Pro",
           "highlighted": true
@@ -253,11 +257,13 @@
           "name": "Enterprise",
           "price": "Custom",
           "period": "",
-          "description": "Para grupos con múltiples sitios y integraciones.",
+          "priceNote": "",
+          "description": "Para grupos con múltiples sitios e integraciones.",
           "features": [
-            "Multi-sitio",
-            "API e integraciones",
-            "SLA dedicado",
+            "Lotes, etiquetas y memoria ilimitados",
+            "Usuarios ilimitados",
+            "Chat de equipo",
+            "Numeración de botellas",
             "Onboarding personalizado"
           ],
           "cta": "Contactar"
@@ -268,7 +274,7 @@
       "title": "Dale memoria a tu operación.",
       "subtitle": "Every bottle tells a story. We track the proof.",
       "inputPlaceholder": "tu@email.com",
-      "cta": "Empieza gratis"
+      "cta": "90 días sin tarjeta"
     },
     "footer": {
       "tagline": "Memoria operativa para producción líquida.",
@@ -283,9 +289,9 @@
     },
     "upgradeModal": {
       "title": "Esta función es parte del plan Pro",
-      "body": "Agente de voz, foto inteligente y subusuarios incluidos desde $29/mes.",
+      "body": "Chat de equipo, más lotes y memoria extendida desde $899/mes ($666/mes pagando anual).",
       "seePlans": "Ver planes",
-      "stayBasic": "Seguir en básico"
+      "stayBasic": "Seguir en Regular"
     }
   },
   "about": {
@@ -650,11 +656,21 @@
       "distillerCellar": "Bodega",
       "distillerSales": "Ventas",
       "winemakerLots": "Lotes",
+      "winemakerCellar": "Etiquetas en bodega",
       "winemakerSuppliers": "Proveedores",
       "winemakerDocuments": "Documentos",
       "winemakerExpenses": "Gastos",
       "winemakerAgenda": "Agenda",
+      "team": "Mi equipo",
+      "connectAgent": "Conectar agente",
       "settings": "Configuración"
+    },
+    "rail": {
+      "groups": {
+        "operacion": "Operación",
+        "equipo": "Equipo",
+        "configuracion": "Configuración"
+      }
     },
     "pageTitles": {
       "home": "Inicio",
@@ -669,6 +685,7 @@
       "labels": "Etiquetas",
       "clients": "Clientes",
       "agent": "PROOF",
+      "connect": "Conectar agente",
       "warehouse": "Almacén",
       "lots": "Lotes",
       "bottling": "Embotellado",
@@ -682,10 +699,12 @@
       "distillerSales": "Ventas",
       "distillerLotDetail": "Detalle lote",
       "winemakerLots": "Lotes",
+      "winemakerCellar": "Etiquetas en bodega",
       "winemakerSuppliers": "Proveedores",
       "winemakerDocuments": "Documentos",
       "winemakerExpenses": "Gastos",
       "winemakerAgenda": "Agenda",
+      "teamChat": "Chat de equipo",
       "team": "Mi equipo",
       "fallback": "PROOF"
     },
@@ -769,17 +788,39 @@
       "billing": {
         "title": "Billing",
         "currentPlan": "Plan actual:",
-        "freeLimits": "Free: hasta {lots} lotes, {docs} documentos/mes",
-        "proLimits": "Pro: lotes y documentos ilimitados + invitar equipo",
+        "regularLimits": "Regular / trial: {lots} lotes activos, {labels} etiquetas, {memory} meses de memoria",
+        "proLimits": "Pro: más lotes, etiquetas y memoria + invitar equipo + chat de bodega",
+        "enterpriseLimits": "Enterprise: límites ilimitados + numeración física de botellas",
         "upgrade": "Upgrade a Pro",
         "manage": "Gestionar suscripción",
         "success": "Suscripción activada. Puede tardar unos segundos en reflejarse.",
         "canceled": "Checkout cancelado.",
         "checkoutError": "No se pudo iniciar el checkout",
         "portalError": "No se pudo abrir el portal",
-        "genericError": "Error de billing"
+        "genericError": "Error de billing",
+        "cycleLabel": "Ciclo de facturación",
+        "cycle": {
+          "monthly": "Mensual",
+          "annual": "Anual (pre-vendimia)"
+        },
+        "annualHint": "El primer ciclo anual se prorratea y renueva el 1 de agosto (pre-vendimia).",
+        "trialRemaining": "{days, plural, =0 {Trial expirado} one {# día de trial restante} other {# días de trial restantes}}",
+        "trialExpired": "Trial expirado",
+        "renewalAnchor": "Renovación anual: {date}",
+        "downgradeHint": "Para cambiar o cancelar tu plan, usa el portal de Stripe. Tus datos e historial permanecen accesibles; solo se bloquea crear más allá del límite Regular.",
+        "downgradeNoticeTitle": "Por encima del límite Regular",
+        "downgradeNoticeBody": "Tras el downgrade conservas todo lo creado. No podrás agregar más hasta volver a Pro o reducir uso:",
+        "foundingMember": "Cohorte fundadora — precio anual congelado de por vida al pagar anual.",
+        "overLimit": {
+          "lotes_activos": "{current} lotes activos (límite Regular: {limit})",
+          "etiquetas": "{current} etiquetas (límite Regular: {limit})",
+          "usuarios": "{current} miembros (límite Regular: {limit})",
+          "memoria": "{current} meses de memoria (límite Regular: {limit})"
+        }
       },
       "plans": {
+        "regular": "Regular",
+        "trial": "Trial vendimia",
         "free": "Gratuito",
         "pro": "Pro",
         "enterprise": "Enterprise"
@@ -839,6 +880,21 @@
       "saving": "Guardando...",
       "saved": "Guardado"
     },
+    "teamChat": {
+      "title": "Chat de equipo",
+      "subtitle": "Canal general de la bodega",
+      "lotThreadTitle": "Hilo del lote",
+      "lotThreadHint": "Mensajes anclados a este lote",
+      "loading": "Cargando mensajes…",
+      "empty": "Aún no hay mensajes. Escribe el primero.",
+      "placeholder": "Mensaje al equipo…",
+      "send": "Enviar",
+      "you": "Tú",
+      "member": "Miembro",
+      "toggle": "Mostrar u ocultar chat de equipo",
+      "unread": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}",
+      "upgradeHint": "El chat de equipo está disponible en plan Pro o Enterprise."
+    },
     "equipo": {
       "title": "👥 Mi equipo",
       "description": "Miembros de {org}. Owner y admin pueden invitar con rol admin, member o viewer.",
@@ -873,7 +929,19 @@
       "noName": "Sin nombre",
       "submit": "Enviar invitación",
       "submitting": "Enviando…",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "inviteLimitReached": "Límite de miembros alcanzado en tu plan.",
+      "invitePro": "🔒 Invitar — Disponible en Pro",
+      "proRequiredTitle": "Disponible en Pro",
+      "proRequiredBody": "Invitar admin, member o viewer requiere plan Pro o Enterprise. Tu historial y datos no se pierden.",
+      "proRequiredAction": "Ver planes y upgrade"
+    },
+    "limits": {
+      "limit_reached_lotes_activos": "Alcanzaste el límite de lotes activos de tu plan ({limit}). Mejora el plan para agregar más.",
+      "limit_reached_etiquetas": "Alcanzaste el límite de etiquetas de tu plan ({limit}). Mejora el plan para agregar más.",
+      "limit_reached_usuarios": "Tu plan permite {limit} miembro en el equipo. Mejora a Pro para invitar más personas.",
+      "limit_reached_memoria": "La memoria de tu plan está llena ({limit} meses). Mejora el plan para seguir registrando eventos.",
+      "upgradeHint": "Mejora a Pro o Enterprise para límites más altos."
     }
   },
   "distributor": {
@@ -1575,6 +1643,13 @@
     "common": {
       "loading": "Cargando…"
     },
+    "salidaTipo": {
+      "venta": "Venta",
+      "degustacion": "Degustación",
+      "autoconsumo": "Autoconsumo",
+      "merma": "Merma",
+      "ajuste": "Ajuste"
+    },
     "lotStatus": {
       "fermentation": "Fermentación",
       "aging": "Envejecimiento",
@@ -1675,6 +1750,14 @@
       "bottling": "Embotellado",
       "bottled": "Embotellado"
     },
+    "etapa": {
+      "cosecha": "Cosecha",
+      "analisis": "Análisis",
+      "fermentacion": "Fermentación",
+      "malolactica": "Maloláctica",
+      "crianza": "Crianza",
+      "embotellado": "Embotellado"
+    },
     "home": {
       "badge": "🍇 Winemaker",
       "defaultFirstName": "Aldo",
@@ -1715,6 +1798,41 @@
         "staleSubtextWithEvent": "Último evento hace {days} días",
         "staleSubtextNoEvent": "Sin eventos registrados",
         "viewLot": "Ver lote"
+      },
+      "desktop": {
+        "healthOk": "Todo en orden",
+        "healthAttention": "{count, plural, one {# lote requiere atención} other {# lotes requieren atención}}",
+        "agentConnected": "Agente conectado",
+        "connectAgent": "Conectar agente",
+        "pipelineTitle": "Pipeline de bodega",
+        "pipelineHint": "{count, plural, =0 {Sin lotes activos} one {# lote activo} other {# lotes activos}}",
+        "pipelinePlaceholder": "Pipeline — issue A3",
+        "agentCard": "Agente externo",
+        "agentDisconnected": "Sin agente externo configurado",
+        "tokenExpires": "Token expira {date}",
+        "tokenExpired": "Token expirado — renueva en Conectar agente",
+        "lastToolCall": "Última tool: {tool} · {when}",
+        "noToolCallsYet": "Aún no hay llamadas MCP registradas",
+        "manageConnection": "Gestionar conexión",
+        "moreTasks": "+{count} más"
+      },
+      "planLimits": {
+        "lotesLabel": "Lotes activos",
+        "memoriaLabel": "Memoria",
+        "lotesApproaching": "{current} de {limit} lotes activos — queda poco espacio",
+        "lotesReached": "Límite de lotes activos ({current}/{limit}) — cierra un lote o mejora el plan",
+        "memoriaApproaching": "Memoria {current} de {limit} meses — mejora el plan antes de que se llene",
+        "memoriaReached": "Memoria llena ({limit} meses) — el historial sigue visible; nuevos eventos bloqueados",
+        "upgrade": "Ver planes"
+      },
+      "pipeline": {
+        "emptyStage": "—",
+        "noContainer": "—",
+        "noMeasurement": "—",
+        "daysSinceRecord": "{days, plural, =0 {Registro hoy} one {Último registro hace # día} other {Último registro hace # días}}",
+        "alertTemp": "Temp",
+        "alertStale": "Sin registro",
+        "alertBottling": "Embotellar"
       }
     },
     "canvas": {
@@ -1891,6 +2009,109 @@
         "notAuthenticated": "No autenticado",
         "noOrganization": "Sin organización",
         "loadFailed": "Error al cargar el lote"
+      },
+      "bottling": {
+        "loading": "Cargando formulario de embotellado…",
+        "title": "Registrar embotellado",
+        "subtitle": "Cierra el lote y crea la línea de existencia en bodega.",
+        "etiquetaLegend": "Etiqueta",
+        "etiquetaExisting": "Existente",
+        "etiquetaNew": "Nueva",
+        "newEtiquetaLabel": "Nombre de etiqueta",
+        "newEtiquetaPlaceholder": "Nebbiolo Reserva",
+        "anadaLabel": "Añada",
+        "formatoLabel": "Formato",
+        "formatoCustom": "Otro…",
+        "formatoCustomLabel": "Formato personalizado",
+        "botellasPorCajaLabel": "Botellas por caja",
+        "botellasPorCajaOption": "{count} botellas",
+        "botellasProducidasLabel": "Total botellas producidas",
+        "preview": "{botellas} botellas · {cajas} cajas de {porCaja} + {sueltas} sueltas",
+        "submit": "Confirmar embotellado",
+        "completedTitle": "Embotellado registrado",
+        "completedBody": "Este lote ya tiene existencia en bodega. Las salidas se registran desde",
+        "completedLink": "Etiquetas en bodega",
+        "notReady": "El lote debe estar al menos en crianza para registrar embotellado.",
+        "errors": {
+          "loadFailed": "No se pudo cargar el formulario",
+          "submitFailed": "No se pudo registrar el embotellado",
+          "not_authenticated": "No autenticado",
+          "no_organization": "Sin organización",
+          "missing_lot_id": "Falta el lote",
+          "missing_etiqueta": "Elige o crea una etiqueta",
+          "invalid_anada": "Añada inválida",
+          "invalid_formato": "Formato requerido",
+          "invalid_botellas_por_caja": "Elige 6, 9 o 12 botellas por caja",
+          "invalid_botellas_producidas": "Indica cuántas botellas se produjeron",
+          "lot_not_found": "Lote no encontrado",
+          "lot_not_active": "El lote no está activo",
+          "lot_stage_too_early": "El lote aún no está listo para embotellar",
+          "lot_already_bottled": "Este lote ya tiene existencia registrada",
+          "invalid_etiqueta": "Etiqueta no válida",
+          "etiqueta_create_failed": "No se pudo crear la etiqueta",
+          "existencia_create_failed": "No se pudo crear la existencia",
+          "event_create_failed": "No se pudo registrar el evento de embotellado",
+          "limit_reached_etiquetas": "Límite de etiquetas alcanzado en tu plan",
+          "limit_reached_memoria": "Memoria llena — mejora el plan para registrar más eventos"
+        }
+      }
+    },
+    "bodega": {
+      "title": "Etiquetas en bodega",
+      "subtitle": "Producto embotellado agrupado por etiqueta — siempre producidas, consumidas y disponibles.",
+      "loading": "Cargando inventario…",
+      "filterAnada": "Añada",
+      "filterFormato": "Formato",
+      "clearFilters": "Quitar filtros",
+      "empty": "Aún no hay existencias. Registra un embotellado desde el detalle de un lote.",
+      "emptyFiltered": "Ninguna existencia coincide con los filtros.",
+      "emptyHint": "Ve al pipeline en",
+      "emptyLink": "Inicio",
+      "groupTotal": "{count} disponibles",
+      "rowMeta": "{anada} · {formato} · {lote}",
+      "progress": "Botella N° {consumidas} de {producidas} · quedan {disponibles}",
+      "unitsBotellas": "{count} botellas",
+      "unitsFullCases": "{botellas} botellas · {cajas} cajas de {porCaja}",
+      "unitsBrokenCases": "{cajas} cajas + {sueltas} sueltas",
+      "lowStockBadge": "Stock bajo",
+      "registerSalida": "Registrar salida",
+      "salida": {
+        "title": "Registrar salida",
+        "tipoLabel": "Tipo de salida",
+        "unidadLabel": "Unidad",
+        "unidadCajas": "Cajas",
+        "unidadBotellas": "Botellas",
+        "unidadCajasShort": "cajas",
+        "unidadBotellasShort": "botellas",
+        "cantidadLabel": "Cantidad",
+        "conversionPreview": "{cantidad} {unidad} de {porCaja} = {botellas} botellas · quedarán {quedan}",
+        "conversionOverStock": "Solo hay {disponibles} botellas — {cantidad} {unidad} serían {botellas} botellas",
+        "rangoLegend": "Numeración física",
+        "rangoInicioLabel": "Botella inicial",
+        "rangoFinLabel": "Botella final",
+        "rangoHint": "Rango {inicio}–{fin} (siguiente disponible pre-llenado)",
+        "submit": "Confirmar salida",
+        "cancel": "Cancelar",
+        "errors": {
+          "submitFailed": "No se pudo registrar la salida",
+          "not_authenticated": "No autenticado",
+          "no_organization": "Sin organización",
+          "missing_existencia_id": "Falta la existencia",
+          "invalid_tipo": "Tipo de salida inválido",
+          "invalid_cantidad": "Cantidad inválida",
+          "invalid_unidad": "Unidad inválida",
+          "invalid_rango": "Rango inválido",
+          "existencia_not_found": "Existencia no encontrada",
+          "insufficient_stock": "Stock insuficiente",
+          "rango_not_allowed": "Numeración no disponible en tu plan",
+          "rango_overlap": "El rango se traslapa con una salida previa",
+          "rango_required": "Rango requerido",
+          "salida_create_failed": "No se pudo crear la salida"
+        }
+      },
+      "errors": {
+        "loadFailed": "Error al cargar inventario",
+        "noOrganization": "Sin organización winemaker"
       }
     }
   },
@@ -2137,16 +2358,31 @@
     "mcpUrl": "URL del servidor MCP",
     "copyUrl": "Copiar URL",
     "copyToken": "Copiar token",
+    "downloadToken": "Descargar token",
+    "tokenDownloaded": "Descargado",
+    "copyCursorConfig": "Copiar config Cursor",
+    "copyClaudeConfig": "Copiar config Claude",
     "copied": "Copiado",
+    "testConnection": "Probar conexión",
+    "testing": "Probando…",
+    "tokenExpiry": "El token caduca {when}",
+    "tokenExpired": "Token expirado — copia uno nuevo antes de conectar",
+    "test": {
+      "ok": "Conexión OK — perfil {profile}",
+      "error": "Falló la prueba: {detail}",
+      "noProfile": "No hay un perfil activo para conectar."
+    },
     "oauthHint": "Metadatos OAuth:",
     "oauthLink": "recurso protegido",
     "clients": {
       "cursor": "Cursor",
       "cursorHint": "Añade en MCP settings (~/.cursor/mcp.json):",
       "claude": "Claude Desktop",
-      "claudeStep1": "Instala mcp-remote o usa Streamable HTTP si tu versión lo soporta.",
-      "claudeStep2": "Pega la URL MCP y tu token de Supabase en Authorization.",
-      "claudeStep3": "Reinicia Claude y verifica que aparecen las tools de PROOF.",
+      "claudeConfigPath": "Archivo (Mac): {path}",
+      "claudeStep1": "En PROOF pulsa «Descargar token» (archivo proof-mcp-token.txt).",
+      "claudeStep2": "En Terminal: npm run setup:claude-mcp -- --file ~/Downloads/proof-mcp-token.txt",
+      "claudeStep3": "Cierra Claude por completo (Cmd+Q) y ábrelo de nuevo.",
+      "claudeStep4": "En el chat deberías ver las tools de PROOF (martillo).",
       "chatgpt": "ChatGPT / otros",
       "chatgptHint": "Cualquier cliente MCP con HTTP + Bearer token puede conectarse a la misma URL."
     },
@@ -2167,9 +2403,11 @@
       "list_pedidos": "Pedidos recientes con cliente.",
       "get_credito_resumen": "Totales de cuentas por cobrar.",
       "list_ordenes_compra": "Órdenes de compra pendientes.",
-      "list_lotes": "Lotes de vino de la bodega.",
+      "list_lotes": "Lotes activos con etapa del pipeline, dias_sin_registro y alertas.",
       "list_documentos": "Tickets y facturas winemaker.",
-      "get_resumen_bodega": "KPIs de bodega.",
+      "get_resumen_bodega": "KPIs de bodega, salud, conteo por etapa y lotes que requieren atención.",
+      "list_etiquetas": "Etiquetas en bodega con producidas, consumidas y disponibles por existencia.",
+      "list_mensajes": "Mensajes del chat de equipo; filtra por lote o fecha.",
       "list_corridas": "Corridas de embotellado.",
       "list_viajes": "Viajes de compra de agave.",
       "list_lotes_distiller": "Lotes de producción mezcal.",
@@ -2181,7 +2419,12 @@
       "registrar_pago_cliente": "Registrar pago de cliente.",
       "editar_sku": "Editar precio o categoría de SKU.",
       "get_cobro_context": "Datos estructurados para redactar cobro.",
-      "import_winemaker_ticket": "Importar ticket desde JSON de extracción."
+      "import_winemaker_ticket": "Importar ticket desde JSON de extracción.",
+      "registrar_salida": "Registrar salida de producto embotellado (cajas o botellas).",
+      "enviar_mensaje": "Publicar mensaje en el chat de equipo (opcional lote_id).",
+      "crear_lote": "Crear lote activo en el pipeline (aplica límite de lotes del plan).",
+      "registrar_embotellado": "Registrar embotellado y crear existencia (límites de etiquetas y memoria).",
+      "cambiar_etapa_lote": "Cambiar etapa del lote en el pipeline (aplica límite de memoria)."
     },
     "prompts": {
       "distributor": {
@@ -2191,7 +2434,8 @@
       },
       "winemaker": {
         "summary": "Resume el estado de mi bodega este mes.",
-        "ticket": "Importa este ticket CFDI y clasifica las líneas."
+        "ticket": "Importa este ticket CFDI y clasifica las líneas.",
+        "labels": "¿Qué etiquetas tengo disponibles en bodega?"
       },
       "distiller": {
         "runs": "¿Qué corridas de embotellado están activas?",
@@ -2205,9 +2449,18 @@
       "credit": "Crédito",
       "documents": "Documentos",
       "lots": "Lotes",
+      "cellarLabels": "Etiquetas en bodega",
       "expenses": "Gastos",
       "purchases": "Compras",
       "production": "Producción"
+    },
+    "ownerCta": {
+      "title": "Conectar agente externo",
+      "hint": "Usa Claude Desktop o Cursor con tus datos PROOF vía MCP.",
+      "action": "Abrir conexión",
+      "connectedTitle": "Agente externo listo",
+      "connectedHint": "Usa Claude Desktop para consultar tu bodega. El dashboard no cambia — opera desde el chat de Claude.",
+      "connectedAction": "Renovar token o ver tools"
     }
   },
   "agent": {
