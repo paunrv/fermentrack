@@ -1,19 +1,25 @@
 import type { OrgPlan, OrgPlanStatus } from '@/lib/supabase/organization'
+import { PLAN_LIMITS_CATALOG } from '@/lib/proof/plan-limits'
 
-/** Límites v1 — ver docs/ORG-TENANCY.md */
+/** @deprecated Prefer plan_limites via checkLimit — kept for billing webhook compatibility. */
 export const WINEMAKER_PLAN_LIMITS = {
-  free: {
-    maxLots: 3,
-    maxDocumentsPerMonth: 20,
+  regular: {
+    maxLots: PLAN_LIMITS_CATALOG.regular.lotes_activos,
+    maxDocumentsPerMonth: null as number | null,
+    teamInvites: (PLAN_LIMITS_CATALOG.regular.max_usuarios ?? 1) > 1,
+  },
+  trial: {
+    maxLots: PLAN_LIMITS_CATALOG.trial.lotes_activos,
+    maxDocumentsPerMonth: null as number | null,
     teamInvites: false,
   },
   pro: {
-    maxLots: null as number | null,
+    maxLots: PLAN_LIMITS_CATALOG.pro.lotes_activos,
     maxDocumentsPerMonth: null as number | null,
     teamInvites: true,
   },
   enterprise: {
-    maxLots: null as number | null,
+    maxLots: PLAN_LIMITS_CATALOG.enterprise.lotes_activos,
     maxDocumentsPerMonth: null as number | null,
     teamInvites: true,
   },
@@ -38,7 +44,7 @@ export function planFromStripeSubscriptionStatus(
     case 'canceled':
     case 'unpaid':
     case 'incomplete_expired':
-      return { plan: 'free', plan_status: 'canceled' }
+      return { plan: 'regular', plan_status: 'canceled' }
     case 'incomplete':
     case 'paused':
     default:

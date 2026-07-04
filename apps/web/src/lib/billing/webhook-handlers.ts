@@ -1,5 +1,10 @@
 import type Stripe from 'stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { billingCycleFromStripeInterval } from '@/lib/billing/billing-checkout'
+import {
+  formatRenewalAnchorDate,
+  nextRenewalAnchorDate,
+} from '@/lib/billing/billing-renewal-anchor'
 import { planFromStripeSubscriptionStatus } from '@/lib/billing/winemaker-plans'
 
 type OrgBillingRow = {
@@ -49,6 +54,19 @@ function stripeId(value: unknown): string | null {
   return null
 }
 
+function billingCycleFromSession(session: Stripe.Checkout.Session): 'monthly' | 'annual' | null {
+  const raw = session.metadata?.billing_cycle
+  if (raw === 'monthly' || raw === 'annual') return raw
+  return null
+}
+
+function billingCycleFromSubscription(subscription: Stripe.Subscription): 'monthly' | 'annual' | null {
+  const fromMeta = subscription.metadata?.billing_cycle
+  if (fromMeta === 'monthly' || fromMeta === 'annual') return fromMeta
+  const item = subscription.items.data[0]
+  return billingCycleFromStripeInterval(item?.price.recurring?.interval)
+}
+
 export async function handleCheckoutSessionCompleted(
   sb: SupabaseClient,
   session: Stripe.Checkout.Session
@@ -58,12 +76,17 @@ export async function handleCheckoutSessionCompleted(
 
   const customerId = stripeId(session.customer)
   const subscriptionId = stripeId(session.subscription)
+  const billingCycle = billingCycleFromSession(session)
 
   await updateOrgBilling(sb, organizationId, {
     ...(customerId ? { stripe_customer_id: customerId } : {}),
     ...(subscriptionId ? { stripe_subscription_id: subscriptionId } : {}),
     plan: 'pro',
     plan_status: 'active',
+    ...(billingCycle ? { billing_cycle: billingCycle } : {}),
+    ...(billingCycle === 'annual'
+      ? { renewal_anchor: formatRenewalAnchorDate(nextRenewalAnchorDate(new Date())) }
+      : {}),
   })
 }
 
@@ -74,14 +97,21 @@ export async function handleSubscriptionUpdated(
   const organizationId = subscription.metadata?.organization_id
   const customerId = stripeId(subscription.customer)
   const snapshot = planFromStripeSubscriptionStatus(subscription.status)
+  const billingCycle = billingCycleFromSubscription(subscription)
+
+  const patch = {
+    stripe_customer_id: customerId,
+    stripe_subscription_id: subscription.id,
+    plan: snapshot.plan,
+    plan_status: snapshot.plan_status,
+    ...(billingCycle ? { billing_cycle: billingCycle } : {}),
+    ...(billingCycle === 'annual'
+      ? { renewal_anchor: formatRenewalAnchorDate(nextRenewalAnchorDate(new Date())) }
+      : {}),
+  }
 
   if (organizationId) {
-    await updateOrgBilling(sb, organizationId, {
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscription.id,
-      plan: snapshot.plan,
-      plan_status: snapshot.plan_status,
-    })
+    await updateOrgBilling(sb, organizationId, patch)
     return
   }
 
@@ -93,9 +123,7 @@ export async function handleSubscriptionUpdated(
 
   await updateOrgBilling(sb, org.id, {
     stripe_customer_id: customerId ?? org.stripe_customer_id,
-    stripe_subscription_id: subscription.id,
-    plan: snapshot.plan,
-    plan_status: snapshot.plan_status,
+    ...patch,
   })
 }
 
@@ -107,9 +135,10 @@ export async function handleSubscriptionDeleted(
   const customerId = stripeId(subscription.customer)
 
   const patch = {
-    plan: 'free',
-    plan_status: 'canceled',
+    plan: 'regular' as const,
+    plan_status: 'canceled' as const,
     stripe_subscription_id: null,
+    billing_cycle: null,
   }
 
   if (organizationId) {

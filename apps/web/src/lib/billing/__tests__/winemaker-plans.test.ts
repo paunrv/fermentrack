@@ -16,9 +16,9 @@ describe('planFromStripeSubscriptionStatus', () => {
     })
   })
 
-  it('maps canceled to free/canceled', () => {
+  it('maps canceled to regular/canceled', () => {
     expect(planFromStripeSubscriptionStatus('canceled')).toEqual({
-      plan: 'free',
+      plan: 'regular',
       plan_status: 'canceled',
     })
   })
