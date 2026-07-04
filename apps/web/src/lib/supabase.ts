@@ -418,7 +418,7 @@ export async function fetchClients(
     .select('*')
     .order('created_at', { ascending: false })
   if (scope) {
-    query = query.eq('clerk_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
+    query = query.eq('user_id', scope.user_id).eq('profile_type_v2', scope.profile_type_v2)
   }
   const { data, error } = await query
   if (error) throw error

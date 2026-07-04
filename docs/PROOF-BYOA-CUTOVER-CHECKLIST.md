@@ -162,3 +162,20 @@ Optional: `PROOF_MCP_CLIENTE='Nombre Cliente'` if you have CxC data; default `Pr
 4. `npm run check:mcp-audit`
 
 Read-only tools (`list_skus`, etc.) do **not** write to `mcp_tool_calls`.
+
+---
+
+## 5. Clerk cleanup · Distribuidor (#12)
+
+**Status (2026-07-04):** ✅ Applied on remote — 21 tablas sin `clerk_id`.
+
+| Step | Script | Verify |
+|------|--------|--------|
+| Backfill orphans | `scripts/apply-clerk-user-id-backfill.sql` | `npm run check:clerk-cleanup` → 21/21 |
+| Prereq RLS | `scripts/prereq-drop-clerk-columns.sql` | (si DROP function falla con 2BP01) |
+| Drop columns | `supabase/migrations/20260624160000_drop_clerk_columns.sql` | `check:clerk-cleanup` → all dropped |
+| Vercel | Remove `CLERK_*` env vars | Redeploy |
+
+Post-cutover app fix: `createSkuCatalog` / `fetchClients` usan solo `user_id` (no `clerk_id` en inserts ni filtros).
+
+**Pendiente:** destilador (`destilador.ts`) y winemaker (`20260630190000_winemaker_drop_clerk_id.sql`) siguen con `clerk_id` en tablas propias.

@@ -1,5 +1,7 @@
 -- Clerk → Supabase Auth (fase 2 · limpieza final)
 -- Prerequisito: 20260624120000 aplicada y user_id poblado por la app.
+-- Si DROP auth_has_staff_access_to_scope(text,text) falla con 2BP01, ejecutar antes:
+--   scripts/prereq-drop-clerk-columns.sql
 -- Elimina columnas clerk_id del distribuidor (21 tablas raíz).
 -- NO toca: profiles_clerk_legacy/proof_profiles, destilador, winemaker.
 
@@ -160,6 +162,87 @@ begin
   end loop;
 end;
 $drop_child_policies$;
+
+-- -----------------------------------------------------------------------------
+-- 4b. Tablas fuera del listado §4 (M2/M7) — desvincular overload (text,text)
+-- -----------------------------------------------------------------------------
+update public.movimientos_sku m
+set user_id = s.user_id
+from public.skus s
+where m.user_id is null
+  and m.sku_id = s.id
+  and s.user_id is not null;
+
+drop policy if exists movimientos_sku_select on public.movimientos_sku;
+drop policy if exists movimientos_sku_insert on public.movimientos_sku;
+drop policy if exists movimientos_sku_update on public.movimientos_sku;
+drop policy if exists movimientos_sku_delete on public.movimientos_sku;
+
+create policy movimientos_sku_select on public.movimientos_sku for select
+  using (
+    user_id = auth.uid()
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  );
+create policy movimientos_sku_insert on public.movimientos_sku for insert
+  with check (
+    user_id = auth.uid()
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  );
+create policy movimientos_sku_update on public.movimientos_sku for update
+  using (
+    user_id = auth.uid()
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  )
+  with check (
+    user_id = auth.uid()
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  );
+create policy movimientos_sku_delete on public.movimientos_sku for delete
+  using (
+    user_id = auth.uid()
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  );
+
+drop policy if exists proof_profiles_select on public.proof_profiles;
+drop policy if exists proof_profiles_update on public.proof_profiles;
+
+create policy proof_profiles_select on public.proof_profiles for select
+  using (
+    user_id = auth.uid()
+    or clerk_id = auth.uid()::text
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  );
+create policy proof_profiles_update on public.proof_profiles for update
+  using (
+    user_id = auth.uid()
+    or clerk_id = auth.uid()::text
+    or proof.auth_has_staff_access_to_scope(user_id, profile_type_v2)
+  )
+  with check (
+    user_id = auth.uid()
+    or clerk_id = auth.uid()::text
+  );
+
+create or replace function proof.sku_image_path_owned(object_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, storage, proof
+as $$
+  select exists (
+    select 1
+    from public.skus s
+    where (storage.foldername(object_name))[1] = 'skus'
+      and s.id::text = (storage.foldername(object_name))[2]
+      and (
+        s.user_id = auth.uid()
+        or proof.auth_has_staff_access_to_scope(s.user_id, s.profile_type_v2)
+      )
+  );
+$$;
+
+grant execute on function proof.sku_image_path_owned(text) to authenticated, service_role;
 
 -- -----------------------------------------------------------------------------
 -- 5. Helper staff: clerk_id → user_id del scope

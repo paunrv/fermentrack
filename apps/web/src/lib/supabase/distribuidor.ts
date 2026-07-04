@@ -638,30 +638,6 @@ export type CreateSkuCatalogInput = {
   stock_total?: number
 }
 
-async function resolveDistribuidorClerkId(
-  sb: SupabaseClient,
-  scopeUserId: string
-): Promise<string> {
-  const { data: skuRow } = await sb
-    .from('skus')
-    .select('clerk_id')
-    .eq('user_id', scopeUserId)
-    .limit(1)
-    .maybeSingle()
-  if (skuRow?.clerk_id) return skuRow.clerk_id
-
-  const { data: worker } = await sb
-    .from('trabajadores')
-    .select('clerk_id')
-    .eq('user_id', scopeUserId)
-    .eq('profile_type_v2', 'distributor')
-    .limit(1)
-    .maybeSingle()
-  if (worker?.clerk_id) return worker.clerk_id
-
-  return scopeUserId
-}
-
 export async function createSkuCatalog(
   sb: SupabaseClient,
   scope: ProfileScope,
@@ -672,7 +648,6 @@ export async function createSkuCatalog(
   } = await sb.auth.getUser()
   if (!user) throw new Error('No autenticado')
 
-  const clerkId = await resolveDistribuidorClerkId(sb, scope.user_id)
   const codigo = await rpcProofNextCodigo(
     sb,
     scope.user_id,
@@ -699,7 +674,6 @@ export async function createSkuCatalog(
       notas: input.notas ?? null,
       imagen_url: input.imagen_url ?? null,
       user_id: user.id,
-      clerk_id: clerkId,
       profile_type_v2: scope.profile_type_v2,
     })
     .select('*')

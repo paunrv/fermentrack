@@ -18,7 +18,8 @@
     "check:dist-schema": "node scripts/check-dist-schema.mjs",
     "check:mcp-audit": "node scripts/check-mcp-audit.mjs",
     "probe:mcp-audit": "node scripts/probe-mcp-audit.mjs",
-    "check:fase2-rpcs": "node scripts/check-fase2-rpcs.mjs"
+    "check:fase2-rpcs": "node scripts/check-fase2-rpcs.mjs",
+    "check:clerk-cleanup": "node scripts/check-clerk-cleanup.mjs"
   },
   "packageManager": "npm@11.11.0",
   "engines": {
