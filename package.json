@@ -15,7 +15,10 @@
     "setup:claude-mcp": "node scripts/setup-claude-mcp.mjs",
     "check:prod-schema": "node scripts/check-prod-schema.mjs",
     "apply:prod-migrations": "node scripts/apply-pending-prod-migrations.mjs",
-    "check:dist-schema": "node scripts/check-dist-schema.mjs"
+    "check:dist-schema": "node scripts/check-dist-schema.mjs",
+    "check:mcp-audit": "node scripts/check-mcp-audit.mjs",
+    "probe:mcp-audit": "node scripts/probe-mcp-audit.mjs",
+    "check:fase2-rpcs": "node scripts/check-fase2-rpcs.mjs"
   },
   "packageManager": "npm@11.11.0",
   "engines": {

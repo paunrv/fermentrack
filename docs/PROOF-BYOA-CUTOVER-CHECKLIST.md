@@ -64,7 +64,7 @@ console.log(error ? error.message : 'table_exists');
 
 ## 2. Remove `ANTHROPIC_API_KEY` from Vercel
 
-**Status (2026-07-02):** Blocked — Vercel CLI not authenticated in this environment.
+**Status (2026-07-04):** ✅ Removed from Vercel (confirmed in Dashboard).
 
 ```bash
 npx vercel login
@@ -88,7 +88,7 @@ Or manually: Vercel Dashboard → Project → Settings → Environment Variables
 | MCP without bearer → 401 | ✅ | Live `curl` → 401 |
 | Forged JWT → 401 | ✅ | Live `curl` → 401 |
 | Rate limit → 429 + `Retry-After` | ✅ | Live load test → 429, `Retry-After: 43` |
-| Write success in `mcp_tool_calls` | ⏳ | 0 rows in prod (2026-07-03) — needs one MCP write after deploy green |
+| Write success in `mcp_tool_calls` | ✅ | 2026-07-04 — `get_cobro_context` probe |
 
 ### QA session (2026-07-03)
 
@@ -96,9 +96,10 @@ Or manually: Vercel Dashboard → Project → Settings → Environment Variables
 |-------|--------|-------|
 | `npm run check:prod-schema` | ✅ 7/7 | incl. `mcp_tool_calls` |
 | MCP unit tests (`apps/web`) | ✅ 26/26 | after fix `plan-limit-mcp.ts` missing `>` |
-| Vercel Production deploy | ❌ → fix pushed | Build failed: `Promise<McpPlanLimitError \| null {` syntax error in `plan-limit-mcp.ts:128` — fixed in `main` |
-| Prod URL probe (unauthenticated) | ⏭️ | `fermentrack-paunrvs-projects.vercel.app` behind Vercel SSO — verify hub logged-in in browser |
-| `mcp_tool_calls` rows | 0 | No audited writes yet |
+| Vercel Production deploy | ✅ Ready (`e9d1e4b`, 2026-07-03) | Fixed TS cascade: plan-limit, movimientos, winemaker, billing, MCP enums |
+| Prod connection hub | ✅ | User confirmed `/dashboard` after deploy Ready |
+| Prod URL probe (unauthenticated) | ⏭️ | SSO on preview URL — use production login |
+| `mcp_tool_calls` rows | ✅ | `npm run check:mcp-audit` — 2 rows `success` (2026-07-04) |
 
 ### Live MCP auth/rate-limit probe (localhost)
 
@@ -121,6 +122,43 @@ rate_limit 429 43
 
 - [x] Push commits to `origin/main` and deploy (2026-07-03)
 - [x] Apply winemaker migrations Jul 2026 — see `docs/DEPLOY-MIGRATIONS.md` (2026-07-03)
-- [ ] Confirm connection hub loads on production `/dashboard` (blocked until Vercel deploy green — rebuild after syntax fix)
-- [ ] One MCP write → row in `mcp_tool_calls` (manual: Cursor/Claude + bearer token)
+- [x] Confirm connection hub loads on production `/dashboard` (2026-07-03 — deploy Ready)
+- [x] One MCP write → row in `mcp_tool_calls` — **`npm run probe:mcp-audit`** (2026-07-04 ✓)
 - [ ] Rotate Supabase JWT if any test tokens were created during QA
+
+## 5. MCP audit probe (closes §3 write row)
+
+Safe write-scoped tool (logs to `mcp_tool_calls`, no data mutation): **`get_cobro_context`**.
+
+**Why local dev:** the Vercel preview URL is behind SSO — external `curl` gets 302. Local `npm run dev` talks to the same prod Supabase and writes the audit row.
+
+**Not SQL Editor:** BYOA audit is an MCP HTTP call, not a Supabase migration. Do not paste this checklist (Markdown) into SQL Editor.
+
+**If probe returns 500:** check disk space (`df -h`) — ENOSPC breaks Next dev. Free ≥2 GB, restart `npm run dev`, re-download token if expired.
+
+### Option A — automated script (recommended)
+
+```bash
+# Terminal 1
+npm run dev
+
+# Browser: http://localhost:3000 → sign in as distributor
+# → /dashboard/conectar → «Descargar token»
+
+# Terminal 2
+npm run probe:mcp-audit -- --file ~/Downloads/proof-mcp-token.txt
+# or: PROOF_MCP_TOKEN='eyJ...' npm run probe:mcp-audit
+```
+
+Expect: `Tool OK ✓` then `npm run check:mcp-audit` → at least one `success` row.
+
+Optional: `PROOF_MCP_CLIENTE='Nombre Cliente'` if you have CxC data; default `Probe QA` is fine (empty cuentas still audits).
+
+### Option B — Cursor / Claude MCP
+
+1. `/dashboard/conectar` → **Copiar config Cursor** (or Claude)
+2. Cursor → Settings → MCP → ensure **proof** server is connected (fix if errored)
+3. As **distributor**, call tool **`get_cobro_context`** with any `cliente_nombre`
+4. `npm run check:mcp-audit`
+
+Read-only tools (`list_skus`, etc.) do **not** write to `mcp_tool_calls`.

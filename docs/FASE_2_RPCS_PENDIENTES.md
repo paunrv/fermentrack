@@ -1,29 +1,46 @@
 # RPCs pendientes de migración Clerk → Supabase Auth
 
-Estas 31 funciones fallarán en runtime hasta ser migradas.
-No tocar hasta completar las migraciones 001-003 de PROOF.
+Deploy: **[DEPLOY-FASE2-RPCS.md](./DEPLOY-FASE2-RPCS.md)** · Verifica: `npm run check:fase2-rpcs`
 
-## proof.* (19)
-confirmar_pedido, entregar_pedido, actualizar_estado_pedido,
-crear_remision_distribuidor, crear_cuenta_por_cobrar_pedido,
-aplicar_anticipo_cxc_pedido, registrar_pago_cliente,
-registrar_pago_proveedor, confirmar_llegada_orden_compra_distribuidor,
-confirmar_recepcion, sku_image_path_owned,
-storage_distribuidor_path_select, storage_distribuidor_path_insert_patron,
-storage_distribuidor_path_insert_bodega, confirmar_llegada_destilador,
-cerrar_corrida_destilador, dest_next_numero_lote, dest_ensure_bodega_principal
+## Bundle 1 — core distribuidor ✅ prod (2026-07-03)
 
-## public.* wrappers (12)
-confirmar_pedido, entregar_pedido, actualizar_estado_pedido,
-crear_remision_distribuidor, crear_cuenta_por_cobrar_pedido,
-aplicar_anticipo_cxc_pedido, registrar_pago_cliente,
-registrar_pago_proveedor, confirmar_llegada_orden_compra_distribuidor,
-confirmar_recepcion, confirmar_llegada_destilador, cerrar_corrida_destilador
+`scripts/apply-fase2-rpcs-core.sql`:
 
-## Patrón de migración para cada función:
-Reemplazar: proof.row_belongs_to_requester() → user_id = auth.uid()
-Reemplazar: proof.current_clerk_id() → auth.uid()
-Reemplazar: proof.is_super_user() → (consulta a profiles donde id = auth.uid())
+- `proof.auth_can_access_scope`
+- `confirmar_pedido`, `actualizar_estado_pedido`, `entregar_pedido`
+- `crear_remision_distribuidor`, `aplicar_anticipo_cxc_pedido`, `crear_cuenta_por_cobrar_pedido`
+- `confirmar_recepcion`, `confirmar_llegada_orden_compra_distribuidor`
+- `public.registrar_movimiento_sku` (auth fix)
 
-## public.registrar_movimiento_sku
-Llama directo a row_belongs_to_requester — migrar junto con el módulo de SKUs.
+## Bundle 2 — pagos + storage ✅ prod (2026-07-03)
+
+`scripts/apply-fase2-rpcs-pagos.sql`:
+
+- `scope_user_id_from_clerk_folder`
+- `registrar_pago_cliente`, `registrar_pago_proveedor`
+- `sku_image_path_owned`, `storage_distribuidor_path_*`
+- `next_codigo` (resuelve clave legacy en sequences)
+
+## Bundle 3 — destilador ✅ prod (2026-07-03)
+
+`scripts/apply-fase2-rpcs-destilador.sql`:
+
+- `destilador_row_owned` (Supabase Auth + `proof_profiles`)
+- RLS tablas destilador + storage `lotes-produccion`
+- `dest_next_numero_lote`, `dest_ensure_bodega_principal`
+- `confirmar_llegada_destilador`, `cerrar_corrida_destilador`
+
+## Patrón de migración
+
+```sql
+-- Antes
+if not proof.row_belongs_to_requester(v_row.clerk_id, v_row.profile_type_v2) then
+
+-- Después
+if not proof.auth_can_access_scope(v_row.user_id, v_row.profile_type_v2) then
+```
+
+Inserts: `clerk_id` → `user_id` en tablas con columna `user_id`.
+
+Reemplazar: `proof.current_clerk_id()` → `auth.uid()`
+Reemplazar: `proof.is_super_user()` → consulta a `profiles` donde `id = auth.uid()`
