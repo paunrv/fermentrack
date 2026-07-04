@@ -8,7 +8,7 @@ export default function AgentePage() {
   const router = useRouter()
 
   useEffect(() => {
-    router.replace('/dashboard')
+    router.replace('/dashboard/conectar')
   }, [router])
 
   return null

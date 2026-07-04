@@ -16,6 +16,8 @@ const READ_TOOLS: ConnectionHubTool[] = [
   { name: 'list_lotes', kind: 'read', descriptionKey: 'tools.list_lotes' },
   { name: 'list_documentos', kind: 'read', descriptionKey: 'tools.list_documentos' },
   { name: 'get_resumen_bodega', kind: 'read', descriptionKey: 'tools.get_resumen_bodega' },
+  { name: 'list_etiquetas', kind: 'read', descriptionKey: 'tools.list_etiquetas' },
+  { name: 'list_mensajes', kind: 'read', descriptionKey: 'tools.list_mensajes' },
   { name: 'list_corridas', kind: 'read', descriptionKey: 'tools.list_corridas' },
   { name: 'list_viajes', kind: 'read', descriptionKey: 'tools.list_viajes' },
   { name: 'list_lotes_distiller', kind: 'read', descriptionKey: 'tools.list_lotes_distiller' },
@@ -31,6 +33,11 @@ const WRITE_TOOLS: ConnectionHubTool[] = [
   { name: 'editar_sku', kind: 'write', descriptionKey: 'tools.editar_sku' },
   { name: 'get_cobro_context', kind: 'write', descriptionKey: 'tools.get_cobro_context' },
   { name: 'import_winemaker_ticket', kind: 'write', descriptionKey: 'tools.import_winemaker_ticket' },
+  { name: 'registrar_salida', kind: 'write', descriptionKey: 'tools.registrar_salida' },
+  { name: 'enviar_mensaje', kind: 'write', descriptionKey: 'tools.enviar_mensaje' },
+  { name: 'crear_lote', kind: 'write', descriptionKey: 'tools.crear_lote' },
+  { name: 'registrar_embotellado', kind: 'write', descriptionKey: 'tools.registrar_embotellado' },
+  { name: 'cambiar_etapa_lote', kind: 'write', descriptionKey: 'tools.cambiar_etapa_lote' },
 ]
 
 export function toolsForProfile(profileType: ProfileType): ConnectionHubTool[] {
@@ -56,7 +63,14 @@ export function toolsForProfile(profileType: ProfileType): ConnectionHubTool[] {
       'list_lotes',
       'list_documentos',
       'get_resumen_bodega',
+      'list_etiquetas',
+      'list_mensajes',
       'import_winemaker_ticket',
+      'registrar_salida',
+      'enviar_mensaje',
+      'crear_lote',
+      'registrar_embotellado',
+      'cambiar_etapa_lote',
     ],
     distiller: [
       'get_session_snapshot',
@@ -85,6 +99,7 @@ export function manualLinksForProfile(profileType: ProfileType): ManualLink[] {
       return [
         { href: '/dashboard/winemaker/documentos', labelKey: 'manual.documents' },
         { href: '/dashboard/winemaker/lotes', labelKey: 'manual.lots' },
+        { href: '/dashboard/winemaker/bodega', labelKey: 'manual.cellarLabels' },
         { href: '/dashboard/winemaker/gastos', labelKey: 'manual.expenses' },
       ]
     case 'distiller':
@@ -105,7 +120,7 @@ export function examplePromptsForProfile(profileType: ProfileType): string[] {
         'prompts.distributor.credit',
       ]
     case 'winemaker':
-      return ['prompts.winemaker.summary', 'prompts.winemaker.ticket']
+      return ['prompts.winemaker.summary', 'prompts.winemaker.ticket', 'prompts.winemaker.labels']
     case 'distiller':
       return ['prompts.distiller.runs', 'prompts.distiller.trips']
   }

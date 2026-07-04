@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useMcpConnectionInfo } from '@/hooks/useMcpConnectionInfo'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
 import {
@@ -10,20 +10,33 @@ import {
   toolsForProfile,
 } from '@/lib/proof/connection-hub-tools'
 
+function formatTokenExpiry(whenUnix: number, locale: string): string {
+  const diffSec = whenUnix - Math.floor(Date.now() / 1000)
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
+  if (Math.abs(diffSec) < 60) return rtf.format(diffSec, 'second')
+  const diffMin = Math.round(diffSec / 60)
+  if (Math.abs(diffMin) < 60) return rtf.format(diffMin, 'minute')
+  const diffHour = Math.round(diffMin / 60)
+  return rtf.format(diffHour, 'hour')
+}
+
 function CopyButton({
   label,
   copiedLabel,
   onClick,
   copied,
+  disabled,
 }: {
   label: string
   copiedLabel: string
   onClick: () => void | Promise<void>
   copied: boolean
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={() => void onClick()}
       style={{
         fontSize: 12,
@@ -33,7 +46,8 @@ function CopyButton({
         border: '1px solid var(--hairline)',
         background: 'var(--panel)',
         color: 'var(--fg-0)',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
         whiteSpace: 'nowrap',
       }}
     >
@@ -76,6 +90,7 @@ export function ProofConnectionHub({
   profileType: ProfileType
 }) {
   const t = useTranslations('connectionHub')
+  const locale = useLocale()
   const {
     mcpUrl,
     oauthMetadataUrl,
@@ -83,10 +98,23 @@ export function ProofConnectionHub({
     isAuthReady,
     isSignedIn,
     userEmail,
+    tokenExpiresAt,
+    tokenExpired,
     copyMcpUrl,
     copyAccessToken,
+    downloadAccessToken,
+    copyCursorConfig,
+    copyClaudeConfig,
+    testConnection,
+    testLoading,
+    testResult,
     urlCopied,
     tokenCopied,
+    tokenDownloaded,
+    configCopied,
+    claudeConfigCopied,
+    claudeConfig,
+    claudeConfigPath,
   } = useMcpConnectionInfo()
 
   const tools = toolsForProfile(profileType)
@@ -188,14 +216,76 @@ export function ProofConnectionHub({
             />
             {isSignedIn ? (
               <CopyButton
+                label={tokenDownloaded ? t('tokenDownloaded') : t('downloadToken')}
+                copiedLabel={t('tokenDownloaded')}
+                onClick={downloadAccessToken}
+                copied={tokenDownloaded}
+              />
+            ) : null}
+            {isSignedIn ? (
+              <CopyButton
                 label={t('copyToken')}
                 copiedLabel={t('copied')}
                 onClick={copyAccessToken}
                 copied={tokenCopied}
               />
             ) : null}
+            {isSignedIn ? (
+              <CopyButton
+                label={t('copyClaudeConfig')}
+                copiedLabel={t('copied')}
+                onClick={copyClaudeConfig}
+                copied={claudeConfigCopied}
+              />
+            ) : null}
+            {isSignedIn ? (
+              <CopyButton
+                label={t('copyCursorConfig')}
+                copiedLabel={t('copied')}
+                onClick={copyCursorConfig}
+                copied={configCopied}
+              />
+            ) : null}
+            {isSignedIn ? (
+              <CopyButton
+                label={testLoading ? t('testing') : t('testConnection')}
+                copiedLabel={t('copied')}
+                onClick={testConnection}
+                copied={false}
+                disabled={testLoading}
+              />
+            ) : null}
           </div>
         </div>
+
+        {isSignedIn && tokenExpiresAt ? (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              color: tokenExpired ? 'var(--crit)' : 'var(--fg-3)',
+            }}
+          >
+            {tokenExpired
+              ? t('tokenExpired')
+              : t('tokenExpiry', { when: formatTokenExpiry(tokenExpiresAt, locale) })}
+          </p>
+        ) : null}
+
+        {testResult ? (
+          <p
+            style={{
+              margin: 0,
+              fontSize: 13,
+              color: testResult.ok ? 'var(--ok)' : 'var(--crit)',
+              lineHeight: 1.45,
+            }}
+          >
+            {testResult.ok
+              ? t('test.ok', { profile: testResult.profile_type ?? '—' })
+              : t('test.error', { detail: testResult.error ?? 'unknown' })}
+          </p>
+        ) : null}
 
         {oauthMetadataUrl ? (
           <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
@@ -208,6 +298,40 @@ export function ProofConnectionHub({
       </section>
 
       <section style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+        <SetupCard title={t('clients.claude')}>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.45 }}>
+            {t('clients.claudeConfigPath', { path: claudeConfigPath })}
+          </p>
+          <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.55 }}>
+            <li>{t('clients.claudeStep1')}</li>
+            <li>{t('clients.claudeStep2')}</li>
+            <li>{t('clients.claudeStep3')}</li>
+            <li>{t('clients.claudeStep4')}</li>
+          </ol>
+          {isSignedIn ? (
+            <CopyButton
+              label={t('copyClaudeConfig')}
+              copiedLabel={t('copied')}
+              onClick={copyClaudeConfig}
+              copied={claudeConfigCopied}
+            />
+          ) : null}
+          <pre
+            style={{
+              margin: 0,
+              fontSize: 11,
+              lineHeight: 1.45,
+              padding: 12,
+              borderRadius: 8,
+              background: 'var(--panel-2)',
+              overflow: 'auto',
+              maxHeight: 200,
+            }}
+          >
+            {claudeConfig}
+          </pre>
+        </SetupCard>
+
         <SetupCard title={t('clients.cursor')}>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
             {t('clients.cursorHint')}
@@ -226,14 +350,6 @@ export function ProofConnectionHub({
           >
             {cursorConfig}
           </pre>
-        </SetupCard>
-
-        <SetupCard title={t('clients.claude')}>
-          <ol style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.55 }}>
-            <li>{t('clients.claudeStep1')}</li>
-            <li>{t('clients.claudeStep2')}</li>
-            <li>{t('clients.claudeStep3')}</li>
-          </ol>
         </SetupCard>
 
         <SetupCard title={t('clients.chatgpt')}>
