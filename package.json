@@ -19,7 +19,8 @@
     "check:mcp-audit": "node scripts/check-mcp-audit.mjs",
     "probe:mcp-audit": "node scripts/probe-mcp-audit.mjs",
     "check:fase2-rpcs": "node scripts/check-fase2-rpcs.mjs",
-    "check:clerk-cleanup": "node scripts/check-clerk-cleanup.mjs"
+    "check:clerk-cleanup": "node scripts/check-clerk-cleanup.mjs",
+    "check:wm-org-migration": "node scripts/check-wm-org-migration.mjs"
   },
   "packageManager": "npm@11.11.0",
   "engines": {

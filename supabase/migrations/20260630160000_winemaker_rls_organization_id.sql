@@ -6,6 +6,36 @@
 begin;
 
 -- -----------------------------------------------------------------------------
+-- Restore legacy helper (dropped in 20260624120000) — required for dual-read #8
+-- -----------------------------------------------------------------------------
+create or replace function proof.winemaker_row_owned(p_clerk_id text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p_clerk_id is not null
+    and btrim(p_clerk_id) <> ''
+    and (
+      p_clerk_id = auth.uid()::text
+      or (
+        p_clerk_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        and p_clerk_id::uuid = auth.uid()
+      )
+      or exists (
+        select 1
+        from public.proof_profiles pp
+        where pp.user_id = auth.uid()
+          and pp.profile_type_v2 = 'winemaker'
+          and (pp.clerk_id = p_clerk_id or pp.user_id::text = p_clerk_id)
+      )
+    );
+$$;
+
+grant execute on function proof.winemaker_row_owned(text) to authenticated, service_role;
+
+-- -----------------------------------------------------------------------------
 -- Helpers visibilidad / escritura (dual-read)
 -- -----------------------------------------------------------------------------
 create or replace function public.wm_row_select_allowed(

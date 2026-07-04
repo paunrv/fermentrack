@@ -164,14 +164,17 @@ $$;
 
 -- -----------------------------------------------------------------------------
 -- 4. Mapa clerk_id → organization_id
+-- Staging table (not TEMP): Supabase SQL Editor may implicit-commit after DDL,
+-- which drops ON COMMIT DROP temp tables before section 5 runs.
 -- -----------------------------------------------------------------------------
-create temporary table _wm_org_map (
+drop table if exists public._wm_org_map_staging;
+create table public._wm_org_map_staging (
   clerk_id text primary key,
   organization_id uuid not null
-) on commit drop;
+);
 
 -- 4a. Perfiles winemaker legacy
-insert into _wm_org_map (clerk_id, organization_id)
+insert into public._wm_org_map_staging (clerk_id, organization_id)
 select distinct
   coalesce(pp.clerk_id, pp.user_id::text) as clerk_id,
   public._wm_ensure_winemaker_org(
@@ -185,7 +188,7 @@ where pp.profile_type_v2 = 'winemaker'
 on conflict (clerk_id) do nothing;
 
 -- 4b. clerk_id presentes en tablas wm_* (datos huérfanos de perfil)
-insert into _wm_org_map (clerk_id, organization_id)
+insert into public._wm_org_map_staging (clerk_id, organization_id)
 select
   s.clerk_id,
   public._wm_ensure_winemaker_org(
@@ -208,12 +211,12 @@ from (
 ) s
 where s.clerk_id is not null
   and btrim(s.clerk_id) <> ''
-  and not exists (select 1 from _wm_org_map m where m.clerk_id = s.clerk_id)
+  and not exists (select 1 from public._wm_org_map_staging m where m.clerk_id = s.clerk_id)
   and public._wm_resolve_user_id(s.clerk_id) is not null
 on conflict (clerk_id) do nothing;
 
 -- 4c. Miembros con org winemaker — mapear user_id::text como clerk_id
-insert into _wm_org_map (clerk_id, organization_id)
+insert into public._wm_org_map_staging (clerk_id, organization_id)
 select
   om.user_id::text,
   om.organization_id
@@ -222,7 +225,7 @@ join public.organizations o on o.id = om.organization_id
 where o.org_type = 'winemaker'
   and om.status = 'active'
   and not exists (
-    select 1 from _wm_org_map m where m.clerk_id = om.user_id::text
+    select 1 from public._wm_org_map_staging m where m.clerk_id = om.user_id::text
   )
 on conflict (clerk_id) do nothing;
 
@@ -246,7 +249,7 @@ begin
       $sql$
         update public.%I t
         set organization_id = m.organization_id
-        from _wm_org_map m
+        from public._wm_org_map_staging m
         where t.organization_id is null
           and t.clerk_id = m.clerk_id
       $sql$,
@@ -336,6 +339,7 @@ create index if not exists wm_document_lines_org_kind_idx
 -- -----------------------------------------------------------------------------
 -- 8. Limpiar helpers privados de migración
 -- -----------------------------------------------------------------------------
+drop table if exists public._wm_org_map_staging;
 drop function if exists public._wm_ensure_winemaker_org(uuid, text, text);
 drop function if exists public._wm_resolve_user_id(text);
 

@@ -178,4 +178,30 @@ Read-only tools (`list_skus`, etc.) do **not** write to `mcp_tool_calls`.
 
 Post-cutover app fix: `createSkuCatalog` / `fetchClients` usan solo `user_id` (no `clerk_id` en inserts ni filtros).
 
-**Pendiente:** destilador (`destilador.ts`) y winemaker (`20260630190000_winemaker_drop_clerk_id.sql`) siguen con `clerk_id` en tablas propias.
+**Pendiente:** destilador (`destilador.ts`) sigue con `clerk_id` en tablas propias.
+
+---
+
+## 6. Winemaker org + clerk drop (#7 → #8 → #12)
+
+**Status (2026-07-04):** ✅ Applied on remote — `#7` organization_id + `#12` clerk_id dropped (`check:wm-org-migration`).
+
+```bash
+npm run check:wm-org-migration
+```
+
+| Orden | SQL Editor | Verify |
+|-------|------------|--------|
+| 0 | `scripts/prereq-wm-rls-helpers.sql` | org helpers + `winemaker_row_owned` (solo si aplicas #8) |
+| 1 | `supabase/migrations/20260630150000_winemaker_organization_id_backfill.sql` | **obligatorio primero** · `check:wm-org-migration` |
+| 2a | `supabase/migrations/20260630160000_winemaker_rls_organization_id.sql` | dual-read temporal — **opcional** si vas directo a #12 |
+| 2b | `supabase/migrations/20260630190000_winemaker_drop_clerk_id.sql` | org-only RLS + drop `clerk_id` — **saltar #8 y usar esto** |
+
+**Errores comunes**
+
+| Error | Causa | Fix |
+|-------|-------|-----|
+| `winemaker_row_owned(text) does not exist` | #8 sin prereq; función borrada en migración Clerk | Ejecutar `prereq-wm-rls-helpers.sql` **o** saltar #8 |
+| `organization_id does not exist` | #12 / #8 antes de #7 | Aplicar **#7 backfill primero** |
+
+Prod `wm_*` vacías: #7 + #12 (sin #8) es suficiente.
