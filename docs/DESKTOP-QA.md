@@ -1,12 +1,13 @@
-# QA desktop — Epic #2
+# QA desktop — Epic #2 + Winemaker home (#35)
 
-Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#34](https://github.com/paunrv/fermentrack/issues/34).
+Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#34](https://github.com/paunrv/fermentrack/issues/34) · Winemaker owner home [#35](https://github.com/paunrv/fermentrack/issues/35) · [#43](https://github.com/paunrv/fermentrack/issues/43).
 
 Checklist reproducible antes de cerrar releases de UX desktop. Complementa:
 
 - [DASHBOARD-SHELL.md](./DASHBOARD-SHELL.md) — shell y rail
 - [CANVAS-DESKTOP.md](./CANVAS-DESKTOP.md) — canvas ≥1280px
 - [DASHBOARD-BREAKPOINTS.md](./DASHBOARD-BREAKPOINTS.md) — tablet 768–1023
+- [WINEMAKER-HOME.md](./WINEMAKER-HOME.md) — owner pipeline desktop
 
 ---
 
@@ -108,13 +109,22 @@ Perfil: winemaker con acceso team (no solo owner mobile home)
 
 ---
 
-## Winemaker (owner) · Owner at desktop width
+## Winemaker (owner) · Owner home
+
+Doc: [WINEMAKER-HOME.md](./WINEMAKER-HOME.md) · Cuenta owner winemaker · Viewports: 375×667, 768×1024, 1280×800, 1024×768
 
 | # | es-MX | en-US | ✓ |
 |---|-------|-------|---|
-| O1 | En **≤767**: `WinemakerMobileHome` + bottom nav | Mobile home + bottom nav on small screens | ☐ |
-| O2 | En **≥768**: owner sigue en `WinemakerMobileHome` pero con **rail + header canvas** (shell #31) | Owner home inside desktop shell (rail + header) | ☐ |
-| O3 | Sin scroll horizontal en owner home a 1280×800 | No horizontal overflow on owner home | ☐ |
+| O1 | **≤767**: `WinemakerMobileHome` + bottom nav — acordeones, CTA MCP, cero regresión vs pre-Epic A | Same mobile home unchanged | ☐ |
+| O2 | **768–1023**: owner sigue en `WinemakerMobileHome` con **rail + header** (tablet) | Tablet: mobile home inside desktop shell | ☐ |
+| O3 | **≥1024**: `WinemakerDesktopHome` — **ningún acordeón**; pipeline + fila inferior visibles sin clicks | Desktop: no accordions; pipeline + bottom row always visible | ☐ |
+| O4 | Pipeline: 6 columnas de etapa siempre visibles; vacías muestran «—» y contador 0 | Empty stages show dash + zero count | ☐ |
+| O5 | Lote con >5 días sin registro se distingue en tarjeta (badge / estilo) sin abrir detalle | Stale lot visible on card without opening detail | ☐ |
+| O6 | Click tarjeta de lote → detalle `/dashboard/lotes/[id]` | Lot card navigates to detail | ☐ |
+| O7 | Header: pill salud + pill agente (conectado) o CTA conectar (desconectado) | Health + agent pills / connect CTA | ☐ |
+| O8 | Fila inferior: tareas pendientes, calendario hoy, tarjeta agente (token + última tool si hay audit) | Bottom row tasks, calendar, MCP status card | ☐ |
+| O9 | Contenedor desktop max **1280px** centrado; sin scroll horizontal a 1280×800 | Centered 1280px, no horizontal overflow | ☐ |
+| O10 | i18n: etapas del pipeline y strings desktop en es-MX y en-US | Pipeline stage labels localized | ☐ |
 
 ---
 
@@ -147,7 +157,7 @@ Perfil: `distiller` · cuando hay datos de prueba
 | Fecha / Date | |
 | Revisor / Reviewer | |
 | Commit / branch | |
-| Viewports probados | ☐ 1280×800 ☐ 1440×900 ☐ 1024×768 |
+| Viewports probados | ☐ 1280×800 ☐ 1440×900 ☐ 1024×768 ☐ 375×667 (owner mobile) |
 | Locales probados | ☐ es-MX ☐ en-US |
 | Issues abiertos | |
 

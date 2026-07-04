@@ -1,6 +1,6 @@
 # Dashboard breakpoints
 
-Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#33](https://github.com/paunrv/fermentrack/issues/33).
+Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#33](https://github.com/paunrv/fermentrack/issues/33) · Winemaker owner [#35](https://github.com/paunrv/fermentrack/issues/35).
 
 ## Tiers
 
@@ -29,7 +29,12 @@ Fuente: `apps/web/src/lib/ui/breakpoints.ts`, `useBreakpoint.ts`.
 
 - **Tablet ≠ desktop reducido**: padding 20px, títulos 24px, ask bar max 480px.
 - **Rail en tablet**: sí (igual que desktop); bottom nav solo en mobile.
-- **Winemaker mobile home**: solo `mobile` + canvas.
+- **Winemaker owner `/dashboard`**:
+  - ≤767 (`mobile`): `WinemakerMobileHome` + bottom nav
+  - 768–1023 (`tablet`): `WinemakerMobileHome` dentro del shell con rail (mismo UI móvil, sin pipeline desktop)
+  - ≥1024 (`desktop`): `WinemakerDesktopHome` — pipeline 6 columnas, sin acordeones
+
+Ver [WINEMAKER-HOME.md](./WINEMAKER-HOME.md).
 
 ## QA
 

@@ -7,6 +7,9 @@ import {
   isWinemakerPath,
 } from '@/lib/proof/dashboard-routes'
 
+/** Ancho del panel de chat de equipo (px). */
+export const TEAM_CHAT_PANEL_WIDTH_PX = 280
+
 /** Ancho del rail lateral desktop (px). */
 export const DASHBOARD_RAIL_WIDTH_PX = 52
 
@@ -19,6 +22,13 @@ export function shouldShowDesktopRailForBreakpoint(breakpoint: ShellBreakpoint):
 /** @deprecated Prefer shouldShowDesktopRailForBreakpoint */
 export function shouldShowDesktopRail(isMobile: boolean): boolean {
   return !isMobile
+}
+
+export function shouldShowTeamChatDock(
+  breakpoint: ShellBreakpoint,
+  isWinemaker: boolean
+): boolean {
+  return isWinemaker && breakpoint !== 'mobile'
 }
 
 export function shouldShowWinemakerMobileNav(

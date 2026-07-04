@@ -303,6 +303,32 @@ select {
   outline-offset: 2px;
 }
 
+.proof-dashboard-rail-link[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--fg-0);
+  color: var(--canvas);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms var(--ease-out);
+  z-index: 30;
+  box-shadow: var(--shadow-sm);
+}
+
+.proof-dashboard-rail-link:hover::after,
+.proof-dashboard-rail-link:focus-visible::after {
+  opacity: 1;
+}
+
 .proof-dashboard-header {
   flex-shrink: 0;
   z-index: 15;

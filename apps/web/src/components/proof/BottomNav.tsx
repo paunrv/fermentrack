@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { useTranslations } from 'next-intl'
 
-export type BottomNavItemId = 'inicio' | 'lotes' | 'agenda' | 'conectar' | 'tareas' | 'mas'
+export type BottomNavItemId = 'inicio' | 'lotes' | 'agenda' | 'chat' | 'conectar' | 'tareas' | 'mas'
 
 export type BottomNavProfile = 'winemaker' | 'bodega'
 
@@ -16,6 +16,7 @@ export const BOTTOM_NAV_ITEMS: Record<
   inicio: { emoji: '🏠', labelKey: 'inicio', href: '/dashboard' },
   lotes: { emoji: '🍷', labelKey: 'lotes', href: '/dashboard/winemaker/lotes' },
   agenda: { emoji: '📅', labelKey: 'agenda', href: '/dashboard/winemaker/agenda' },
+  chat: { emoji: '💬', labelKey: 'chat', href: '/dashboard/winemaker/chat' },
   conectar: { emoji: '🔗', labelKey: 'conectar', href: '/dashboard' },
   tareas: { emoji: '✅', labelKey: 'tareas', href: '/bodega' },
   mas: { emoji: '⋯', labelKey: 'mas', href: '/dashboard/settings' },
@@ -121,19 +122,28 @@ export function BottomNav({
   onCaptureToggle,
   fixed = false,
   showEquipo = false,
+  showChat = false,
 }: {
   profile: BottomNavProfile
   captureOpen: boolean
   onCaptureToggle: () => void
   fixed?: boolean
   showEquipo?: boolean
+  showChat?: boolean
 }) {
   const t = useTranslations('dashboard.bottomNav')
   const tItems = useTranslations('dashboard.bottomNav.items')
   const tMas = useTranslations('dashboard.bottomNav.mas')
   const pathname = usePathname()
   const { slots } = useBottomNavSlots(profile)
-  const [leftItems, rightItems] = useMemo(() => [slots.slice(0, 2), slots.slice(2, 4)], [slots])
+  const resolvedSlots = useMemo(() => {
+    if (!showChat) return slots
+    return slots.map(id => (id === 'conectar' ? 'chat' : id)) as BottomNavItemId[]
+  }, [showChat, slots])
+  const [leftItems, rightItems] = useMemo(
+    () => [resolvedSlots.slice(0, 2), resolvedSlots.slice(2, 4)],
+    [resolvedSlots]
+  )
   const [masOpen, setMasOpen] = useState(false)
   const masItems = useMemo(() => masItemsFor(profile, showEquipo), [profile, showEquipo])
 

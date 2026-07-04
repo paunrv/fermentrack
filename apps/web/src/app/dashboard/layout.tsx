@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserAvatarUrl, getUserInitials } from '@/lib/auth/user'
 import { useProfile } from '@/context/ProfileContext'
@@ -29,25 +29,31 @@ import { fetchDestiladorMembresia } from '@/lib/supabase/destilador'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useTranslations } from 'next-intl'
 import {
-  NAV_OPERACION_DEFS,
-  pageTitleForPath,
-  visibleNavDefs,
-} from '@/lib/proof/dashboard-nav'
-import {
   DASHBOARD_CANVAS_HEADER_HEIGHT_PX,
-  DASHBOARD_RAIL_WIDTH_PX,
-  isDashboardNavItemActive,
   shouldShowDashboardInnerHeader,
   shouldShowDesktopRailForBreakpoint,
   shouldShowBottomNav,
+  shouldShowTeamChatDock,
   shouldShowWinemakerMobileNav,
   shellHorizontalPadding,
   innerHeaderAskMaxWidth,
 } from '@/lib/proof/dashboard-shell'
+import { pageTitleForPath } from '@/lib/proof/dashboard-nav'
+import { buildDashboardRail } from '@/lib/proof/dashboard-rail'
+import { railIcon } from '@/lib/proof/dashboard-rail-icons'
+import { DashboardRail } from '@/components/proof/DashboardRail'
+import { fetchTeamAccess } from '@/app/actions/equipo'
 import { MobileBottomNav } from '@/components/proof/MobileBottomNav'
 import { WinemakerMobileNav } from '@/components/proof/WinemakerMobileNav'
 import { ProofDatosCobroSheet } from '@/components/proof/ProofDatosCobroSheet'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
+import {
+  TeamChatDock,
+  TeamChatRailToggle,
+  useTeamChatDockState,
+} from '@/components/proof/TeamChatDock'
+import { useTeamChatUnread } from '@/hooks/useTeamChatUnread'
+import { orgHasFeature } from '@/lib/proof/org-features'
 
 type Role = ExtraProfile | 'producer'
 
@@ -75,38 +81,6 @@ const ic = (path: React.ReactNode) => (
 )
 
 const ICONS = {
-  inicio: ic(
-    <>
-      <path d="M3 11l9-8 9 8" />
-      <path d="M5 10v10h14V10" />
-      <path d="M10 20v-6h4v6" />
-    </>
-  ),
-  inventario: ic(
-    <>
-      <path d="M3 7l9-4 9 4-9 4-9-4z" />
-      <path d="M3 7v10l9 4 9-4V7" />
-      <path d="M12 11v10" />
-    </>
-  ),
-  movimientos: ic(
-    <>
-      <path d="M3 12h13" />
-      <path d="M13 6l6 6-6 6" />
-    </>
-  ),
-  catalogo: ic(
-    <>
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
-      <circle cx="7" cy="7" r="1.4" />
-    </>
-  ),
-  clientes: ic(
-    <>
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-    </>
-  ),
   ajustes: ic(
     <>
       <circle cx="12" cy="12" r="3" />
@@ -130,41 +104,6 @@ const ICONS = {
   ),
 }
 
-const ICON_BY_HREF: Record<string, React.ReactNode> = {
-  '/dashboard': ICONS.inicio,
-  '/dashboard/inventario': ICONS.inventario,
-  '/dashboard/pedidos': ICONS.movimientos,
-  '/dashboard/movimientos': ICONS.movimientos,
-  '/dashboard/productos': ICONS.catalogo,
-  '/dashboard/clientes': ICONS.clientes,
-  '/dashboard/credito': ICONS.movimientos,
-  '/dashboard/productores': ICONS.catalogo,
-  '/dashboard/recepcion': ICONS.camera,
-  '/dashboard/remisiones': ICONS.movimientos,
-  '/dashboard/destilador/compras': ICONS.movimientos,
-  '/dashboard/destilador/lotes': ICONS.inventario,
-  '/dashboard/destilador/produccion': ICONS.catalogo,
-  '/dashboard/destilador/bodega': ICONS.inventario,
-  '/dashboard/destilador/ventas': ICONS.clientes,
-  '/dashboard/winemaker/lotes': ICONS.inventario,
-  '/dashboard/winemaker/proveedores': ICONS.clientes,
-  '/dashboard/winemaker/documentos': ICONS.camera,
-  '/dashboard/winemaker/gastos': ICONS.movimientos,
-  '/dashboard/winemaker/agenda': ICONS.catalogo,
-}
-
-function defsToNavItems(
-  defs: typeof NAV_OPERACION_DEFS,
-  t: (key: string) => string
-): NavItem[] {
-  return defs.map(def => ({
-    href: def.href,
-    label: t(def.labelKey),
-    roles: def.roles,
-    icon: ICON_BY_HREF[def.href] ?? ICONS.catalogo,
-  }))
-}
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('dashboard')
   const path = usePathname()
@@ -177,6 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [membresia, setMembresia] = useState<DestMembresia>('basico')
   const [datosCobroOpen, setDatosCobroOpen] = useState(false)
   const [datosCobroStrip, setDatosCobroStrip] = useState(false)
+  const [showEquipo, setShowEquipo] = useState(false)
   const askCameraRef = useRef<HTMLInputElement>(null)
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isCanvas = path === '/dashboard'
@@ -195,9 +135,67 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isTablet = breakpoint === 'tablet'
   const shellPadX = shellHorizontalPadding(breakpoint)
   const isWinemakerMobileHome = isWinemaker && isCanvas && isMobile
+  const isDedicatedChatPage = path.startsWith('/dashboard/winemaker/chat')
   const showWinemakerMobileNav = shouldShowWinemakerMobileNav(breakpoint, isWinemaker)
+  const showTeamChatDock = shouldShowTeamChatDock(breakpoint, isWinemaker) && !isDedicatedChatPage
   const showSidebar = shouldShowDesktopRailForBreakpoint(breakpoint)
   const showMobileNav = shouldShowBottomNav(breakpoint, isWinemaker)
+  const { open: chatOpen, toggle: toggleChat } = useTeamChatDockState()
+  const chatEnabled =
+    isWinemaker &&
+    !!activeOrg &&
+    orgHasFeature(
+      { plan: activeOrg.plan, features: activeOrg.features },
+      'chat'
+    )
+  const { unreadCount: chatUnreadCount } = useTeamChatUnread({
+    organizationId: activeOrg?.id,
+    userId: user?.id,
+    enabled: chatEnabled,
+  })
+
+  const effectiveProfile =
+    activeProfile ??
+    (isWinemaker ? ({ profile_type_v2: 'winemaker', is_super_user: false } as Profile) : null)
+
+  const railModel = useMemo(
+    () =>
+      buildDashboardRail(
+        loading
+          ? {
+              profile: null,
+              isWinemaker: false,
+              chatEnabled: false,
+              showEquipo: false,
+            }
+          : {
+              profile: effectiveProfile,
+              isWinemaker,
+              chatEnabled: !!chatEnabled,
+              showEquipo,
+            }
+      ),
+    [effectiveProfile, isWinemaker, chatEnabled, showEquipo, loading]
+  )
+
+  const navItems = useMemo(
+    () =>
+      (loading
+        ? buildDashboardRail({
+            profile: null,
+            isWinemaker: false,
+            chatEnabled: false,
+            showEquipo: false,
+          }).flatItems
+        : railModel.flatItems
+      ).map(item => ({
+        href: item.href,
+        label: t(item.labelKey),
+        roles: 'all' as const,
+        icon: railIcon(item.icon),
+      })),
+    [loading, railModel.flatItems, t]
+  )
 
   const initials = getUserInitials(user)
 
@@ -206,17 +204,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.push('/sign-in')
   }
 
-  const navItems = loading
-    ? defsToNavItems(NAV_OPERACION_DEFS, t)
-    : defsToNavItems(
-        visibleNavDefs(
-          activeProfile ??
-            (isWinemaker
-              ? ({ profile_type_v2: 'winemaker', is_super_user: false } as Profile)
-              : null)
-        ),
-        t
-      )
+  useEffect(() => {
+    if (!activeOrg?.id || !isWinemaker) {
+      setShowEquipo(false)
+      return
+    }
+    let cancelled = false
+    fetchTeamAccess(activeOrg.id)
+      .then(access => {
+        if (!cancelled) setShowEquipo(access.canManage)
+      })
+      .catch(() => {
+        if (!cancelled) setShowEquipo(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeOrg?.id, isWinemaker])
 
   useEffect(() => {
     if (!isLoaded || loading || orgLoading || !profilesResolved || !orgsResolved) return
@@ -332,92 +336,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       {showSidebar && (
-        <aside
-          style={{
-            width: DASHBOARD_RAIL_WIDTH_PX,
-            flexShrink: 0,
-            position: 'sticky',
-            top: 0,
-            height: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            background: 'var(--canvas)',
-            borderRight: '1px solid var(--hairline)',
-            padding: '14px 0 12px',
-            zIndex: 20,
-          }}
-        >
-          <Link
-            href="/dashboard"
-            aria-label={t('shell.homeAria')}
-            style={{
-              textDecoration: 'none',
-              display: 'grid',
-              placeItems: 'center',
-              marginBottom: 14,
-              width: 36,
-              height: 36,
-            }}
-          >
-            <span
-              aria-hidden
-              className="mono"
-              style={{
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                lineHeight: 1.15,
-                textAlign: 'center',
-                color: 'var(--fg-0)',
-              }}
-            >
-              PR
-              <br />
-              OF
-            </span>
-          </Link>
-
-          <nav
-            aria-label={t('shell.railNav')}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              width: '100%',
-              padding: '0 8px',
-              overflowY: 'auto',
-              flex: 1,
-            }}
-          >
-            {navItems.map((item, index) => {
-              const active = isDashboardNavItemActive(path, item.href)
-              const iconColor = theme.navText[index % theme.navText.length]!
-              return (
-                <SideRailLink
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  active={active}
-                  iconColor={iconColor}
-                  accent={theme.accent}
-                />
-              )
-            })}
-          </nav>
-
-          <div style={{ marginTop: 'auto', width: '100%', padding: '0 8px' }}>
-            <SideRailLink
-              href="/dashboard/settings"
-              label={t('nav.settings')}
-              icon={ICONS.ajustes}
-              active={path.startsWith('/dashboard/settings')}
-              iconColor={theme.navText[0]}
-              accent={theme.accent}
-            />
-          </div>
-        </aside>
+        <DashboardRail
+          path={path}
+          model={railModel}
+          accent={theme.accent}
+          t={key => t(key)}
+          chatSlot={
+            showTeamChatDock && chatEnabled ? (
+              <TeamChatRailToggle
+                open={chatOpen}
+                unreadCount={chatUnreadCount}
+                onToggle={toggleChat}
+                accent={theme.accent}
+              />
+            ) : undefined
+          }
+        />
       )}
 
       <main
@@ -655,7 +589,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               showWinemakerMobileNav || showMobileNav ? 'var(--proof-bottom-nav)' : 0,
           }}
         >
-          {children}
+          {showTeamChatDock && chatEnabled ? (
+            <TeamChatDock
+              organizationId={activeOrg?.id}
+              userId={user?.id}
+              enabled={chatEnabled}
+              open={chatOpen}
+            >
+              {children}
+            </TeamChatDock>
+          ) : (
+            children
+          )}
         </div>
       </main>
     </div>
@@ -935,69 +880,5 @@ function DropdownItem({
     <button type="button" role="menuitem" style={style} onClick={onClick}>
       {label}
     </button>
-  )
-}
-
-function SideRailLink({
-  href,
-  label,
-  icon,
-  active,
-  accent,
-}: {
-  href: string
-  label: string
-  icon: React.ReactNode
-  active: boolean
-  iconColor?: string
-  accent: string
-}) {
-  return (
-    <Link
-      href={href}
-      aria-label={label}
-      aria-current={active ? 'page' : undefined}
-      title={label}
-      className="proof-dashboard-rail-link"
-      style={{
-        position: 'relative',
-        display: 'grid',
-        placeItems: 'center',
-        width: '100%',
-        height: 36,
-        textDecoration: 'none',
-        color: active ? 'var(--fg-0)' : 'var(--fg-3)',
-        background: active ? 'var(--hover)' : 'transparent',
-        borderRadius: 'var(--radius-sm)',
-        transition: 'background 150ms var(--ease-out), color 150ms var(--ease-out)',
-      }}
-      onMouseEnter={e => {
-        if (active) return
-        e.currentTarget.style.background = 'var(--hover)'
-        e.currentTarget.style.color = 'var(--fg-0)'
-      }}
-      onMouseLeave={e => {
-        if (active) return
-        e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.color = 'var(--fg-3)'
-      }}
-    >
-      {active && (
-        <span
-          aria-hidden
-          style={{
-            position: 'absolute',
-            left: -8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            width: 2,
-            height: 18,
-            borderRadius: 1,
-            background: accent,
-          }}
-        />
-      )}
-      {icon}
-    </Link>
   )
 }

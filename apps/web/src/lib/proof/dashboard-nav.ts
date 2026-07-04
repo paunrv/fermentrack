@@ -39,6 +39,7 @@ export const NAV_DESTILADOR_DEFS: NavItemDef[] = [
 
 export const NAV_WINEMAKER_DEFS: NavItemDef[] = [
   { href: '/dashboard/winemaker/lotes', labelKey: 'nav.winemakerLots', roles: ['winemaker'] },
+  { href: '/dashboard/winemaker/bodega', labelKey: 'nav.winemakerCellar', roles: ['winemaker'] },
   { href: '/dashboard/winemaker/proveedores', labelKey: 'nav.winemakerSuppliers', roles: ['winemaker'] },
   { href: '/dashboard/winemaker/documentos', labelKey: 'nav.winemakerDocuments', roles: ['winemaker'] },
   { href: '/dashboard/winemaker/gastos', labelKey: 'nav.winemakerExpenses', roles: ['winemaker'] },
@@ -92,6 +93,8 @@ export function pageTitleForPath(
     ['/dashboard/winemaker/documentos', 'pageTitles.winemakerDocuments'],
     ['/dashboard/winemaker/proveedores', 'pageTitles.winemakerSuppliers'],
     ['/dashboard/winemaker/lotes', 'pageTitles.winemakerLots'],
+    ['/dashboard/winemaker/bodega', 'pageTitles.winemakerCellar'],
+    ['/dashboard/winemaker/chat', 'pageTitles.teamChat'],
     ['/dashboard/equipo', 'pageTitles.team'],
     ['/dashboard/destilador/lotes/', 'pageTitles.distillerLotDetail'],
     ['/dashboard/destilador/compras', 'pageTitles.distillerPurchases'],
@@ -100,6 +103,7 @@ export function pageTitleForPath(
     ['/dashboard/destilador/ventas', 'pageTitles.distillerSales'],
     ['/dashboard/destilador/lotes', 'pageTitles.distillerLots'],
     ['/dashboard/settings', 'pageTitles.settings'],
+    ['/dashboard/conectar', 'pageTitles.connect'],
     ['/dashboard/costos', 'pageTitles.costs'],
     ['/dashboard/muestras', 'pageTitles.samples'],
     ['/dashboard/embotellado', 'pageTitles.bottling'],

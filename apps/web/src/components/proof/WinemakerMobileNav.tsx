@@ -5,12 +5,17 @@ import { useOrganization } from '@/context/OrganizationContext'
 import { fetchTeamAccess } from '@/app/actions/equipo'
 import { BottomNav } from '@/components/proof/BottomNav'
 import { CapturePanel } from '@/components/proof/CapturePanel'
+import { orgHasFeature } from '@/lib/proof/org-features'
 
 export function WinemakerMobileNav() {
   const { activeOrg } = useOrganization()
   const [captureOpen, setCaptureOpen] = useState(false)
   const [showEquipo, setShowEquipo] = useState(false)
   const [canWrite, setCanWrite] = useState(true)
+
+  const chatEnabled =
+    !!activeOrg?.id &&
+    orgHasFeature({ plan: activeOrg.plan, features: activeOrg.features }, 'chat')
 
   useEffect(() => {
     if (!activeOrg?.id) {
@@ -49,6 +54,7 @@ export function WinemakerMobileNav() {
         profile="winemaker"
         fixed
         showEquipo={showEquipo}
+        showChat={chatEnabled}
         captureOpen={captureOpen}
         onCaptureToggle={() => {
           if (!canWrite) return

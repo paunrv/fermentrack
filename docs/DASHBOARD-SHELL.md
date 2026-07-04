@@ -1,6 +1,6 @@
 # Dashboard shell (desktop)
 
-Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#31](https://github.com/paunrv/fermentrack/issues/31).
+Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#31](https://github.com/paunrv/fermentrack/issues/31) · Winemaker owner home Epic [#35](https://github.com/paunrv/fermentrack/issues/35) · [WINEMAKER-HOME.md](./WINEMAKER-HOME.md).
 
 ## Breakpoints
 
@@ -12,16 +12,29 @@ Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#31](https:/
 
 Ver `apps/web/src/hooks/useBreakpoint.ts` y `docs/DASHBOARD-BREAKPOINTS.md`.
 
+## Winemaker owner en `/dashboard`
+
+Solo el rol **owner** (no team canvas):
+
+| Tier | Componente |
+|------|------------|
+| `mobile`, `tablet` | `WinemakerMobileHome` (acordeones) |
+| `desktop` (≥1024) | `WinemakerDesktopHome` (pipeline + fila inferior, sin acordeones) |
+
+Resolución: `resolveWinemakerOwnerHomeView()` · doc completa en [WINEMAKER-HOME.md](./WINEMAKER-HOME.md).
+
 ## Matriz perfil × ruta
 
 | Área | Rutas | Rail (desktop) | Header |
 |------|-------|----------------|--------|
-| Canvas | `/dashboard` | Sí | Canvas header (PROOF + badge perfil) |
+| Canvas | `/dashboard` | Sí | Canvas header (PROOF + badge perfil) · **Owner winemaker:** ver [WINEMAKER-HOME.md](./WINEMAKER-HOME.md) |
 | Operativo | inventario, pedidos, winemaker/*, … | Sí | Inner header (título + ask + avatar) |
 | Canvas-style | `/dashboard/credito` | Sí | Sin inner header (contenido full-bleed) |
 | Agente legacy | `/dashboard/agente` | Sí | Sin inner header |
 
 Guards de perfil: `apps/web/src/lib/proof/dashboard-routes.ts`.
+
+Rail agrupado (Epic B): [DASHBOARD-RAIL.md](./DASHBOARD-RAIL.md) · `dashboard-rail.ts` · `DashboardRail.tsx`.
 
 ## Helpers
 
