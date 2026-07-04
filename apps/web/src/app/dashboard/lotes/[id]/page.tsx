@@ -6,12 +6,16 @@ import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useWinemakerOwnerCopy } from '@/hooks/useWinemakerOwnerCopy'
 import { useSupabase } from '@/hooks/useSupabase'
+import { LotBottlingForm } from '@/components/proof/LotBottlingForm'
+import { LotTeamChatSection } from '@/components/proof/LotTeamChatSection'
 import { fetchOwnerOrganizationId, varietalNamesFromInputs } from '@/lib/supabase/winemaker-owner-home'
+import type { LotEtapa } from '@/lib/proof/lot-etapa'
 
 type LotDetail = {
   id: string
   code: string
   current_stage: string | null
+  etapa: LotEtapa
   status: string
   notes: string | null
   varietal: string | null
@@ -45,7 +49,7 @@ export default function LoteDetailPage() {
 
         const { data, error: lotError } = await supabase
           .from('lots')
-          .select('id, code, current_stage, status, notes, lot_grape_inputs(varietals(name))')
+          .select('id, code, current_stage, etapa, status, notes, lot_grape_inputs(varietals(name))')
           .eq('id', lotId)
           .eq('organization_id', orgId)
           .maybeSingle()
@@ -60,6 +64,7 @@ export default function LoteDetailPage() {
             id: data.id,
             code: data.code,
             current_stage: data.current_stage,
+            etapa: data.etapa ?? 'cosecha',
             status: data.status,
             notes: data.notes,
             varietal: varietalNames.length > 0 ? varietalNames.join(', ') : null,
@@ -125,6 +130,8 @@ export default function LoteDetailPage() {
           {lot.notes ? (
             <p style={{ margin: '16px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{lot.notes}</p>
           ) : null}
+          <LotBottlingForm lotId={lot.id} />
+          <LotTeamChatSection lotId={lot.id} />
         </div>
       )}
     </div>
