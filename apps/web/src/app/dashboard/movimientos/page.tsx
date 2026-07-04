@@ -148,10 +148,11 @@ export default function MovimientosPage() {
       fetchClients(supabase, scope ?? undefined),
       fetchMovimientosSku(supabase, { date: today, scope: scope ?? undefined }),
     ])
-    setInventory(skuRowsToInventoryRows(skus))
+    const invRows = skuRowsToInventoryRows(skus)
+    setInventory(invRows)
     setClients(cls)
     setMovements(movs.map(movimientoSkuToDistMovement))
-    if (inv.length && !productId && inv[0]) setProductId(inv[0].id)
+    if (invRows.length && !productId && invRows[0]) setProductId(invRows[0].id)
     if (cls.length && !clientId && cls[0]) setClientId(cls[0].id)
   }
 
