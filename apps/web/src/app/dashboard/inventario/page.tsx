@@ -11,7 +11,7 @@ import { useSupabase } from '@/hooks/useSupabase'
 import {
   CATEGORIA_LIQUIDO_OPTIONS,
 } from '@/lib/proof/categoria-liquido'
-import { fetchSkus, rpcSyncAllSkusForScope } from '@/lib/supabase'
+import { fetchSkus } from '@/lib/supabase'
 import { mapSkuRowToSKU } from '@/lib/proof/sku-state'
 import type { EstadoSKU } from '@/lib/proof/types'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
@@ -40,7 +40,6 @@ export default function InventarioPage() {
   const breakpoint = useBreakpoint()
   const [skuRows, setSkuRows] = useState<Awaited<ReturnType<typeof fetchSkus>>>([])
   const [loading, setLoading] = useState(true)
-  const [syncing, setSyncing] = useState(false)
   const [filtro, setFiltro] = useState<Filtro>('todos')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -128,21 +127,7 @@ export default function InventarioPage() {
 
   const skus = useMemo(() => skuRows.map(mapSkuRowToSKU), [skuRows])
   const skuRowById = useMemo(() => new Map(skuRows.map(r => [r.id, r])), [skuRows])
-  const needsSync = !loading && skus.length === 0
-
-  async function onSyncCatalog() {
-    if (!scope) return
-    setSyncing(true)
-    try {
-      await rpcSyncAllSkusForScope(supabase, scope.user_id, scope.profile_type_v2)
-      await loadSkus()
-    } catch (e) {
-      console.error(e)
-      alert(e instanceof Error ? e.message : t('syncError'))
-    } finally {
-      setSyncing(false)
-    }
-  }
+  const isEmpty = !loading && skus.length === 0
 
   const filtered = useMemo(() => {
     return skus.filter(s => {
@@ -186,36 +171,34 @@ export default function InventarioPage() {
   return (
     <div style={pagePadding({ withAiBar: true, breakpoint })}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        {needsSync && (
+        {isEmpty && (
           <div
             style={{
               marginBottom: 20,
               padding: '16px 18px',
               borderRadius: 'var(--radius-card)',
-              border: '1px solid var(--gold)',
-              background: 'var(--gold-soft)',
+              border: '1px solid var(--hairline)',
+              background: 'var(--panel)',
             }}
           >
             <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--fg-0)', lineHeight: 1.5 }}>
-              {t('syncBanner')}
+              {t('empty.noSkus')}
             </p>
-            <button
-              type="button"
-              onClick={() => void onSyncCatalog()}
-              disabled={syncing}
+            <Link
+              href="/dashboard/productos/nueva"
               style={{
+                display: 'inline-block',
                 padding: '10px 16px',
                 background: 'var(--gold)',
-                border: 'none',
                 borderRadius: 'var(--radius-sm)',
                 color: 'var(--ink)',
                 fontSize: 12,
                 fontWeight: 600,
-                cursor: syncing ? 'wait' : 'pointer',
+                textDecoration: 'none',
               }}
             >
-              {syncing ? t('syncing') : t('syncCatalog')}
-            </button>
+              {t('empty.createFirstSku')}
+            </Link>
           </div>
         )}
 
@@ -420,7 +403,7 @@ export default function InventarioPage() {
             toolbar={
               <HorizontalChipRail options={filtroOptions} value={filtro} onChange={setFiltro} />
             }
-            emptyMessage={needsSync ? t('empty.needsSync') : t('empty.noFilterResults')}
+            emptyMessage={isEmpty ? t('empty.noSkus') : t('empty.noFilterResults')}
             loading={loading}
             itemWidth={176}
             skeletonCount={3}
@@ -429,7 +412,7 @@ export default function InventarioPage() {
               <InventarioSkuRailCard
                 key={s.id}
                 sku={s}
-                href={s.distProductId ? `/dashboard/productos/${s.distProductId}` : null}
+                href={`/dashboard/productos/${s.id}`}
                 canEdit={skuRowById.has(s.id)}
                 onEdit={() => openEditForm(s.id)}
               />
@@ -481,7 +464,7 @@ export default function InventarioPage() {
       <ConnectedProofAIBar
         pantalla="inventario"
         profileType="distributor"
-        hints={{ pantalla: { kpis, skuCount: skus.length, filtro, needsSync } }}
+        hints={{ pantalla: { kpis, skuCount: skus.length, filtro, isEmpty } }}
         fallback={{ mensaje: proofMsg, accionLabel: tCommon('analyzeWithProof') }}
       />
     </div>

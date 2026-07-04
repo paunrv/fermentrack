@@ -100,7 +100,6 @@ export interface SkuRow {
   en_transito: boolean
   en_consignacion: boolean
   ultimo_movimiento: string | null
-  dist_product_id: string | null
   cliente_id: string | null
   etiqueta_id: string | null
   imagen_url: string | null
@@ -404,19 +403,6 @@ export async function rpcConfirmarRecepcion(
   })
   throwIfError(error)
   return data as RecepcionRow
-}
-
-export async function rpcSyncAllSkusForScope(
-  sb: SupabaseClient,
-  userId: string,
-  profileTypeV2 = 'distributor'
-): Promise<number> {
-  const { data, error } = await sb.rpc('sync_all_skus_for_scope', {
-    p_user_id: userId,
-    p_profile_type_v2: profileTypeV2,
-  })
-  throwIfError(error)
-  return data as number
 }
 
 export async function rpcProofNextCodigo(

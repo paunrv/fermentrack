@@ -1342,7 +1342,8 @@
         "slowDebt": "Deuda en lento"
       },
       "empty": {
-        "needsSync": "Sin SKUs PROOF. Sincroniza tu catálogo arriba.",
+        "noSkus": "Sin productos en inventario. Crea tu primer SKU para empezar.",
+        "createFirstSku": "Crear producto",
         "noFilterResults": "Sin resultados para este filtro.",
         "mainWarehouse": "Sin SKUs en bodega principal.",
         "inTransit": "Sin SKUs en tránsito."

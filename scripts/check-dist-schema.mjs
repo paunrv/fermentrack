@@ -52,7 +52,7 @@ if (!url || !key) {
 const sb = createClient(url, key)
 let missing = 0
 
-console.log('Distributor SKU migration audit (M1–M3)\n')
+console.log('Distributor SKU migration audit (M1–M3, M8)\n')
 
 let m2Ok = false
 
@@ -100,7 +100,37 @@ if (rpcMissing || !m2Ok) {
   )
 }
 
+// M8: sync RPC revoked; skus.dist_product_id dropped
+const { error: syncRpcError } = await sb.rpc('sync_all_skus_for_scope', {
+  p_clerk_id: '00000000-0000-0000-0000-000000000000',
+  p_profile_type_v2: 'distributor',
+})
+const syncRevoked =
+  syncRpcError &&
+  (syncRpcError.code === 'PGRST202' ||
+    String(syncRpcError.message ?? '').includes('Could not find the function'))
+if (syncRevoked) {
+  console.log('✓ M8 sync_all_skus_for_scope — revoked')
+} else {
+  missing += 1
+  console.log(
+    `✗ M8 sync_all_skus_for_scope — still callable${syncRpcError ? '' : ' (unexpected success)'}`
+  )
+}
+
+const { error: distColError } = await sb.from('skus').select('dist_product_id').limit(1)
+const distColDropped =
+  distColError &&
+  (distColError.code === '42703' ||
+    String(distColError.message ?? '').includes('dist_product_id'))
+if (distColDropped) {
+  console.log('✓ M8 skus.dist_product_id — dropped')
+} else {
+  missing += 1
+  console.log(`✗ M8 skus.dist_product_id — still present`)
+}
+
 console.log(
-  `\n${missing === 0 ? 'All checks passed.' : `${missing} pending — run scripts/apply-dist-m2-m3.sql in SQL Editor`}`
+  `\n${missing === 0 ? 'All checks passed.' : `${missing} pending — see docs/DEPLOY-DIST-MIGRATIONS.md`}`
 )
 process.exit(missing === 0 ? 0 : 1)

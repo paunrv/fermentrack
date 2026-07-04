@@ -49,8 +49,6 @@ export interface SKU {
   estado: EstadoSKU
   ultimoMovimiento: Date | null
   pedidosReservados?: number
-  /** Catálogo legacy dist_products (enlace detalle) */
-  distProductId?: string | null
 }
 
 export type EstadoPedido =

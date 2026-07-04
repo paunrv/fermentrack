@@ -25,6 +25,5 @@ export function mapSkuRowToSKU(row: SkuRow): SKU {
     estado: estadoDb,
     ultimoMovimiento: row.ultimo_movimiento ? new Date(row.ultimo_movimiento) : null,
     pedidosReservados: row.stock_reservado > 0 ? 1 : 0,
-    distProductId: row.dist_product_id,
   }
 }

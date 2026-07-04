@@ -1342,7 +1342,8 @@
         "slowDebt": "Slow-moving debt"
       },
       "empty": {
-        "needsSync": "No PROOF SKUs. Sync your catalog above.",
+        "noSkus": "No products in inventory yet. Create your first SKU to get started.",
+        "createFirstSku": "Create product",
         "noFilterResults": "No results for this filter.",
         "mainWarehouse": "No SKUs in main warehouse.",
         "inTransit": "No SKUs in transit."

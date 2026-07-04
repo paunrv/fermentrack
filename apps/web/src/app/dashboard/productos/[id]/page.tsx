@@ -279,7 +279,7 @@ export default function ProductDetailPage() {
     setUploading(true)
     try {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-      const path = `${product.id}/${Date.now()}.${ext}`
+      const path = `skus/${product.id}/${Date.now()}.${ext}`
 
       const { error: uploadError } = await supabase.storage
         .from('product-images')

@@ -61,7 +61,6 @@ export {
   rpcCancelarPedido,
   rpcEntregarPedido,
   rpcConfirmarRecepcion,
-  rpcSyncAllSkusForScope,
   rpcProofNextCodigo,
   fetchSkus,
   fetchClientEtiquetas,

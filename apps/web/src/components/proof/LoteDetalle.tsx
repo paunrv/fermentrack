@@ -22,8 +22,9 @@ import {
   type KpiMetric,
   type ProfileType,
 } from '@/lib/proof/kpi-metrics'
-import { fetchDistMovements } from '@/lib/supabase'
-import { fetchSkuById, type SkuRow } from '@/lib/supabase/distribuidor'
+import type { DistMovementWithRefs } from '@/lib/supabase'
+import { fetchMovimientosSku, fetchSkuById, type SkuRow } from '@/lib/supabase/distribuidor'
+import { movimientoSkuToDistMovement } from '@/lib/proof/sku-dist-adapter'
 import {
   fetchCorridasByLote,
   fetchLoteById,
@@ -569,7 +570,7 @@ function buildDistillerSections(
 
 function buildDistributorSections(
   sku: SkuRow,
-  movements: Awaited<ReturnType<typeof fetchDistMovements>>
+  movements: DistMovementWithRefs[]
 ): CollapsibleSectionData[] {
   const timeline: TimelineEvent[] = movements.map(m => ({
     id: m.id,
@@ -656,9 +657,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
   const [corridas, setCorridas] = useState<CorridaRow[]>([])
   const [movimientos, setMovimientos] = useState<MovimientoInventarioRow[]>([])
   const [sku, setSku] = useState<SkuRow | null>(null)
-  const [distMovements, setDistMovements] = useState<
-    Awaited<ReturnType<typeof fetchDistMovements>>
-  >([])
+  const [distMovements, setDistMovements] = useState<DistMovementWithRefs[]>([])
 
   const { config: kpiConfig, updateKpi, loading: kpiLoading } = useKpiConfig(
     profileType,
@@ -695,13 +694,13 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
         setLote(null)
         setCorridas([])
         setMovimientos([])
-        if (s?.dist_product_id) {
-          const movs = await fetchDistMovements(supabase, {
+        if (s) {
+          const movs = await fetchMovimientosSku(supabase, {
             scope,
-            productId: s.dist_product_id,
+            skuId: s.id,
             limit: 25,
           })
-          setDistMovements(movs)
+          setDistMovements(movs.map(movimientoSkuToDistMovement))
         } else {
           setDistMovements([])
         }
