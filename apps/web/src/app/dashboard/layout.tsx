@@ -53,6 +53,7 @@ import {
   useTeamChatDockState,
 } from '@/components/proof/TeamChatDock'
 import { useTeamChatUnread } from '@/hooks/useTeamChatUnread'
+import { useDashboardRailExpanded } from '@/hooks/useDashboardRailExpanded'
 import { orgHasFeature } from '@/lib/proof/org-features'
 
 type Role = ExtraProfile | 'producer'
@@ -141,6 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const showSidebar = shouldShowDesktopRailForBreakpoint(breakpoint)
   const showMobileNav = shouldShowBottomNav(breakpoint, isWinemaker)
   const { open: chatOpen, toggle: toggleChat } = useTeamChatDockState()
+  const { expanded: railExpanded, toggle: toggleRailExpanded } = useDashboardRailExpanded()
   const chatEnabled =
     isWinemaker &&
     !!activeOrg &&
@@ -341,6 +343,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           model={railModel}
           accent={theme.accent}
           t={key => t(key)}
+          expanded={railExpanded}
+          onToggleExpanded={toggleRailExpanded}
           chatSlot={
             showTeamChatDock && chatEnabled ? (
               <TeamChatRailToggle
@@ -348,6 +352,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 unreadCount={chatUnreadCount}
                 onToggle={toggleChat}
                 accent={theme.accent}
+                expanded={railExpanded}
               />
             ) : undefined
           }

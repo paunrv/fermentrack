@@ -712,6 +712,8 @@
       "homeAria": "PROOF · Inicio",
       "brandLabel": "PROOF",
       "railNav": "Navegación principal",
+      "railExpand": "Expandir menú",
+      "railCollapse": "Contraer menú",
       "railSettings": "Ajustes",
       "askPlaceholder": "Pregúntale a PROOF — stock, productos, entregas…",
       "askPlaceholderCompact": "Pregunta a PROOF…",

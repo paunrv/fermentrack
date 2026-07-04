@@ -10,7 +10,7 @@ Rail lateral de 52px con agrupación, separadores visibles y tooltips localizado
 |----|-------|--------|
 | B1 | [#45](https://github.com/paunrv/fermentrack/issues/45) | Auditoría ruta × perfil ✅ |
 | B2 | [#46](https://github.com/paunrv/fermentrack/issues/46) | Agrupación + separadores + tooltips ✅ |
-| B3 | [#47](https://github.com/paunrv/fermentrack/issues/47) | Modo expandido — *fuera de v1* |
+| B3 | [#47](https://github.com/paunrv/fermentrack/issues/47) | Modo expandido 52px ↔ 220px ✅ |
 
 ## B1 — Matriz ruta × perfil
 
@@ -52,7 +52,18 @@ Fuente de verdad: `apps/web/src/lib/proof/dashboard-rail.ts` · tests: `dashboar
 2. **Equipo** — separador · chat toggle + miembros + agenda (winemaker)
 3. **Configuración** — separador · pegado al pie (conectar + ajustes)
 
-Tooltips: `data-tooltip` + label de `dashboard.nav.*` vía next-intl.
+Tooltips: `data-tooltip` + label de `dashboard.nav.*` vía next-intl (solo en modo colapsado 52px).
+
+## B3 — Modo expandido
+
+| Pieza | Path |
+|-------|------|
+| Preferencia localStorage | `dashboard-rail-preference.ts` · clave `proof_dashboard_rail_expanded` |
+| Hook | `hooks/useDashboardRailExpanded.ts` |
+| Anchos | `DASHBOARD_RAIL_WIDTH_PX` (52) · `DASHBOARD_RAIL_WIDTH_EXPANDED_PX` (220) |
+| Toggle | Pie del rail · transición `width 200ms` |
+
+Modo colapsado = comportamiento B2. Modo expandido muestra etiquetas i18n sin truncar en la mayoría de locales.
 
 ## Criterios de aceptación
 

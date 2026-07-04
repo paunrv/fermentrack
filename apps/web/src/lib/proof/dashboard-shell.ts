@@ -13,6 +13,13 @@ export const TEAM_CHAT_PANEL_WIDTH_PX = 280
 /** Ancho del rail lateral desktop (px). */
 export const DASHBOARD_RAIL_WIDTH_PX = 52
 
+/** Ancho del rail expandido con etiquetas visibles (px). */
+export const DASHBOARD_RAIL_WIDTH_EXPANDED_PX = 220
+
+export function dashboardRailWidthPx(expanded: boolean): number {
+  return expanded ? DASHBOARD_RAIL_WIDTH_EXPANDED_PX : DASHBOARD_RAIL_WIDTH_PX
+}
+
 export const DASHBOARD_CANVAS_HEADER_HEIGHT_PX = 64
 
 export function shouldShowDesktopRailForBreakpoint(breakpoint: ShellBreakpoint): boolean {

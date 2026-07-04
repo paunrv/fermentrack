@@ -7,8 +7,8 @@ Epic [#2](https://github.com/paunrv/fermentrack/issues/2) · Issue [#31](https:/
 | Rango | Hook | Shell |
 |-------|------|--------|
 | ≤767px | `mobile` | Bottom nav o `WinemakerMobileNav` |
-| 768–1023px | `tablet` | Rail 52px + header (padding 20px) |
-| ≥1024px | `desktop` | Rail 52px + header sticky |
+| 768–1023px | `tablet` | Rail 52px (o 220px expandido) + header (padding 20px) |
+| ≥1024px | `desktop` | Rail 52px (o 220px expandido) + header sticky |
 
 Ver `apps/web/src/hooks/useBreakpoint.ts` y `docs/DASHBOARD-BREAKPOINTS.md`.
 
@@ -34,7 +34,7 @@ Resolución: `resolveWinemakerOwnerHomeView()` · doc completa en [WINEMAKER-HOM
 
 Guards de perfil: `apps/web/src/lib/proof/dashboard-routes.ts`.
 
-Rail agrupado (Epic B): [DASHBOARD-RAIL.md](./DASHBOARD-RAIL.md) · `dashboard-rail.ts` · `DashboardRail.tsx`.
+Rail agrupado (Epic B): [DASHBOARD-RAIL.md](./DASHBOARD-RAIL.md) · toggle expandido persistido en `localStorage` (`proof_dashboard_rail_expanded`).
 
 ## Helpers
 

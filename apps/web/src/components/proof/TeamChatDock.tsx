@@ -56,28 +56,34 @@ export function TeamChatRailToggle({
   unreadCount,
   onToggle,
   accent,
+  expanded = false,
 }: {
   open: boolean
   unreadCount: number
   onToggle: () => void
   accent: string
+  expanded?: boolean
 }) {
   const t = useTranslations('dashboard.teamChat')
+  const label = t('toggle')
 
   return (
     <button
       type="button"
-      aria-label={t('toggle')}
+      aria-label={label}
       aria-expanded={open}
-      data-tooltip={t('toggle')}
+      {...(!expanded ? { 'data-tooltip': label } : {})}
       className="proof-dashboard-rail-link"
       onClick={onToggle}
       style={{
         position: 'relative',
-        display: 'grid',
-        placeItems: 'center',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: expanded ? 'flex-start' : 'center',
+        gap: expanded ? 10 : 0,
         width: '100%',
         height: 36,
+        padding: expanded ? '0 10px' : 0,
         border: 'none',
         borderRadius: 'var(--radius-sm)',
         background: open ? 'var(--hover)' : 'transparent',
@@ -90,7 +96,7 @@ export function TeamChatRailToggle({
           aria-hidden
           style={{
             position: 'absolute',
-            left: -8,
+            left: expanded ? 0 : -8,
             top: '50%',
             transform: 'translateY(-50%)',
             width: 2,
@@ -100,16 +106,30 @@ export function TeamChatRailToggle({
           }}
         />
       ) : null}
-      <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>
+      <span aria-hidden style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>
         💬
       </span>
+      {expanded ? (
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            minWidth: 0,
+          }}
+        >
+          {label}
+        </span>
+      ) : null}
       {unreadCount > 0 ? (
         <span
           aria-label={t('unread', { count: unreadCount })}
           style={{
             position: 'absolute',
             top: 4,
-            right: 6,
+            right: expanded ? 10 : 6,
             minWidth: 16,
             height: 16,
             padding: '0 4px',
