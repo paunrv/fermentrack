@@ -16,6 +16,7 @@ import {
   requireMcpContext,
   type McpToolResult,
 } from '@/lib/mcp/tool-helpers'
+import { normalizeMcpPlanLimitError } from '@/lib/mcp/plan-limit-mcp'
 
 export type McpWriteInput = McpScopeInput & {
   idempotency_key?: string
@@ -87,16 +88,22 @@ export async function withMcpWriteScope<T>(
 
     return result
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unknown error'
+    const limitError = await normalizeMcpPlanLimitError(
+      e,
+      sb,
+      scope?.organizationId ?? input?.organization_id ?? null
+    )
+    const message =
+      limitError?.payload.message ?? (e instanceof Error ? e.message : 'Unknown error')
     void logMcpToolCall({
       userId: ctx.userId,
       organizationId: scope?.organizationId ?? input?.organization_id ?? null,
       profileType: scope?.profileType ?? input?.profile_type ?? 'unknown',
       toolName,
-      status: 'error',
+      status: limitError ? 'limit_blocked' : 'error',
       idempotencyKey: input?.idempotency_key,
       errorMessage: message,
     })
-    throw e
+    throw limitError ?? e
   }
 }

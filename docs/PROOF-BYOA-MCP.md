@@ -160,9 +160,10 @@ Auth remains Supabase bearer JWT (RLS). Tools accept optional `profile_type` and
 | Distributor | `list_pedidos` | `fetchPedidos` |
 | Distributor | `get_credito_resumen` | `fetchCreditoCxCResumen` |
 | Distributor | `list_ordenes_compra` | `fetchOrdenesCompraDistribuidorPendientes` |
-| Winemaker | `list_lotes` | `fetchWineLots` (org-scoped) |
+| Winemaker | `list_lotes` | `loadWinemakerPipelineMcpContext` → `public.lots` + `etapa`, `dias_sin_registro` ([#44](https://github.com/paunrv/fermentrack/issues/44)) |
 | Winemaker | `list_documentos` | `fetchDocuments` |
-| Winemaker | `get_resumen_bodega` | `fetchWinemakerSummary` + agent context |
+| Winemaker | `get_resumen_bodega` | `fetchWinemakerSummary` + pipeline `salud` / `conteo_por_etapa` ([#44](https://github.com/paunrv/fermentrack/issues/44)) |
+| Winemaker | `list_etiquetas` | `fetchFinishedGoodsInventory` → grouped etiqueta → existencia ([#57](https://github.com/paunrv/fermentrack/issues/57)) |
 | Distiller | `list_corridas` | `fetchCorridas` |
 | Distiller | `list_viajes` | `fetchViajes` + `fetchProductosViaje` |
 | Distiller | `list_lotes_distiller` | `fetchLotesForAgent` |
@@ -184,7 +185,51 @@ Auth remains Supabase bearer JWT (RLS). Tools accept optional `profile_type` and
 
 Call `get_session_snapshot` first, then profile tools with `profile_type` / `organization_id` if needed.
 
-## Phase 2 write tools (implemented — #27)
+### Winemaker pipeline tools (Epic A — #44)
+
+`list_lotes` and `get_resumen_bodega` read **`public.lots`** (pipeline `etapa`) plus `public.events` for `dias_sin_registro` and attention. Legacy `wm_wine_lots.status` counts remain in `resumen.porEstado` inside `get_resumen_bodega` only.
+
+**`list_lotes` response (excerpt):**
+
+```json
+{
+  "organization_id": "…",
+  "salud": "requiere_atencion",
+  "count": 2,
+  "lotes": [{
+    "id": "…",
+    "code": "LOT-2026-001",
+    "etapa": "fermentacion",
+    "dias_sin_registro": 8,
+    "varietal": "Chardonnay",
+    "requiere_atencion": true,
+    "contenedor": "Tanque 3",
+    "ultima_medicion": "17°C · 20.1°Bx"
+  }]
+}
+```
+
+**`get_resumen_bodega` pipeline fields:**
+
+```json
+{
+  "salud": "todo_en_orden",
+  "lotes_requieren_atencion": 0,
+  "conteo_por_etapa": {
+    "cosecha": 1,
+    "analisis": 0,
+    "fermentacion": 2,
+    "malolactica": 0,
+    "crianza": 0,
+    "embotellado": 0
+  },
+  "pipeline": { "…": "same object" }
+}
+```
+
+Loader: `apps/web/src/lib/mcp/winemaker-pipeline-context.ts` · doc: [WINEMAKER-HOME.md](./WINEMAKER-HOME.md).
+
+Example agent prompt: *«Resume el estado de mi bodega»* → call `get_resumen_bodega`.
 
 All write tools accept optional `idempotency_key` (min 8 chars). Duplicate keys return the first result with `idempotent_replay: true`.
 
@@ -201,8 +246,83 @@ Winemaker writes require org role `owner`, `admin`, or `member` — **viewer is 
 | `editar_sku` | distributor | `editar_sku` |
 | `get_cobro_context` | distributor | `fetchDetalleClienteCredito` (structured, no hosted LLM) |
 | `import_winemaker_ticket` | winemaker | `processTicketUpload` from extraction JSON |
+| `registrar_salida` | winemaker | `recordWmSalida` — `origen = mcp`, optional `preview_only` ([#57](https://github.com/paunrv/fermentrack/issues/57)) |
 
 **Import schemas:** `lib/mcp/schemas/recepcion-draft.ts`, `lib/mcp/schemas/winemaker-ticket.ts`
+
+### Winemaker finished goods (Epic D — #57)
+
+**`list_etiquetas`** — grouped cellar inventory (`wm_etiquetas` → `wm_existencias` + derived salidas). Filters: `anada`, `formato`, `etiqueta_id`.
+
+```json
+{
+  "organization_id": "…",
+  "etiquetas": [{
+    "etiqueta_id": "…",
+    "nombre": "Nebbiolo Reserva",
+    "total_disponibles": 96,
+    "existencias": [{
+      "existencia_id": "…",
+      "anada": 2023,
+      "formato": "750ml",
+      "lote_origen": "LOT-2023-004",
+      "botellas_por_caja": 12,
+      "producidas": 480,
+      "consumidas": 384,
+      "disponibles": 96,
+      "cajas_disponibles": 8,
+      "sueltas": 0
+    }]
+  }]
+}
+```
+
+**`registrar_salida`** — deduct stock from an existencia. Params: `existencia_id`, `tipo`, `cantidad`, `unidad` (`cajas`|`botellas`), optional `rango_inicio`/`rango_fin` (Enterprise only), optional `preview_only` (validate conversion without insert). Audit: `mcp_tool_calls` via `withMcpWriteScope`.
+
+**Enterprise gating (D6):** `rango_inicio` / `rango_fin` require `orgHasFeature(org, 'numeracion_botellas')` — enabled on Enterprise plan or via `organizations.features.numeracion_botellas`. Free/Pro calls with a range return a validation error (no upsell in MCP). See [INVENTARIO-TERMINADO.md](./INVENTARIO-TERMINADO.md#gating-numeración-d6--58).
+
+Example agent flow: `list_etiquetas` → `registrar_salida` with `preview_only: true` → confirm with user → `registrar_salida` without preview.
+
+Loader: `lib/proof/finished-goods-inventory.ts` · doc: [INVENTARIO-TERMINADO.md](./INVENTARIO-TERMINADO.md).
+
+## Epic C — Team chat MCP (implemented — #37)
+
+**`list_mensajes`** — read org chat messages. Params: optional `lote_id`, optional `desde` (ISO timestamp), optional `limit`. Requires `orgHasFeature(org, 'chat')` (Pro+).
+
+**`enviar_mensaje`** — write message as authenticated user. Params: `body`, optional `lote_id`. Sets `origen = mcp`. Audit: `mcp_tool_calls` via `withMcpWriteScope`.
+
+Example agent flow: `list_mensajes` with `lote_id` → summarize thread → `enviar_mensaje` with update for the team.
+
+Loader: `lib/proof/team-chat.ts` · doc: [CHAT.md](./CHAT.md).
+
+## Epic E — Plan limits MCP (implemented — #59 E3)
+
+When a write would exceed `plan_limites`, MCP tools throw **`McpPlanLimitError`** — a JSON payload (in the error message) with:
+
+- `error`: `plan_limit_reached`
+- `resource`, `current`, `limit`, `plan`
+- `message` — human/agent explanation (data is never deleted)
+- `upgrade_path`: `/dashboard/settings`
+- `upgrade_hint` — Pro vs Enterprise guidance
+- `data_safe`: `true`
+
+Audit: `mcp_tool_calls.status = limit_blocked` (via `withMcpWriteScope`).
+
+| Tool | Limits enforced |
+|------|-----------------|
+| `crear_lote` | `lotes_activos` |
+| `registrar_embotellado` | new `etiquetas` + `memoria` (event) |
+| `cambiar_etapa_lote` | `memoria` (STAGE_CHANGED event) |
+
+Helper: `lib/mcp/plan-limit-mcp.ts` · catalog: [PLANES.md](./PLANES.md).
+
+**`crear_lote`** — params: `code`, optional `vintage_id`, `etapa`, `notes`. Creates active row in `public.lots`.
+
+**`registrar_embotellado`** — params: `lot_id`, `etiqueta_id` or `new_etiqueta`, `anada`, `formato`, `botellas_por_caja`, `botellas_producidas`. Same domain as web bottling form.
+
+**`cambiar_etapa_lote`** — params: `lot_id`, `to_etapa`, optional `note`. Appends `STAGE_CHANGED` and updates pipeline stage.
+
+Example agent flow on limit: tool fails with JSON payload → agent explains limit → offers `/dashboard/settings` upgrade → user can still read all historical data via read tools.
 
 ## Phase 3 connection hub UI (implemented — #28)
 

@@ -10,7 +10,9 @@ import {
   importRecepcionDraftTool,
   registrarPagoClienteTool,
 } from '@/lib/mcp/tools/distributor-write'
-import { importWinemakerTicketTool } from '@/lib/mcp/tools/winemaker-write'
+import { importWinemakerTicketTool, registrarSalidaTool, enviarMensajeTool, crearLoteTool, registrarEmbotelladoTool, cambiarEtapaLoteTool } from '@/lib/mcp/tools/winemaker-write'
+import { LOT_ETAPA_VALUES } from '@/lib/proof/lot-etapa'
+import { WM_BOTELLAS_POR_CAJA_VALUES } from '@/lib/proof/finished-goods-types'
 
 const profileTypeSchema = z.enum(['distributor', 'winemaker', 'distiller']).optional()
 const organizationIdSchema = z.string().uuid().optional()
@@ -164,5 +166,107 @@ export function registerProofMcpWriteTools(server: McpServer): void {
       },
     },
     async input => importWinemakerTicketTool(input)
+  )
+
+  server.registerTool(
+    'registrar_salida',
+    {
+      title: 'Register finished-goods exit',
+      description:
+        'Deduct bottles from a wm_existencias line. Set preview_only=true to validate conversion without writing. Enterprise orgs may pass rango_inicio/fin.',
+      inputSchema: {
+        ...writeScopeFields,
+        existencia_id: z.string().uuid(),
+        tipo: z.enum(['venta', 'degustacion', 'autoconsumo', 'merma', 'ajuste']),
+        cantidad: z.number().positive(),
+        unidad: z.enum(['botellas', 'cajas']),
+        rango_inicio: z.number().int().positive().nullable().optional(),
+        rango_fin: z.number().int().positive().nullable().optional(),
+        preview_only: z.boolean().optional(),
+      },
+    },
+    async input => registrarSalidaTool(input)
+  )
+
+  server.registerTool(
+    'enviar_mensaje',
+    {
+      title: 'Send team chat message',
+      description:
+        'Post a message to the winemaker org chat as the authenticated user. Optional lote_id anchors the message to a lot thread. Requires Pro+ chat feature.',
+      inputSchema: {
+        ...writeScopeFields,
+        body: z.string().min(1).max(4000),
+        lote_id: z.string().uuid().nullable().optional(),
+      },
+    },
+    async input => enviarMensajeTool(input)
+  )
+
+  server.registerTool(
+    'crear_lote',
+    {
+      title: 'Create active lot',
+      description:
+        'Create a new active pipeline lot. Subject to plan lotes_activos limit — returns structured upgrade path when blocked.',
+      inputSchema: {
+        ...writeScopeFields,
+        code: z.string().min(1),
+        vintage_id: z.string().uuid().nullable().optional(),
+        etapa: z.enum(LOT_ETAPA_VALUES as unknown as [string, ...string[]]).optional(),
+        notes: z.string().nullable().optional(),
+      },
+    },
+    async input => crearLoteTool(input)
+  )
+
+  server.registerTool(
+    'registrar_embotellado',
+    {
+      title: 'Register bottling',
+      description:
+        'Close a lot and create finished-goods stock. New labels count toward etiquetas limit; event counts toward memoria.',
+      inputSchema: {
+        ...writeScopeFields,
+        lot_id: z.string().uuid(),
+        etiqueta_id: z.string().uuid().nullable().optional(),
+        new_etiqueta: z
+          .object({
+            nombre: z.string().min(1),
+            varietal: z.string().nullable().optional(),
+            region: z.string().nullable().optional(),
+            tipo: z.string().nullable().optional(),
+          })
+          .nullable()
+          .optional(),
+        anada: z.number().int().min(1900).max(2100),
+        formato: z.string().min(1),
+        botellas_por_caja: z
+          .number()
+          .refine((v): v is (typeof WM_BOTELLAS_POR_CAJA_VALUES)[number] =>
+            (WM_BOTELLAS_POR_CAJA_VALUES as readonly number[]).includes(v)
+          ),
+        botellas_producidas: z.number().int().positive(),
+        occurred_at: z.string().datetime().optional(),
+      },
+    },
+    async input => registrarEmbotelladoTool(input)
+  )
+
+  server.registerTool(
+    'cambiar_etapa_lote',
+    {
+      title: 'Change lot pipeline stage',
+      description:
+        'Append STAGE_CHANGED event and update lot etapa. Subject to memoria plan limit.',
+      inputSchema: {
+        ...writeScopeFields,
+        lot_id: z.string().uuid(),
+        to_etapa: z.enum(LOT_ETAPA_VALUES as unknown as [string, ...string[]]),
+        note: z.string().nullable().optional(),
+        occurred_at: z.string().datetime().optional(),
+      },
+    },
+    async input => cambiarEtapaLoteTool(input)
   )
 }

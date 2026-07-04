@@ -1,4 +1,13 @@
 import { buildWinemakerAgentContext } from '@/lib/proof/winemaker-agent-context'
+import { formatEtiquetasForMcp } from '@/lib/mcp/finished-goods-mcp'
+import { loadWinemakerPipelineMcpContext } from '@/lib/mcp/winemaker-pipeline-context'
+import {
+  fetchFinishedGoodsInventory,
+  filterFinishedGoodsInventory,
+} from '@/lib/proof/finished-goods-inventory'
+import { fetchTeamChatMessages } from '@/lib/proof/team-chat'
+import { fetchOrgFeatureSource, orgHasFeature } from '@/lib/proof/org-features'
+import { formatMensajesForMcp } from '@/lib/mcp/team-chat-mcp'
 import {
   fetchDocuments,
   fetchProductionCosts,
@@ -16,19 +25,15 @@ function clampLimit(limit: number | undefined, fallback = 50): number {
 export async function listLotesTool(input?: McpScopeInput & { limit?: number }) {
   return withMcpScope(input, 'winemaker', async ({ sb, scope }) => {
     const orgId = scope.organizationId!
-    const rows = await fetchWineLots(sb, orgId, { limit: clampLimit(input?.limit) })
+    const { lotes, pipeline } = await loadWinemakerPipelineMcpContext(sb, orgId)
+    const limit = clampLimit(input?.limit)
+    const sliced = lotes.slice(0, limit)
+
     return {
       organization_id: orgId,
-      count: rows.length,
-      lotes: rows.map(l => ({
-        id: l.id,
-        code: l.lot_code,
-        name: l.name,
-        varietal: l.varietal,
-        status: l.status,
-        liters_initial: l.liters_initial,
-        vintage: l.vintage,
-      })),
+      count: sliced.length,
+      salud: pipeline.salud,
+      lotes: sliced,
     }
   })
 }
@@ -61,24 +66,83 @@ export async function listDocumentosTool(
 export async function getResumenBodegaTool(input?: McpScopeInput) {
   return withMcpScope(input, 'winemaker', async ({ sb, scope }) => {
     const orgId = scope.organizationId!
-    const [summary, lots, documents, costs, suppliers] = await Promise.all([
+    const [summary, pipelineCtx, wmLots, documents, costs, suppliers] = await Promise.all([
       fetchWinemakerSummary(sb, orgId),
+      loadWinemakerPipelineMcpContext(sb, orgId),
       fetchWineLots(sb, orgId, { limit: 500 }),
       fetchDocuments(sb, orgId, { limit: 500 }),
       fetchProductionCosts(sb, orgId, { limit: 500 }),
       fetchSuppliers(sb, orgId, { limit: 500 }),
     ])
+
     const agentCtx = buildWinemakerAgentContext(
-      lots,
+      wmLots,
       documents,
       costs,
       suppliers,
       summary
     )
+
     return {
       organization_id: orgId,
       resumen: agentCtx.resumen,
       summary,
+      pipeline: pipelineCtx.pipeline,
+      conteo_por_etapa: pipelineCtx.pipeline.conteo_por_etapa,
+      salud: pipelineCtx.pipeline.salud,
+      lotes_requieren_atencion: pipelineCtx.pipeline.lotes_requieren_atencion,
+    }
+  })
+}
+
+export async function listEtiquetasTool(
+  input?: McpScopeInput & {
+    anada?: number
+    formato?: string
+    etiqueta_id?: string
+  }
+) {
+  return withMcpScope(input, 'winemaker', async ({ sb, scope }) => {
+    const orgId = scope.organizationId!
+    const raw = await fetchFinishedGoodsInventory(sb, orgId)
+    const filtered = filterFinishedGoodsInventory(raw, {
+      anada: input?.anada,
+      formato: input?.formato,
+      etiquetaId: input?.etiqueta_id,
+    })
+
+    return {
+      organization_id: orgId,
+      ...formatEtiquetasForMcp(filtered),
+    }
+  })
+}
+
+export async function listMensajesTool(
+  input?: McpScopeInput & {
+    lote_id?: string
+    desde?: string
+    limit?: number
+  }
+) {
+  return withMcpScope(input, 'winemaker', async ({ sb, scope }) => {
+    const orgId = scope.organizationId!
+    const org = await fetchOrgFeatureSource(sb, orgId)
+    if (!orgHasFeature(org, 'chat')) {
+      throw new Error('chat_not_allowed')
+    }
+
+    const filter = input?.lote_id ? { loteId: input.lote_id } : 'channel'
+    const messages = await fetchTeamChatMessages(sb, orgId, {
+      filter,
+      limit: clampLimit(input?.limit, 50),
+      since: input?.desde,
+    })
+
+    return {
+      organization_id: orgId,
+      count: messages.length,
+      mensajes: formatMensajesForMcp(messages),
     }
   })
 }

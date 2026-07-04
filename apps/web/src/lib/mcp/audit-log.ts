@@ -1,6 +1,6 @@
 import { createServiceSupabase } from '@/utils/supabase/service'
 
-export type McpAuditStatus = 'success' | 'error' | 'replay'
+export type McpAuditStatus = 'success' | 'error' | 'replay' | 'limit_blocked'
 
 export type McpAuditLogInput = {
   userId: string

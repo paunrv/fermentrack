@@ -16,7 +16,9 @@ import { getSessionSnapshotTool } from '@/lib/mcp/tools/session'
 import {
   getResumenBodegaTool,
   listDocumentosTool,
+  listEtiquetasTool,
   listLotesTool,
+  listMensajesTool,
 } from '@/lib/mcp/tools/winemaker'
 
 const profileTypeSchema = z.enum(['distributor', 'winemaker', 'distiller']).optional()
@@ -103,7 +105,8 @@ export function registerProofMcpTools(server: McpServer): void {
     'list_lotes',
     {
       title: 'List wine lots',
-      description: 'Winemaker wine lots for the active organization.',
+      description:
+        'Active winery lots with pipeline etapa, dias_sin_registro, and attention flags (public.lots).',
       inputSchema: {
         ...scopeFields,
         limit: z.number().int().min(1).max(200).optional(),
@@ -130,10 +133,43 @@ export function registerProofMcpTools(server: McpServer): void {
     'get_resumen_bodega',
     {
       title: 'Winery summary',
-      description: 'Winemaker bodega KPIs (lots, documents, monthly costs).',
+      description:
+        'Winemaker bodega KPIs plus pipeline salud, conteo_por_etapa, and lotes_requieren_atencion.',
       inputSchema: scopeFields,
     },
     async input => getResumenBodegaTool(input)
+  )
+
+  server.registerTool(
+    'list_etiquetas',
+    {
+      title: 'List finished-goods labels',
+      description:
+        'Winemaker cellar inventory grouped by etiqueta with producidas/consumidas/disponibles per existencia.',
+      inputSchema: {
+        ...scopeFields,
+        anada: z.number().int().min(1900).max(2100).optional(),
+        formato: z.string().min(1).optional(),
+        etiqueta_id: z.string().uuid().optional(),
+      },
+    },
+    async input => listEtiquetasTool(input)
+  )
+
+  server.registerTool(
+    'list_mensajes',
+    {
+      title: 'List team chat messages',
+      description:
+        'Winemaker org chat messages. Filter by lote_id or since timestamp. Requires Pro+ chat feature.',
+      inputSchema: {
+        ...scopeFields,
+        lote_id: z.string().uuid().optional(),
+        desde: z.string().datetime().optional(),
+        limit: z.number().int().min(1).max(200).optional(),
+      },
+    },
+    async input => listMensajesTool(input)
   )
 
   server.registerTool(
