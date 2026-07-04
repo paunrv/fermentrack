@@ -88,7 +88,17 @@ Or manually: Vercel Dashboard → Project → Settings → Environment Variables
 | MCP without bearer → 401 | ✅ | Live `curl` → 401 |
 | Forged JWT → 401 | ✅ | Live `curl` → 401 |
 | Rate limit → 429 + `Retry-After` | ✅ | Live load test → 429, `Retry-After: 43` |
-| Write success in `mcp_tool_calls` | ⏳ | Pending one MCP write after winemaker migrations applied |
+| Write success in `mcp_tool_calls` | ⏳ | 0 rows in prod (2026-07-03) — needs one MCP write after deploy green |
+
+### QA session (2026-07-03)
+
+| Check | Result | Notes |
+|-------|--------|-------|
+| `npm run check:prod-schema` | ✅ 7/7 | incl. `mcp_tool_calls` |
+| MCP unit tests (`apps/web`) | ✅ 26/26 | after fix `plan-limit-mcp.ts` missing `>` |
+| Vercel Production deploy | ❌ → fix pushed | Build failed: `Promise<McpPlanLimitError \| null {` syntax error in `plan-limit-mcp.ts:128` — fixed in `main` |
+| Prod URL probe (unauthenticated) | ⏭️ | `fermentrack-paunrvs-projects.vercel.app` behind Vercel SSO — verify hub logged-in in browser |
+| `mcp_tool_calls` rows | 0 | No audited writes yet |
 
 ### Live MCP auth/rate-limit probe (localhost)
 
@@ -111,5 +121,6 @@ rate_limit 429 43
 
 - [x] Push commits to `origin/main` and deploy (2026-07-03)
 - [x] Apply winemaker migrations Jul 2026 — see `docs/DEPLOY-MIGRATIONS.md` (2026-07-03)
-- [ ] Confirm connection hub loads on production `/dashboard`
+- [ ] Confirm connection hub loads on production `/dashboard` (blocked until Vercel deploy green — rebuild after syntax fix)
+- [ ] One MCP write → row in `mcp_tool_calls` (manual: Cursor/Claude + bearer token)
 - [ ] Rotate Supabase JWT if any test tokens were created during QA
