@@ -86,6 +86,7 @@ export function ProofLanding() {
     name: string
     price: string
     period: string
+    priceNote?: string
     description: string
     features: string[]
     cta: string
@@ -282,7 +283,7 @@ export function ProofLanding() {
           </div>
           <h2
             style={{
-              margin: '0 0 48px',
+              margin: '0 0 12px',
               fontSize: 'clamp(26px, 3.5vw, 36px)',
               fontWeight: 700,
               letterSpacing: '-0.02em',
@@ -291,6 +292,17 @@ export function ProofLanding() {
           >
             {tPricing('title')}
           </h2>
+          <p
+            style={{
+              margin: '0 0 48px',
+              fontSize: 15,
+              color: LANDING.textSecondary,
+              maxWidth: 560,
+              lineHeight: 1.5,
+            }}
+          >
+            {tPricing('subtitle')}
+          </p>
           <div
             style={{
               display: 'grid',
@@ -332,6 +344,11 @@ export function ProofLanding() {
                     <span style={{ fontSize: 14, color: LANDING.textSecondary }}>{plan.period}</span>
                   )}
                 </div>
+                {plan.priceNote ? (
+                  <p style={{ margin: '0 0 8px', fontSize: 12, color: LANDING.textSecondary }}>
+                    {plan.priceNote}
+                  </p>
+                ) : null}
                 <p style={{ margin: '0 0 20px', fontSize: 13, color: LANDING.textSecondary }}>
                   {plan.description}
                 </p>
