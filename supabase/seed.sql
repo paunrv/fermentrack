@@ -201,6 +201,7 @@ insert into public.lots (
   code,
   product_type,
   current_stage,
+  etapa,
   status,
   notes
 )
@@ -212,6 +213,7 @@ values
     'LOT-2026-001',
     'wine',
     'fermentation',
+    'fermentacion',
     'active',
     null
   ),
@@ -222,6 +224,7 @@ values
     'LOT-2026-002',
     'wine',
     'harvest',
+    'cosecha',
     'active',
     null
   );

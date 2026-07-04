@@ -1,7 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { OrgFeaturesMap } from '@/lib/proof/org-features'
+import { parseOrgFeatures } from '@/lib/proof/org-features'
+import {
+  computeTrialEndsAt,
+  formatRenewalAnchorDate,
+  nextRenewalAnchorDate,
+} from '@/lib/billing/billing-renewal-anchor'
 
 export type OrgType = 'winemaker'
-export type OrgPlan = 'free' | 'pro' | 'enterprise'
+export type OrgPlan = 'regular' | 'pro' | 'enterprise' | 'trial'
 export type OrgPlanStatus = 'active' | 'trialing' | 'past_due' | 'canceled'
 export type OrgMemberRole = 'owner' | 'admin' | 'member' | 'viewer'
 export type OrgMemberStatus = 'active' | 'invited' | 'suspended'
@@ -13,6 +20,12 @@ export interface Organization {
   org_type: OrgType
   plan: OrgPlan
   plan_status: OrgPlanStatus
+  features: Record<string, boolean>
+  billing_cycle?: 'monthly' | 'annual' | null
+  trial_ends_at?: string | null
+  primer_registro_at?: string | null
+  renewal_anchor?: string | null
+  founding_member_at?: string | null
   created_at: string
 }
 
@@ -34,30 +47,52 @@ export function slugifyOrganizationName(name: string): string {
   return base || 'bodega'
 }
 
-function mapOrganizationRow(row: Record<string, unknown>): Organization {
+/** PostgREST error when a selected column is absent (migration not applied yet). */
+export function isMissingColumnError(error: unknown, column: string): boolean {
+  if (typeof error !== 'object' || error === null || !('message' in error)) return false
+  const message = String((error as { message: unknown }).message).toLowerCase()
+  return message.includes(column.toLowerCase()) && message.includes('does not exist')
+}
+
+function mapOrganizationRow(
+  row: Record<string, unknown>,
+  opts?: { legacySchema?: boolean }
+): Organization {
+  const legacy = opts?.legacySchema ?? false
   return {
     id: String(row.id),
     name: String(row.name),
     slug: String(row.slug),
-    org_type: row.org_type as OrgType,
-    plan: (row.plan as OrgPlan) ?? 'free',
-    plan_status: (row.plan_status as OrgPlanStatus) ?? 'active',
-    created_at: String(row.created_at),
+    org_type: legacy ? 'winemaker' : ((row.org_type as OrgType) ?? 'winemaker'),
+    plan: (row.plan as OrgPlan) ?? 'regular',
+    plan_status: legacy ? 'active' : ((row.plan_status as OrgPlanStatus) ?? 'active'),
+    features: legacy ? {} : parseOrgFeatures(row.features) as OrgFeaturesMap,
+    billing_cycle: legacy ? null : ((row.billing_cycle as Organization['billing_cycle']) ?? null),
+    trial_ends_at: legacy ? null : ((row.trial_ends_at as string | null) ?? null),
+    primer_registro_at: legacy ? null : ((row.primer_registro_at as string | null) ?? null),
+    renewal_anchor: legacy ? null : ((row.renewal_anchor as string | null) ?? null),
+    founding_member_at: legacy ? null : ((row.founding_member_at as string | null) ?? null),
+    created_at: String(row.created_at ?? new Date().toISOString()),
   }
 }
 
-export async function fetchWinemakerOrganizations(
-  sb: SupabaseClient,
-  userId: string
-): Promise<OrganizationMembership[]> {
-  const { data, error } = await sb
-    .from('organization_members')
-    .select(
+const ORG_EMBED_FULL = `
+        id,
+        name,
+        slug,
+        org_type,
+        plan,
+        plan_status,
+        features,
+        billing_cycle,
+        trial_ends_at,
+        primer_registro_at,
+        renewal_anchor,
+        founding_member_at,
+        created_at
       `
-      role,
-      status,
-      organization_id,
-      organizations (
+
+const ORG_EMBED_NO_FEATURES = `
         id,
         name,
         slug,
@@ -65,11 +100,46 @@ export async function fetchWinemakerOrganizations(
         plan,
         plan_status,
         created_at
+      `
+
+const ORG_EMBED_LEGACY = `
+        id,
+        name,
+        slug,
+        plan,
+        created_at
+      `
+
+async function fetchActiveMembershipRows(sb: SupabaseClient, userId: string, orgEmbed: string) {
+  return sb
+    .from('organization_members')
+    .select(
+      `
+      role,
+      status,
+      organization_id,
+      organizations (
+        ${orgEmbed}
       )
     `
     )
     .eq('user_id', userId)
     .eq('status', 'active')
+}
+
+export async function fetchWinemakerOrganizations(
+  sb: SupabaseClient,
+  userId: string
+): Promise<OrganizationMembership[]> {
+  let legacySchema = false
+  let { data, error } = await fetchActiveMembershipRows(sb, userId, ORG_EMBED_FULL)
+
+  if (error && isMissingColumnError(error, 'org_type')) {
+    legacySchema = true
+    ;({ data, error } = await fetchActiveMembershipRows(sb, userId, ORG_EMBED_LEGACY))
+  } else if (error && isMissingColumnError(error, 'features')) {
+    ;({ data, error } = await fetchActiveMembershipRows(sb, userId, ORG_EMBED_NO_FEATURES))
+  }
 
   if (error) throw error
 
@@ -79,8 +149,8 @@ export async function fetchWinemakerOrganizations(
     const orgRaw = row.organizations
     const orgRow = Array.isArray(orgRaw) ? orgRaw[0] : orgRaw
     if (!orgRow || typeof orgRow !== 'object') continue
-    const org = mapOrganizationRow(orgRow as Record<string, unknown>)
-    if (org.org_type !== 'winemaker') continue
+    const org = mapOrganizationRow(orgRow as Record<string, unknown>, { legacySchema })
+    if (!legacySchema && org.org_type !== 'winemaker') continue
     memberships.push({
       organizationId: String(row.organization_id),
       role: row.role as OrgMemberRole,
@@ -127,6 +197,9 @@ export async function createWinemakerOrganization(
 
   const suffix = Date.now().toString(36).slice(-4)
   let slug = `${slugifyOrganizationName(trimmed)}-${suffix}`
+  const now = new Date()
+  const trialEndsAt = computeTrialEndsAt(now)
+  const renewalAnchor = formatRenewalAnchorDate(nextRenewalAnchorDate(now))
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data, error } = await sb
@@ -135,8 +208,15 @@ export async function createWinemakerOrganization(
         name: trimmed,
         slug,
         org_type: 'winemaker',
+        plan: 'trial',
+        plan_status: 'trialing',
+        trial_ends_at: trialEndsAt.toISOString(),
+        primer_registro_at: now.toISOString(),
+        renewal_anchor: renewalAnchor,
       })
-      .select('id, name, slug, org_type, plan, plan_status, created_at')
+      .select(
+        'id, name, slug, org_type, plan, plan_status, trial_ends_at, primer_registro_at, renewal_anchor, created_at'
+      )
       .single()
 
     if (!error && data) {

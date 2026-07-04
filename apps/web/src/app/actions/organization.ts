@@ -18,6 +18,9 @@ export type OrganizationSettings = {
   canManage: boolean
   isOwner: boolean
   hasStripeCustomer: boolean
+  billing_cycle: 'monthly' | 'annual' | null
+  trial_ends_at: string | null
+  renewal_anchor: string | null
 }
 
 async function requireOrgMember(organizationId: string) {
@@ -66,7 +69,9 @@ export async function fetchOrganizationSettings(
 
   const { data: org, error: orgError } = await sb
     .from('organizations')
-    .select('id, name, slug, plan, plan_status, stripe_customer_id')
+    .select(
+      'id, name, slug, plan, plan_status, stripe_customer_id, billing_cycle, trial_ends_at, renewal_anchor'
+    )
     .eq('id', organizationId)
     .maybeSingle()
 
@@ -83,6 +88,9 @@ export async function fetchOrganizationSettings(
     canManage: ['owner', 'admin'].includes(member.role),
     isOwner: member.role === 'owner',
     hasStripeCustomer: Boolean(org.stripe_customer_id),
+    billing_cycle: (org.billing_cycle as OrganizationSettings['billing_cycle']) ?? null,
+    trial_ends_at: (org.trial_ends_at as string | null) ?? null,
+    renewal_anchor: (org.renewal_anchor as string | null) ?? null,
   }
 }
 

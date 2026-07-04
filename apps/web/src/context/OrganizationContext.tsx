@@ -27,6 +27,7 @@ export interface ActiveOrganizationContext {
   org_type: Organization['org_type']
   plan: Organization['plan']
   plan_status: Organization['plan_status']
+  features: Organization['features']
 }
 
 export interface ActiveMembershipContext {
@@ -89,6 +90,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
       org_type: found.organization.org_type,
       plan: found.organization.plan,
       plan_status: found.organization.plan_status,
+      features: found.organization.features,
     })
     setMembership({ role: found.role, status: found.status })
     writeStoredOrganizationId(found.organizationId)
@@ -169,6 +171,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         org_type: next.organization.org_type,
         plan: next.organization.plan,
         plan_status: next.organization.plan_status,
+        features: next.organization.features,
       })
       setMembership({ role: next.role, status: next.status })
       writeStoredOrganizationId(organizationId)
