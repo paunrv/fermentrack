@@ -125,7 +125,7 @@ export async function normalizeMcpPlanLimitError(
   e: unknown,
   sb: SupabaseClient | null,
   organizationId: string | null
-): Promise<McpPlanLimitError | null {
+): Promise<McpPlanLimitError | null> {
   if (e instanceof McpPlanLimitError) return e
   if (e instanceof PlanLimitError) return McpPlanLimitError.fromPlanLimitError(e)
 
