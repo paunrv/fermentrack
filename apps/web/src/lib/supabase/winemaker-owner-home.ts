@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { PROOF_PROFILES_TABLE, type ExtraProfile } from '@/lib/supabase'
+import { etapaFromCurrentStage, type LotEtapa } from '@/lib/proof/lot-etapa'
 
 // Winemaker owner home — parcialmente org-aware. Epic #3: docs/ORG-TENANCY.md
 
@@ -9,6 +10,7 @@ export type OwnerLotRow = {
   id: string
   code: string
   current_stage: string | null
+  etapa: LotEtapa
   varietal: string | null
   created_at: string
 }
@@ -42,6 +44,7 @@ type LotQueryRow = {
   id: string
   code: string
   current_stage: string | null
+  etapa: LotEtapa | null
   created_at: string
   lot_grape_inputs: unknown
 }
@@ -128,7 +131,7 @@ export async function fetchActiveLots(
 ): Promise<OwnerLotRow[]> {
   const { data, error } = await sb
     .from('lots')
-    .select('id, code, current_stage, created_at, lot_grape_inputs(varietals(name))')
+    .select('id, code, current_stage, etapa, created_at, lot_grape_inputs(varietals(name))')
     .eq('organization_id', organizationId)
     .eq('status', 'active')
     .order('code')
@@ -141,6 +144,7 @@ export async function fetchActiveLots(
       id: lot.id,
       code: lot.code,
       current_stage: lot.current_stage,
+      etapa: lot.etapa ?? etapaFromCurrentStage(lot.current_stage),
       varietal: varietalNames.length > 0 ? varietalNames.join(', ') : null,
       created_at: lot.created_at,
     }

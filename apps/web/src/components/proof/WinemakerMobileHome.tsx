@@ -1,35 +1,25 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { AlertCard } from '@/components/proof/AlertCard'
 import { CollapsibleSection } from '@/components/proof/CollapsibleSection'
-import { useAuth } from '@/hooks/useAuth'
-import { useOrganization } from '@/context/OrganizationContext'
-import { useProfile } from '@/context/ProfileContext'
-import { useSupabase } from '@/hooks/useSupabase'
+import { PlanLimitHomeAlerts } from '@/components/proof/PlanLimitHomeAlerts'
+import {
+  CalendarTaskRow,
+  PendingTaskRow,
+} from '@/components/proof/WinemakerOwnerTaskRows'
+import { useWinemakerOwnerHomeData } from '@/hooks/useWinemakerOwnerHomeData'
 import {
   useWinemakerOwnerCopy,
   type WinemakerOwnerCopy,
 } from '@/hooks/useWinemakerOwnerCopy'
-import { buildOwnerAlertDescriptors } from '@/lib/proof/winemaker-owner-alerts'
 import { getProfileTheme, proofAccentCssVars } from '@/lib/proof/profile-theme'
-import type { AlertaOperativa } from '@/lib/proof/types'
-import {
-  completeTask,
-  fetchActiveLots,
-  fetchLotEvents,
-  fetchOwnerOrganizationId,
-  fetchPendingTasks,
-  fetchProfileFirstName,
-  fetchTasksToday,
-  fetchTeamMembers,
-  memberInitial,
-  type OwnerLotRow,
-  type OwnerTaskRow,
-  type OwnerTeamMember,
-} from '@/lib/supabase/winemaker-owner-home'
+import { isMcpConfiguredLocally } from '@/lib/mcp/connection-status'
+import type { OwnerLotRow, OwnerTeamMember } from '@/lib/supabase/winemaker-owner-home'
+import { memberInitial } from '@/lib/supabase/winemaker-owner-home'
 
 function EmptyMessage({ children }: { children: React.ReactNode }) {
   return (
@@ -57,78 +47,6 @@ function LotRow({ lot, copy }: { lot: OwnerLotRow; copy: WinemakerOwnerCopy }) {
         <p className="proof-task-row__meta">{meta || tHome('noDetail')}</p>
       </div>
     </button>
-  )
-}
-
-function CalendarTaskRow({
-  task,
-  onComplete,
-  completing,
-  copy,
-}: {
-  task: OwnerTaskRow
-  onComplete: (id: string) => void
-  completing: string | null
-  copy: WinemakerOwnerCopy
-}) {
-  const tHome = useTranslations('winemaker.home')
-
-  return (
-    <div className="proof-task-row">
-      <input
-        type="checkbox"
-        aria-label={tHome('completeTaskAria', { title: task.title })}
-        disabled={completing === task.id}
-        onChange={() => onComplete(task.id)}
-        style={{ marginTop: 2, accentColor: 'var(--proof-accent)' }}
-      />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <p className="proof-task-row__title">{task.title}</p>
-        <p className="proof-task-row__meta">{copy.formatTaskTime(task.due_at)}</p>
-      </div>
-    </div>
-  )
-}
-
-function PendingTaskRow({
-  task,
-  onComplete,
-  completing,
-  copy,
-}: {
-  task: OwnerTaskRow
-  onComplete: (id: string) => void
-  completing: string | null
-  copy: WinemakerOwnerCopy
-}) {
-  const tHome = useTranslations('winemaker.home')
-  const assignee = task.assigneeName?.trim() || tHome('unassigned')
-
-  return (
-    <div className="proof-task-row">
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <p className="proof-task-row__title">{task.title}</p>
-        <p className="proof-task-row__meta">{tHome('assignedTo', { name: assignee })}</p>
-      </div>
-      <button
-        type="button"
-        disabled={completing === task.id}
-        onClick={() => onComplete(task.id)}
-        style={{
-          flexShrink: 0,
-          fontSize: 11,
-          fontWeight: 600,
-          padding: '6px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--line)',
-          background: 'var(--panel)',
-          color: 'var(--fg-0)',
-          cursor: completing === task.id ? 'wait' : 'pointer',
-        }}
-      >
-        {completing === task.id ? '…' : tHome('completeTask')}
-      </button>
-    </div>
   )
 }
 
@@ -183,97 +101,31 @@ function TeamMemberRow({ member, copy }: { member: OwnerTeamMember; copy: Winema
 
 export function WinemakerMobileHome() {
   const theme = getProfileTheme('winemaker')
-  const supabase = useSupabase()
-  const { user } = useAuth()
-  const { activeOrg } = useOrganization()
-  const { scope } = useProfile()
-  const userId = scope?.user_id ?? user?.id
   const copy = useWinemakerOwnerCopy()
   const tCommon = useTranslations('winemaker.common')
   const tHome = useTranslations('winemaker.home')
+  const tHub = useTranslations('connectionHub')
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [firstName, setFirstName] = useState('')
-  const [organizationId, setOrganizationId] = useState<string | null>(null)
-  const [lots, setLots] = useState<OwnerLotRow[]>([])
-  const [alerts, setAlerts] = useState<AlertaOperativa[]>([])
-  const [tasksToday, setTasksToday] = useState<OwnerTaskRow[]>([])
-  const [pendingTasks, setPendingTasks] = useState<OwnerTaskRow[]>([])
-  const [team, setTeam] = useState<OwnerTeamMember[]>([])
-  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
+  const {
+    loading,
+    error,
+    displayName,
+    organizationId,
+    lots,
+    alerts,
+    tasksToday,
+    pendingTasks,
+    team,
+    completingTaskId,
+    completeTask,
+    planWarnings,
+  } = useWinemakerOwnerHomeData()
 
-  const displayName = firstName || copy.defaultFirstName
-
-  const load = useCallback(async () => {
-    if (!userId) {
-      setLoading(false)
-      return
-    }
-    setLoading(true)
-    setError(null)
-
-    try {
-      const [orgId, name] = await Promise.all([
-        fetchOwnerOrganizationId(supabase, userId),
-        fetchProfileFirstName(supabase, userId),
-      ])
-      const resolvedOrgId = orgId ?? activeOrg?.id ?? null
-      setFirstName(name)
-      setOrganizationId(resolvedOrgId)
-
-      if (!resolvedOrgId) {
-        setLots([])
-        setAlerts([])
-        setTasksToday([])
-        setPendingTasks([])
-        setTeam([])
-        return
-      }
-
-      const [activeLots, todayTasks, pending, members] = await Promise.all([
-        fetchActiveLots(supabase, resolvedOrgId),
-        fetchTasksToday(supabase, resolvedOrgId, userId),
-        fetchPendingTasks(supabase, resolvedOrgId, userId),
-        fetchTeamMembers(supabase, resolvedOrgId),
-      ])
-
-      const lotIds = activeLots.map(l => l.id)
-      const events = await fetchLotEvents(supabase, resolvedOrgId, lotIds)
-      const computedAlerts = copy.mapAlerts(buildOwnerAlertDescriptors(activeLots, events))
-
-      setLots(activeLots)
-      setAlerts(computedAlerts)
-      setTasksToday(todayTasks)
-      setPendingTasks(pending)
-      setTeam(members)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : tHome('loadError')
-      setError(msg)
-    } finally {
-      setLoading(false)
-    }
-  }, [supabase, userId, activeOrg?.id, copy, tHome])
+  const [mcpConfigured, setMcpConfigured] = useState(false)
 
   useEffect(() => {
-    void load()
-  }, [load])
-
-  const handleCompleteTask = useCallback(
-    async (taskId: string) => {
-      setCompletingTaskId(taskId)
-      try {
-        await completeTask(supabase, taskId)
-        setTasksToday(prev => prev.filter(t => t.id !== taskId))
-        setPendingTasks(prev => prev.filter(t => t.id !== taskId))
-      } catch (err) {
-        console.error('[WinemakerMobileHome] complete task', err)
-      } finally {
-        setCompletingTaskId(null)
-      }
-    },
-    [supabase]
-  )
+    setMcpConfigured(isMcpConfiguredLocally())
+  }, [])
 
   if (loading) {
     return (
@@ -309,6 +161,43 @@ export function WinemakerMobileHome() {
             {copy.attentionCount(alerts.length)}
           </p>
         </header>
+
+        <PlanLimitHomeAlerts warnings={planWarnings} />
+
+        <Link
+          href="/dashboard/conectar"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            marginBottom: 16,
+            padding: '12px 14px',
+            borderRadius: 12,
+            border: mcpConfigured
+              ? '0.5px solid color-mix(in srgb, var(--ok) 35%, var(--hairline))'
+              : '0.5px solid var(--hairline)',
+            background: mcpConfigured ? 'var(--ok-soft)' : 'var(--panel)',
+            textDecoration: 'none',
+            color: 'inherit',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)' }}>
+            {mcpConfigured ? tHub('ownerCta.connectedTitle') : tHub('ownerCta.title')}
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.45 }}>
+            {mcpConfigured ? tHub('ownerCta.connectedHint') : tHub('ownerCta.hint')}
+          </span>
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: mcpConfigured ? 'var(--ok)' : '#6940A5',
+              marginTop: 4,
+            }}
+          >
+            {mcpConfigured ? tHub('ownerCta.connectedAction') : tHub('ownerCta.action')} →
+          </span>
+        </Link>
 
         {error ? (
           <div
@@ -369,8 +258,8 @@ export function WinemakerMobileHome() {
                   <CalendarTaskRow
                     key={task.id}
                     task={task}
+                    onComplete={completeTask}
                     completing={completingTaskId}
-                    onComplete={handleCompleteTask}
                     copy={copy}
                   />
                 ))
@@ -390,8 +279,8 @@ export function WinemakerMobileHome() {
                   <PendingTaskRow
                     key={task.id}
                     task={task}
+                    onComplete={completeTask}
                     completing={completingTaskId}
-                    onComplete={handleCompleteTask}
                     copy={copy}
                   />
                 ))

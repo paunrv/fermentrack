@@ -10,7 +10,10 @@ import { useOrganization } from '@/context/OrganizationContext'
 import { useWinemakerAccess } from '@/hooks/useWinemakerAccess'
 import { ProofConnectionHub } from '@/components/proof/ProofConnectionHub'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
+import { WinemakerDesktopHome } from '@/components/proof/WinemakerDesktopHome'
 import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
+import { resolveWinemakerOwnerHomeView } from '@/lib/proof/winemaker-owner-home-view'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
 
@@ -44,6 +47,8 @@ export default function DashboardPage() {
   const isWinemakerOwner = isWinemaker && membership?.role === 'owner'
 
   const [ocFromUrl, setOcFromUrl] = useState<string | null>(null)
+  const breakpoint = useBreakpoint()
+  const ownerHomeView = resolveWinemakerOwnerHomeView(breakpoint)
 
   useEffect(() => {
     const oc = searchParams.get('oc')?.trim()
@@ -156,7 +161,7 @@ export default function DashboardPage() {
   if (isWinemaker && isWinemakerOwner) {
     return (
       <div style={{ ...pageShellStyle, overflow: 'hidden' }}>
-        <WinemakerMobileHome />
+        {ownerHomeView === 'desktop' ? <WinemakerDesktopHome /> : <WinemakerMobileHome />}
       </div>
     )
   }

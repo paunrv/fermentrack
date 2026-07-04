@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
+import type { LotEtapa } from '@/lib/proof/lot-etapa'
 import type { ExtraProfile } from '@/lib/supabase'
 import {
   mapOwnerAlertsToOperativas,
@@ -18,6 +19,7 @@ export function useWinemakerOwnerCopy() {
   const locale = useLocale() as AppLocale
   const tHome = useTranslations('winemaker.home')
   const tStage = useTranslations('winemaker.stage')
+  const tEtapa = useTranslations('winemaker.etapa')
   const tOrgRole = useTranslations('dashboard.equipo.orgRoles')
   const tProfile = useTranslations('dashboard.settings.profileTypes')
 
@@ -28,6 +30,7 @@ export function useWinemakerOwnerCopy() {
         if (!stage) return tStage('none')
         return tStage.has(stage) ? tStage(stage) : stage
       },
+      etapaLabel: (etapa: LotEtapa) => (tEtapa.has(etapa) ? tEtapa(etapa) : etapa),
       formatTaskTime: (dueAt: string | null) => {
         if (!dueAt) return tHome('noTime')
         return new Intl.DateTimeFormat(locale, {
@@ -52,7 +55,7 @@ export function useWinemakerOwnerCopy() {
         }),
       attentionCount: (count: number) => tHome('attentionCount', { count }),
     }),
-    [locale, tHome, tStage, tOrgRole, tProfile]
+    [locale, tHome, tStage, tEtapa, tOrgRole, tProfile]
   )
 }
 
