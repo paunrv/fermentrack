@@ -112,7 +112,7 @@ export function validateRegistrarSalidaInput(
   }
 
   const cantidad = input.cantidad
-  if (!Number.isFinite(cantidad) || cantidad <= 0) {
+  if (cantidad == null || !Number.isFinite(cantidad) || cantidad <= 0) {
     return { ok: false, code: 'invalid_cantidad' }
   }
 

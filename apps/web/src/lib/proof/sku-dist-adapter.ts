@@ -97,6 +97,7 @@ export function skuRowToInventoryRow(sku: SkuRow): DistInventoryRow {
       cases,
       loose_units,
       max_units: sku.stock_total,
+      updated_at: sku.updated_at,
     },
   }
 }

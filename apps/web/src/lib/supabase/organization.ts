@@ -76,55 +76,26 @@ function mapOrganizationRow(
   }
 }
 
-const ORG_EMBED_FULL = `
-        id,
-        name,
-        slug,
-        org_type,
-        plan,
-        plan_status,
-        features,
-        billing_cycle,
-        trial_ends_at,
-        primer_registro_at,
-        renewal_anchor,
-        founding_member_at,
-        created_at
-      `
+const MEMBERSHIP_SELECT_FULL =
+  'role, status, organization_id, organizations(id, name, slug, org_type, plan, plan_status, features, billing_cycle, trial_ends_at, primer_registro_at, renewal_anchor, founding_member_at, created_at)' as const
 
-const ORG_EMBED_NO_FEATURES = `
-        id,
-        name,
-        slug,
-        org_type,
-        plan,
-        plan_status,
-        created_at
-      `
+const MEMBERSHIP_SELECT_NO_FEATURES =
+  'role, status, organization_id, organizations(id, name, slug, org_type, plan, plan_status, created_at)' as const
 
-const ORG_EMBED_LEGACY = `
-        id,
-        name,
-        slug,
-        plan,
-        created_at
-      `
+const MEMBERSHIP_SELECT_LEGACY =
+  'role, status, organization_id, organizations(id, name, slug, plan, created_at)' as const
 
-async function fetchActiveMembershipRows(sb: SupabaseClient, userId: string, orgEmbed: string) {
-  return sb
-    .from('organization_members')
-    .select(
-      `
-      role,
-      status,
-      organization_id,
-      organizations (
-        ${orgEmbed}
-      )
-    `
-    )
-    .eq('user_id', userId)
-    .eq('status', 'active')
+type MembershipSelect =
+  | typeof MEMBERSHIP_SELECT_FULL
+  | typeof MEMBERSHIP_SELECT_NO_FEATURES
+  | typeof MEMBERSHIP_SELECT_LEGACY
+
+async function fetchActiveMembershipRows(
+  sb: SupabaseClient,
+  userId: string,
+  select: MembershipSelect
+) {
+  return sb.from('organization_members').select(select).eq('user_id', userId).eq('status', 'active')
 }
 
 export async function fetchWinemakerOrganizations(
@@ -132,13 +103,13 @@ export async function fetchWinemakerOrganizations(
   userId: string
 ): Promise<OrganizationMembership[]> {
   let legacySchema = false
-  let { data, error } = await fetchActiveMembershipRows(sb, userId, ORG_EMBED_FULL)
+  let { data, error } = await fetchActiveMembershipRows(sb, userId, MEMBERSHIP_SELECT_FULL)
 
   if (error && isMissingColumnError(error, 'org_type')) {
     legacySchema = true
-    ;({ data, error } = await fetchActiveMembershipRows(sb, userId, ORG_EMBED_LEGACY))
+    ;({ data, error } = await fetchActiveMembershipRows(sb, userId, MEMBERSHIP_SELECT_LEGACY))
   } else if (error && isMissingColumnError(error, 'features')) {
-    ;({ data, error } = await fetchActiveMembershipRows(sb, userId, ORG_EMBED_NO_FEATURES))
+    ;({ data, error } = await fetchActiveMembershipRows(sb, userId, MEMBERSHIP_SELECT_NO_FEATURES))
   }
 
   if (error) throw error

@@ -14,6 +14,8 @@ import { importWinemakerTicketTool, registrarSalidaTool, enviarMensajeTool, crea
 import { LOT_ETAPA_VALUES } from '@/lib/proof/lot-etapa'
 import { WM_BOTELLAS_POR_CAJA_VALUES } from '@/lib/proof/finished-goods-types'
 
+const lotEtapaSchema = z.enum(LOT_ETAPA_VALUES)
+
 const profileTypeSchema = z.enum(['distributor', 'winemaker', 'distiller']).optional()
 const organizationIdSchema = z.string().uuid().optional()
 const idempotencyKeySchema = z.string().min(8).max(128).optional()
@@ -213,7 +215,7 @@ export function registerProofMcpWriteTools(server: McpServer): void {
         ...writeScopeFields,
         code: z.string().min(1),
         vintage_id: z.string().uuid().nullable().optional(),
-        etapa: z.enum(LOT_ETAPA_VALUES as unknown as [string, ...string[]]).optional(),
+        etapa: lotEtapaSchema.optional(),
         notes: z.string().nullable().optional(),
       },
     },
@@ -262,7 +264,7 @@ export function registerProofMcpWriteTools(server: McpServer): void {
       inputSchema: {
         ...writeScopeFields,
         lot_id: z.string().uuid(),
-        to_etapa: z.enum(LOT_ETAPA_VALUES as unknown as [string, ...string[]]),
+        to_etapa: lotEtapaSchema,
         note: z.string().nullable().optional(),
         occurred_at: z.string().datetime().optional(),
       },

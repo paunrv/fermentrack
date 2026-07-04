@@ -60,7 +60,7 @@ export function orgHasFeature(source: OrgFeatureSource | OrgPlan | 'free', featu
   const limits = planLimitsForTier(tier)
 
   return planHasFeature(
-    { limits, features: ctx.features as Record<string, boolean> | undefined },
+    { limits, features: ctx.features ?? {} },
     feature
   )
 }

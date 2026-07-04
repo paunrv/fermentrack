@@ -85,7 +85,7 @@ export function validateLotBottlingInput(
   if (!hasEtiquetaId && !newNombre) return { ok: false, code: 'missing_etiqueta' }
 
   const anada = input.anada
-  if (!Number.isInteger(anada) || anada < 1900 || anada > 2100) {
+  if (anada == null || !Number.isInteger(anada) || anada < 1900 || anada > 2100) {
     return { ok: false, code: 'invalid_anada' }
   }
 
@@ -100,7 +100,11 @@ export function validateLotBottlingInput(
   }
 
   const botellasProducidas = input.botellasProducidas
-  if (!Number.isInteger(botellasProducidas) || botellasProducidas <= 0) {
+  if (
+    botellasProducidas == null ||
+    !Number.isInteger(botellasProducidas) ||
+    botellasProducidas <= 0
+  ) {
     return { ok: false, code: 'invalid_botellas_producidas' }
   }
 
@@ -119,7 +123,7 @@ export function validateLotBottlingInput(
         : null,
       anada,
       formato,
-      botellasPorCaja: input.botellasPorCaja,
+      botellasPorCaja: input.botellasPorCaja!,
       botellasProducidas,
       occurredAt: input.occurredAt,
     },

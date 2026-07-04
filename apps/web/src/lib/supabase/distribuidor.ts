@@ -588,7 +588,15 @@ export async function fetchMovimientosSku(
 
   const { data, error } = await q
   throwIfError(error)
-  return (data || []) as Awaited<ReturnType<typeof fetchMovimientosSku>>
+  return (data ?? []).map(row => {
+    const skus = Array.isArray(row.skus) ? row.skus[0] : row.skus
+    const clients = Array.isArray(row.clients) ? row.clients[0] : row.clients
+    return {
+      ...row,
+      skus: skus ?? null,
+      clients: clients ?? null,
+    }
+  }) as Awaited<ReturnType<typeof fetchMovimientosSku>>
 }
 
 export async function registrarMovimientoSku(
