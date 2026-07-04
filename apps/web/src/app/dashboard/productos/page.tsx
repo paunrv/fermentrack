@@ -9,13 +9,16 @@ import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
-  fetchDistProducts,
-  createDistProduct,
   type DistProduct,
   type ProductCategory,
   type ProductOrigin,
   type ProductUnitType,
 } from '@/lib/supabase'
+import { createSkuCatalog, fetchSkus } from '@/lib/supabase/distribuidor'
+import {
+  productCategoryToCategoriaSku,
+  skuRowToDistProduct,
+} from '@/lib/proof/sku-dist-adapter'
 import { formatCurrencyMxn } from '@/lib/i18n/format'
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
@@ -89,8 +92,9 @@ export default function ProductosPage() {
   const [notes, setNotes] = useState('')
 
   async function load() {
-    const data = await fetchDistProducts(supabase, scope ?? undefined)
-    setProducts(data)
+    if (!scope) return
+    const data = await fetchSkus(supabase, scope)
+    setProducts(data.map(skuRowToDistProduct))
   }
 
   useEffect(() => {
@@ -119,19 +123,20 @@ export default function ProductosPage() {
 
     setSaving(true)
     try {
-      await createDistProduct(supabase, {
-        name: name.trim(),
-        category,
-        producer: producer.trim() || null,
-        origin,
-        unit_type: unitType,
-        bottles_per_case: parseInt(bottlesPerCase, 10) || 12,
-        cost_per_unit: parseFloat(costPerUnit) || 0,
-        price_regular: parseFloat(priceRegular) || 0,
-        price_mayoreo: parseFloat(priceMayoreo) || 0,
-        price_especial: parseFloat(priceEspecial) || 0,
-        currency: currency.trim().toUpperCase() || 'MXN',
-        notes: notes.trim() || null,
+      if (!scope) return
+      await createSkuCatalog(supabase, scope, {
+        nombre: name.trim(),
+        categoria: productCategoryToCategoriaSku(category),
+        productor: producer.trim() || null,
+        origen: origin,
+        tipo_unidad: unitType,
+        botellas_por_caja: parseInt(bottlesPerCase, 10) || 12,
+        costo_unitario: parseFloat(costPerUnit) || 0,
+        precio_venta: parseFloat(priceRegular) || 0,
+        precio_mayoreo: parseFloat(priceMayoreo) || 0,
+        precio_especial: parseFloat(priceEspecial) || 0,
+        moneda: currency.trim().toUpperCase() || 'MXN',
+        notas: notes.trim() || null,
       })
       resetForm()
       setShowForm(false)

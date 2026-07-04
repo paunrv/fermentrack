@@ -13,16 +13,22 @@ import { useIntlLocaleTag } from '@/lib/i18n/locale'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
   fetchClients,
-  fetchDistMovements,
-  fetchDistProductById,
-  createDistMovement,
-  updateDistInventory,
   type Client,
   type DistInventoryRow,
   type DistMovementWithRefs,
   type MovementType,
   type ProductCategory,
 } from '@/lib/supabase'
+import {
+  fetchMovimientosSku,
+  fetchSkuById,
+  registrarMovimientoSku,
+  updateSkuImagenUrl,
+} from '@/lib/supabase/distribuidor'
+import {
+  movimientoSkuToDistMovement,
+  skuRowToInventoryRow,
+} from '@/lib/proof/sku-dist-adapter'
 
 
 
@@ -193,26 +199,27 @@ export default function ProductDetailPage() {
   const [showModal, setShowModal] = useState(false)
 
   async function load() {
-    if (!id) return
-    const [p, m, cs] = await Promise.all([
-      fetchDistProductById(supabase, id),
-      fetchDistMovements(supabase, { productId: id, scope: scope ?? undefined }),
-      fetchClients(supabase, scope ?? undefined),
+    if (!id || !scope) return
+    const [sku, m, cs] = await Promise.all([
+      fetchSkuById(supabase, scope, id),
+      fetchMovimientosSku(supabase, { skuId: id, scope }),
+      fetchClients(supabase, scope),
     ])
-    if (!p) {
+    if (!sku) {
       setNotFound(true)
       setLoading(false)
       return
     }
-    setProduct(p)
-    setMovements(m)
+    setProduct(skuRowToInventoryRow(sku))
+    setMovements(m.map(movimientoSkuToDistMovement))
     setClients(cs)
   }
 
   useEffect(() => {
+    if (!scope) return
     setLoading(true)
     load().finally(() => setLoading(false))
-  }, [id])
+  }, [id, scope?.user_id, scope?.profile_type_v2, supabase])
 
   const stats = useMemo(() => {
     if (!product) return null
@@ -285,11 +292,7 @@ export default function ProductDetailPage() {
       const { data: urlData } = supabase.storage.from('product-images').getPublicUrl(path)
       const publicUrl = urlData.publicUrl
 
-      const { error: updateError } = await supabase
-        .from('dist_products')
-        .update({ image_url: publicUrl })
-        .eq('id', product.id)
-      if (updateError) throw updateError
+      await updateSkuImagenUrl(supabase, product.id, publicUrl)
 
       await load()
     } catch (err: any) {
@@ -1218,45 +1221,23 @@ function MovementModal({
     setSaving(true)
     try {
       const today = new Date().toISOString().slice(0, 10)
-      const baseRecord = {
-        product_id: product.id,
-        movement_type: type,
-        cases: c,
-        loose_units: u,
-        movement_date: today,
-        notes: notes.trim() || null,
-        user_id: product.user_id ?? null,
-        profile_type_v2: product.profile_type_v2 ?? null,
-      }
+      const precio = parseFloat(unitPrice) || 0
 
-      if (type === 'venta') {
-        const price = parseFloat(unitPrice) || 0
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          client_id: clientId,
-          unit_price: price,
-          total_amount: requestedBottles * price,
-          currency: product.currency || 'MXN',
-        } as any)
-      } else if (type === 'donacion') {
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          recipient: recipient.trim() || null,
-        } as any)
-      } else if (type === 'merma') {
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          reason,
-        } as any)
-      } else if (type === 'muestra') {
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          recipient: recipient.trim() || null,
-          event: event.trim() || null,
-        } as any)
-      }
-
-      await updateDistInventory(supabase, product.id, -c, -u, bpc)
+      await registrarMovimientoSku(supabase, {
+        skuId: product.id,
+        tipo: type,
+        cantidad: requestedBottles,
+        fecha: today,
+        notas: notes.trim() || null,
+        clientId: type === 'venta' ? clientId : null,
+        recipient:
+          type === 'donacion' || type === 'muestra' ? recipient.trim() || null : null,
+        reason: type === 'merma' ? reason : null,
+        event: type === 'muestra' ? event.trim() || null : null,
+        precioUnitario: type === 'venta' ? precio : null,
+        total: type === 'venta' ? requestedBottles * precio : null,
+        moneda: type === 'venta' ? product.currency || 'MXN' : null,
+      })
       resetForm()
       await onSaved()
     } finally {

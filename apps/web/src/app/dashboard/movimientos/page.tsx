@@ -10,15 +10,20 @@ import { useSupabase } from '@/hooks/useSupabase'
 import { useIntlLocaleTag } from '@/lib/i18n/locale'
 import {
   fetchClients,
-  fetchDistInventory,
-  fetchDistMovements,
-  createDistMovement,
-  updateDistInventory,
   type Client,
   type DistInventoryRow,
   type DistMovementWithRefs,
   type ProductCategory,
 } from '@/lib/supabase'
+import {
+  fetchMovimientosSku,
+  fetchSkus,
+  registrarMovimientoSku,
+} from '@/lib/supabase/distribuidor'
+import {
+  movimientoSkuToDistMovement,
+  skuRowsToInventoryRows,
+} from '@/lib/proof/sku-dist-adapter'
 import { fmtMoney } from '@/lib/proof/format'
 import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 
@@ -138,14 +143,14 @@ export default function MovimientosPage() {
   }, [type, productId, clientId, selectedProduct, selectedClient])
 
   async function load() {
-    const [inv, cls, movs] = await Promise.all([
-      fetchDistInventory(supabase, scope ?? undefined),
+    const [skus, cls, movs] = await Promise.all([
+      fetchSkus(supabase, scope ?? undefined),
       fetchClients(supabase, scope ?? undefined),
-      fetchDistMovements(supabase, { date: today, scope: scope ?? undefined }),
+      fetchMovimientosSku(supabase, { date: today, scope: scope ?? undefined }),
     ])
-    setInventory(inv)
+    setInventory(skuRowsToInventoryRows(skus))
     setClients(cls)
-    setMovements(movs)
+    setMovements(movs.map(movimientoSkuToDistMovement))
     if (inv.length && !productId && inv[0]) setProductId(inv[0].id)
     if (cls.length && !clientId && cls[0]) setClientId(cls[0].id)
   }
@@ -183,52 +188,24 @@ export default function MovimientosPage() {
 
     setSaving(true)
     try {
-      const baseRecord = {
-        product_id: selectedProduct.id,
-        movement_type: type,
-        cases: c,
-        loose_units: u,
-        movement_date: today,
-        notes: notes.trim() || null,
-        ...(scope
-          ? { user_id: scope.user_id, profile_type_v2: scope.profile_type_v2 }
-          : {}),
-      }
+      const cantidad = requested
+      const precio = parseFloat(unitPrice) || 0
 
-      if (type === 'venta') {
-        const price = parseFloat(unitPrice) || 0
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          client_id: clientId,
-          unit_price: price,
-          total_amount: requested * price,
-          currency: selectedProduct.currency || 'MXN',
-        })
-      } else if (type === 'donacion') {
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          recipient: recipient.trim() || null,
-        })
-      } else if (type === 'merma') {
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          reason,
-        })
-      } else if (type === 'muestra') {
-        await createDistMovement(supabase, {
-          ...baseRecord,
-          recipient: recipient.trim() || null,
-          event: event.trim() || null,
-        })
-      }
-
-      await updateDistInventory(
-        supabase,
-        selectedProduct.id,
-        -c,
-        -u,
-        selectedProduct.bottles_per_case
-      )
+      await registrarMovimientoSku(supabase, {
+        skuId: selectedProduct.id,
+        tipo: type,
+        cantidad,
+        fecha: today,
+        notas: notes.trim() || null,
+        clientId: type === 'venta' ? clientId : null,
+        recipient:
+          type === 'donacion' || type === 'muestra' ? recipient.trim() || null : null,
+        reason: type === 'merma' ? reason : null,
+        event: type === 'muestra' ? event.trim() || null : null,
+        precioUnitario: type === 'venta' ? precio : null,
+        total: type === 'venta' ? cantidad * precio : null,
+        moneda: type === 'venta' ? selectedProduct.currency || 'MXN' : null,
+      })
 
       resetForm()
       await load()

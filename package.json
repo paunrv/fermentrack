@@ -14,7 +14,8 @@
     "build-storybook": "turbo run build-storybook --filter=@fermentrack/storybook",
     "setup:claude-mcp": "node scripts/setup-claude-mcp.mjs",
     "check:prod-schema": "node scripts/check-prod-schema.mjs",
-    "apply:prod-migrations": "node scripts/apply-pending-prod-migrations.mjs"
+    "apply:prod-migrations": "node scripts/apply-pending-prod-migrations.mjs",
+    "check:dist-schema": "node scripts/check-dist-schema.mjs"
   },
   "packageManager": "npm@11.11.0",
   "engines": {

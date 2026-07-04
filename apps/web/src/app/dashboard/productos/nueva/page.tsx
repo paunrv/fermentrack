@@ -7,10 +7,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { type ProductCategory } from '@/lib/supabase'
 import {
-  updateDistInventory,
-  type ProductCategory,
-} from '@/lib/supabase'
+  createSkuCatalog,
+  registrarMovimientoSku,
+} from '@/lib/supabase/distribuidor'
+import { productCategoryToCategoriaSku } from '@/lib/proof/sku-dist-adapter'
 
 
 
@@ -279,48 +281,32 @@ export default function NuevaProductoPage() {
     }
     setSaving(true)
     try {
+      if (!scope) return
       const bottlesPerCase = 12
-      const cases_qty = Math.floor(qty / bottlesPerCase)
-      const units_qty = qty % bottlesPerCase
+      const cantidad = qty
 
-      const { data: inserted, error: insertError } = await supabase
-        .from('dist_products')
-        .insert({
-          name: name.trim(),
-          category,
-          producer: producer.trim() || null,
-          origin: 'local',
-          unit_type: 'botella',
-          bottles_per_case: bottlesPerCase,
-          cost_per_unit: price,
-          price_regular: price,
-          price_mayoreo: 0,
-          price_especial: 0,
-          currency: 'MXN',
-          notes: null,
-          user_id: scope?.user_id ?? null,
-          profile_type_v2: scope?.profile_type_v2 ?? null,
-        })
-        .select()
-        .single()
-
-      if (insertError) throw insertError
-      const productId = inserted.id
-
-      await supabase.from('dist_movements').insert({
-        product_id: productId,
-        movement_type: 'entrada',
-        cases: cases_qty,
-        loose_units: units_qty,
-        movement_date: date,
-        notes: 'Inventario inicial',
-        user_id: scope?.user_id ?? null,
-        profile_type_v2: scope?.profile_type_v2 ?? null,
+      const sku = await createSkuCatalog(supabase, scope, {
+        nombre: name.trim(),
+        categoria: productCategoryToCategoriaSku(category),
+        productor: producer.trim() || null,
+        origen: 'local',
+        tipo_unidad: 'botella',
+        botellas_por_caja: bottlesPerCase,
+        costo_unitario: price,
+        precio_venta: price,
+        moneda: 'MXN',
+        stock_total: 0,
       })
 
-      await updateDistInventory(supabase, productId, cases_qty, units_qty, bottlesPerCase)
+      await registrarMovimientoSku(supabase, {
+        skuId: sku.id,
+        tipo: 'entrada',
+        cantidad,
+        fecha: date,
+        notas: 'Inventario inicial',
+      })
 
-      router.push(`/dashboard/productos/${productId}`)
+      router.push(`/dashboard/productos/${sku.id}`)
     } catch (err: any) {
       alert(`Error al guardar: ${err?.message || 'desconocido'}`)
     } finally {

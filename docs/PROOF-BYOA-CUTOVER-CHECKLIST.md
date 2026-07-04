@@ -2,17 +2,17 @@
 
 Run after deploying commits through **#30** (`mcp_tool_calls`, rate limits, migration docs).
 
-**Schema audit (2026-07-03):** `npm run check:prod-schema` on project `stjnoacbdcjhhucaoqrw`
+**Schema audit (2026-07-03):** `npm run check:prod-schema` on project `stjnoacbdcjhhucaoqrw` — **7/7 ✓** (issue [#67](https://github.com/paunrv/fermentrack/issues/67) closed)
 
 | Check | Remote |
 |-------|--------|
 | `mcp_tool_calls` | ✅ |
-| `lots.etapa` | ⏳ pending |
-| `wm_existencias` + D schema | ⏳ pending |
-| `organizations.features` | ⏳ pending |
-| `wm_mensajes` (chat) | ⏳ pending |
-| `plan_limites` + billing fields | ⏳ pending |
-| `founding_member_at` | ⏳ pending |
+| `lots.etapa` | ✅ |
+| `wm_existencias` + D schema | ✅ |
+| `organizations.features` | ✅ |
+| `wm_mensajes` (chat) | ✅ |
+| `plan_limites` + billing fields | ✅ |
+| `founding_member_at` | ✅ |
 
 Apply: **`docs/DEPLOY-MIGRATIONS.md`** · **run `scripts/prereq-wm-rls-helpers.sql` first** · then `scripts/pending-prod-migrations.sql` · `npm run apply:prod-migrations` (needs `DATABASE_URL`).
 
@@ -110,6 +110,6 @@ rate_limit 429 43
 ## 4. Post-cutover
 
 - [x] Push commits to `origin/main` and deploy (2026-07-03)
-- [ ] Apply winemaker migrations Jul 2026 — see `docs/DEPLOY-MIGRATIONS.md`
+- [x] Apply winemaker migrations Jul 2026 — see `docs/DEPLOY-MIGRATIONS.md` (2026-07-03)
 - [ ] Confirm connection hub loads on production `/dashboard`
 - [ ] Rotate Supabase JWT if any test tokens were created during QA

@@ -105,6 +105,11 @@ export interface SkuRow {
   etiqueta_id: string | null
   imagen_url: string | null
   notas: string | null
+  origen?: 'local' | 'importado'
+  tipo_unidad?: 'botella' | 'lata'
+  precio_mayoreo?: number
+  precio_especial?: number
+  moneda?: string
   user_id: string
   profile_type_v2: string
   created_at: string
@@ -535,6 +540,191 @@ export async function fetchSkuById(
   const { data, error } = await q.maybeSingle()
   throwIfError(error)
   return (data as SkuRow | null) ?? null
+}
+
+export type RegistrarMovimientoSkuInput = {
+  skuId: string
+  tipo: 'entrada' | 'venta' | 'donacion' | 'merma' | 'muestra'
+  cantidad: number
+  fecha?: string
+  notas?: string | null
+  clientId?: string | null
+  recipient?: string | null
+  reason?: string | null
+  event?: string | null
+  precioUnitario?: number | null
+  total?: number | null
+  moneda?: string | null
+  distMovementId?: string | null
+}
+
+export async function fetchMovimientosSku(
+  sb: SupabaseClient,
+  options?: {
+    date?: string
+    limit?: number
+    skuId?: string
+    scope?: ProfileScope
+  }
+): Promise<
+  Array<{
+    id: string
+    sku_id: string
+    tipo: RegistrarMovimientoSkuInput['tipo']
+    cantidad: number
+    fecha: string
+    notas: string | null
+    client_id: string | null
+    recipient: string | null
+    reason: string | null
+    event: string | null
+    precio_unitario: number | null
+    total: number | null
+    moneda: string | null
+    created_at: string
+    skus: { nombre: string; botellas_por_caja: number; categoria: CategoriaSku } | null
+    clients: { name: string } | null
+  }>
+> {
+  let q = sb
+    .from('movimientos_sku')
+    .select(
+      'id, sku_id, tipo, cantidad, fecha, notas, client_id, recipient, reason, event, precio_unitario, total, moneda, created_at, skus(nombre, botellas_por_caja, categoria), clients(name)'
+    )
+    .order('created_at', { ascending: false })
+
+  if (options?.date) q = q.eq('fecha', options.date)
+  if (options?.skuId) q = q.eq('sku_id', options.skuId)
+  if (options?.limit) q = q.limit(options.limit)
+  if (options?.scope) {
+    q = q.eq('user_id', options.scope.user_id)
+  }
+
+  const { data, error } = await q
+  throwIfError(error)
+  return (data || []) as Awaited<ReturnType<typeof fetchMovimientosSku>>
+}
+
+export async function registrarMovimientoSku(
+  sb: SupabaseClient,
+  input: RegistrarMovimientoSkuInput
+): Promise<void> {
+  const { error } = await sb.rpc('registrar_movimiento_sku', {
+    p_sku_id: input.skuId,
+    p_tipo: input.tipo,
+    p_cantidad: input.cantidad,
+    p_fecha: input.fecha ?? undefined,
+    p_notas: input.notas ?? undefined,
+    p_client_id: input.clientId ?? undefined,
+    p_recipient: input.recipient ?? undefined,
+    p_reason: input.reason ?? undefined,
+    p_event: input.event ?? undefined,
+    p_precio_unitario: input.precioUnitario ?? undefined,
+    p_total: input.total ?? undefined,
+    p_moneda: input.moneda ?? undefined,
+    p_dist_movement_id: input.distMovementId ?? undefined,
+  })
+  throwIfError(error)
+}
+
+export type CreateSkuCatalogInput = {
+  nombre: string
+  categoria: CategoriaSku
+  productor?: string | null
+  origen?: 'local' | 'importado'
+  tipo_unidad?: 'botella' | 'lata'
+  botellas_por_caja?: number
+  costo_unitario?: number
+  precio_venta?: number
+  precio_mayoreo?: number
+  precio_especial?: number
+  moneda?: string
+  notas?: string | null
+  imagen_url?: string | null
+  stock_total?: number
+}
+
+async function resolveDistribuidorClerkId(
+  sb: SupabaseClient,
+  scopeUserId: string
+): Promise<string> {
+  const { data: skuRow } = await sb
+    .from('skus')
+    .select('clerk_id')
+    .eq('user_id', scopeUserId)
+    .limit(1)
+    .maybeSingle()
+  if (skuRow?.clerk_id) return skuRow.clerk_id
+
+  const { data: worker } = await sb
+    .from('trabajadores')
+    .select('clerk_id')
+    .eq('user_id', scopeUserId)
+    .eq('profile_type_v2', 'distributor')
+    .limit(1)
+    .maybeSingle()
+  if (worker?.clerk_id) return worker.clerk_id
+
+  return scopeUserId
+}
+
+export async function createSkuCatalog(
+  sb: SupabaseClient,
+  scope: ProfileScope,
+  input: CreateSkuCatalogInput
+): Promise<SkuRow> {
+  const {
+    data: { user },
+  } = await sb.auth.getUser()
+  if (!user) throw new Error('No autenticado')
+
+  const clerkId = await resolveDistribuidorClerkId(sb, scope.user_id)
+  const codigo = await rpcProofNextCodigo(
+    sb,
+    scope.user_id,
+    scope.profile_type_v2,
+    'sku'
+  )
+
+  const { data, error } = await sb
+    .from('skus')
+    .insert({
+      codigo,
+      nombre: input.nombre,
+      productor: input.productor?.trim() || '',
+      categoria: input.categoria,
+      botellas_por_caja: input.botellas_por_caja ?? 12,
+      stock_total: input.stock_total ?? 0,
+      costo_unitario: input.costo_unitario ?? 0,
+      precio_venta: input.precio_venta ?? 0,
+      origen: input.origen ?? 'local',
+      tipo_unidad: input.tipo_unidad ?? 'botella',
+      precio_mayoreo: input.precio_mayoreo ?? 0,
+      precio_especial: input.precio_especial ?? 0,
+      moneda: input.moneda ?? 'MXN',
+      notas: input.notas ?? null,
+      imagen_url: input.imagen_url ?? null,
+      user_id: user.id,
+      clerk_id: clerkId,
+      profile_type_v2: scope.profile_type_v2,
+    })
+    .select('*')
+    .single()
+
+  throwIfError(error)
+  return data as SkuRow
+}
+
+export async function updateSkuImagenUrl(
+  sb: SupabaseClient,
+  skuId: string,
+  imagenUrl: string
+): Promise<void> {
+  const { error } = await sb
+    .from('skus')
+    .update({ imagen_url: imagenUrl, updated_at: new Date().toISOString() })
+    .eq('id', skuId)
+  throwIfError(error)
 }
 
 export async function createSkuCartera(
