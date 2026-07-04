@@ -4,6 +4,17 @@ import { getAuthUserId, createClient } from '@/lib/supabase/server'
 import { PROOF_PROFILES_TABLE, type ExtraProfile } from '@/lib/supabase'
 import { createServiceSupabase } from '@/utils/supabase/service'
 import type { OrgMemberRole } from '@/lib/supabase/organization'
+import {
+  assertPlanLimit,
+  checkLimit,
+  fetchOrgPlanContext,
+  planLimitErrorCode,
+  PlanLimitError,
+} from '@/lib/proof/plan-limits'
+import {
+  INVITE_PRO_REQUIRED_CODE,
+  orgCanInviteTeamMembersFromLimits,
+} from '@/lib/proof/plan-team-invites'
 
 export type TeamMemberRow = {
   id: string
@@ -191,6 +202,28 @@ export async function fetchTeamMembers(organizationId: string): Promise<TeamMemb
   }))
 }
 
+export type TeamInviteStatus = {
+  canInvite: boolean
+  proRequired?: boolean
+  limitReachedCode?: string
+}
+
+export async function fetchTeamInviteStatus(organizationId: string): Promise<TeamInviteStatus> {
+  await requireManageContext(organizationId)
+  const sb = createServiceSupabase()
+  const ctx = await fetchOrgPlanContext(sb, organizationId)
+
+  if (!orgCanInviteTeamMembersFromLimits(ctx.limits)) {
+    return { canInvite: false, proRequired: true }
+  }
+
+  const result = await checkLimit(sb, organizationId, 'usuarios')
+  if (!result.ok) {
+    return { canInvite: false, limitReachedCode: planLimitErrorCode(result.resource) }
+  }
+  return { canInvite: true }
+}
+
 export async function inviteTeamMember(input: {
   organizationId: string
   email: string
@@ -207,6 +240,11 @@ export async function inviteTeamMember(input: {
   if (!name) throw new Error('Escribe el nombre de la persona')
 
   const sb = createServiceSupabase()
+
+  const planCtx = await fetchOrgPlanContext(sb, organizationId)
+  if (!orgCanInviteTeamMembersFromLimits(planCtx.limits)) {
+    throw new Error(INVITE_PRO_REQUIRED_CODE)
+  }
 
   let invitedUserId: string | null = null
 
@@ -236,6 +274,19 @@ export async function inviteTeamMember(input: {
     .maybeSingle()
 
   if (existingError) throw new Error(existingError.message)
+
+  const needsNewSeat =
+    !existingMember ||
+    existingMember.status === 'suspended'
+
+  if (needsNewSeat) {
+    try {
+      await assertPlanLimit(sb, organizationId, 'usuarios')
+    } catch (err) {
+      if (err instanceof PlanLimitError) throw new Error(err.code)
+      throw err
+    }
+  }
 
   if (existingMember) {
     if (existingMember.role === 'owner') {
