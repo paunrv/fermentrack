@@ -67,6 +67,7 @@ export function useWinemakerOwnerHomeData(): WinemakerOwnerHomeData {
   const [team, setTeam] = useState<OwnerTeamMember[]>([])
   const [existenciaLotIds, setExistenciaLotIds] = useState<Set<string>>(new Set())
   const [planWarnings, setPlanWarnings] = useState<PlanHomeWarnings | null>(null)
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!userId) {

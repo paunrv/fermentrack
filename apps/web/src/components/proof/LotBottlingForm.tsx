@@ -58,7 +58,8 @@ export function LotBottlingForm({ lotId }: LotBottlingFormProps) {
       const next = await fetchLotBottlingContextAction(lotId)
       setContext(next)
       if (next.etiquetas.length === 0) setMode('new')
-      if (next.etiquetas.length > 0) setEtiquetaId(next.etiquetas[0].id)
+      const firstEtiqueta = next.etiquetas[0]
+      if (firstEtiqueta) setEtiquetaId(firstEtiqueta.id)
       if (next.lot.defaultAnada != null) setAnada(String(next.lot.defaultAnada))
     } catch (err) {
       const code = err instanceof Error ? err.message : 'loadFailed'

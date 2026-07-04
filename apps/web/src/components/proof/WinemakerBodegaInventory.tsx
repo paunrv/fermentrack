@@ -13,6 +13,7 @@ import { RegistrarSalidaForm } from '@/components/proof/RegistrarSalidaForm'
 import {
   filterFinishedGoodsInventory,
   fetchFinishedGoodsInventory,
+  type ExistenciaInventoryRow,
   type FinishedGoodsInventoryFilters,
   type FinishedGoodsInventoryView,
 } from '@/lib/proof/finished-goods-inventory'
