@@ -2,9 +2,23 @@
 
 Run after deploying commits through **#30** (`mcp_tool_calls`, rate limits, migration docs).
 
+**Schema audit (2026-07-03):** `npm run check:prod-schema` on project `stjnoacbdcjhhucaoqrw`
+
+| Check | Remote |
+|-------|--------|
+| `mcp_tool_calls` | ✅ |
+| `lots.etapa` | ⏳ pending |
+| `wm_existencias` + D schema | ⏳ pending |
+| `organizations.features` | ⏳ pending |
+| `wm_mensajes` (chat) | ⏳ pending |
+| `plan_limites` + billing fields | ⏳ pending |
+| `founding_member_at` | ⏳ pending |
+
+Apply: **`docs/DEPLOY-MIGRATIONS.md`** · **run `scripts/prereq-wm-rls-helpers.sql` first** · then `scripts/pending-prod-migrations.sql` · `npm run apply:prod-migrations` (needs `DATABASE_URL`).
+
 ## 1. Database migration (`mcp_tool_calls`)
 
-**Status (2026-07-02):** Not yet on remote — `public.mcp_tool_calls` missing (PGRST205).
+**Status (2026-07-03):** ✅ Applied on remote — `public.mcp_tool_calls` exists.
 
 ### Option A — Supabase MCP (Cursor)
 
@@ -74,7 +88,7 @@ Or manually: Vercel Dashboard → Project → Settings → Environment Variables
 | MCP without bearer → 401 | ✅ | Live `curl` → 401 |
 | Forged JWT → 401 | ✅ | Live `curl` → 401 |
 | Rate limit → 429 + `Retry-After` | ✅ | Live load test → 429, `Retry-After: 43` |
-| Write success in `mcp_tool_calls` | ⏳ | Pending migration + one MCP write in staging |
+| Write success in `mcp_tool_calls` | ⏳ | Pending one MCP write after winemaker migrations applied |
 
 ### Live MCP auth/rate-limit probe (localhost)
 
@@ -95,6 +109,7 @@ rate_limit 429 43
 
 ## 4. Post-cutover
 
-- [ ] Push 7 local commits to `origin/main` and deploy
+- [x] Push commits to `origin/main` and deploy (2026-07-03)
+- [ ] Apply winemaker migrations Jul 2026 — see `docs/DEPLOY-MIGRATIONS.md`
 - [ ] Confirm connection hub loads on production `/dashboard`
 - [ ] Rotate Supabase JWT if any test tokens were created during QA

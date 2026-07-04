@@ -12,7 +12,9 @@
     "postinstall": "npm run build --workspace=@fermentrack/ui",
     "storybook": "turbo run storybook --filter=@fermentrack/storybook",
     "build-storybook": "turbo run build-storybook --filter=@fermentrack/storybook",
-    "setup:claude-mcp": "node scripts/setup-claude-mcp.mjs"
+    "setup:claude-mcp": "node scripts/setup-claude-mcp.mjs",
+    "check:prod-schema": "node scripts/check-prod-schema.mjs",
+    "apply:prod-migrations": "node scripts/apply-pending-prod-migrations.mjs"
   },
   "packageManager": "npm@11.11.0",
   "engines": {
@@ -22,6 +24,7 @@
     "@types/node": "^20.0.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.35",
+    "pg": "^8.16.0",
     "prettier": "^3.2.0",
     "turbo": "latest",
     "typescript": "^5.4.0"
