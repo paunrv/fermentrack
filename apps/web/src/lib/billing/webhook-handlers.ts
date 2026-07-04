@@ -122,8 +122,8 @@ export async function handleSubscriptionUpdated(
   if (!org) return
 
   await updateOrgBilling(sb, org.id, {
-    stripe_customer_id: customerId ?? org.stripe_customer_id,
     ...patch,
+    stripe_customer_id: customerId ?? org.stripe_customer_id,
   })
 }
 
