@@ -71,6 +71,34 @@ export function isDashboardNavItemActive(pathname: string, href: string): boolea
   return pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
 }
 
+const LEGACY_NON_WINEMAKER_PROFILES: ExtraProfile[] = ['distributor', 'distiller', 'brewer']
+
+/**
+ * Shell badge, theme, and rail chrome.
+ * Legacy `proof_profiles` (profile switcher) beat org tenancy when the user picked
+ * distributor/distiller/brewer — avoids showing WINEMAKER while on inventario.
+ */
+export function resolveShellProfileType(options: {
+  profileType: ExtraProfile | null | undefined
+  orgType: string | null | undefined
+}): ExtraProfile | null | undefined {
+  const { profileType, orgType } = options
+  if (profileType && LEGACY_NON_WINEMAKER_PROFILES.includes(profileType)) {
+    return profileType
+  }
+  if (profileType === 'winemaker' || orgType === 'winemaker') {
+    return 'winemaker'
+  }
+  return profileType
+}
+
+export function isWinemakerShellMode(options: {
+  profileType: ExtraProfile | null | undefined
+  orgType: string | null | undefined
+}): boolean {
+  return resolveShellProfileType(options) === 'winemaker'
+}
+
 /**
  * Header de página operativa (título + ask bar). Canvas y agente usan su propio chrome.
  */

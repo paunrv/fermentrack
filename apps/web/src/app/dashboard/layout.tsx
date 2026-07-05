@@ -35,6 +35,8 @@ import {
   shouldShowBottomNav,
   shouldShowTeamChatDock,
   shouldShowWinemakerMobileNav,
+  resolveShellProfileType,
+  isWinemakerShellMode,
   shellHorizontalPadding,
   innerHeaderAskMaxWidth,
 } from '@/lib/proof/dashboard-shell'
@@ -122,13 +124,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isOnAssistant = path.startsWith('/dashboard/agente')
   const isCanvas = path === '/dashboard'
   const isCanvasStyle = isCanvasStylePath(path)
-  const isDistributor = activeProfile?.profile_type_v2 === 'distributor'
-  const isDistiller = activeProfile?.profile_type_v2 === 'distiller'
-  const isWinemaker =
-    activeProfile?.profile_type_v2 === 'winemaker' || activeOrg?.org_type === 'winemaker'
-  const effectiveProfileType = isWinemaker
-    ? 'winemaker'
-    : activeProfile?.profile_type_v2
+  const shellProfileType = resolveShellProfileType({
+    profileType: activeProfile?.profile_type_v2,
+    orgType: activeOrg?.org_type,
+  })
+  const isWinemaker = isWinemakerShellMode({
+    profileType: activeProfile?.profile_type_v2,
+    orgType: activeOrg?.org_type,
+  })
+  const isDistributor = shellProfileType === 'distributor'
+  const isDistiller = shellProfileType === 'distiller'
+  const effectiveProfileType = shellProfileType
   const theme = getProfileTheme(effectiveProfileType)
   const pageTitle = pageTitleForPath(path, key => t(key))
   const breakpoint = useBreakpoint()

@@ -53,6 +53,18 @@ describe('buildDashboardRail', () => {
     expect(model.flatItems.some(item => item.href === '/dashboard/settings')).toBe(true)
   })
 
+  it('keeps distributor rail when legacy profile wins over winemaker org flag', () => {
+    const model = buildDashboardRail({
+      profile: distributorProfile,
+      isWinemaker: true,
+      chatEnabled: false,
+      showEquipo: false,
+    })
+
+    expect(model.flatItems.some(item => item.href === '/dashboard/inventario')).toBe(true)
+    expect(model.flatItems.some(item => item.href === '/dashboard/winemaker/lotes')).toBe(false)
+  })
+
   it('uses two main groups max for distiller (operacion only)', () => {
     const model = buildDashboardRail({
       profile: { profile_type_v2: 'distiller', is_super_user: false } as Profile,

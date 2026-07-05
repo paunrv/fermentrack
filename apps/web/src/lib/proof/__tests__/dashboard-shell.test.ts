@@ -6,6 +6,8 @@ import {
   shouldShowDesktopRail,
   shouldShowDesktopRailForBreakpoint,
   shouldShowWinemakerMobileNav,
+  resolveShellProfileType,
+  isWinemakerShellMode,
   shellHorizontalPadding,
 } from '@/lib/proof/dashboard-shell'
 
@@ -46,6 +48,27 @@ describe('dashboard-shell', () => {
     )
     expect(isDashboardNavItemActive('/dashboard', '/dashboard')).toBe(true)
     expect(isDashboardNavItemActive('/dashboard/inventario', '/dashboard')).toBe(false)
+  })
+
+  it('prefers legacy distributor profile over winemaker org for shell badge', () => {
+    expect(
+      resolveShellProfileType({
+        profileType: 'distributor',
+        orgType: 'winemaker',
+      })
+    ).toBe('distributor')
+    expect(
+      isWinemakerShellMode({
+        profileType: 'distributor',
+        orgType: 'winemaker',
+      })
+    ).toBe(false)
+    expect(
+      resolveShellProfileType({
+        profileType: undefined,
+        orgType: 'winemaker',
+      })
+    ).toBe('winemaker')
   })
 
   it('hides inner header on canvas, canvas-style, and assistant routes', () => {

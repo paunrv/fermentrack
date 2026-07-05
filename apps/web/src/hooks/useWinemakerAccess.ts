@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useOrganization } from '@/context/OrganizationContext'
 import { useProfile } from '@/context/ProfileContext'
 import type { ExtraProfile } from '@/lib/supabase'
+import { isWinemakerShellMode, resolveShellProfileType } from '@/lib/proof/dashboard-shell'
 
 const BOOT_TIMEOUT_MS = 8_000
 
@@ -30,11 +31,15 @@ export function useWinemakerAccess() {
 
   const viaOrg = activeOrg?.org_type === 'winemaker'
   const viaProfile = activeProfile?.profile_type_v2 === 'winemaker'
-  const isWinemaker = viaOrg || viaProfile
-
-  const effectiveProfileType: ExtraProfile | null = isWinemaker
-    ? 'winemaker'
-    : (activeProfile?.profile_type_v2 ?? null)
+  const shellProfileType = resolveShellProfileType({
+    profileType: activeProfile?.profile_type_v2,
+    orgType: activeOrg?.org_type,
+  })
+  const isWinemaker = isWinemakerShellMode({
+    profileType: activeProfile?.profile_type_v2,
+    orgType: activeOrg?.org_type,
+  })
+  const effectiveProfileType: ExtraProfile | null = shellProfileType ?? null
 
   const dataPending =
     !isLoaded || profileLoading || orgLoading || !profilesResolved || !orgsResolved

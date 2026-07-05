@@ -97,10 +97,10 @@ function profileKind(
   ctx: RailBuildContext
 ): 'super' | 'winemaker' | 'distributor' | 'distiller' | 'producer' | 'default' {
   if (ctx.profile?.is_super_user) return 'super'
-  if (ctx.isWinemaker || ctx.profile?.profile_type_v2 === 'winemaker') return 'winemaker'
   if (ctx.profile?.profile_type_v2 === 'distributor') return 'distributor'
   if (ctx.profile?.profile_type_v2 === 'distiller') return 'distiller'
   if (ctx.profile?.profile_type_v2 === 'brewer') return 'producer'
+  if (ctx.isWinemaker || ctx.profile?.profile_type_v2 === 'winemaker') return 'winemaker'
   return 'default'
 }
 
