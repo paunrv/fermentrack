@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { useMcpConnectionInfo } from '@/hooks/useMcpConnectionInfo'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
+import type { AgentProfileType } from '@/lib/proof/agent-context-types'
 import {
   examplePromptsForProfile,
   manualLinksForProfile,
@@ -85,9 +86,12 @@ function SetupCard({
 export function ProofConnectionHub({
   accent,
   profileType,
+  mcpProfileType,
 }: {
   accent: string
   profileType: ProfileType
+  /** Scope sent to test-connection (winemaker vs distributor). */
+  mcpProfileType?: AgentProfileType | null
 }) {
   const t = useTranslations('connectionHub')
   const locale = useLocale()
@@ -115,7 +119,7 @@ export function ProofConnectionHub({
     claudeConfigCopied,
     claudeConfig,
     claudeConfigPath,
-  } = useMcpConnectionInfo()
+  } = useMcpConnectionInfo(mcpProfileType)
 
   const tools = toolsForProfile(profileType)
   const manualLinks = manualLinksForProfile(profileType)

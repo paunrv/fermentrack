@@ -1,5 +1,6 @@
 import { createClient, getAuthUserId } from '@/lib/supabase/server'
 import { errorMessageFromUnknown } from '@/lib/errors/unknown'
+import type { AgentProfileType } from '@/lib/proof/agent-context-types'
 import { resolveMcpScope } from '@/lib/mcp/resolve-scope'
 import { createServiceSupabase } from '@/utils/supabase/service'
 import type { McpAgentStatusResponse } from '@/lib/mcp/agent-status'
@@ -10,7 +11,14 @@ export type { McpAgentStatusResponse }
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+function profileTypeFromQuery(value: string | null): AgentProfileType | undefined {
+  if (value === 'distributor' || value === 'winemaker' || value === 'distiller') {
+    return value
+  }
+  return undefined
+}
+
+export async function GET(request: Request) {
   const supabase = await createClient()
   const userId = await getAuthUserId()
 
@@ -22,8 +30,16 @@ export async function GET() {
     data: { session },
   } = await supabase.auth.getSession()
 
+  const requestedProfile = profileTypeFromQuery(
+    new URL(request.url).searchParams.get('profile_type')
+  )
+
   try {
-    const scope = await resolveMcpScope(supabase, userId)
+    const scope = await resolveMcpScope(
+      supabase,
+      userId,
+      requestedProfile ? { profile_type: requestedProfile } : undefined
+    )
     const tokenExpiresAt = session?.expires_at ?? null
     const tokenExpired = tokenExpiresAt != null && tokenExpiresAt * 1000 <= Date.now()
 

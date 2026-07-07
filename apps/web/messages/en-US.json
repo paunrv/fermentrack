@@ -41,7 +41,7 @@
       "ctaDemo": "See demo",
       "ctaStart": "90 days, no card",
       "mockup": {
-        "userLabel": "Aldo · Winemaker",
+        "userLabel": "Florencia · Winemaker",
         "liveLabel": "Live",
         "alerts": [
           {
@@ -1763,7 +1763,7 @@
     },
     "home": {
       "badge": "🍇 Winemaker",
-      "defaultFirstName": "Aldo",
+      "defaultFirstName": "Florencia",
       "greeting": {
         "morning": "Good morning",
         "afternoon": "Good afternoon",
@@ -1817,7 +1817,12 @@
         "lastToolCall": "Last tool: {tool} · {when}",
         "noToolCallsYet": "No MCP tool calls recorded yet",
         "manageConnection": "Manage connection",
-        "moreTasks": "+{count} more"
+        "moreTasks": "+{count} more",
+        "agentDockTitle": "Ask PROOF",
+        "agentDockHint": "Chat lives in Claude Desktop or Cursor. Type or pick an example — we copy the text so you can paste it in your agent.",
+        "agentDockPlaceholder": "E.g. Which lots need attention today?",
+        "agentDockCopy": "Copy",
+        "agentDockCopied": "Copied"
       },
       "planLimits": {
         "lotesLabel": "Active lots",

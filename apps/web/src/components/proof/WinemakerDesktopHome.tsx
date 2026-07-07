@@ -17,6 +17,7 @@ import { useWinemakerOwnerCopy } from '@/hooks/useWinemakerOwnerCopy'
 import { useWinemakerOwnerHomeData } from '@/hooks/useWinemakerOwnerHomeData'
 import { isMcpConfiguredLocally } from '@/lib/mcp/connection-status'
 import { DesktopHomeBottomRow } from '@/components/proof/DesktopHomeBottomRow'
+import { AgentPromptDock } from '@/components/proof/AgentPromptDock'
 import { PlanLimitHomeAlerts } from '@/components/proof/PlanLimitHomeAlerts'
 import { PipelineBodega } from '@/components/proof/PipelineBodega'
 import { useMcpAgentStatus } from '@/hooks/useMcpAgentStatus'
@@ -76,10 +77,20 @@ export function WinemakerDesktopHome() {
   } = useWinemakerOwnerHomeData()
 
   const [mcpConfigured, setMcpConfigured] = useState(false)
-  const { data: agentStatus, loading: agentLoading } = useMcpAgentStatus(Boolean(organizationId))
+  const { data: agentStatus, loading: agentLoading } = useMcpAgentStatus(
+    Boolean(organizationId),
+    'winemaker'
+  )
 
   useEffect(() => {
-    setMcpConfigured(isMcpConfiguredLocally())
+    const sync = () => setMcpConfigured(isMcpConfiguredLocally())
+    sync()
+    window.addEventListener('focus', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('focus', sync)
+      window.removeEventListener('storage', sync)
+    }
   }, [])
 
   const headerDate = useMemo(() => formatHeaderDate(locale), [locale])
@@ -165,6 +176,8 @@ export function WinemakerDesktopHome() {
               </span>
             </Link>
           ) : null}
+
+          <AgentPromptDock profileType="winemaker" accent={theme.accent} mcpConfigured={mcpConfigured} />
 
           <PlanLimitHomeAlerts warnings={planWarnings} />
 

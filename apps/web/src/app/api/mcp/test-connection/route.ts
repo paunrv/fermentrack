@@ -1,5 +1,6 @@
 import { createClient, getAuthUserId } from '@/lib/supabase/server'
 import { errorMessageFromUnknown } from '@/lib/errors/unknown'
+import type { AgentProfileType } from '@/lib/proof/agent-context-types'
 import { resolveMcpScope } from '@/lib/mcp/resolve-scope'
 
 export const runtime = 'nodejs'
@@ -9,7 +10,16 @@ export const dynamic = 'force-dynamic'
  * Browser-only connectivity check using the same Supabase SSR session as the dashboard
  * (cookies), not the bearer-token MCP path used by external clients.
  */
-export async function POST() {
+function parseProfileType(body: unknown): AgentProfileType | undefined {
+  if (!body || typeof body !== 'object') return undefined
+  const value = (body as { profile_type?: unknown }).profile_type
+  if (value === 'distributor' || value === 'winemaker' || value === 'distiller') {
+    return value
+  }
+  return undefined
+}
+
+export async function POST(request: Request) {
   const supabase = await createClient()
   const userId = await getAuthUserId()
 
@@ -21,8 +31,20 @@ export async function POST() {
     data: { session },
   } = await supabase.auth.getSession()
 
+  let requestedProfile: AgentProfileType | undefined
   try {
-    const scope = await resolveMcpScope(supabase, userId)
+    const body = await request.json()
+    requestedProfile = parseProfileType(body)
+  } catch {
+    requestedProfile = undefined
+  }
+
+  try {
+    const scope = await resolveMcpScope(
+      supabase,
+      userId,
+      requestedProfile ? { profile_type: requestedProfile } : undefined
+    )
 
     return Response.json({
       ok: true,

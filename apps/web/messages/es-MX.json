@@ -41,7 +41,7 @@
       "ctaDemo": "Ver demo",
       "ctaStart": "90 días sin tarjeta",
       "mockup": {
-        "userLabel": "Aldo · Winemaker",
+        "userLabel": "Florencia · Winemaker",
         "liveLabel": "En vivo",
         "alerts": [
           {
@@ -1763,7 +1763,7 @@
     },
     "home": {
       "badge": "🍇 Winemaker",
-      "defaultFirstName": "Aldo",
+      "defaultFirstName": "Florencia",
       "greeting": {
         "morning": "Buenos días",
         "afternoon": "Buenas tardes",
@@ -1817,7 +1817,12 @@
         "lastToolCall": "Última tool: {tool} · {when}",
         "noToolCallsYet": "Aún no hay llamadas MCP registradas",
         "manageConnection": "Gestionar conexión",
-        "moreTasks": "+{count} más"
+        "moreTasks": "+{count} más",
+        "agentDockTitle": "Pregunta a PROOF",
+        "agentDockHint": "El chat vive en Claude Desktop o Cursor. Escribe o elige un ejemplo — copiamos el texto para que lo pegues en tu agente.",
+        "agentDockPlaceholder": "Ej. ¿Qué lotes requieren atención hoy?",
+        "agentDockCopy": "Copiar",
+        "agentDockCopied": "Copiado"
       },
       "planLimits": {
         "lotesLabel": "Lotes activos",

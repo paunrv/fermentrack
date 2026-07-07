@@ -9,6 +9,7 @@ import {
   CLAUDE_DESKTOP_CONFIG_PATH_MAC,
 } from '@/lib/mcp/client-config'
 import { markMcpConfigured } from '@/lib/mcp/connection-status'
+import type { AgentProfileType } from '@/lib/proof/agent-context-types'
 
 export type McpConnectionTestResult = {
   ok: boolean
@@ -22,7 +23,7 @@ function buildCursorConfigJson(mcpUrl: string, token: string): string {
   return buildMcpHttpConfigJson(mcpUrl, token)
 }
 
-export function useMcpConnectionInfo() {
+export function useMcpConnectionInfo(mcpProfileType?: AgentProfileType | null) {
   const { user, isLoaded, supabase } = useAuth()
   const [origin, setOrigin] = useState('')
   const [tokenCopied, setTokenCopied] = useState(false)
@@ -114,7 +115,13 @@ export function useMcpConnectionInfo() {
     setTestLoading(true)
     setTestResult(null)
     try {
-      const res = await fetch('/api/mcp/test-connection', { method: 'POST' })
+      const res = await fetch('/api/mcp/test-connection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          mcpProfileType ? { profile_type: mcpProfileType } : {}
+        ),
+      })
       const data = (await res.json()) as McpConnectionTestResult & { expires_at?: number | null }
       if (!res.ok || !data.ok) {
         setTestResult({ ok: false, error: data.error ?? 'request_failed' })
@@ -136,7 +143,7 @@ export function useMcpConnectionInfo() {
     } finally {
       setTestLoading(false)
     }
-  }, [])
+  }, [mcpProfileType])
 
   const tokenExpired = tokenExpiresAt != null && tokenExpiresAt * 1000 <= Date.now()
 

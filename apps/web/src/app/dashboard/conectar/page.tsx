@@ -4,7 +4,9 @@ export const dynamic = 'force-dynamic'
 
 import { ProofConnectionHub } from '@/components/proof/ProofConnectionHub'
 import { useProfile } from '@/context/ProfileContext'
+import { useOrganization } from '@/context/OrganizationContext'
 import { useWinemakerAccess } from '@/hooks/useWinemakerAccess'
+import { resolveMcpClientProfileType } from '@/lib/mcp/client-profile'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
 import { useTranslations } from 'next-intl'
@@ -23,11 +25,16 @@ const pageShellStyle: CSSProperties = {
 export default function ConectarPage() {
   const t = useTranslations('connectionHub')
   const { activeProfile } = useProfile()
+  const { activeOrg } = useOrganization()
   const { effectiveProfileType, loading } = useWinemakerAccess()
 
   const profileType = profileTypeFromV2(
     effectiveProfileType ?? activeProfile?.profile_type_v2 ?? undefined
   )
+  const mcpProfileType = resolveMcpClientProfileType({
+    profileType: effectiveProfileType ?? activeProfile?.profile_type_v2,
+    orgType: activeOrg?.org_type,
+  })
   const theme = getProfileTheme(effectiveProfileType ?? activeProfile?.profile_type_v2)
 
   if (loading) {
@@ -66,7 +73,11 @@ export default function ConectarPage() {
 
   return (
     <div className="proof-canvas-page" style={pageShellStyle}>
-      <ProofConnectionHub accent={theme.accent} profileType={profileType} />
+      <ProofConnectionHub
+        accent={theme.accent}
+        profileType={profileType}
+        mcpProfileType={mcpProfileType}
+      />
     </div>
   )
 }
