@@ -62,7 +62,7 @@ export const ALL_NAV_DEFS: NavItemDef[] = [
 
 export function visibleNavDefs(active: Profile | null): NavItemDef[] {
   if (!active) return NAV_OPERACION_DEFS
-  if (active.is_super_user) return ALL_NAV_DEFS
+  // Super users keep elevated access elsewhere; nav follows the active profile type.
   const isProducer = PRODUCERS.includes(active.profile_type_v2)
   const isDistiller = active.profile_type_v2 === 'distiller'
   const isWinemaker = active.profile_type_v2 === 'winemaker'

@@ -27,7 +27,7 @@ const WINEMAKER_OPERACION: RailNavItemDef[] = [
   { href: '/dashboard', labelKey: 'nav.home', icon: 'home' },
   { href: '/dashboard/winemaker/lotes', labelKey: 'nav.winemakerLots', icon: 'lots' },
   { href: '/dashboard/lab', labelKey: 'nav.winemakerLab', icon: 'lab' },
-  { href: '/dashboard/winemaker/bodega', labelKey: 'nav.winemakerCellar', icon: 'cellar' },
+  { href: '/dashboard/winemaker/bodega', labelKey: 'nav.winemakerCellar', icon: 'labels' },
   { href: '/dashboard/winemaker/documentos', labelKey: 'nav.winemakerDocuments', icon: 'documents' },
   { href: '/dashboard/winemaker/proveedores', labelKey: 'nav.winemakerSuppliers', icon: 'suppliers' },
   { href: '/dashboard/winemaker/gastos', labelKey: 'nav.winemakerExpenses', icon: 'expenses' },
@@ -99,10 +99,13 @@ function filterWinemakerEquipo(items: RailNavItemDef[], ctx: RailBuildContext): 
   })
 }
 
+/**
+ * Rail follows the active profile type — including for super users.
+ * Elevated access stays elsewhere (RLS / settings); the nav must stay scannable.
+ */
 function profileKind(
   ctx: RailBuildContext
-): 'super' | 'winemaker' | 'bodega' | 'distributor' | 'distiller' | 'producer' | 'default' {
-  if (ctx.profile?.is_super_user) return 'super'
+): 'winemaker' | 'bodega' | 'distributor' | 'distiller' | 'producer' | 'default' {
   if (ctx.profile?.profile_type_v2 === 'distributor') return 'distributor'
   if (ctx.profile?.profile_type_v2 === 'distiller') return 'distiller'
   if (ctx.profile?.profile_type_v2 === 'brewer') return 'producer'
@@ -113,28 +116,6 @@ function profileKind(
 
 function groupsForProfile(ctx: RailBuildContext): { main: RailGroup[]; config: RailGroup } {
   const kind = profileKind(ctx)
-
-  if (kind === 'super') {
-    const operacion = dedupeItems([
-      ...WINEMAKER_OPERACION,
-      ...DISTRIBUTOR_OPERACION.filter(i => i.href !== '/dashboard'),
-      ...DISTILLER_OPERACION.filter(i => i.href !== '/dashboard'),
-      ...PRODUCER_OPERACION.filter(i => i.href !== '/dashboard'),
-    ])
-    const equipo = dedupeItems([
-      ...filterWinemakerEquipo(WINEMAKER_EQUIPO, ctx),
-      ...DISTRIBUTOR_EQUIPO,
-    ])
-    return {
-      main: [
-        { id: 'operacion', labelKey: 'rail.groups.operacion', items: operacion },
-        ...(equipo.length > 0
-          ? [{ id: 'equipo' as const, labelKey: 'rail.groups.equipo', items: equipo }]
-          : []),
-      ],
-      config: { id: 'configuracion', labelKey: 'rail.groups.configuracion', items: CONFIG_ITEMS },
-    }
-  }
 
   if (kind === 'winemaker') {
     return {

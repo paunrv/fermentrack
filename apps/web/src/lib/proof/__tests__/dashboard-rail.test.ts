@@ -93,4 +93,41 @@ describe('buildDashboardRail', () => {
     expect(model.mainGroups).toHaveLength(1)
     expect(model.mainGroups[0]?.id).toBe('operacion')
   })
+
+  it('super user follows active profile type instead of unioning all rails', () => {
+    const model = buildDashboardRail({
+      profile: { profile_type_v2: 'winemaker', is_super_user: true } as Profile,
+      isWinemaker: true,
+      chatEnabled: true,
+      showEquipo: true,
+    })
+
+    expect(findDuplicateRailHrefs(model.flatItems)).toEqual([])
+    expect(model.flatItems.some(item => item.href === '/dashboard/winemaker/lotes')).toBe(true)
+    expect(model.flatItems.some(item => item.href === '/dashboard/inventario')).toBe(false)
+    expect(model.flatItems.some(item => item.href === '/dashboard/destilador/compras')).toBe(false)
+    expect(model.mainGroups.map(group => group.id)).toEqual(['operacion', 'equipo'])
+  })
+
+  it('winemaker cellar uses labels icon distinct from distiller cellar', () => {
+    const winemaker = buildDashboardRail({
+      profile: winemakerProfile,
+      isWinemaker: true,
+      chatEnabled: false,
+      showEquipo: false,
+    })
+    const distiller = buildDashboardRail({
+      profile: { profile_type_v2: 'distiller', is_super_user: false } as Profile,
+      isWinemaker: false,
+      chatEnabled: false,
+      showEquipo: false,
+    })
+
+    expect(
+      winemaker.flatItems.find(i => i.href === '/dashboard/winemaker/bodega')?.icon
+    ).toBe('labels')
+    expect(
+      distiller.flatItems.find(i => i.href === '/dashboard/destilador/bodega')?.icon
+    ).toBe('cellar')
+  })
 })

@@ -18,11 +18,11 @@ Fuente de verdad: `apps/web/src/lib/proof/dashboard-rail.ts` · tests: `dashboar
 
 | Perfil | Operación | Equipo | Configuración |
 |--------|-----------|--------|---------------|
-| **Winemaker** | Inicio, Lotes, Etiquetas bodega, Documentos, Proveedores, Gastos | Mi equipo*, Agenda, Chat† | Conectar agente, Ajustes |
+| **Winemaker** | Inicio, Lotes, Laboratorio, Etiquetas bodega, Documentos, Proveedores, Gastos | Mi equipo*, Agenda, Chat† | Conectar agente, Ajustes |
 | **Distribuidor** | Inicio, Inventario, Pedidos, Movimientos, Catálogo, Entrada, Remisiones | Clientes, Crédito, Productores | Conectar agente, Ajustes |
 | **Destilador** | Inicio, Compras, Lotes, Producción, Bodega, Ventas | — | Conectar agente, Ajustes |
 | **Productor (brewer)** | Inicio, Inventario, Movimientos, Catálogo, Clientes | — | Conectar agente, Ajustes |
-| **Super user** | Unión deduplicada de rutas anteriores | Equipo winemaker + finanzas distribuidor | Conectar agente, Ajustes |
+| **Super user** | Mismo rail que el **perfil activo** (no unión de todos) | Según perfil activo | Conectar agente, Ajustes |
 
 \* Mi equipo solo si `fetchTeamAccess.canManage` (owner/admin).  
 † Toggle 💬 en grupo Equipo cuando `orgHasFeature('chat')` (Pro+).
@@ -35,6 +35,9 @@ Fuente de verdad: `apps/web/src/lib/proof/dashboard-rail.ts` · tests: `dashboar
 | Ajustes duplicado (lista + pie) | Solo en grupo **Configuración** al pie |
 | `/dashboard` como home y como “conectar” | Home en Operación; MCP hub en `/dashboard/conectar` |
 | Lista plana sin jerarquía (~20 iconos) | Máx. 3 grupos con separador |
+| Super user = unión de todos los perfiles (~24 iconos, glyphs repetidos) | Rail = perfil activo; acceso elevado fuera del nav |
+| Proveedores / equipo / clientes con el mismo glyph de personas | Proveedores → storefront; equipo/clientes mantienen people |
+| Etiquetas bodega (winemaker) vs bodega (destilador) | `labels` vs `cellar` |
 
 ## B2 — Implementación
 
