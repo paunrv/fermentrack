@@ -27,6 +27,23 @@ describe('buildDashboardRail', () => {
     expect(model.showChatToggle).toBe(true)
   })
 
+  it('bodega team gets minimal rail: home, agenda, settings, chat', () => {
+    const model = buildDashboardRail({
+      profile: { profile_type_v2: 'bodega', is_super_user: false } as Profile,
+      isWinemaker: false,
+      chatEnabled: true,
+      showEquipo: false,
+    })
+
+    expect(model.mainGroups.map(group => group.id)).toEqual(['operacion'])
+    expect(model.mainGroups[0]?.items.map(i => i.href)).toEqual([
+      '/dashboard',
+      '/dashboard/winemaker/agenda',
+    ])
+    expect(model.configGroup.items.map(i => i.href)).toEqual(['/dashboard/settings'])
+    expect(model.showChatToggle).toBe(true)
+  })
+
   it('hides equipo link when showEquipo is false', () => {
     const model = buildDashboardRail({
       profile: winemakerProfile,

@@ -11,12 +11,15 @@ import {
   fetchTeamInviteStatus,
   fetchTeamMembers,
   inviteTeamMember,
+  removeTeamMember,
+  updateTeamAccessCode,
   type TeamMemberRow,
 } from '@/app/actions/equipo'
 import type { TeamPlatformProfile } from '@/lib/proof/team-access-code'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 import { ProFeatureLock } from '@/components/proof/ProFeatureLock'
 import { INVITE_PRO_REQUIRED_CODE } from '@/lib/proof/plan-team-invites'
+import { errorMessageFromUnknown } from '@/lib/errors/unknown'
 
 const label: React.CSSProperties = {
   display: 'block',
@@ -37,6 +40,18 @@ const input: React.CSSProperties = {
   fontWeight: 500,
   color: 'var(--fg-0)',
   outline: 'none',
+  fontFamily: 'var(--font-display)',
+}
+
+const codeBtnStyle: React.CSSProperties = {
+  padding: '6px 10px',
+  border: '1px solid var(--hairline)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--bg-1)',
+  color: 'var(--fg-0)',
+  fontSize: 12,
+  fontWeight: 600,
+  cursor: 'pointer',
   fontFamily: 'var(--font-display)',
 }
 
@@ -65,7 +80,58 @@ export default function EquipoPage() {
     name: string
     wineryName: string
     accessCode: string
+    emailSent: boolean
+    inviteLink: string | null
   } | null>(null)
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null)
+  const [updatingCodeMemberId, setUpdatingCodeMemberId] = useState<string | null>(null)
+  const [customCodes, setCustomCodes] = useState<Record<string, string>>({})
+  const [codeNotice, setCodeNotice] = useState<string | null>(null)
+
+  function inviteErrorMessage(err: unknown): string {
+    const code = errorMessageFromUnknown(err)
+    if (code === INVITE_PRO_REQUIRED_CODE) return t('proRequiredBody')
+    if (code === 'limit_reached_usuarios') {
+      try {
+        return tLimits('limit_reached_usuarios', { limit: 1 })
+      } catch {
+        return t('inviteError')
+      }
+    }
+    if (code.toLowerCase().includes('rate limit')) return t('inviteRateLimit')
+    if (code.toLowerCase().includes('already') || code.toLowerCase().includes('registered')) {
+      return t('inviteEmailExists')
+    }
+    return code || t('inviteError')
+  }
+
+  function memberStatusLabel(status: string): string {
+    const key = `status.${status}` as 'status.active' | 'status.invited' | 'status.suspended'
+    try {
+      return t.has(key) ? t(key) : status
+    } catch {
+      return status
+    }
+  }
+
+  function memberRoleLabel(member: TeamMemberRow): string {
+    if (member.platformProfile) {
+      const key = `platformRoles.${member.platformProfile}` as
+        | 'platformRoles.winemaker'
+        | 'platformRoles.bodega'
+      try {
+        return t.has(key) ? t(key) : member.platformProfile
+      } catch {
+        return member.platformProfile
+      }
+    }
+    const key = `orgRoles.${member.orgRole}` as 'orgRoles.owner'
+    try {
+      return t.has(key) ? t(key) : member.orgRole
+    } catch {
+      return member.orgRole
+    }
+  }
 
   async function loadMembers() {
     if (!organizationId) return
@@ -91,7 +157,7 @@ export default function EquipoPage() {
       const rows = await fetchTeamMembers(organizationId)
       setMembers(rows)
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('loadError'))
+      setError(errorMessageFromUnknown(err) || t('loadError'))
     } finally {
       setLoading(false)
     }
@@ -113,29 +179,109 @@ export default function EquipoPage() {
     setSaveError(null)
     try {
       const invitedName = name.trim()
-      const result = await inviteTeamMember({ organizationId, email, name: invitedName, platformProfile })
+      const result = await inviteTeamMember({
+        organizationId,
+        email,
+        name: invitedName,
+        platformProfile,
+        siteOrigin: typeof window !== 'undefined' ? window.location.origin : undefined,
+      })
+      if (!result?.accessCode) throw new Error('invite_failed')
+
       setEmail('')
       setName('')
       setPlatformProfile('winemaker')
       setShowForm(false)
       setInviteSuccess({
         name: invitedName,
-        wineryName: result.wineryName,
+        wineryName: result.wineryName || activeOrg?.name || '',
         accessCode: result.accessCode,
+        emailSent: result.emailSent,
+        inviteLink: result.inviteLink,
       })
-      await loadMembers()
+      void loadMembers().catch(err => {
+        setError(errorMessageFromUnknown(err) || t('loadError'))
+      })
     } catch (err) {
-      const code = err instanceof Error ? err.message : 'inviteError'
-      const msg =
-        code === INVITE_PRO_REQUIRED_CODE
-          ? t('proRequiredBody')
-          : tLimits.has(code as 'limit_reached_usuarios')
-            ? tLimits(code as 'limit_reached_usuarios', { limit: 1 })
-            : t('inviteError')
-      setSaveError(msg)
+      setSaveError(inviteErrorMessage(err))
     } finally {
       setSaving(false)
     }
+  }
+
+  async function handleRemoveMember(member: TeamMemberRow) {
+    if (!organizationId || member.orgRole === 'owner') return
+    const label = member.fullName || member.email || t('noName')
+    if (!window.confirm(t('removeConfirm', { name: label }))) return
+
+    setRemovingMemberId(member.id)
+    setError(null)
+    try {
+      await removeTeamMember({ organizationId, memberId: member.id })
+      setMembers(prev => prev.filter(m => m.id !== member.id))
+    } catch (err) {
+      setError(errorMessageFromUnknown(err) || t('removeError'))
+    } finally {
+      setRemovingMemberId(null)
+    }
+  }
+
+  async function handleRegenerateCode(member: TeamMemberRow) {
+    if (!organizationId) return
+    setUpdatingCodeMemberId(member.id)
+    setCodeNotice(null)
+    try {
+      const result = await updateTeamAccessCode({ organizationId, memberId: member.id })
+      setMembers(prev =>
+        prev.map(m => (m.id === member.id ? { ...m, accessCode: result.accessCode } : m))
+      )
+      setCodeNotice(t('codeRegenerated', { name: member.fullName || member.email || t('noName') }))
+    } catch (err) {
+      setError(errorMessageFromUnknown(err) || t('codeUpdateError'))
+    } finally {
+      setUpdatingCodeMemberId(null)
+    }
+  }
+
+  async function handleSaveCustomCode(member: TeamMemberRow) {
+    if (!organizationId) return
+    const code = (customCodes[member.id] ?? '').replace(/\D/g, '').slice(0, 4)
+    if (code.length !== 4) {
+      setCodeNotice(t('codeInvalid'))
+      return
+    }
+    setUpdatingCodeMemberId(member.id)
+    setCodeNotice(null)
+    try {
+      const result = await updateTeamAccessCode({ organizationId, memberId: member.id, code })
+      setMembers(prev =>
+        prev.map(m => (m.id === member.id ? { ...m, accessCode: result.accessCode } : m))
+      )
+      setCustomCodes(prev => ({ ...prev, [member.id]: '' }))
+      setCodeNotice(t('codeSaved'))
+    } catch (err) {
+      setError(errorMessageFromUnknown(err) || t('codeUpdateError'))
+    } finally {
+      setUpdatingCodeMemberId(null)
+    }
+  }
+
+  async function copyText(text: string, notice: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCodeNotice(notice)
+    } catch {
+      setCodeNotice(t('copyFailed'))
+    }
+  }
+
+  function shareMessage(member: TeamMemberRow, code: string): string {
+    return t('shareMessage', {
+      name: member.fullName || member.email || t('noName'),
+      winery: activeOrg?.name ?? '—',
+      code,
+      url: typeof window !== 'undefined' ? window.location.origin : '',
+    })
   }
 
   if (orgLoading || !organizationId) {
@@ -154,6 +300,26 @@ export default function EquipoPage() {
         <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
           {t('description', { org: activeOrg?.name ?? '' })}
         </p>
+        <div
+          style={{
+            marginTop: 12,
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--hairline)',
+            background: 'var(--bg-1)',
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: 'var(--fg-2)',
+          }}
+        >
+          <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--fg-0)' }}>{t('rolesHelpTitle')}</p>
+          <p style={{ margin: 0 }}>{t('rolesHelpBody')}</p>
+          {typeof window !== 'undefined' ? (
+            <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>
+              {t('mobileHint', { url: window.location.origin })}
+            </p>
+          ) : null}
+        </div>
       </header>
 
       {canManage ? (
@@ -199,8 +365,8 @@ export default function EquipoPage() {
                 lineHeight: 1.5,
               }}
             >
-              {tLimits.has(inviteLimitCode as 'limit_reached_usuarios')
-                ? tLimits(inviteLimitCode as 'limit_reached_usuarios', { limit: 1 })
+              {inviteLimitCode === 'limit_reached_usuarios'
+                ? tLimits('limit_reached_usuarios', { limit: 1 })
                 : t('inviteLimitReached')}{' '}
               {tLimits('upgradeHint')}
             </p>
@@ -332,10 +498,18 @@ export default function EquipoPage() {
           }}
         >
           <p style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: 'var(--fg-0)' }}>
-            {t('inviteSuccessTitle')}
+            {inviteSuccess.emailSent ? t('inviteSuccessTitle') : t('inviteManualTitle')}
           </p>
           <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
-            {t('inviteSuccessBody', { name: inviteSuccess.name, winery: inviteSuccess.wineryName })}
+            {inviteSuccess.emailSent
+              ? t('inviteSuccessBody', {
+                  name: inviteSuccess.name,
+                  winery: inviteSuccess.wineryName || activeOrg?.name || '—',
+                })
+              : t('inviteManualBody', {
+                  name: inviteSuccess.name,
+                  winery: inviteSuccess.wineryName || activeOrg?.name || '—',
+                })}
           </p>
           <div
             className="proof-equipo-access-code"
@@ -360,6 +534,25 @@ export default function EquipoPage() {
             </span>
           </div>
           <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>{t('inviteSuccessHint')}</p>
+          {inviteSuccess.inviteLink ? (
+            <div style={{ marginTop: 12 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, color: 'var(--fg-1)' }}>
+                {t('inviteLinkLabel')}
+              </p>
+              <a
+                href={inviteSuccess.inviteLink}
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  wordBreak: 'break-all',
+                  color: 'var(--proof-accent)',
+                }}
+              >
+                {inviteSuccess.inviteLink}
+              </a>
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>{t('inviteLinkHint')}</p>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => setInviteSuccess(null)}
@@ -386,6 +579,22 @@ export default function EquipoPage() {
       ) : members.length === 0 ? (
         <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('empty')}</p>
       ) : (
+        <>
+          {codeNotice ? (
+            <p
+              style={{
+                margin: '0 0 12px',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--ok-soft)',
+                border: '1px solid color-mix(in srgb, var(--ok) 35%, var(--hairline))',
+                fontSize: 13,
+                color: 'var(--fg-1)',
+              }}
+            >
+              {codeNotice}
+            </p>
+          ) : null}
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
           {members.map(member => (
             <li
@@ -406,28 +615,118 @@ export default function EquipoPage() {
                     <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--fg-2)' }}>{member.email}</p>
                   )}
                   <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
-                    {member.platformProfile
-                      ? t(`platformRoles.${member.platformProfile}` as 'platformRoles.winemaker')
-                      : t(`orgRoles.${member.orgRole}` as 'orgRoles.owner')}
+                    {memberRoleLabel(member)}
                   </p>
+                  {canManage && member.status === 'invited' ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        paddingTop: 12,
+                        borderTop: '1px solid var(--hairline)',
+                      }}
+                    >
+                      <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--fg-2)' }}>
+                        {t('inviteCodeSection')}
+                      </p>
+                      {member.accessCode ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                          <span className="mono" style={{ fontSize: 20, fontWeight: 700, letterSpacing: '0.2em' }}>
+                            {member.accessCode}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => void copyText(member.accessCode!, t('codeCopied'))}
+                            style={codeBtnStyle}
+                          >
+                            {t('copyCode')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              void copyText(shareMessage(member, member.accessCode!), t('shareCopied'))
+                            }
+                            style={codeBtnStyle}
+                          >
+                            {t('copyShare')}
+                          </button>
+                        </div>
+                      ) : (
+                        <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--fg-2)' }}>{t('codeMissing')}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={4}
+                          placeholder={t('customCodePlaceholder')}
+                          value={customCodes[member.id] ?? ''}
+                          onChange={e =>
+                            setCustomCodes(prev => ({
+                              ...prev,
+                              [member.id]: e.target.value.replace(/\D/g, '').slice(0, 4),
+                            }))
+                          }
+                          style={{ ...input, width: 88, flex: '0 0 auto' }}
+                        />
+                        <button
+                          type="button"
+                          disabled={updatingCodeMemberId === member.id}
+                          onClick={() => void handleSaveCustomCode(member)}
+                          style={codeBtnStyle}
+                        >
+                          {t('saveCode')}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={updatingCodeMemberId === member.id}
+                          onClick={() => void handleRegenerateCode(member)}
+                          style={codeBtnStyle}
+                        >
+                          {updatingCodeMemberId === member.id ? t('codeUpdating') : t('regenerateCode')}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-                <span
-                  style={{
-                    flexShrink: 0,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '4px 8px',
-                    borderRadius: 999,
-                    background: member.status === 'active' ? 'var(--bg-2)' : 'rgba(159, 225, 203, 0.25)',
-                    color: 'var(--fg-1)',
-                  }}
-                >
-                  {t(`status.${member.status}` as 'status.active')}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, flexShrink: 0 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: '4px 8px',
+                      borderRadius: 999,
+                      background: member.status === 'active' ? 'var(--bg-2)' : 'rgba(159, 225, 203, 0.25)',
+                      color: 'var(--fg-1)',
+                    }}
+                  >
+                    {memberStatusLabel(member.status)}
+                  </span>
+                  {canManage && member.orgRole !== 'owner' ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleRemoveMember(member)}
+                      disabled={removingMemberId === member.id}
+                      style={{
+                        padding: '4px 10px',
+                        border: '1px solid var(--hairline)',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'transparent',
+                        color: 'var(--red)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: removingMemberId === member.id ? 'wait' : 'pointer',
+                        opacity: removingMemberId === member.id ? 0.6 : 1,
+                      }}
+                    >
+                      {removingMemberId === member.id ? t('removing') : t('remove')}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </li>
           ))}
         </ul>
+        </>
       )}
     </div>
   )

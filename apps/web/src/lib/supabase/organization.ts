@@ -86,10 +86,22 @@ const MEMBERSHIP_SELECT_NO_FEATURES =
 const MEMBERSHIP_SELECT_LEGACY =
   'role, status, organization_id, organizations(id, name, slug, plan, created_at)' as const
 
+const INVITE_MEMBERSHIP_SELECT =
+  'role, status, organization_id, platform_profile, organizations(id, name, slug, org_type, plan, plan_status, features, billing_cycle, trial_ends_at, primer_registro_at, renewal_anchor, founding_member_at, created_at)' as const
+
+const INVITE_MEMBERSHIP_SELECT_NO_FEATURES =
+  'role, status, organization_id, platform_profile, organizations(id, name, slug, org_type, plan, plan_status, created_at)' as const
+
+const INVITE_MEMBERSHIP_SELECT_LEGACY =
+  'role, status, organization_id, platform_profile, organizations(id, name, slug, plan, created_at)' as const
+
 type MembershipSelect =
   | typeof MEMBERSHIP_SELECT_FULL
   | typeof MEMBERSHIP_SELECT_NO_FEATURES
   | typeof MEMBERSHIP_SELECT_LEGACY
+  | typeof INVITE_MEMBERSHIP_SELECT
+  | typeof INVITE_MEMBERSHIP_SELECT_NO_FEATURES
+  | typeof INVITE_MEMBERSHIP_SELECT_LEGACY
 
 async function fetchActiveMembershipRows(
   sb: SupabaseClient,
@@ -121,18 +133,26 @@ export async function fetchPendingWinemakerInvite(
   userId: string
 ): Promise<PendingWinemakerInvite | null> {
   let legacySchema = false
-  let { data, error } = await fetchMembershipRows(sb, userId, MEMBERSHIP_SELECT_FULL, 'invited')
+  let { data, error } = await fetchMembershipRows(sb, userId, INVITE_MEMBERSHIP_SELECT, 'invited')
 
   if (error && isMissingColumnError(error, 'org_type')) {
     legacySchema = true
-    ;({ data, error } = await fetchMembershipRows(sb, userId, MEMBERSHIP_SELECT_LEGACY, 'invited'))
+    ;({ data, error } = await fetchMembershipRows(sb, userId, INVITE_MEMBERSHIP_SELECT_LEGACY, 'invited'))
   } else if (error && isMissingColumnError(error, 'features')) {
-    ;({ data, error } = await fetchMembershipRows(sb, userId, MEMBERSHIP_SELECT_NO_FEATURES, 'invited'))
+    ;({ data, error } = await fetchMembershipRows(
+      sb,
+      userId,
+      INVITE_MEMBERSHIP_SELECT_NO_FEATURES,
+      'invited'
+    ))
   }
 
   if (error) throw error
   const row = data?.[0]
   if (!row) return null
+
+  const platformProfile = (row.platform_profile as TeamPlatformProfile | null) ?? null
+  if (!platformProfile) return null
 
   const orgRaw = row.organizations
   const orgRow = Array.isArray(orgRaw) ? orgRaw[0] : orgRaw
@@ -144,7 +164,7 @@ export async function fetchPendingWinemakerInvite(
     organizationId: String(row.organization_id),
     organizationName: org.name,
     role: row.role as OrgMemberRole,
-    platformProfile: (row.platform_profile as TeamPlatformProfile | null) ?? null,
+    platformProfile,
   }
 }
 

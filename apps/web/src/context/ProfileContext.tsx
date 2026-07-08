@@ -56,7 +56,8 @@ function readStoredType(): ExtraProfile | null {
     raw === 'brewer' ||
     raw === 'winemaker' ||
     raw === 'distiller' ||
-    raw === 'distributor'
+    raw === 'distributor' ||
+    raw === 'bodega'
   ) {
     return raw
   }

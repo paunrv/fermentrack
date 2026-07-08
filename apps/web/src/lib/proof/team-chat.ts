@@ -159,30 +159,60 @@ export async function fetchLotCodeMap(
   return map
 }
 
+type TeamChatInsertListener = (messageId: string) => void
+
+type TeamChatChannelEntry = {
+  channel: RealtimeChannel
+  listeners: Set<TeamChatInsertListener>
+  sb: SupabaseClient
+}
+
+/** One Realtime channel per org — multiple hooks can listen without re-subscribing. */
+const teamChatChannels = new Map<string, TeamChatChannelEntry>()
+
 export function subscribeTeamChatMessages(
   sb: SupabaseClient,
   organizationId: string,
-  onInsert: (messageId: string) => void
+  onInsert: TeamChatInsertListener
 ): () => void {
-  const channel: RealtimeChannel = sb
-    .channel(`team-chat-${organizationId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'wm_mensajes',
-        filter: `organization_id=eq.${organizationId}`,
-      },
-      payload => {
-        const id = (payload.new as { id?: string } | null)?.id
-        if (id) onInsert(id)
-      }
-    )
-    .subscribe()
+  let entry = teamChatChannels.get(organizationId)
+
+  if (!entry) {
+    const listeners = new Set<TeamChatInsertListener>()
+    const channel = sb
+      .channel(`team-chat-${organizationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'wm_mensajes',
+          filter: `organization_id=eq.${organizationId}`,
+        },
+        payload => {
+          const id = (payload.new as { id?: string } | null)?.id
+          if (!id) return
+          for (const listener of listeners) {
+            listener(id)
+          }
+        }
+      )
+      .subscribe()
+
+    entry = { channel, listeners, sb }
+    teamChatChannels.set(organizationId, entry)
+  }
+
+  entry.listeners.add(onInsert)
 
   return () => {
-    void sb.removeChannel(channel)
+    const current = teamChatChannels.get(organizationId)
+    if (!current) return
+    current.listeners.delete(onInsert)
+    if (current.listeners.size === 0) {
+      void current.sb.removeChannel(current.channel)
+      teamChatChannels.delete(organizationId)
+    }
   }
 }
 

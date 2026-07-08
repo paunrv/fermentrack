@@ -15,6 +15,11 @@ import {
   type WmTicketVisionStatus,
 } from '@/lib/proof/winemaker-ticket-vision'
 import { buildTicketUploadMessage } from '@/lib/proof/winemaker-ticket-copy'
+import { isWinemakerEtapaKey } from '@/lib/proof/winemaker-etapa'
+import {
+  processWinemakerCaptureUpload,
+  type WinemakerCaptureKind,
+} from '@/lib/proof/winemaker-capture-process'
 import { createSupabaseForProofApi } from '@/utils/supabase/server-api'
 import { fetchActiveProfile } from '@/lib/supabase'
 import { fetchWinemakerOrganizationIdForUser } from '@/lib/supabase/organization'
@@ -55,6 +60,13 @@ export async function POST(req: NextRequest) {
 
   const documentId = randomUUID()
   const contentType = resolveTicketContentType(file.name, file.type)
+  const captureKindRaw = form.get('captureKind')
+  const etapaRaw = form.get('etapa')
+  const captureKind =
+    captureKindRaw === 'whiteboard' || captureKindRaw === 'lab' || captureKindRaw === 'bodega'
+      ? (captureKindRaw as WinemakerCaptureKind)
+      : null
+  const etapa = typeof etapaRaw === 'string' && isWinemakerEtapaKey(etapaRaw) ? etapaRaw : null
   const documentType = inferWmDocumentType(contentType, file.name)
 
   try {
@@ -68,14 +80,39 @@ export async function POST(req: NextRequest) {
     if (!organizationId) {
       return Response.json({ error: 'Organización winemaker no encontrada' }, { status: 403 })
     }
-    const profile = await fetchActiveProfile(sb, clerkId, 'winemaker').catch(() => null)
-    const wineryName = profile?.username?.trim() || null
-    const buffer = await file.arrayBuffer()
 
     const storagePath = await uploadWinemakerDocument(sb, organizationId, documentId, file, {
       contentType,
       filename: file.name,
     })
+
+    if (captureKind && !etapa) {
+      return Response.json({ error: 'Categoría de etapa requerida' }, { status: 400 })
+    }
+
+    if (captureKind && etapa) {
+      const document = await processWinemakerCaptureUpload(sb, {
+        organizationId,
+        documentId,
+        captureKind,
+        etapa,
+        storagePath,
+        filename: file.name,
+        contentType,
+      })
+
+      return Response.json({
+        documentId: document.id,
+        document,
+        captureKind,
+        etapa,
+        mensaje: 'Archivo guardado en PROOF.',
+      })
+    }
+
+    const profile = await fetchActiveProfile(sb, clerkId, 'winemaker').catch(() => null)
+    const wineryName = profile?.username?.trim() || null
+    const buffer = await file.arrayBuffer()
 
     let visionStatus: WmTicketVisionStatus
     let visionError: string | undefined

@@ -695,7 +695,7 @@ export async function upsertProfile(
 
   const { error } = await sb
     .from(PROOF_PROFILES_TABLE)
-    .upsert(record, { onConflict: 'clerk_id,profile_type_v2' })
+    .upsert(record, { onConflict: 'user_id,profile_type_v2' })
   if (error) throw error
 }
 

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireBillingAccess } from '@/lib/billing/auth'
-import { billingSiteUrl, getStripe } from '@/lib/stripe/server'
+import {
+  billingSiteUrl,
+  getStripe,
+  STRIPE_PORTAL_UNAVAILABLE,
+  stripeSecretConfigured,
+} from '@/lib/stripe/server'
 import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -12,6 +17,10 @@ export async function POST(req: NextRequest) {
     const organizationId = body.organizationId?.trim()
     if (!organizationId) {
       return NextResponse.json({ error: 'organizationId requerido' }, { status: 400 })
+    }
+
+    if (!stripeSecretConfigured()) {
+      return NextResponse.json({ error: STRIPE_PORTAL_UNAVAILABLE }, { status: 503 })
     }
 
     await requireBillingAccess(organizationId)

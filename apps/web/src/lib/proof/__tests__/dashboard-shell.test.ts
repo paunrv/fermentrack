@@ -50,6 +50,21 @@ describe('dashboard-shell', () => {
     expect(isDashboardNavItemActive('/dashboard/inventario', '/dashboard')).toBe(false)
   })
 
+  it('resolves bodega team shell in winemaker org', () => {
+    expect(
+      resolveShellProfileType({
+        profileType: 'bodega',
+        orgType: 'winemaker',
+      })
+    ).toBe('bodega')
+    expect(
+      isWinemakerShellMode({
+        profileType: 'bodega',
+        orgType: 'winemaker',
+      })
+    ).toBe(true)
+  })
+
   it('prefers legacy distributor profile over winemaker org for shell badge', () => {
     expect(
       resolveShellProfileType({

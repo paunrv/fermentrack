@@ -15,12 +15,11 @@ import { persistActiveProfileType, useProfile } from '@/context/ProfileContext'
 import { useOrganization } from '@/context/OrganizationContext'
 import {
   createWinemakerOrganization,
-  fetchPendingWinemakerInvite,
   type PendingWinemakerInvite,
 } from '@/lib/supabase/organization'
 import { useSupabase } from '@/hooks/useSupabase'
 import { AuthLocaleBar } from '@/components/auth/AuthLocaleBar'
-import { completeTeamOnboarding } from '@/app/actions/team-onboarding'
+import { completeTeamOnboarding, fetchPendingTeamInvite, fetchActiveTeamMembership } from '@/app/actions/team-onboarding'
 import { isValidAccessCodeFormat } from '@/lib/proof/team-access-code'
 
 type LegacyProfileType = 'brewer' | 'distiller' | 'distributor'
@@ -92,7 +91,29 @@ function OnboardingContent() {
 
     void (async () => {
       try {
-        const invite = await fetchPendingWinemakerInvite(supabase, user.id)
+        const teamInvite = await fetchPendingTeamInvite()
+        const activeMembership = teamInvite ? null : await fetchActiveTeamMembership()
+        if (cancelled) return
+
+        if (activeMembership && !teamInvite) {
+          persistActiveProfileType(activeMembership.platformProfile)
+          router.replace('/dashboard')
+          return
+        }
+
+        if (!teamInvite && !isTeamModeParam) {
+          router.replace('/dashboard')
+          return
+        }
+
+        const invite: PendingWinemakerInvite | null = teamInvite
+          ? {
+              organizationId: teamInvite.organizationId,
+              organizationName: teamInvite.organizationName,
+              role: 'member',
+              platformProfile: teamInvite.platformProfile,
+            }
+          : null
         if (cancelled) return
 
         setPendingInvite(invite)
@@ -105,15 +126,17 @@ function OnboardingContent() {
           setTeamInviteMissing(true)
           setStep(2)
         } else {
-          setProfileType('winemaker')
-          setUserName(getUserFirstName(user) || '')
-          setStep(2)
+          router.replace('/dashboard')
+          return
         }
       } catch {
         if (!cancelled) {
-          setProfileType('winemaker')
-          setUserName(getUserFirstName(user) || '')
-          setStep(2)
+          if (isTeamModeParam) {
+            setTeamInviteMissing(true)
+            setStep(2)
+          } else {
+            router.replace('/dashboard')
+          }
         }
       } finally {
         if (!cancelled) setBootReady(true)
@@ -123,7 +146,7 @@ function OnboardingContent() {
     return () => {
       cancelled = true
     }
-  }, [user, supabase, isTeamModeParam])
+  }, [user, isTeamModeParam, router])
 
   function styleOptions(): string[] {
     if (profileType === 'brewer') return BEER_STYLES
@@ -183,6 +206,9 @@ function OnboardingContent() {
 
   async function finishWinemakerOrg() {
     if (!user) return
+    const pending = await fetchPendingTeamInvite()
+    if (pending) throw new Error('NO_PENDING_INVITE')
+
     const orgName = wineryName.trim()
     if (!orgName) throw new Error(t('step2.orgNameWinemaker'))
 
@@ -193,20 +219,45 @@ function OnboardingContent() {
 
     const org = await createWinemakerOrganization(supabase, { name: orgName })
 
+    const email = getUserEmail(user) || null
+    await upsertProfile(supabase, {
+      user_id: user.id,
+      profile_type_v2: 'winemaker',
+      profile_type: 'winemaker',
+      username: userName.trim() || getUserFirstName(user) || orgName,
+      onboarding_complete: true,
+      email,
+    })
+
+    await reloadProfiles()
     await reloadOrganizations()
     switchOrganization(org.id)
     persistActiveProfileType('winemaker')
     router.push('/dashboard')
   }
 
+  async function updateInvitedMemberAuth(fullName: string, nextPassword: string) {
+    const { error } = await supabase.auth.updateUser({
+      password: nextPassword,
+      data: { full_name: fullName },
+    })
+    if (!error) return
+
+    const samePassword = error.message.toLowerCase().includes('different from the old')
+    if (samePassword) {
+      const { error: metaError } = await supabase.auth.updateUser({
+        data: { full_name: fullName },
+      })
+      if (metaError) throw metaError
+      return
+    }
+    throw error
+  }
+
   async function finishTeamMember() {
     if (!user || !profileType || (profileType !== 'winemaker' && profileType !== 'bodega')) return
 
-    const { error: authError } = await supabase.auth.updateUser({
-      password,
-      data: { full_name: userName.trim() },
-    })
-    if (authError) throw authError
+    await updateInvitedMemberAuth(userName.trim(), password)
 
     await completeTeamOnboarding({
       wineryName: wineryName.trim(),
@@ -234,6 +285,9 @@ function OnboardingContent() {
     if (code === 'ACCESS_CODE_INVALID') return t('errors.accessCodeInvalid')
     if (code === 'WINERY_NAME_MISMATCH') return t('errors.wineryNameMismatch')
     if (code === 'NO_PENDING_INVITE') return t('errors.noPendingInvite')
+    if (code.toLowerCase().includes('different from the old')) {
+      return t('errors.passwordSame')
+    }
 
     return code.toLowerCase().includes('fetch') || code.toLowerCase().includes('network')
       ? `${code}${t('errors.networkSuffix')}`

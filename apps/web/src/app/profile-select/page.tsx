@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useOrganization } from '@/context/OrganizationContext'
 import { AuthLocaleBar } from '@/components/auth/AuthLocaleBar'
+import { ensureWinemakerOwnerProfile } from '@/app/actions/profile'
 import type { ExtraProfile } from '@/lib/supabase'
 
 const PROFILE_EMOJI: Record<ExtraProfile, string> = {
@@ -26,6 +27,14 @@ const PROFILE_COLORS: Record<ExtraProfile, string> = {
   bodega: '#2F5F8F',
 }
 
+const ALL_PROFILE_TYPES: ExtraProfile[] = [
+  'brewer',
+  'winemaker',
+  'distiller',
+  'distributor',
+  'bodega',
+]
+
 export default function ProfileSelectPage() {
   const t = useTranslations('profileSelect')
   const router = useRouter()
@@ -37,11 +46,12 @@ export default function ProfileSelectPage() {
     allOrganizations,
   } = useOrganization()
   const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const [syncingProfile, setSyncingProfile] = useState(false)
 
   useEffect(() => {
     if (loading || orgLoading || !profilesResolved || !orgsResolved) return
     if (allProfiles.length === 0 && allOrganizations.length === 0 && !loadError) {
-      router.replace('/onboarding')
+      router.replace('/dashboard')
     }
   }, [
     loading,
@@ -55,16 +65,43 @@ export default function ProfileSelectPage() {
   ])
 
   useEffect(() => {
-    if (loading || orgLoading || !orgsResolved) return
-    if (allProfiles.length === 0 && allOrganizations.length > 0) {
-      router.replace('/dashboard')
+    if (loading || orgLoading || !profilesResolved || !orgsResolved) return
+    if (allProfiles.length > 0 || allOrganizations.length === 0) return
+
+    let cancelled = false
+    setSyncingProfile(true)
+    void ensureWinemakerOwnerProfile()
+      .then(result => {
+        if (cancelled) return
+        if (result.created) return reload()
+      })
+      .catch(err => {
+        console.warn('[profile-select] ensureWinemakerOwnerProfile', err)
+      })
+      .finally(() => {
+        if (!cancelled) setSyncingProfile(false)
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [loading, orgLoading, orgsResolved, allProfiles.length, allOrganizations.length, router])
+  }, [
+    loading,
+    orgLoading,
+    profilesResolved,
+    orgsResolved,
+    allProfiles.length,
+    allOrganizations.length,
+    reload,
+  ])
 
   function handleSelect(type: ExtraProfile) {
     switchProfile(type)
     router.push('/dashboard')
   }
+
+  const existingTypes = new Set(allProfiles.map(p => p.profile_type_v2))
+  const missingTypes = ALL_PROFILE_TYPES.filter(type => !existingTypes.has(type))
 
   const loadingScreen = (
     <div
@@ -83,7 +120,7 @@ export default function ProfileSelectPage() {
     </div>
   )
 
-  if (loading || orgLoading) {
+  if (loading || orgLoading || syncingProfile) {
     return <AuthLocaleBar>{loadingScreen}</AuthLocaleBar>
   }
 
@@ -128,6 +165,10 @@ export default function ProfileSelectPage() {
         </div>
       </AuthLocaleBar>
     )
+  }
+
+  if (allProfiles.length === 0 && allOrganizations.length > 0) {
+    return <AuthLocaleBar>{loadingScreen}</AuthLocaleBar>
   }
 
   if (allProfiles.length === 0) {
@@ -234,6 +275,35 @@ export default function ProfileSelectPage() {
             )
           })}
 
+          {missingTypes.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => router.push('/onboarding')}
+              onMouseEnter={() => setHoveredKey('add')}
+              onMouseLeave={() => setHoveredKey(null)}
+              style={{
+                width: 148,
+                minHeight: 140,
+                background: hoveredKey === 'add' ? 'rgba(105, 64, 165, 0.08)' : 'var(--ink)',
+                border: `1px dashed ${hoveredKey === 'add' ? 'var(--proof-accent, #6940A5)' : 'var(--hairline)'}`,
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--fg-0)',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: 16,
+              }}
+            >
+              <div style={{ fontSize: 32, lineHeight: 1 }}>+</div>
+              <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
+                {t('addProfile')}
+              </div>
+            </button>
+          ) : null}
         </div>
       </div>
     </AuthLocaleBar>

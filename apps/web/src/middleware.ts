@@ -11,6 +11,7 @@ const PUBLIC_PREFIXES = [
   '/sign-in',
   '/sign-up',
   '/auth/callback',
+  '/auth/confirm',
   '/i18n-pilot',
   '/contacto',
   '/nosotros',
@@ -57,11 +58,16 @@ function ensureLocaleCookie(request: NextRequest, response: NextResponse): void 
 
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request)
+  const { pathname, search } = request.nextUrl
 
-  if (!user && !isPublicPath(request.nextUrl.pathname)) {
+  if (user && (pathname === '/sign-in' || pathname === '/sign-up')) {
+    return supabaseResponse
+  }
+
+  if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone()
     url.pathname = '/sign-in'
-    url.searchParams.set('next', request.nextUrl.pathname)
+    url.searchParams.set('next', `${pathname}${search}`)
     const redirect = NextResponse.redirect(url)
     mergeCookies(supabaseResponse, redirect)
     ensureLocaleCookie(request, redirect)

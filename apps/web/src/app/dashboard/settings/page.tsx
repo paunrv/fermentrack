@@ -16,8 +16,12 @@ import { fetchOrganizationSettings,
   updateOrganizationName,
   type OrganizationSettings,
 } from '@/app/actions/organization'
-import { fetchPlanBillingStatusAction } from '@/app/actions/plan-billing'
+import { fetchPlanBillingStatusAction, fetchBillingCheckoutStatus, activateProDevelopment } from '@/app/actions/plan-billing'
 import type { PlanBillingStatus } from '@/lib/proof/plan-over-limit'
+import {
+  STRIPE_CHECKOUT_UNAVAILABLE,
+  STRIPE_PORTAL_UNAVAILABLE,
+} from '@/lib/stripe/billing-errors'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 import { SettingsLanguageSection } from '@/components/proof/SettingsLanguageSection'
 import { PLAN_LIMITS_CATALOG } from '@/lib/proof/plan-limits'
@@ -97,6 +101,11 @@ export default function SettingsPage() {
   const [billingError, setBillingError] = useState<string | null>(null)
   const [billingNotice, setBillingNotice] = useState<string | null>(null)
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')
+  const [checkoutStatus, setCheckoutStatus] = useState<{
+    ready: boolean
+    devBypass: boolean
+    devHint: string | null
+  } | null>(null)
   const [planBilling, setPlanBilling] = useState<PlanBillingStatus | null>(null)
   const searchParams = useSearchParams()
 
@@ -176,18 +185,52 @@ export default function SettingsPage() {
     }
   }, [searchParams, router, reloadOrganizations, activeOrg?.id])
 
+  function billingApiErrorMessage(code: string | undefined, fallback: string): string {
+    if (
+      code === STRIPE_CHECKOUT_UNAVAILABLE ||
+      code === STRIPE_PORTAL_UNAVAILABLE ||
+      code?.startsWith('Missing STRIPE')
+    ) {
+      return t('billing.stripeNotConfigured')
+    }
+    return code || fallback
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    void fetchBillingCheckoutStatus(billingCycle).then(status => {
+      if (!cancelled) setCheckoutStatus(status)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [billingCycle])
+
   async function startCheckout() {
     if (!activeOrg?.id) return
     setBillingLoading(true)
     setBillingError(null)
     try {
+      if (checkoutStatus?.devBypass) {
+        await activateProDevelopment(activeOrg.id)
+        setBillingNotice(t('billing.devProActivated'))
+        await reloadOrganizations({ silent: true })
+        const nextSettings = await fetchOrganizationSettings(activeOrg.id)
+        setOrgSettings(nextSettings)
+        const nextBilling = await fetchPlanBillingStatusAction(activeOrg.id)
+        setPlanBilling(nextBilling)
+        return
+      }
+
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ organizationId: activeOrg.id, billingCycle }),
       })
       const body = (await res.json()) as { url?: string; error?: string }
-      if (!res.ok || !body.url) throw new Error(body.error || t('billing.checkoutError'))
+      if (!res.ok || !body.url) {
+        throw new Error(billingApiErrorMessage(body.error, t('billing.checkoutError')))
+      }
       window.location.href = body.url
     } catch (err) {
       setBillingError(err instanceof Error ? err.message : t('billing.genericError'))
@@ -206,7 +249,9 @@ export default function SettingsPage() {
         body: JSON.stringify({ organizationId: activeOrg.id }),
       })
       const body = (await res.json()) as { url?: string; error?: string }
-      if (!res.ok || !body.url) throw new Error(body.error || t('billing.portalError'))
+      if (!res.ok || !body.url) {
+        throw new Error(billingApiErrorMessage(body.error, t('billing.portalError')))
+      }
       window.location.href = body.url
     } catch (err) {
       setBillingError(err instanceof Error ? err.message : t('billing.genericError'))
@@ -628,6 +673,32 @@ export default function SettingsPage() {
             </div>
           )}
 
+          {checkoutStatus?.ready === false && !checkoutStatus.devBypass ? (
+            <>
+              <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
+                {t('billing.stripeNotConfigured')}
+              </p>
+              {checkoutStatus.devHint ? (
+                <p
+                  style={{
+                    margin: '0 0 12px',
+                    fontSize: 12,
+                    color: 'var(--fg-3)',
+                    lineHeight: 1.5,
+                    fontFamily: 'var(--font-mono, monospace)',
+                  }}
+                >
+                  {checkoutStatus.devHint}
+                </p>
+              ) : null}
+            </>
+          ) : null}
+          {checkoutStatus?.devBypass ? (
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
+              {t('billing.devBypassHint')}
+            </p>
+          ) : null}
+
           {billingNotice && (
             <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--fg-1)' }}>{billingNotice}</p>
           )}
@@ -639,7 +710,12 @@ export default function SettingsPage() {
             {(orgSettings.plan === 'regular' ||
               orgSettings.plan === 'trial' ||
               orgSettings.plan_status === 'canceled') && (
-              <Button type="button" loading={billingLoading} onClick={() => void startCheckout()}>
+              <Button
+                type="button"
+                loading={billingLoading}
+                disabled={checkoutStatus?.ready === false && !checkoutStatus?.devBypass}
+                onClick={() => void startCheckout()}
+              >
                 {t('billing.upgrade')}
               </Button>
             )}

@@ -2,8 +2,9 @@
 
 export const dynamic = 'force-dynamic'
 
+import { Suspense } from 'react'
 import { useEffect, useState, type CSSProperties } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useOrganization } from '@/context/OrganizationContext'
@@ -13,6 +14,7 @@ import { ProofConnectionHub } from '@/components/proof/ProofConnectionHub'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { WinemakerDesktopHome } from '@/components/proof/WinemakerDesktopHome'
 import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
+import { WinemakerDashboardTour } from '@/components/proof/WinemakerDashboardTour'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { resolveWinemakerOwnerHomeView } from '@/lib/proof/winemaker-owner-home-view'
 import { profileTypeFromV2 } from '@/lib/proof/canvas-kpi'
@@ -28,12 +30,12 @@ const pageShellStyle: CSSProperties = {
 
 export default function DashboardPage() {
   const tHome = useTranslations('distributor.home')
-  const router = useRouter()
   const searchParams = useSearchParams()
   const { activeProfile } = useProfile()
   const { activeOrg } = useOrganization()
   const {
     isWinemaker,
+    isWinemakerOrgShell,
     effectiveProfileType,
     membership,
     loading: winemakerAccessLoading,
@@ -59,22 +61,6 @@ export default function DashboardPage() {
     const oc = searchParams.get('oc')?.trim()
     if (oc) setOcFromUrl(oc)
   }, [searchParams])
-
-  useEffect(() => {
-    if (winemakerAccessLoading || bootTimedOut) return
-    if (effectiveProfileType) return
-    if (!isWinemaker && !activeProfile && !activeOrg) {
-      router.replace('/onboarding')
-    }
-  }, [
-    winemakerAccessLoading,
-    bootTimedOut,
-    effectiveProfileType,
-    isWinemaker,
-    activeProfile,
-    activeOrg,
-    router,
-  ])
 
   if (winemakerAccessLoading) {
     return (
@@ -167,6 +153,9 @@ export default function DashboardPage() {
     return (
       <div style={{ ...pageShellStyle, overflow: 'hidden' }}>
         {ownerHomeView === 'desktop' ? <WinemakerDesktopHome /> : <WinemakerMobileHome />}
+        <Suspense fallback={null}>
+          <WinemakerDashboardTour />
+        </Suspense>
       </div>
     )
   }

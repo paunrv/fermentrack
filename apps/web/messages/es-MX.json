@@ -509,15 +509,22 @@
       "submitting": "Entrando…",
       "noAccount": "¿Sin cuenta?",
       "signUp": "Regístrate",
-      "loading": "Cargando…"
+      "loading": "Cargando…",
+      "useLocalhost": "Para iniciar sesión con Google, abre {url} en este equipo."
     },
     "signUp": {
       "meta": {
         "title": "Crear cuenta",
         "description": "Regístrate en PROOF — software para bodegas."
       },
-      "placeholder": "Registro próximamente.",
-      "backToSignIn": "Volver a iniciar sesión"
+      "eyebrow": "90 días sin tarjeta",
+      "subtitle": "Crea tu cuenta y configura tu bodega",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Crear cuenta",
+      "submitting": "Creando cuenta…",
+      "hasAccount": "¿Ya tienes cuenta?",
+      "signIn": "Inicia sesión",
+      "checkEmail": "Te enviamos un enlace a {email}. Confírmalo para continuar."
     },
     "errors": {
       "authCallback": "No se pudo iniciar sesión. Intenta de nuevo.",
@@ -525,7 +532,14 @@
       "googleUnexpected": "Error inesperado al conectar con Google",
       "invalidCredentials": "Email o contraseña incorrectos.",
       "emailNotConfirmed": "Confirma tu email antes de iniciar sesión.",
+      "userAlreadyRegistered": "Ya existe una cuenta con este email. Inicia sesión.",
+      "weakPassword": "La contraseña debe tener al menos 6 caracteres.",
+      "passwordMismatch": "Las contraseñas no coinciden.",
       "generic": "Ocurrió un error. Intenta de nuevo."
+    },
+    "confirm": {
+      "loading": "Activando tu invitación…",
+      "error": "No se pudo activar la invitación. Pide al owner un nuevo enlace."
     }
   },
   "profileSelect": {
@@ -637,6 +651,7 @@
       "accessCodeInvalid": "Código de acceso inválido. Revisa los 4 dígitos que te dio el owner.",
       "wineryNameMismatch": "El nombre de la vinícola no coincide con la invitación.",
       "noPendingInvite": "No hay invitación pendiente. Pide al owner que te invite de nuevo.",
+      "passwordSame": "Esa contraseña ya la usaste. Elige otra o pulsa Entrar de nuevo con una distinta.",
       "networkSuffix": " — revisa tu conexión e intenta de nuevo"
     }
   },
@@ -805,6 +820,9 @@
         "checkoutError": "No se pudo iniciar el checkout",
         "portalError": "No se pudo abrir el portal",
         "genericError": "Error de billing",
+        "stripeNotConfigured": "Los pagos en línea no están disponibles en este momento.",
+        "devBypassHint": "Modo desarrollo: «Upgrade a Pro» activa el plan sin Stripe.",
+        "devProActivated": "Plan Pro activado (desarrollo). Ya puedes invitar equipo.",
         "cycleLabel": "Ciclo de facturación",
         "cycle": {
           "monthly": "Mensual",
@@ -912,17 +930,23 @@
       "empty": "Aún no hay miembros en tu organización.",
       "loadError": "No se pudo cargar el equipo",
       "inviteError": "No se pudo enviar la invitación",
+      "inviteRateLimit": "Límite de correos de Supabase. Usa «Nuevo código» y copia el enlace manualmente, o espera unos minutos.",
+      "inviteEmailExists": "Ese correo ya existe — si la invitación se creó, copia el código y el enlace de la lista.",
       "email": "Email",
       "name": "Nombre",
       "role": "Rol en la plataforma",
       "platformRoles": {
         "winemaker": "Winemaker — lotes, lab, producción",
-        "bodega": "Equipo de bodega — inventario y etiquetas"
+        "bodega": "Equipo de bodega — agenda, cámara y chat (acceso mínimo)"
       },
       "inviteSuccessTitle": "Invitación enviada",
-      "inviteSuccessBody": "Comparte con {name}: vinícola «{winery}» y código de acceso",
+      "inviteManualTitle": "Invitación creada — comparte el enlace",
+      "inviteSuccessBody": "Comparte con {name} el código para unirse a {winery}.",
+      "inviteManualBody": "Ese correo ya tenía cuenta en PROOF. No llegó email automático — envía a {name} el enlace y el código para unirse a {winery}.",
       "accessCodeLabel": "Código de acceso",
       "inviteSuccessHint": "Lo necesitará al crear su cuenta.",
+      "inviteLinkLabel": "Enlace de invitación",
+      "inviteLinkHint": "Ábrelo en incógnito o en el navegador de la persona invitada (no en tu sesión de Owner).",
       "emailPlaceholder": "persona@bodega.com",
       "namePlaceholder": "Nombre completo",
       "roles": {
@@ -949,7 +973,30 @@
       "invitePro": "🔒 Invitar — Disponible en Pro",
       "proRequiredTitle": "Disponible en Pro",
       "proRequiredBody": "Invitar admin, member o viewer requiere plan Pro o Enterprise. Tu historial y datos no se pierden.",
-      "proRequiredAction": "Ver planes y upgrade"
+      "proRequiredAction": "Ver planes y upgrade",
+      "rolesHelpTitle": "Owner vs Winemaker",
+      "rolesHelpBody": "Owner: funda la bodega, facturación e invitar o quitar equipo. Winemaker: rol de trabajo — lotes, lab y producción (mismo dashboard, sin gestionar equipo ni billing).",
+      "remove": "Quitar",
+      "removing": "Quitando…",
+      "removeConfirm": "¿Quitar a {name} del equipo? Si aún no aceptó, deberás volver a invitarlo.",
+      "removeError": "No se pudo quitar al miembro",
+      "inviteCodeSection": "Código de acceso",
+      "codeMissing": "Código no disponible — genera uno nuevo.",
+      "copyCode": "Copiar código",
+      "copyShare": "Copiar mensaje",
+      "codeCopied": "Código copiado",
+      "shareCopied": "Mensaje copiado — pégalo en WhatsApp o SMS",
+      "copyFailed": "No se pudo copiar",
+      "customCodePlaceholder": "1234",
+      "saveCode": "Guardar código",
+      "regenerateCode": "Nuevo código",
+      "codeUpdating": "Guardando…",
+      "codeRegenerated": "Nuevo código para {name}",
+      "codeSaved": "Código actualizado",
+      "codeInvalid": "Escribe 4 dígitos",
+      "codeUpdateError": "No se pudo actualizar el código",
+      "shareMessage": "Hola {name}, únete a {winery} en PROOF. Código: {code}. Abre {url}/onboarding?mode=team tras aceptar la invitación por correo.",
+      "mobileHint": "Desde el celular (misma Wi‑Fi): {url}/dashboard/equipo"
     },
     "limits": {
       "limit_reached_lotes_activos": "Alcanzaste el límite de lotes activos de tu plan ({limit}). Mejora el plan para agregar más.",
@@ -1659,6 +1706,37 @@
     "common": {
       "loading": "Cargando…"
     },
+    "tour": {
+      "skip": "Saltar",
+      "next": "Siguiente",
+      "back": "Atrás",
+      "done": "Empezar",
+      "stepOf": "Paso {current} de {total}",
+      "steps": [
+        {
+          "emoji": "🧰",
+          "title": "Tu navaja suiza, no un ERP",
+          "body": "PROOF no viene a reemplazar todas tus herramientas. El pizarrón en bodega sigue siendo el centro de tu operación — nosotros somos la memoria que conecta lo de la pared con tu equipo y tus lotes."
+        },
+        {
+          "emoji": "📅",
+          "title": "Calendario + foto del pizarrón",
+          "body": "Elige la categoría antes de subir: Cosecha, Análisis, Fermentación, Maloláctica, Crianza, Embotellado o Bodega. Así todo queda clasificado desde el primer día."
+        },
+        {
+          "emoji": "🧪",
+          "title": "Análisis y resultados en bodega",
+          "body": "Sube PDFs o fotos de laboratorio y controles en bodega. PROOF los guarda como evidencia — listos para consultar en lotes y calendario."
+        },
+        {
+          "emoji": "📸",
+          "title": "Listo para empezar",
+          "body": "Revisa tus lotes en Inicio y sube tu primera foto del pizarrón o un análisis desde Agenda.",
+          "cta": "Ir a agenda",
+          "href": "/dashboard/winemaker/agenda"
+        }
+      ]
+    },
     "salidaTipo": {
       "venta": "Venta",
       "degustacion": "Degustación",
@@ -1753,9 +1831,21 @@
     },
     "agenda": {
       "title": "Agenda",
-      "subtitle": "Tiempos de barrica, muestras de laboratorio y embotellado. Los eventos aparecerán aquí cuando registres lotes y fechas en PROOF.",
+      "subtitle": "Calendario, foto del pizarrón y resultados de laboratorio — todo categorizado desde el primer día.",
       "backToProof": "← PROOF",
-      "nextStep": "Próximo paso: enlazar eventos de <code>wm_events</code> (envejecimiento, embotellado, lab) a cada día del calendario."
+      "capture": {
+        "whiteboardTitle": "Foto del pizarrón",
+        "whiteboardHint": "Cuando actualices el pizarrón en bodega, elige la etapa y sube una foto. PROOF la guarda como evidencia del día.",
+        "categoryLabel": "Categoría",
+        "whiteboardCta": "Tomar o subir foto",
+        "resultsTitle": "Resultados de análisis y bodega",
+        "resultsHint": "Sube PDFs o fotos de laboratorio y controles en bodega. Quedan ligados a tu calendario y documentos.",
+        "labCta": "Subir análisis de laboratorio",
+        "bodegaCta": "Subir resultado en bodega",
+        "uploading": "Subiendo…",
+        "success": "Archivo guardado en PROOF.",
+        "error": "No se pudo subir el archivo."
+      }
     },
     "stage": {
       "none": "Sin etapa",
@@ -1772,7 +1862,8 @@
       "fermentacion": "Fermentación",
       "malolactica": "Maloláctica",
       "crianza": "Crianza",
-      "embotellado": "Embotellado"
+      "embotellado": "Embotellado",
+      "bodega": "Bodega"
     },
     "home": {
       "badge": "🍇 Winemaker",

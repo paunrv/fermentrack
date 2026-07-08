@@ -1,6 +1,30 @@
 import Stripe from 'stripe'
+import {
+  STRIPE_CHECKOUT_UNAVAILABLE,
+  STRIPE_PORTAL_UNAVAILABLE,
+} from '@/lib/stripe/billing-errors'
 
 export type BillingCycle = 'monthly' | 'annual'
+
+export { STRIPE_CHECKOUT_UNAVAILABLE, STRIPE_PORTAL_UNAVAILABLE }
+
+export function stripeSecretConfigured(): boolean {
+  return Boolean(process.env.STRIPE_SECRET_KEY?.trim())
+}
+
+export function stripeCheckoutReady(cycle: BillingCycle = 'monthly'): boolean {
+  if (!stripeSecretConfigured()) return false
+  if (cycle === 'annual') {
+    return Boolean(
+      process.env.STRIPE_PRICE_WINEMAKER_PRO_ANNUAL?.trim() ||
+        process.env.STRIPE_PRICE_WINEMAKER_PRO_YEARLY?.trim()
+    )
+  }
+  return Boolean(
+    process.env.STRIPE_PRICE_WINEMAKER_PRO_MONTHLY?.trim() ||
+      process.env.STRIPE_PRICE_WINEMAKER_PRO?.trim()
+  )
+}
 
 let stripeClient: Stripe | null = null
 

@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
+import { AgendaCaptureSection } from '@/components/proof/AgendaCaptureSection'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
@@ -88,6 +89,8 @@ export default function WinemakerAgendaPage() {
         </Link>
       </div>
 
+      <AgendaCaptureSection />
+
       <div
         className="proof-agenda-calendar"
         style={{
@@ -166,24 +169,6 @@ export default function WinemakerAgendaPage() {
             )
           })}
         </div>
-      </div>
-
-      <div
-        style={{
-          marginTop: 20,
-          padding: 16,
-          borderRadius: 10,
-          border: '1px dashed var(--border)',
-          fontSize: 13,
-          lineHeight: 1.6,
-          color: 'var(--fg-2)',
-        }}
-      >
-        {t.rich('nextStep', {
-          code: chunks => (
-            <code style={{ fontSize: 12 }}>{chunks}</code>
-          ),
-        })}
       </div>
     </div>
   )

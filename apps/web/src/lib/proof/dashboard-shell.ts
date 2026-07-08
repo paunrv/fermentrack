@@ -86,17 +86,35 @@ export function resolveShellProfileType(options: {
   if (profileType && LEGACY_NON_WINEMAKER_PROFILES.includes(profileType)) {
     return profileType
   }
+  if (profileType === 'bodega' && orgType === 'winemaker') {
+    return 'bodega'
+  }
   if (profileType === 'winemaker' || orgType === 'winemaker') {
     return 'winemaker'
   }
   return profileType
 }
 
+export function isWinemakerOrgShellMode(options: {
+  profileType: ExtraProfile | null | undefined
+  orgType: string | null | undefined
+}): boolean {
+  const shell = resolveShellProfileType(options)
+  return shell === 'winemaker' || shell === 'bodega'
+}
+
+export function isBodegaTeamProfile(options: {
+  profileType: ExtraProfile | null | undefined
+  orgType: string | null | undefined
+}): boolean {
+  return resolveShellProfileType(options) === 'bodega'
+}
+
 export function isWinemakerShellMode(options: {
   profileType: ExtraProfile | null | undefined
   orgType: string | null | undefined
 }): boolean {
-  return resolveShellProfileType(options) === 'winemaker'
+  return isWinemakerOrgShellMode(options)
 }
 
 /**

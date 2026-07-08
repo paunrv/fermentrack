@@ -2,10 +2,14 @@
 
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { translateAuthError } from '@/lib/i18n/auth-errors'
+import { safeNextPath } from '@/lib/auth/safe-next-path'
+import { setAuthNextCookie } from '@/lib/auth/post-auth-next'
+import { buildAuthCallbackUrl } from '@/lib/auth/auth-callback'
+import { getBrowserSiteUrl } from '@/lib/i18n/site'
 
 function GoogleIcon() {
   return (
@@ -30,19 +34,42 @@ function GoogleIcon() {
   )
 }
 
+function buildAuthHref(opts: {
+  mode?: 'signup'
+  email?: string
+  next?: string | null
+}): string {
+  const params = new URLSearchParams()
+  if (opts.mode === 'signup') params.set('mode', 'signup')
+  if (opts.email?.trim()) params.set('email', opts.email.trim())
+  if (opts.next) params.set('next', opts.next)
+  const query = params.toString()
+  return query ? `/sign-in?${query}` : '/sign-in'
+}
+
 function SignInFormInner() {
   const t = useTranslations('auth.signIn')
+  const tSignUp = useTranslations('auth.signUp')
   const tErrors = useTranslations('auth.errors')
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? '/dashboard'
-  const authError = searchParams.get('error') === 'auth'
+  const isSignUp = searchParams.get('mode') === 'signup'
+  const nextParam = searchParams.get('next')
+  const emailParam = searchParams.get('email') ?? ''
 
-  const [email, setEmail] = useState('')
+  const next = useMemo(() => safeNextPath(nextParam, '/dashboard'), [nextParam])
+
+  const [email, setEmail] = useState(emailParam)
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState<'google' | 'email' | null>(null)
+  const [signupEmailSent, setSignupEmailSent] = useState(false)
   const [error, setError] = useState<string | null>(
-    authError ? tErrors('authCallback') : null
+    searchParams.get('error') === 'auth' ? tErrors('authCallback') : null
   )
+
+  useEffect(() => {
+    if (emailParam) setEmail(emailParam)
+  }, [emailParam])
 
   const handleGoogleLogin = async () => {
     setLoading('google')
@@ -50,7 +77,14 @@ function SignInFormInner() {
 
     try {
       const supabase = createClient()
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      const authOrigin = getBrowserSiteUrl()
+      if (typeof window !== 'undefined' && nextParam) {
+        setAuthNextCookie(next)
+      }
+      const redirectTo = buildAuthCallbackUrl({
+        intent: 'dashboard',
+        origin: authOrigin,
+      })
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -99,7 +133,54 @@ function SignInFormInner() {
     window.location.assign(next)
   }
 
+  async function signUpWithEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading('email')
+    setError(null)
+    setSignupEmailSent(false)
+
+    if (password.length < 6) {
+      setError(tErrors('weakPassword'))
+      setLoading(null)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError(tErrors('passwordMismatch'))
+      setLoading(null)
+      return
+    }
+
+    const supabase = createClient()
+    const signupNext = safeNextPath(nextParam, '/dashboard')
+    const redirectTo = buildAuthCallbackUrl({ intent: 'dashboard', origin: getBrowserSiteUrl() })
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: redirectTo,
+      },
+    })
+
+    if (signUpError) {
+      setError(translateAuthError(signUpError.message, key => tErrors(key)))
+      setLoading(null)
+      return
+    }
+
+    if (data.session) {
+      window.location.assign(signupNext)
+      return
+    }
+
+    setSignupEmailSent(true)
+    setLoading(null)
+  }
+
   const disabled = loading !== null
+  const switchHref = isSignUp
+    ? buildAuthHref({ email, next: nextParam })
+    : buildAuthHref({ mode: 'signup', email, next: nextParam })
 
   return (
     <div
@@ -115,7 +196,7 @@ function SignInFormInner() {
     >
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
         <div className="eyebrow" style={{ color: 'var(--copper)', marginBottom: 10 }}>
-          {t('eyebrow')}
+          {isSignUp ? tSignUp('eyebrow') : t('eyebrow')}
         </div>
         <h1
           style={{
@@ -128,7 +209,9 @@ function SignInFormInner() {
         >
           PR<span style={{ color: 'var(--copper)' }}>O</span>OF
         </h1>
-        <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
+        <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>
+          {isSignUp ? tSignUp('subtitle') : t('subtitle')}
+        </p>
       </div>
 
       {error ? (
@@ -145,6 +228,24 @@ function SignInFormInner() {
           }}
         >
           {error}
+        </div>
+      ) : null}
+
+      {signupEmailSent ? (
+        <div
+          role="status"
+          style={{
+            marginBottom: 16,
+            padding: '12px 14px',
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: 'var(--fg-1)',
+            background: 'var(--ok-soft)',
+            border: '1px solid color-mix(in srgb, var(--ok) 25%, transparent)',
+            borderRadius: 'var(--radius-sm)',
+          }}
+        >
+          {tSignUp('checkEmail', { email: email.trim() })}
         </div>
       ) : null}
 
@@ -190,7 +291,10 @@ function SignInFormInner() {
         <span style={{ flex: 1, height: 1, background: 'var(--hairline)' }} />
       </div>
 
-      <form onSubmit={e => void signInWithEmail(e)} style={{ display: 'grid', gap: 12 }}>
+      <form
+        onSubmit={e => void (isSignUp ? signUpWithEmail(e) : signInWithEmail(e))}
+        style={{ display: 'grid', gap: 12 }}
+      >
         <label style={{ display: 'grid', gap: 6 }}>
           <span
             style={{
@@ -237,8 +341,9 @@ function SignInFormInner() {
           </span>
           <input
             type="password"
-            autoComplete="current-password"
+            autoComplete={isSignUp ? 'new-password' : 'current-password'}
             required
+            minLength={isSignUp ? 6 : undefined}
             value={password}
             onChange={e => setPassword(e.target.value)}
             disabled={disabled}
@@ -255,9 +360,44 @@ function SignInFormInner() {
           />
         </label>
 
+        {isSignUp ? (
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                color: 'var(--fg-2)',
+              }}
+            >
+              {tSignUp('confirmPassword')}
+            </span>
+            <input
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={6}
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              disabled={disabled}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                background: '#fff',
+                border: '1px solid var(--hairline)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 13,
+                color: 'var(--fg-0)',
+                outline: 'none',
+              }}
+            />
+          </label>
+        ) : null}
+
         <button
           type="submit"
-          disabled={disabled}
+          disabled={disabled || signupEmailSent}
           style={{
             marginTop: 4,
             width: '100%',
@@ -270,11 +410,17 @@ function SignInFormInner() {
             fontWeight: 600,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            cursor: disabled ? 'not-allowed' : 'pointer',
+            cursor: disabled || signupEmailSent ? 'not-allowed' : 'pointer',
             opacity: disabled && loading !== 'email' ? 0.6 : 1,
           }}
         >
-          {loading === 'email' ? t('submitting') : t('submit')}
+          {loading === 'email'
+            ? isSignUp
+              ? tSignUp('submitting')
+              : t('submitting')
+            : isSignUp
+              ? tSignUp('submit')
+              : t('submit')}
         </button>
       </form>
 
@@ -286,9 +432,9 @@ function SignInFormInner() {
           color: 'var(--fg-3)',
         }}
       >
-        {t('noAccount')}{' '}
-        <Link href="/sign-up" style={{ color: 'var(--copper)', textDecoration: 'none' }}>
-          {t('signUp')}
+        {isSignUp ? tSignUp('hasAccount') : t('noAccount')}{' '}
+        <Link href={switchHref} style={{ color: 'var(--copper)', textDecoration: 'none' }}>
+          {isSignUp ? tSignUp('signIn') : t('signUp')}
         </Link>
       </p>
     </div>

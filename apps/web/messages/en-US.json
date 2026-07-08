@@ -509,15 +509,22 @@
       "submitting": "Signing in…",
       "noAccount": "No account?",
       "signUp": "Sign up",
-      "loading": "Loading…"
+      "loading": "Loading…",
+      "useLocalhost": "To sign in with Google, open {url} on this computer."
     },
     "signUp": {
       "meta": {
         "title": "Create account",
         "description": "Sign up for PROOF — winery management software."
       },
-      "placeholder": "Sign-up coming soon.",
-      "backToSignIn": "Back to sign in"
+      "eyebrow": "90 days, no card",
+      "subtitle": "Create your account and set up your winery",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "submitting": "Creating account…",
+      "hasAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "checkEmail": "We sent a link to {email}. Confirm it to continue."
     },
     "errors": {
       "authCallback": "Could not sign in. Please try again.",
@@ -525,7 +532,14 @@
       "googleUnexpected": "Unexpected error connecting to Google",
       "invalidCredentials": "Incorrect email or password.",
       "emailNotConfirmed": "Confirm your email before signing in.",
+      "userAlreadyRegistered": "An account with this email already exists. Sign in instead.",
+      "weakPassword": "Password must be at least 6 characters.",
+      "passwordMismatch": "Passwords do not match.",
       "generic": "Something went wrong. Please try again."
+    },
+    "confirm": {
+      "loading": "Activating your invitation…",
+      "error": "Could not activate the invitation. Ask the owner for a new link."
     }
   },
   "profileSelect": {
@@ -637,6 +651,7 @@
       "accessCodeInvalid": "Invalid access code. Check the 4 digits from your owner.",
       "wineryNameMismatch": "Winery name does not match the invitation.",
       "noPendingInvite": "No pending invitation found. Ask the owner to invite you again.",
+      "passwordSame": "You already used that password. Choose a different one or tap Enter again.",
       "networkSuffix": " — check your connection and try again"
     }
   },
@@ -805,6 +820,9 @@
         "checkoutError": "Could not start checkout",
         "portalError": "Could not open portal",
         "genericError": "Billing error",
+        "stripeNotConfigured": "Online payments are not available right now.",
+        "devBypassHint": "Development mode: “Upgrade to Pro” activates the plan without Stripe.",
+        "devProActivated": "Pro plan activated (development). You can invite team members now.",
         "cycleLabel": "Billing cycle",
         "cycle": {
           "monthly": "Monthly",
@@ -912,17 +930,23 @@
       "empty": "No members in your organization yet.",
       "loadError": "Could not load team",
       "inviteError": "Could not send invitation",
+      "inviteRateLimit": "Supabase email rate limit reached. Use «New code» and copy the link manually, or wait a few minutes.",
+      "inviteEmailExists": "That email already exists — if the invite was created, copy the code and link from the list.",
       "email": "Email",
       "name": "Name",
       "role": "Platform role",
       "platformRoles": {
         "winemaker": "Winemaker — lots, lab, production",
-        "bodega": "Cellar team — inventory and labels"
+        "bodega": "Cellar team — agenda, camera and chat (minimal access)"
       },
       "inviteSuccessTitle": "Invitation sent",
-      "inviteSuccessBody": "Share this with {name}: winery «{winery}» and access code",
+      "inviteManualTitle": "Invitation created — share the link",
+      "inviteSuccessBody": "Share with {name} the code to join {winery}.",
+      "inviteManualBody": "That email already has a PROOF account. No automatic email was sent — send {name} the link and code to join {winery}.",
       "accessCodeLabel": "Access code",
       "inviteSuccessHint": "They will need this code when creating their account.",
+      "inviteLinkLabel": "Invitation link",
+      "inviteLinkHint": "Open in incognito or the invitee's browser (not your Owner session).",
       "emailPlaceholder": "person@winery.com",
       "namePlaceholder": "Full name",
       "roles": {
@@ -949,7 +973,30 @@
       "invitePro": "🔒 Invite — Available on Pro",
       "proRequiredTitle": "Available on Pro",
       "proRequiredBody": "Inviting admins, members, or viewers requires Pro or Enterprise. Your data and history are never deleted.",
-      "proRequiredAction": "View plans and upgrade"
+      "proRequiredAction": "View plans and upgrade",
+      "rolesHelpTitle": "Owner vs Winemaker",
+      "rolesHelpBody": "Owner: founded the winery, billing, and inviting or removing team members. Winemaker: work role — lots, lab, and production (same dashboard, cannot manage team or billing).",
+      "remove": "Remove",
+      "removing": "Removing…",
+      "removeConfirm": "Remove {name} from the team? If they haven't accepted yet, you'll need to invite them again.",
+      "removeError": "Could not remove team member",
+      "inviteCodeSection": "Access code",
+      "codeMissing": "Code unavailable — generate a new one.",
+      "copyCode": "Copy code",
+      "copyShare": "Copy message",
+      "codeCopied": "Code copied",
+      "shareCopied": "Message copied — paste in WhatsApp or SMS",
+      "copyFailed": "Could not copy",
+      "customCodePlaceholder": "1234",
+      "saveCode": "Save code",
+      "regenerateCode": "New code",
+      "codeUpdating": "Saving…",
+      "codeRegenerated": "New code for {name}",
+      "codeSaved": "Code updated",
+      "codeInvalid": "Enter 4 digits",
+      "codeUpdateError": "Could not update code",
+      "shareMessage": "Hi {name}, join {winery} on PROOF. Code: {code}. Open {url}/onboarding?mode=team after accepting the email invite.",
+      "mobileHint": "From your phone (same Wi‑Fi): {url}/dashboard/equipo"
     },
     "limits": {
       "limit_reached_lotes_activos": "You've reached the active lot limit for your plan ({limit}). Upgrade to add more.",
@@ -1659,6 +1706,37 @@
     "common": {
       "loading": "Loading…"
     },
+    "tour": {
+      "skip": "Skip",
+      "next": "Next",
+      "back": "Back",
+      "done": "Get started",
+      "stepOf": "Step {current} of {total}",
+      "steps": [
+        {
+          "emoji": "🧰",
+          "title": "Your Swiss army knife, not an ERP",
+          "body": "PROOF is not here to replace every tool you use. The cellar whiteboard stays at the center of your operation — we are the memory that connects what's on the wall with your team and your lots."
+        },
+        {
+          "emoji": "📅",
+          "title": "Calendar + whiteboard photo",
+          "body": "Pick a category before uploading: Harvest, Analysis, Fermentation, Malolactic, Aging, Bottling, or Cellar. Everything stays classified from day one."
+        },
+        {
+          "emoji": "🧪",
+          "title": "Lab and cellar results",
+          "body": "Upload lab PDFs or photos and cellar control sheets. PROOF stores them as evidence — ready to review on lots and calendar."
+        },
+        {
+          "emoji": "📸",
+          "title": "Ready to start",
+          "body": "Review your lots on Home and upload your first whiteboard photo or lab result from Schedule.",
+          "cta": "Open schedule",
+          "href": "/dashboard/winemaker/agenda"
+        }
+      ]
+    },
     "salidaTipo": {
       "venta": "Sale",
       "degustacion": "Tasting",
@@ -1753,9 +1831,21 @@
     },
     "agenda": {
       "title": "Schedule",
-      "subtitle": "Barrel times, lab samples, and bottling. Events will appear here when you register lots and dates in PROOF.",
+      "subtitle": "Calendar, whiteboard photos, and lab results — categorized from day one.",
       "backToProof": "← PROOF",
-      "nextStep": "Next step: link <code>wm_events</code> (aging, bottling, lab) to each calendar day."
+      "capture": {
+        "whiteboardTitle": "Whiteboard photo",
+        "whiteboardHint": "When you update the cellar whiteboard, pick the stage and upload a photo. PROOF saves it as evidence for the day.",
+        "categoryLabel": "Category",
+        "whiteboardCta": "Take or upload photo",
+        "resultsTitle": "Lab and cellar results",
+        "resultsHint": "Upload lab PDFs or photos and cellar control sheets. They link to your calendar and documents.",
+        "labCta": "Upload lab analysis",
+        "bodegaCta": "Upload cellar result",
+        "uploading": "Uploading…",
+        "success": "File saved in PROOF.",
+        "error": "Could not upload the file."
+      }
     },
     "stage": {
       "none": "No stage",
@@ -1772,7 +1862,8 @@
       "fermentacion": "Fermentation",
       "malolactica": "Malolactic",
       "crianza": "Aging",
-      "embotellado": "Bottling"
+      "embotellado": "Bottling",
+      "bodega": "Cellar"
     },
     "home": {
       "badge": "🍇 Winemaker",

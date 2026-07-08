@@ -109,7 +109,7 @@ export async function completeTeamOnboarding(input: {
       extra_profiles: [],
       updated_at: new Date().toISOString(),
     },
-    { onConflict: 'clerk_id,profile_type_v2' }
+    { onConflict: 'user_id,profile_type_v2' }
   )
   if (profileError) throw new Error(profileError.message)
 
@@ -120,6 +120,7 @@ export async function completeTeamOnboarding(input: {
     .update({
       status: 'active',
       access_code_hash: null,
+      access_code_plain: null,
       role: 'member',
     })
     .eq('id', member.id)
@@ -127,4 +128,36 @@ export async function completeTeamOnboarding(input: {
   if (activateError) throw new Error(activateError.message)
 
   return { ok: true }
+}
+
+export async function fetchActiveTeamMembership(): Promise<{
+  organizationId: string
+  organizationName: string
+  platformProfile: TeamPlatformProfile
+} | null> {
+  const userId = await getAuthUserId()
+  if (!userId) return null
+
+  const sb = await createClient()
+  const { data, error } = await sb
+    .from('organization_members')
+    .select('organization_id, platform_profile, organizations(name)')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .not('platform_profile', 'is', null)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!data?.platform_profile) return null
+
+  const orgRaw = data.organizations
+  const org = Array.isArray(orgRaw) ? orgRaw[0] : orgRaw
+  const orgName = org && typeof org === 'object' && 'name' in org ? String(org.name) : ''
+
+  return {
+    organizationId: String(data.organization_id),
+    organizationName: orgName,
+    platformProfile: data.platform_profile as TeamPlatformProfile,
+  }
 }

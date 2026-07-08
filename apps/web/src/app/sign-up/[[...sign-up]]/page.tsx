@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
-import { AuthLocaleBar } from '@/components/auth/AuthLocaleBar'
 import { createPublicPageMetadata } from '@/lib/i18n/metadata'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,31 +13,19 @@ export async function generateMetadata(): Promise<Metadata> {
   })
 }
 
-export default async function SignUpPage() {
-  const t = await getTranslations('auth.signUp')
+type SignUpPageProps = {
+  searchParams?: Record<string, string | string[] | undefined>
+}
 
-  return (
-    <AuthLocaleBar>
-      <main
-        style={{
-          minHeight: '100vh',
-          background: 'var(--ink)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 16,
-          color: 'var(--fg-2)',
-          fontSize: 14,
-          fontFamily: 'var(--font-display)',
-          padding: 24,
-        }}
-      >
-        <p style={{ margin: 0 }}>{t('placeholder')}</p>
-        <Link href="/sign-in" style={{ color: 'var(--copper)', textDecoration: 'none', fontSize: 13 }}>
-          {t('backToSignIn')}
-        </Link>
-      </main>
-    </AuthLocaleBar>
-  )
+export default function SignUpPage({ searchParams }: SignUpPageProps) {
+  const params = new URLSearchParams()
+  params.set('mode', 'signup')
+
+  const email = searchParams?.email
+  if (typeof email === 'string' && email.trim()) params.set('email', email.trim())
+
+  const next = searchParams?.next
+  if (typeof next === 'string' && next.startsWith('/')) params.set('next', next)
+
+  redirect(`/sign-in?${params.toString()}`)
 }

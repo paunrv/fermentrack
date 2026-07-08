@@ -3,7 +3,13 @@ import { requireBillingAccess } from '@/lib/billing/auth'
 import { buildWinemakerCheckoutSessionParams } from '@/lib/billing/billing-checkout'
 import { resolveFoundingCheckoutCoupon } from '@/lib/billing/founding-cohort'
 import type { BillingCycle } from '@/lib/stripe/server'
-import { billingSiteUrl, getStripe, getWinemakerProPriceIds } from '@/lib/stripe/server'
+import {
+  billingSiteUrl,
+  getStripe,
+  getWinemakerProPriceIds,
+  STRIPE_CHECKOUT_UNAVAILABLE,
+  stripeCheckoutReady,
+} from '@/lib/stripe/server'
 import { createClient, getAuthUserId } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
@@ -22,6 +28,10 @@ export async function POST(req: NextRequest) {
     }
 
     const billingCycle = parseBillingCycle(body.billingCycle)
+
+    if (!stripeCheckoutReady(billingCycle)) {
+      return NextResponse.json({ error: STRIPE_CHECKOUT_UNAVAILABLE }, { status: 503 })
+    }
 
     await requireBillingAccess(organizationId, { ownerOnly: true })
 

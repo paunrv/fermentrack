@@ -18,8 +18,11 @@ import {
 import {
   generateTeamAccessCode,
   hashTeamAccessCode,
+  isValidAccessCodeFormat,
   type TeamPlatformProfile,
 } from '@/lib/proof/team-access-code'
+import { errorMessageFromUnknown } from '@/lib/errors/unknown'
+import { buildAuthCallbackUrl } from '@/lib/auth/auth-callback'
 
 export type TeamMemberRow = {
   id: string
@@ -30,6 +33,7 @@ export type TeamMemberRow = {
   status: string
   profileType: ExtraProfile | null
   platformProfile: TeamPlatformProfile | null
+  accessCode: string | null
   createdAt: string
 }
 
@@ -89,11 +93,73 @@ async function requireMemberContext(organizationId: string): Promise<ManageConte
   return { userId, organizationId, role: data.role as OrgMemberRole }
 }
 
-function inviteRedirectUrl(): string {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  return `${base}/auth/callback?next=${encodeURIComponent('/onboarding?mode=team')}`
+function inviteRedirectUrl(siteOrigin?: string): string {
+  return buildAuthCallbackUrl({ flow: 'team', origin: siteOrigin })
+}
+
+type InviteAuthResult = {
+  userId: string
+  emailSent: boolean
+  inviteLink: string | null
+}
+
+async function resolveInviteAuthUser(
+  sb: ReturnType<typeof createServiceSupabase>,
+  email: string,
+  name: string,
+  platformProfile: TeamPlatformProfile,
+  siteOrigin?: string
+): Promise<InviteAuthResult> {
+  const redirectTo = inviteRedirectUrl(siteOrigin)
+  const metadata = { full_name: name, platform_profile: platformProfile }
+
+  const { data: inviteData, error: inviteError } = await sb.auth.admin.inviteUserByEmail(email, {
+    data: metadata,
+    redirectTo,
+  })
+
+  if (!inviteError && inviteData.user?.id) {
+    return { userId: inviteData.user.id, emailSent: true, inviteLink: null }
+  }
+
+  let userId = await resolveUserIdByEmail(email)
+
+  if (!userId) {
+    const { data: created, error: createError } = await sb.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      user_metadata: metadata,
+    })
+
+    if (createError) {
+      userId = await resolveUserIdByEmail(email)
+      if (!userId) {
+        const msg = inviteError?.message ?? createError.message
+        throw new Error(msg)
+      }
+    } else {
+      userId = created.user?.id ?? null
+      if (!userId) throw new Error('No se pudo crear el usuario invitado')
+    }
+  }
+
+  const { data: linkData, error: linkError } = await sb.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: { redirectTo, data: metadata },
+  })
+
+  if (linkError) {
+    console.warn('[inviteTeamMember] generateLink failed:', linkError.message)
+    return { userId, emailSent: false, inviteLink: null }
+  }
+
+  const props = linkData?.properties as { action_link?: string } | undefined
+  return {
+    userId,
+    emailSent: false,
+    inviteLink: props?.action_link ?? null,
+  }
 }
 
 async function resolveUserIdByEmail(email: string): Promise<string | null> {
@@ -161,7 +227,7 @@ export async function fetchTeamMembers(organizationId: string): Promise<TeamMemb
 
   const { data: members, error } = await sb
     .from('organization_members')
-    .select('id, user_id, role, status, platform_profile, created_at')
+    .select('id, user_id, role, status, platform_profile, access_code_plain, created_at')
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: true })
 
@@ -192,7 +258,11 @@ export async function fetchTeamMembers(organizationId: string): Promise<TeamMemb
   const emailById = new Map<string, string | null>()
   for (const member of members) {
     const { data: authUser, error: authError } = await sb.auth.admin.getUserById(member.user_id)
-    if (authError) throw new Error(authError.message)
+    if (authError) {
+      console.warn('[fetchTeamMembers] getUserById failed', member.user_id, authError.message)
+      emailById.set(member.user_id, null)
+      continue
+    }
     emailById.set(member.user_id, authUser.user.email ?? null)
   }
 
@@ -205,6 +275,10 @@ export async function fetchTeamMembers(organizationId: string): Promise<TeamMemb
     status: member.status,
     profileType: proofByUser.get(member.user_id) ?? null,
     platformProfile: (member.platform_profile as TeamPlatformProfile | null) ?? null,
+    accessCode:
+      member.status === 'invited' && member.access_code_plain
+        ? String(member.access_code_plain)
+        : null,
     createdAt: member.created_at,
   }))
 }
@@ -218,7 +292,12 @@ export type TeamInviteStatus = {
 export async function fetchTeamInviteStatus(organizationId: string): Promise<TeamInviteStatus> {
   await requireManageContext(organizationId)
   const sb = createServiceSupabase()
-  const ctx = await fetchOrgPlanContext(sb, organizationId)
+  let ctx
+  try {
+    ctx = await fetchOrgPlanContext(sb, organizationId)
+  } catch (err) {
+    throw new Error(errorMessageFromUnknown(err))
+  }
 
   if (!orgCanInviteTeamMembersFromLimits(ctx.limits)) {
     return { canInvite: false, proRequired: true }
@@ -236,7 +315,14 @@ export async function inviteTeamMember(input: {
   email: string
   name: string
   platformProfile: TeamPlatformProfile
-}): Promise<{ ok: true; accessCode: string; wineryName: string }> {
+  siteOrigin?: string
+}): Promise<{
+  ok: true
+  accessCode: string
+  wineryName: string
+  emailSent: boolean
+  inviteLink: string | null
+}> {
   const { userId: ownerId, organizationId } = await requireManageContext(input.organizationId)
 
   const email = input.email.trim().toLowerCase()
@@ -259,7 +345,9 @@ export async function inviteTeamMember(input: {
   if (orgError) throw new Error(orgError.message)
   if (!orgRow?.name) throw new Error('Organización no encontrada')
 
-  const planCtx = await fetchOrgPlanContext(sb, organizationId)
+  const planCtx = await fetchOrgPlanContext(sb, organizationId).catch(err => {
+    throw new Error(errorMessageFromUnknown(err))
+  })
   if (!orgCanInviteTeamMembersFromLimits(planCtx.limits)) {
     throw new Error(INVITE_PRO_REQUIRED_CODE)
   }
@@ -267,23 +355,13 @@ export async function inviteTeamMember(input: {
   const accessCode = generateTeamAccessCode()
   const accessCodeHash = hashTeamAccessCode(organizationId, accessCode)
 
-  let invitedUserId: string | null = null
-
-  const { data: inviteData, error: inviteError } = await sb.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: name, platform_profile: platformProfile },
-    redirectTo: inviteRedirectUrl(),
-  })
-
-  if (inviteError) {
-    const alreadyExists =
-      inviteError.message.toLowerCase().includes('already') ||
-      inviteError.message.toLowerCase().includes('registered')
-    if (!alreadyExists) throw new Error(inviteError.message)
-    invitedUserId = await resolveUserIdByEmail(email)
-    if (!invitedUserId) throw new Error('No se pudo encontrar el usuario con ese email')
-  } else {
-    invitedUserId = inviteData.user.id
-  }
+  const { userId: invitedUserId, emailSent, inviteLink } = await resolveInviteAuthUser(
+    sb,
+    email,
+    name,
+    platformProfile,
+    input.siteOrigin
+  )
 
   await sb.from('profiles').update({ full_name: name }).eq('id', invitedUserId)
 
@@ -305,7 +383,7 @@ export async function inviteTeamMember(input: {
       await assertPlanLimit(sb, organizationId, 'usuarios')
     } catch (err) {
       if (err instanceof PlanLimitError) throw new Error(err.code)
-      throw err
+      throw new Error(errorMessageFromUnknown(err))
     }
   }
 
@@ -315,6 +393,7 @@ export async function inviteTeamMember(input: {
     role: 'member' as const,
     platform_profile: platformProfile,
     access_code_hash: accessCodeHash,
+    access_code_plain: accessCode,
   }
 
   if (existingMember) {
@@ -337,5 +416,80 @@ export async function inviteTeamMember(input: {
     if (insertError) throw new Error(insertError.message)
   }
 
-  return { ok: true, accessCode, wineryName: orgRow.name }
+  return { ok: true, accessCode, wineryName: orgRow.name, emailSent, inviteLink }
+}
+
+export async function removeTeamMember(input: {
+  organizationId: string
+  memberId: string
+}): Promise<{ ok: true }> {
+  const { userId: actorId, organizationId } = await requireManageContext(input.organizationId)
+
+  const sb = createServiceSupabase()
+  const { data: member, error } = await sb
+    .from('organization_members')
+    .select('id, user_id, role')
+    .eq('id', input.memberId)
+    .eq('organization_id', organizationId)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!member) throw new Error('Miembro no encontrado')
+  if (member.role === 'owner') throw new Error('No puedes quitar al owner')
+  if (member.user_id === actorId) throw new Error('No puedes quitarte a ti mismo')
+
+  const { error: deleteError } = await sb.from('organization_members').delete().eq('id', member.id)
+  if (deleteError) throw new Error(deleteError.message)
+
+  return { ok: true }
+}
+
+async function applyTeamAccessCode(
+  sb: ReturnType<typeof createServiceSupabase>,
+  memberId: string,
+  organizationId: string,
+  code: string
+): Promise<void> {
+  if (!isValidAccessCodeFormat(code)) throw new Error('ACCESS_CODE_INVALID')
+
+  const { error } = await sb
+    .from('organization_members')
+    .update({
+      access_code_hash: hashTeamAccessCode(organizationId, code),
+      access_code_plain: code.trim(),
+    })
+    .eq('id', memberId)
+    .eq('organization_id', organizationId)
+    .eq('status', 'invited')
+
+  if (error) throw new Error(error.message)
+}
+
+export async function updateTeamAccessCode(input: {
+  organizationId: string
+  memberId: string
+  code?: string
+}): Promise<{ ok: true; accessCode: string }> {
+  await requireManageContext(input.organizationId)
+
+  const sb = createServiceSupabase()
+  const { data: member, error } = await sb
+    .from('organization_members')
+    .select('id, status, role')
+    .eq('id', input.memberId)
+    .eq('organization_id', input.organizationId)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  if (!member) throw new Error('Miembro no encontrado')
+  if (member.status !== 'invited') throw new Error('Solo puedes editar el código de invitados pendientes')
+  if (member.role === 'owner') throw new Error('No puedes cambiar el código del owner')
+
+  const code =
+    input.code?.trim() && isValidAccessCodeFormat(input.code.trim())
+      ? input.code.trim()
+      : generateTeamAccessCode()
+
+  await applyTeamAccessCode(sb, member.id, input.organizationId, code)
+  return { ok: true, accessCode: code }
 }

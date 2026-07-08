@@ -71,6 +71,11 @@ const PRODUCER_OPERACION: RailNavItemDef[] = [
   { href: '/dashboard/clientes', labelKey: 'nav.clients', icon: 'clients' },
 ]
 
+const BODEGA_TEAM_OPERACION: RailNavItemDef[] = [
+  { href: '/dashboard', labelKey: 'nav.home', icon: 'home' },
+  { href: '/dashboard/winemaker/agenda', labelKey: 'nav.winemakerAgenda', icon: 'agenda' },
+]
+
 const CONFIG_ITEMS: RailNavItemDef[] = [
   { href: '/dashboard/conectar', labelKey: 'nav.connectAgent', icon: 'connect' },
   { href: '/dashboard/settings', labelKey: 'nav.settings', icon: 'settings' },
@@ -96,11 +101,12 @@ function filterWinemakerEquipo(items: RailNavItemDef[], ctx: RailBuildContext): 
 
 function profileKind(
   ctx: RailBuildContext
-): 'super' | 'winemaker' | 'distributor' | 'distiller' | 'producer' | 'default' {
+): 'super' | 'winemaker' | 'bodega' | 'distributor' | 'distiller' | 'producer' | 'default' {
   if (ctx.profile?.is_super_user) return 'super'
   if (ctx.profile?.profile_type_v2 === 'distributor') return 'distributor'
   if (ctx.profile?.profile_type_v2 === 'distiller') return 'distiller'
   if (ctx.profile?.profile_type_v2 === 'brewer') return 'producer'
+  if (ctx.profile?.profile_type_v2 === 'bodega') return 'bodega'
   if (ctx.isWinemaker || ctx.profile?.profile_type_v2 === 'winemaker') return 'winemaker'
   return 'default'
 }
@@ -141,6 +147,17 @@ function groupsForProfile(ctx: RailBuildContext): { main: RailGroup[]; config: R
         },
       ],
       config: { id: 'configuracion', labelKey: 'rail.groups.configuracion', items: CONFIG_ITEMS },
+    }
+  }
+
+  if (kind === 'bodega') {
+    return {
+      main: [{ id: 'operacion', labelKey: 'rail.groups.operacion', items: BODEGA_TEAM_OPERACION }],
+      config: {
+        id: 'configuracion',
+        labelKey: 'rail.groups.configuracion',
+        items: [{ href: '/dashboard/settings', labelKey: 'nav.settings', icon: 'settings' }],
+      },
     }
   }
 
@@ -202,7 +219,7 @@ export function buildDashboardRail(ctx: RailBuildContext): DashboardRailModel {
     mainGroups,
     configGroup: config,
     flatItems,
-    showChatToggle: ctx.isWinemaker && ctx.chatEnabled,
+    showChatToggle: (ctx.isWinemaker || ctx.profile?.profile_type_v2 === 'bodega') && ctx.chatEnabled,
   }
 }
 

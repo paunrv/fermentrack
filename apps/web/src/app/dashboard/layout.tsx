@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserAvatarUrl, getUserInitials } from '@/lib/auth/user'
-import { useProfile } from '@/context/ProfileContext'
+import { useProfile, persistActiveProfileType } from '@/context/ProfileContext'
 import { useOrganization } from '@/context/OrganizationContext'
 import { type ExtraProfile, type Profile } from '@/lib/supabase'
 import {
@@ -36,7 +36,7 @@ import {
   shouldShowTeamChatDock,
   shouldShowWinemakerMobileNav,
   resolveShellProfileType,
-  isWinemakerShellMode,
+  isWinemakerOrgShellMode,
   shellHorizontalPadding,
   innerHeaderAskMaxWidth,
 } from '@/lib/proof/dashboard-shell'
@@ -58,6 +58,9 @@ import { useTeamChatUnread } from '@/hooks/useTeamChatUnread'
 import { useDashboardRailExpanded } from '@/hooks/useDashboardRailExpanded'
 import { orgHasFeature } from '@/lib/proof/org-features'
 import { LocaleToggle } from '@/components/i18n/LocaleToggle'
+import { InviteAuthHashRedirect } from '@/components/auth/InviteAuthHashRedirect'
+import { PendingTeamInviteRedirect } from '@/components/auth/PendingTeamInviteRedirect'
+import { bootstrapWinemakerOwnerAccount } from '@/app/actions/profile'
 
 type Role = ExtraProfile | 'producer'
 
@@ -113,9 +116,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const path = usePathname()
   const router = useRouter()
   const { user, isLoaded, supabase } = useAuth()
-  const { activeProfile, allProfiles, loading, profilesResolved } = useProfile()
-  const { activeOrg, allOrganizations, orgsResolved, loading: orgLoading } =
-    useOrganization()
+  const { activeProfile, allProfiles, loading, profilesResolved, reload: reloadProfiles } =
+    useProfile()
+  const {
+    activeOrg,
+    allOrganizations,
+    orgsResolved,
+    loading: orgLoading,
+    reload: reloadOrganizations,
+    switchOrganization,
+  } = useOrganization()
+  const [bootstrappingAccount, setBootstrappingAccount] = useState(false)
   const [ask, setAsk] = useState('')
   const [membresia, setMembresia] = useState<DestMembresia>('basico')
   const [datosCobroOpen, setDatosCobroOpen] = useState(false)
@@ -129,10 +140,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     profileType: activeProfile?.profile_type_v2,
     orgType: activeOrg?.org_type,
   })
-  const isWinemaker = isWinemakerShellMode({
+  const isWinemakerOrgShell = isWinemakerOrgShellMode({
     profileType: activeProfile?.profile_type_v2,
     orgType: activeOrg?.org_type,
   })
+  const isWinemaker = shellProfileType === 'winemaker' && isWinemakerOrgShell
   const isDistributor = shellProfileType === 'distributor'
   const isDistiller = shellProfileType === 'distiller'
   const effectiveProfileType = shellProfileType
@@ -142,16 +154,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isMobile = breakpoint === 'mobile'
   const isTablet = breakpoint === 'tablet'
   const shellPadX = shellHorizontalPadding(breakpoint)
-  const isWinemakerMobileHome = isWinemaker && isCanvas && isMobile
+  const isWinemakerMobileHome = isWinemakerOrgShell && isCanvas && isMobile
   const isDedicatedChatPage = path.startsWith('/dashboard/winemaker/chat')
-  const showWinemakerMobileNav = shouldShowWinemakerMobileNav(breakpoint, isWinemaker)
-  const showTeamChatDock = shouldShowTeamChatDock(breakpoint, isWinemaker) && !isDedicatedChatPage
+  const showWinemakerMobileNav = shouldShowWinemakerMobileNav(breakpoint, isWinemakerOrgShell)
+  const showTeamChatDock = shouldShowTeamChatDock(breakpoint, isWinemakerOrgShell) && !isDedicatedChatPage
   const showSidebar = shouldShowDesktopRailForBreakpoint(breakpoint)
-  const showMobileNav = shouldShowBottomNav(breakpoint, isWinemaker)
+  const showMobileNav = shouldShowBottomNav(breakpoint, isWinemakerOrgShell)
   const { open: chatOpen, toggle: toggleChat } = useTeamChatDockState()
   const { expanded: railExpanded, toggle: toggleRailExpanded } = useDashboardRailExpanded()
   const chatEnabled =
-    isWinemaker &&
+    isWinemakerOrgShell &&
     !!activeOrg &&
     orgHasFeature(
       { plan: activeOrg.plan, features: activeOrg.features },
@@ -165,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const effectiveProfile =
     activeProfile ??
-    (isWinemaker ? ({ profile_type_v2: 'winemaker', is_super_user: false } as Profile) : null)
+    (isWinemakerOrgShell ? ({ profile_type_v2: shellProfileType ?? 'winemaker', is_super_user: false } as Profile) : null)
 
   const railModel = useMemo(
     () =>
@@ -214,7 +226,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   useEffect(() => {
-    if (!activeOrg?.id || !isWinemaker) {
+    if (!activeOrg?.id || !isWinemakerOrgShell) {
       setShowEquipo(false)
       return
     }
@@ -235,7 +247,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!isLoaded || loading || orgLoading || !profilesResolved || !orgsResolved) return
     if (!user) return
     if (allProfiles.length > 0 || allOrganizations.length > 0) return
-    router.replace('/onboarding')
+    if (bootstrappingAccount) return
+
+    let cancelled = false
+    setBootstrappingAccount(true)
+
+    void bootstrapWinemakerOwnerAccount()
+      .then(async result => {
+        if (cancelled) return
+        if (!result.bootstrapped && !result.organizationId) return
+        await reloadProfiles({ silent: true })
+        await reloadOrganizations({ silent: true })
+        if (result.organizationId) {
+          switchOrganization(result.organizationId)
+        }
+        persistActiveProfileType('winemaker')
+      })
+      .catch(err => {
+        console.error('[dashboard] bootstrapWinemakerOwnerAccount', err)
+      })
+      .finally(() => {
+        if (!cancelled) setBootstrappingAccount(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [
     isLoaded,
     loading,
@@ -245,7 +282,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     user,
     allProfiles.length,
     allOrganizations.length,
-    router,
+    bootstrappingAccount,
+    reloadProfiles,
+    reloadOrganizations,
+    switchOrganization,
   ])
 
   useEffect(() => {
@@ -335,6 +375,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ...proofAccentCssVars(theme),
       }}
     >
+      <InviteAuthHashRedirect />
+      <PendingTeamInviteRedirect />
       {showWinemakerMobileNav && <WinemakerMobileNav />}
 
       {showMobileNav && (
@@ -465,7 +507,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 initials={initials}
                 imageUrl={getUserAvatarUrl(user)}
                 accent={theme.accent}
-                canSwitchProfile={allProfiles.length > 1}
+                canSwitchProfile={allProfiles.length > 0 || allOrganizations.length > 0}
                 onSwitchProfile={() => router.push('/profile-select')}
                 onDatosCobro={openDatosCobroSheet}
                 onSignOut={() => void handleSignOut()}
@@ -569,7 +611,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   initials={initials}
                   imageUrl={getUserAvatarUrl(user)}
                   accent={theme.accent}
-                  canSwitchProfile={allProfiles.length > 1}
+                  canSwitchProfile={allProfiles.length > 0 || allOrganizations.length > 0}
                   onSwitchProfile={() => router.push('/profile-select')}
                   onDatosCobro={openDatosCobroSheet}
                   onSignOut={() => void handleSignOut()}

@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useOrganization } from '@/context/OrganizationContext'
 import { useProfile } from '@/context/ProfileContext'
 import type { ExtraProfile } from '@/lib/supabase'
-import { isWinemakerShellMode, resolveShellProfileType } from '@/lib/proof/dashboard-shell'
+import { isWinemakerOrgShellMode, isBodegaTeamProfile, resolveShellProfileType } from '@/lib/proof/dashboard-shell'
 
 const BOOT_TIMEOUT_MS = 8_000
 
@@ -30,15 +30,22 @@ export function useWinemakerAccess() {
   const [bootTimedOut, setBootTimedOut] = useState(false)
 
   const viaOrg = activeOrg?.org_type === 'winemaker'
-  const viaProfile = activeProfile?.profile_type_v2 === 'winemaker'
+  const viaProfile =
+    activeProfile?.profile_type_v2 === 'winemaker' || activeProfile?.profile_type_v2 === 'bodega'
   const shellProfileType = resolveShellProfileType({
     profileType: activeProfile?.profile_type_v2,
     orgType: activeOrg?.org_type,
   })
-  const isWinemaker = isWinemakerShellMode({
+  const isWinemakerOrgShell = isWinemakerOrgShellMode({
     profileType: activeProfile?.profile_type_v2,
     orgType: activeOrg?.org_type,
   })
+  const isBodegaTeam = isBodegaTeamProfile({
+    profileType: activeProfile?.profile_type_v2,
+    orgType: activeOrg?.org_type,
+  })
+  /** Full winemaker product surface (not cellar-team minimal). */
+  const isWinemaker = shellProfileType === 'winemaker' && isWinemakerOrgShell
   const effectiveProfileType: ExtraProfile | null = shellProfileType ?? null
 
   const dataPending =
@@ -59,6 +66,8 @@ export function useWinemakerAccess() {
 
   return {
     isWinemaker,
+    isWinemakerOrgShell,
+    isBodegaTeam,
     viaOrg,
     viaProfile,
     effectiveProfileType,
