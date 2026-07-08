@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useSupabase } from '@/hooks/useSupabase'
 import { countTeamChatUnread, subscribeTeamChatMessages } from '@/lib/proof/team-chat'
+import { ensureGeneralConversationId } from '@/lib/proof/team-chat-conversations'
 
 export function useTeamChatUnread(options: {
   organizationId: string | null | undefined
@@ -32,9 +33,25 @@ export function useTeamChatUnread(options: {
 
   useEffect(() => {
     if (!organizationId || !enabled) return
-    return subscribeTeamChatMessages(supabase, organizationId, () => {
-      void refresh()
-    })
+
+    let cancelled = false
+    let unsubscribe: (() => void) | undefined
+
+    void ensureGeneralConversationId(supabase, organizationId)
+      .then(conversationId => {
+        if (cancelled) return
+        unsubscribe = subscribeTeamChatMessages(supabase, conversationId, () => {
+          void refresh()
+        })
+      })
+      .catch(() => {
+        /* ignore */
+      })
+
+    return () => {
+      cancelled = true
+      unsubscribe?.()
+    }
   }, [enabled, organizationId, refresh, supabase])
 
   return { unreadCount, refresh }

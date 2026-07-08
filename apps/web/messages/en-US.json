@@ -928,6 +928,7 @@
         "no_permission": "You do not have permission to write in this chat.",
         "profile_missing": "Your profile is not ready yet. Sign out and sign in again.",
         "chat_unavailable": "Chat is not available in this environment. Contact support.",
+        "conversation_create_failed": "Could not prepare the chat channel. Please try again.",
         "no_organization": "We could not find your active winery.",
         "not_authenticated": "Sign in to send messages.",
         "message_create_failed": "Could not send the message. Please try again.",

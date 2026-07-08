@@ -10,6 +10,7 @@ export const TEAM_CHAT_ERROR_CODES = [
   'chat_unavailable',
   'no_organization',
   'not_authenticated',
+  'conversation_create_failed',
   'message_create_failed',
   'load_failed',
   'send_failed',

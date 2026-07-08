@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { TeamChatFilter, TeamChatMessage } from '@/lib/proof/team-chat-types'
+import { ensureGeneralConversationId } from '@/lib/proof/team-chat-conversations'
 
 type RawTeamChatRow = {
   id: string
   organization_id: string
+  conversation_id: string | null
   lote_id: string | null
   author_id: string
   body: string
@@ -26,6 +28,7 @@ export function mapTeamChatRows(rows: RawTeamChatRow[]): TeamChatMessage[] {
     return {
       id: row.id,
       organization_id: row.organization_id,
+      conversation_id: row.conversation_id,
       lote_id: row.lote_id,
       author_id: row.author_id,
       body: row.body,
@@ -44,6 +47,7 @@ export function mapTeamChatRows(rows: RawTeamChatRow[]): TeamChatMessage[] {
 const TEAM_CHAT_SELECT = `
   id,
   organization_id,
+  conversation_id,
   lote_id,
   author_id,
   body,
@@ -60,13 +64,18 @@ export async function fetchTeamChatMessages(
     filter?: TeamChatFilter
     limit?: number
     since?: string
+    conversationId?: string | null
   }
 ): Promise<TeamChatMessage[]> {
   const limit = Math.max(1, Math.min(options?.limit ?? 80, 200))
+  const conversationId =
+    options?.conversationId ?? (await ensureGeneralConversationId(sb, organizationId))
+
   let query = sb
     .from('wm_mensajes')
     .select(TEAM_CHAT_SELECT)
     .eq('organization_id', organizationId)
+    .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(limit)
 
@@ -84,20 +93,51 @@ export async function fetchTeamChatMessages(
   return mapTeamChatRows((data ?? []) as RawTeamChatRow[])
 }
 
+export async function fetchConversationLastReadAt(
+  sb: SupabaseClient,
+  conversationId: string,
+  userId: string
+): Promise<string | null> {
+  const { data, error } = await sb
+    .from('wm_conversacion_miembros')
+    .select('last_read_at')
+    .eq('conversation_id', conversationId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === '42P01') return null
+    throw error
+  }
+  return data?.last_read_at ?? null
+}
+
+/** @deprecated Org-level watermark — prefer conversation read state. */
 export async function fetchTeamChatLastReadAt(
   sb: SupabaseClient,
   organizationId: string,
   memberId: string
 ): Promise<string | null> {
-  const { data, error } = await sb
-    .from('wm_mensajes_lectura')
-    .select('last_read_at')
-    .eq('organization_id', organizationId)
-    .eq('member_id', memberId)
-    .maybeSingle()
+  const conversationId = await ensureGeneralConversationId(sb, organizationId)
+  return fetchConversationLastReadAt(sb, conversationId, memberId)
+}
 
+export async function markConversationRead(
+  sb: SupabaseClient,
+  conversationId: string,
+  userId: string,
+  lastReadAt?: string
+): Promise<void> {
+  const ts = lastReadAt ?? new Date().toISOString()
+  const { error } = await sb.from('wm_conversacion_miembros').upsert(
+    {
+      conversation_id: conversationId,
+      user_id: userId,
+      last_read_at: ts,
+    },
+    { onConflict: 'conversation_id,user_id' }
+  )
   if (error) throw error
-  return data?.last_read_at ?? null
 }
 
 export async function markTeamChatRead(
@@ -106,29 +146,21 @@ export async function markTeamChatRead(
   memberId: string,
   lastReadAt?: string
 ): Promise<void> {
-  const ts = lastReadAt ?? new Date().toISOString()
-  const { error } = await sb.from('wm_mensajes_lectura').upsert(
-    {
-      organization_id: organizationId,
-      member_id: memberId,
-      last_read_at: ts,
-    },
-    { onConflict: 'organization_id,member_id' }
-  )
-  if (error) throw error
+  const conversationId = await ensureGeneralConversationId(sb, organizationId)
+  await markConversationRead(sb, conversationId, memberId, lastReadAt)
 }
 
-export async function countTeamChatUnread(
+export async function countConversationUnread(
   sb: SupabaseClient,
-  organizationId: string,
+  conversationId: string,
   memberId: string
 ): Promise<number> {
-  const lastReadAt = await fetchTeamChatLastReadAt(sb, organizationId, memberId)
+  const lastReadAt = await fetchConversationLastReadAt(sb, conversationId, memberId)
 
   let query = sb
     .from('wm_mensajes')
     .select('id', { count: 'exact', head: true })
-    .eq('organization_id', organizationId)
+    .eq('conversation_id', conversationId)
     .neq('author_id', memberId)
 
   if (lastReadAt) {
@@ -138,6 +170,15 @@ export async function countTeamChatUnread(
   const { count, error } = await query
   if (error) throw error
   return count ?? 0
+}
+
+export async function countTeamChatUnread(
+  sb: SupabaseClient,
+  organizationId: string,
+  memberId: string
+): Promise<number> {
+  const conversationId = await ensureGeneralConversationId(sb, organizationId)
+  return countConversationUnread(sb, conversationId, memberId)
 }
 
 export async function fetchLotCodeMap(
@@ -167,27 +208,27 @@ type TeamChatChannelEntry = {
   sb: SupabaseClient
 }
 
-/** One Realtime channel per org — multiple hooks can listen without re-subscribing. */
+/** One Realtime channel per conversation. */
 const teamChatChannels = new Map<string, TeamChatChannelEntry>()
 
 export function subscribeTeamChatMessages(
   sb: SupabaseClient,
-  organizationId: string,
+  conversationId: string,
   onInsert: TeamChatInsertListener
 ): () => void {
-  let entry = teamChatChannels.get(organizationId)
+  let entry = teamChatChannels.get(conversationId)
 
   if (!entry) {
     const listeners = new Set<TeamChatInsertListener>()
     const channel = sb
-      .channel(`team-chat-${organizationId}`)
+      .channel(`team-chat-conv-${conversationId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'wm_mensajes',
-          filter: `organization_id=eq.${organizationId}`,
+          filter: `conversation_id=eq.${conversationId}`,
         },
         payload => {
           const id = (payload.new as { id?: string } | null)?.id
@@ -200,18 +241,18 @@ export function subscribeTeamChatMessages(
       .subscribe()
 
     entry = { channel, listeners, sb }
-    teamChatChannels.set(organizationId, entry)
+    teamChatChannels.set(conversationId, entry)
   }
 
   entry.listeners.add(onInsert)
 
   return () => {
-    const current = teamChatChannels.get(organizationId)
+    const current = teamChatChannels.get(conversationId)
     if (!current) return
     current.listeners.delete(onInsert)
     if (current.listeners.size === 0) {
       void current.sb.removeChannel(current.channel)
-      teamChatChannels.delete(organizationId)
+      teamChatChannels.delete(conversationId)
     }
   }
 }

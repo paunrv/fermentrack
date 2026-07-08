@@ -928,6 +928,7 @@
         "no_permission": "No tienes permiso para escribir en este chat.",
         "profile_missing": "Tu perfil aún no está listo. Cierra sesión y vuelve a entrar.",
         "chat_unavailable": "El chat no está disponible en este entorno. Contacta soporte.",
+        "conversation_create_failed": "No se pudo preparar el canal de chat. Intenta de nuevo.",
         "no_organization": "No encontramos tu bodega activa.",
         "not_authenticated": "Inicia sesión para enviar mensajes.",
         "message_create_failed": "No se pudo enviar el mensaje. Intenta de nuevo.",

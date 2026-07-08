@@ -3,11 +3,15 @@
 export const WM_MENSAJE_ORIGEN_VALUES = ['web', 'mcp'] as const
 export type WmMensajeOrigen = (typeof WM_MENSAJE_ORIGEN_VALUES)[number]
 
+export const WM_CONVERSACION_KIND_VALUES = ['general', 'dm', 'group', 'lote'] as const
+export type TeamConversationKind = (typeof WM_CONVERSACION_KIND_VALUES)[number]
+
 export const TEAM_CHAT_BODY_MAX = 4000
 
 export type WmMensajeRow = {
   id: string
   organization_id: string
+  conversation_id: string | null
   lote_id: string | null
   author_id: string
   body: string
@@ -30,6 +34,15 @@ export type TeamChatAuthor = {
 export type TeamChatMessage = WmMensajeRow & {
   author: TeamChatAuthor
   lote_code: string | null
+}
+
+export type TeamConversation = {
+  id: string
+  organization_id: string
+  kind: TeamConversationKind
+  title: string | null
+  lote_id: string | null
+  created_at: string
 }
 
 export type TeamChatFilter = 'channel' | { loteId: string }

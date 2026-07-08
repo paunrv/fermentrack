@@ -11,6 +11,7 @@ import {
   markTeamChatRead,
   subscribeTeamChatMessages,
 } from '@/lib/proof/team-chat'
+import { ensureGeneralConversationId } from '@/lib/proof/team-chat-conversations'
 import type { TeamChatFilter, TeamChatMessage } from '@/lib/proof/team-chat-types'
 
 export function useTeamChat(options: {
@@ -29,6 +30,7 @@ export function useTeamChat(options: {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [conversationId, setConversationId] = useState<string | null>(null)
   const knownIdsRef = useRef(new Set<string>())
 
   const refreshUnread = useCallback(async () => {
@@ -47,14 +49,22 @@ export function useTeamChat(options: {
   const loadMessages = useCallback(async () => {
     if (!organizationId || !enabled) {
       setMessages([])
+      setConversationId(null)
       return
     }
 
     setLoading(true)
     setError(null)
     try {
+      const generalConversationId = await ensureGeneralConversationId(supabase, organizationId)
+      setConversationId(generalConversationId)
+
       const [rows, codeMap] = await Promise.all([
-        fetchTeamChatMessages(supabase, organizationId, { filter, limit: 100 }),
+        fetchTeamChatMessages(supabase, organizationId, {
+          filter,
+          limit: 100,
+          conversationId: generalConversationId,
+        }),
         fetchLotCodeMap(supabase, organizationId),
       ])
       knownIdsRef.current = new Set(rows.map(row => row.id))
@@ -87,9 +97,9 @@ export function useTeamChat(options: {
   }, [loadMessages])
 
   useEffect(() => {
-    if (!organizationId || !enabled) return
+    if (!conversationId || !enabled) return
 
-    return subscribeTeamChatMessages(supabase, organizationId, messageId => {
+    return subscribeTeamChatMessages(supabase, conversationId, messageId => {
       if (knownIdsRef.current.has(messageId)) return
       void (async () => {
         const message = await fetchTeamChatMessageById(supabase, messageId)
@@ -100,13 +110,14 @@ export function useTeamChat(options: {
           if (prev.some(row => row.id === message.id)) return prev
           return [...prev, message]
         })
-        if (userId && message.author_id !== userId && markReadOnMount) {
+        if (userId && message.author_id !== userId && markReadOnMount && organizationId) {
           await markTeamChatRead(supabase, organizationId, userId, message.created_at)
         }
         await refreshUnread()
       })()
     })
   }, [
+    conversationId,
     enabled,
     filter,
     markReadOnMount,
@@ -115,8 +126,6 @@ export function useTeamChat(options: {
     supabase,
     userId,
   ])
-
-  const sendMessage = useCallback(
     async (body: string, loteId?: string | null) => {
       if (!organizationId || !enabled) return
       setSending(true)

@@ -7,6 +7,7 @@ import {
   type TeamChatMessage,
   type WmMensajeOrigen,
 } from '@/lib/proof/team-chat-types'
+import { ensureGeneralConversationId } from '@/lib/proof/team-chat-conversations'
 import { fetchTeamChatMessageById } from '@/lib/proof/team-chat'
 import { mapPostgresInsertError } from '@/lib/proof/team-chat-errors'
 
@@ -28,6 +29,7 @@ export type RecordTeamMessageErrorCode =
   | 'no_permission'
   | 'profile_missing'
   | 'chat_unavailable'
+  | 'conversation_create_failed'
   | 'message_create_failed'
 
 export class RecordTeamMessageError extends Error {
@@ -70,10 +72,17 @@ export async function recordTeamMessage(
     if (!lot) throw new RecordTeamMessageError('lote_not_found')
   }
 
+  const conversationId = await ensureGeneralConversationId(sb, params.organizationId).catch(
+    () => {
+      throw new RecordTeamMessageError('conversation_create_failed')
+    }
+  )
+
   const { data: inserted, error: insertError } = await sb
     .from('wm_mensajes')
     .insert({
       organization_id: params.organizationId,
+      conversation_id: conversationId,
       lote_id: loteId,
       author_id: params.authorId,
       body: validated.body,

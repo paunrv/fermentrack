@@ -6,12 +6,15 @@ Coordinación de bodega anclada al contexto operativo: canal general por organiz
 
 ## Schema (C1 — #48)
 
-Migración: `supabase/migrations/20260703200000_team_chat.sql`
+Migración base: `supabase/migrations/20260703200000_team_chat.sql`  
+Conversaciones (Fase 1): `supabase/migrations/20260708210000_team_chat_conversations.sql`
 
 | Tabla | Rol |
 |-------|-----|
-| `wm_mensajes` | Mensajes del canal / hilo (`lote_id` null = solo canal general) |
-| `wm_mensajes_lectura` | Marca de lectura por miembro (`member_id` = `profiles.id`) |
+| `wm_conversaciones` | Canal general por org (`kind = general`); DM/grupo en fases posteriores |
+| `wm_conversacion_miembros` | Marca de lectura por usuario y conversación |
+| `wm_mensajes` | Mensajes del canal / hilo (`conversation_id` + `lote_id` opcional) |
+| `wm_mensajes_lectura` | *(legacy)* Marca org-level — sustituida por `wm_conversacion_miembros` |
 
 ### Columnas clave
 
@@ -54,6 +57,7 @@ Sin DMs, reacciones, adjuntos, edición/borrado, threads anidados.
 | Pieza | Path |
 |-------|------|
 | Types | `apps/web/src/lib/proof/team-chat-types.ts` |
+| Conversaciones | `apps/web/src/lib/proof/team-chat-conversations.ts` |
 | Loaders + realtime | `apps/web/src/lib/proof/team-chat.ts` |
 | Insert + validación | `apps/web/src/lib/proof/record-team-message.ts` |
 | Menciones LOT | `apps/web/src/lib/proof/team-chat-lot-mentions.ts` |
