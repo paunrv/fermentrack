@@ -132,3 +132,38 @@ export async function bootstrapWinemakerOwnerAccount(): Promise<{
   if (upsertError) throw new Error(upsertError.message)
   return { bootstrapped: true, organizationId: org.id }
 }
+
+/** wm_mensajes.author_id FK requires a row in public.profiles. */
+export async function ensureIdentityProfileForChat(): Promise<void> {
+  const userId = await getAuthUserId()
+  if (!userId) throw new Error('No autenticado')
+
+  const sb = await createClient()
+  const { data: existing, error: existingError } = await sb
+    .from('profiles')
+    .select('id')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (existingError) throw new Error(existingError.message)
+  if (existing?.id) return
+
+  const { data: authUser, error: authError } = await sb.auth.getUser()
+  if (authError) throw new Error(authError.message)
+
+  const email = authUser.user?.email ?? ''
+  const fullName =
+    (typeof authUser.user?.user_metadata?.full_name === 'string'
+      ? authUser.user.user_metadata.full_name
+      : ''
+    ).trim() || email.split('@')[0] || 'Usuario'
+
+  const service = createServiceSupabase()
+  const { error: insertError } = await service.from('profiles').upsert({
+    id: userId,
+    full_name: fullName,
+    avatar_url: authUser.user?.user_metadata?.avatar_url ?? null,
+  })
+
+  if (insertError) throw new Error(insertError.message)
+}

@@ -7,7 +7,8 @@ import {
   type TeamChatMessage,
   type WmMensajeOrigen,
 } from '@/lib/proof/team-chat-types'
-import { mapTeamChatRows } from '@/lib/proof/team-chat'
+import { fetchTeamChatMessageById } from '@/lib/proof/team-chat'
+import { mapPostgresInsertError } from '@/lib/proof/team-chat-errors'
 
 export type RecordTeamMessageParams = SendTeamMessageInput & {
   organizationId: string
@@ -24,6 +25,9 @@ export type RecordTeamMessageValidationCode =
 export type RecordTeamMessageErrorCode =
   | RecordTeamMessageValidationCode
   | 'lote_not_found'
+  | 'no_permission'
+  | 'profile_missing'
+  | 'chat_unavailable'
   | 'message_create_failed'
 
 export class RecordTeamMessageError extends Error {
@@ -66,7 +70,7 @@ export async function recordTeamMessage(
     if (!lot) throw new RecordTeamMessageError('lote_not_found')
   }
 
-  const { data, error } = await sb
+  const { data: inserted, error: insertError } = await sb
     .from('wm_mensajes')
     .insert({
       organization_id: params.organizationId,
@@ -75,24 +79,14 @@ export async function recordTeamMessage(
       body: validated.body,
       origen: params.origen ?? 'web',
     })
-    .select(
-      `
-      id,
-      organization_id,
-      lote_id,
-      author_id,
-      body,
-      origen,
-      created_at,
-      author:profiles!wm_mensajes_author_id_fkey ( id, full_name, avatar_url ),
-      lot:lots ( code )
-    `
-    )
+    .select('id')
     .single()
 
-  if (error || !data) throw new RecordTeamMessageError('message_create_failed')
+  if (insertError || !inserted?.id) {
+    throw new RecordTeamMessageError(mapPostgresInsertError(insertError ?? {}))
+  }
 
-  const [message] = mapTeamChatRows([data as never])
+  const message = await fetchTeamChatMessageById(sb, inserted.id)
   if (!message) throw new RecordTeamMessageError('message_create_failed')
   return message
 }

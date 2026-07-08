@@ -35,6 +35,7 @@ export type TeamChatMessage = WmMensajeRow & {
 export type TeamChatFilter = 'channel' | { loteId: string }
 
 export type SendTeamMessageInput = {
+  organizationId: string
   body: string
   loteId?: string | null
 }

@@ -918,7 +918,22 @@
       "member": "Miembro",
       "toggle": "Mostrar u ocultar chat de equipo",
       "unread": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}",
-      "upgradeHint": "El chat de equipo está disponible en plan Pro o Enterprise."
+      "upgradeHint": "El chat de equipo está disponible en plan Pro o Enterprise.",
+      "readOnlyHint": "Tu rol solo permite leer el chat. Pide al owner acceso de escritura si lo necesitas.",
+      "errors": {
+        "empty_body": "Escribe un mensaje antes de enviar.",
+        "body_too_long": "El mensaje es demasiado largo (máx. 4000 caracteres).",
+        "chat_not_allowed": "El chat de equipo requiere plan Pro o Enterprise.",
+        "lote_not_found": "Ese lote no existe en tu bodega.",
+        "no_permission": "No tienes permiso para escribir en este chat.",
+        "profile_missing": "Tu perfil aún no está listo. Cierra sesión y vuelve a entrar.",
+        "chat_unavailable": "El chat no está disponible en este entorno. Contacta soporte.",
+        "no_organization": "No encontramos tu bodega activa.",
+        "not_authenticated": "Inicia sesión para enviar mensajes.",
+        "message_create_failed": "No se pudo enviar el mensaje. Intenta de nuevo.",
+        "load_failed": "No se pudieron cargar los mensajes.",
+        "send_failed": "No se pudo enviar el mensaje."
+      }
     },
     "equipo": {
       "title": "👥 Mi equipo",

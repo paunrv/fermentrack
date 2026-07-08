@@ -918,7 +918,22 @@
       "member": "Member",
       "toggle": "Show or hide team chat",
       "unread": "{count, plural, one {# unread message} other {# unread messages}}",
-      "upgradeHint": "Team chat is available on Pro or Enterprise plans."
+      "upgradeHint": "Team chat is available on Pro or Enterprise plans.",
+      "readOnlyHint": "Your role is read-only in team chat. Ask the owner for write access if needed.",
+      "errors": {
+        "empty_body": "Write a message before sending.",
+        "body_too_long": "Message is too long (max 4000 characters).",
+        "chat_not_allowed": "Team chat requires a Pro or Enterprise plan.",
+        "lote_not_found": "That lot does not exist in your winery.",
+        "no_permission": "You do not have permission to write in this chat.",
+        "profile_missing": "Your profile is not ready yet. Sign out and sign in again.",
+        "chat_unavailable": "Chat is not available in this environment. Contact support.",
+        "no_organization": "We could not find your active winery.",
+        "not_authenticated": "Sign in to send messages.",
+        "message_create_failed": "Could not send the message. Please try again.",
+        "load_failed": "Could not load messages.",
+        "send_failed": "Could not send the message."
+      }
     },
     "equipo": {
       "title": "👥 My team",

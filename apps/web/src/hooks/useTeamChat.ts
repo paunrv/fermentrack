@@ -122,7 +122,11 @@ export function useTeamChat(options: {
       setSending(true)
       setError(null)
       try {
-        const message = await sendTeamMessageAction({ body, loteId })
+        const message = await sendTeamMessageAction({
+          organizationId,
+          body,
+          loteId,
+        })
         knownIdsRef.current.add(message.id)
         setMessages(prev => {
           if (prev.some(row => row.id === message.id)) return prev
