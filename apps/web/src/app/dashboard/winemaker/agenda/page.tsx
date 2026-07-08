@@ -6,7 +6,9 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
+import { dashboardPageShell } from '@/lib/ui/page-shell'
 
 function buildMonthGrid(year: number, month: number) {
   const first = new Date(year, month, 1)
@@ -23,6 +25,7 @@ export default function WinemakerAgendaPage() {
   const locale = useLocale() as AppLocale
   const t = useTranslations('winemaker.agenda')
   const tCommon = useTranslations('winemaker.common')
+  const breakpoint = useBreakpoint()
   const { loading: scopeLoading, ok } = useWinemakerRouteGuard()
   const now = new Date()
   const year = now.getFullYear()
@@ -55,8 +58,9 @@ export default function WinemakerAgendaPage() {
   }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 720 }}>
+    <div style={dashboardPageShell(breakpoint, { withBottomNav: true, maxWidth: 720 })}>
       <div
+        className="proof-agenda-page__header"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -85,6 +89,7 @@ export default function WinemakerAgendaPage() {
       </div>
 
       <div
+        className="proof-agenda-calendar"
         style={{
           borderRadius: 12,
           border: '0.5px solid var(--border)',
@@ -115,6 +120,7 @@ export default function WinemakerAgendaPage() {
           {weekdays.map(d => (
             <div
               key={d}
+              className="proof-agenda-calendar__weekday"
               style={{
                 fontSize: 11,
                 fontWeight: 500,
@@ -134,6 +140,7 @@ export default function WinemakerAgendaPage() {
             return (
               <div
                 key={`${i}-${day ?? 'x'}`}
+                className="proof-agenda-calendar__day"
                 style={{
                   minHeight: 52,
                   padding: 6,
@@ -145,6 +152,7 @@ export default function WinemakerAgendaPage() {
               >
                 {day ? (
                   <span
+                    className="proof-agenda-calendar__day-num"
                     style={{
                       fontSize: 12,
                       fontWeight: isToday ? 600 : 400,

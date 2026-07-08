@@ -69,7 +69,7 @@ function LotPipelineCard({ lot }: { lot: PipelineLot }) {
   return (
     <button
       type="button"
-      onClick={() => router.push(`/dashboard/lotes/${lot.id}`)}
+      onClick={() => router.push(`/dashboard/winemaker/lotes/${lot.id}`)}
       style={{
         width: '100%',
         textAlign: 'left',
@@ -118,11 +118,16 @@ function LotPipelineCard({ lot }: { lot: PipelineLot }) {
         <div
           style={{
             color:
-              lot.daysSinceLastRecord > 5 ? 'var(--warn, var(--fg-2))' : 'var(--fg-3)',
-            fontWeight: lot.daysSinceLastRecord > 5 ? 600 : 400,
+              lot.recordTiming.kind === 'past' && lot.daysSinceLastRecord > 5
+                ? 'var(--warn, var(--fg-2))'
+                : 'var(--fg-3)',
+            fontWeight:
+              lot.recordTiming.kind === 'past' && lot.daysSinceLastRecord > 5 ? 600 : 400,
           }}
         >
-          {t('daysSinceRecord', { days: lot.daysSinceLastRecord })}
+          {lot.recordTiming.kind === 'future'
+            ? t('scheduledInDays', { days: lot.recordTiming.days })
+            : t('daysSinceRecord', { days: lot.recordTiming.days })}
         </div>
       </div>
     </button>
@@ -135,7 +140,7 @@ function LotPipelineChip({ lot }: { lot: PipelineLot }) {
   return (
     <button
       type="button"
-      onClick={() => router.push(`/dashboard/lotes/${lot.id}`)}
+      onClick={() => router.push(`/dashboard/winemaker/lotes/${lot.id}`)}
       className="ui-chip"
       style={{
         width: '100%',

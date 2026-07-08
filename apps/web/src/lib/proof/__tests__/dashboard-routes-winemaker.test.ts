@@ -22,6 +22,18 @@ describe('winemaker dashboard routes', () => {
 
   it('allows winemaker own routes', () => {
     expect(winemakerBlockedFromPath('winemaker', '/dashboard/winemaker/lotes')).toBe(false)
+    expect(
+      winemakerBlockedFromPath(
+        'winemaker',
+        '/dashboard/winemaker/lotes/a0000013-0001-4000-8000-000000000001'
+      )
+    ).toBe(false)
+    expect(
+      winemakerBlockedFromPath(
+        'winemaker',
+        '/dashboard/lotes/a0000013-0001-4000-8000-000000000001'
+      )
+    ).toBe(true)
     expect(winemakerBlockedFromPath('winemaker', '/dashboard')).toBe(false)
   })
 

@@ -37,7 +37,7 @@ function LotRow({ lot, copy }: { lot: OwnerLotRow; copy: WinemakerOwnerCopy }) {
       type="button"
       className="proof-task-row"
       style={{ width: '100%', textAlign: 'left', cursor: 'pointer' }}
-      onClick={() => router.push(`/dashboard/lotes/${lot.id}`)}
+      onClick={() => router.push(`/dashboard/winemaker/lotes/${lot.id}`)}
     >
       <span style={{ fontSize: 16, lineHeight: 1.2 }} aria-hidden>
         🍷

@@ -10,6 +10,7 @@ const baseLot = (overrides: Partial<PipelineLot> = {}): PipelineLot => ({
   container: null,
   lastMeasurement: null,
   daysSinceLastRecord: 1,
+  recordTiming: { kind: 'past', days: 1 },
   needsAttention: false,
   attentionReasons: [],
   ...overrides,

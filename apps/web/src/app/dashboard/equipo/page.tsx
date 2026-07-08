@@ -13,7 +13,7 @@ import {
   inviteTeamMember,
   type TeamMemberRow,
 } from '@/app/actions/equipo'
-import type { OrgMemberRole } from '@/lib/supabase/organization'
+import type { TeamPlatformProfile } from '@/lib/proof/team-access-code'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 import { ProFeatureLock } from '@/components/proof/ProFeatureLock'
 import { INVITE_PRO_REQUIRED_CODE } from '@/lib/proof/plan-team-invites'
@@ -60,7 +60,12 @@ export default function EquipoPage() {
 
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const [orgRole, setOrgRole] = useState<Exclude<OrgMemberRole, 'owner'>>('member')
+  const [platformProfile, setPlatformProfile] = useState<TeamPlatformProfile>('winemaker')
+  const [inviteSuccess, setInviteSuccess] = useState<{
+    name: string
+    wineryName: string
+    accessCode: string
+  } | null>(null)
 
   async function loadMembers() {
     if (!organizationId) return
@@ -107,11 +112,17 @@ export default function EquipoPage() {
     setSaving(true)
     setSaveError(null)
     try {
-      await inviteTeamMember({ organizationId, email, name, orgRole })
+      const invitedName = name.trim()
+      const result = await inviteTeamMember({ organizationId, email, name: invitedName, platformProfile })
       setEmail('')
       setName('')
-      setOrgRole('member')
+      setPlatformProfile('winemaker')
       setShowForm(false)
+      setInviteSuccess({
+        name: invitedName,
+        wineryName: result.wineryName,
+        accessCode: result.accessCode,
+      })
       await loadMembers()
     } catch (err) {
       const code = err instanceof Error ? err.message : 'inviteError'
@@ -134,9 +145,9 @@ export default function EquipoPage() {
   }
 
   return (
-    <div style={{ padding: '20px 16px 24px', maxWidth: 560, margin: '0 auto' }}>
+    <div style={{ padding: '20px 16px calc(20px + var(--proof-bottom-nav))', maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
       <header style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
           <OrgSwitcher compact />
         </div>
@@ -259,13 +270,12 @@ export default function EquipoPage() {
             </label>
             <select
               id="equipo-role"
-              value={orgRole}
-              onChange={e => setOrgRole(e.target.value as Exclude<OrgMemberRole, 'owner'>)}
+              value={platformProfile}
+              onChange={e => setPlatformProfile(e.target.value as TeamPlatformProfile)}
               style={input}
             >
-              <option value="admin">{t('roles.admin')}</option>
-              <option value="member">{t('roles.member')}</option>
-              <option value="viewer">{t('roles.viewer')}</option>
+              <option value="winemaker">{t('platformRoles.winemaker')}</option>
+              <option value="bodega">{t('platformRoles.bodega')}</option>
             </select>
           </div>
 
@@ -311,6 +321,64 @@ export default function EquipoPage() {
         </form>
       )}
 
+      {inviteSuccess ? (
+        <div
+          style={{
+            marginBottom: 24,
+            padding: 16,
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid color-mix(in srgb, var(--ok) 35%, var(--hairline))',
+            background: 'var(--ok-soft)',
+          }}
+        >
+          <p style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 600, color: 'var(--fg-0)' }}>
+            {t('inviteSuccessTitle')}
+          </p>
+          <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.5 }}>
+            {t('inviteSuccessBody', { name: inviteSuccess.name, winery: inviteSuccess.wineryName })}
+          </p>
+          <div
+            className="proof-equipo-access-code"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--panel)',
+              border: '1px solid var(--hairline)',
+            }}
+          >
+            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--fg-2)' }}>
+              {t('accessCodeLabel')}
+            </span>
+            <span
+              className="proof-equipo-access-code__value mono"
+              style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.2em', color: 'var(--fg-0)' }}
+            >
+              {inviteSuccess.accessCode}
+            </span>
+          </div>
+          <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>{t('inviteSuccessHint')}</p>
+          <button
+            type="button"
+            onClick={() => setInviteSuccess(null)}
+            style={{
+              marginTop: 12,
+              padding: '8px 12px',
+              border: '1px solid var(--hairline)',
+              borderRadius: 'var(--radius-sm)',
+              background: 'transparent',
+              color: 'var(--fg-1)',
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            {t('cancel')}
+          </button>
+        </div>
+      ) : null}
+
       {loading ? (
         <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('loadingMembers')}</p>
       ) : error ? (
@@ -338,7 +406,9 @@ export default function EquipoPage() {
                     <p style={{ margin: '0 0 4px', fontSize: 13, color: 'var(--fg-2)' }}>{member.email}</p>
                   )}
                   <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
-                    {t(`orgRoles.${member.orgRole}` as 'orgRoles.owner')}
+                    {member.platformProfile
+                      ? t(`platformRoles.${member.platformProfile}` as 'platformRoles.winemaker')
+                      : t(`orgRoles.${member.orgRole}` as 'orgRoles.owner')}
                   </p>
                 </div>
                 <span

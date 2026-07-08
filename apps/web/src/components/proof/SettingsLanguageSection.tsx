@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { LocaleSwitcher } from '@/components/i18n/LocaleSwitcher'
+import { LocaleToggle } from '@/components/i18n/LocaleToggle'
 
 export function SettingsLanguageSection() {
   const t = useTranslations('dashboard.settings.language')
@@ -28,7 +28,7 @@ export function SettingsLanguageSection() {
         {t('title')}
       </div>
       <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.45 }}>{t('description')}</p>
-      <LocaleSwitcher />
+      <LocaleToggle variant="dashboard" />
     </section>
   )
 }

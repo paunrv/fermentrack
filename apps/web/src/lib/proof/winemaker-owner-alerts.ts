@@ -1,4 +1,5 @@
 import type { AlertaOperativa } from '@/lib/proof/types'
+import { relativeDayTiming } from '@/lib/proof/format'
 import type { OwnerLotRow } from '@/lib/supabase/winemaker-owner-home'
 
 const TEMP_MIN = 15
@@ -78,14 +79,14 @@ export function buildOwnerAlertDescriptors(
   for (const lot of lots) {
     const last = lastEventByLot.get(lot.id)
     const reference = last ? new Date(last).getTime() : new Date(lot.created_at).getTime()
-    const daysSince = Math.floor((now - reference) / (24 * 60 * 60 * 1000))
-    if (daysSince <= STALE_DAYS) continue
+    const timing = relativeDayTiming(reference, now)
+    if (timing.kind !== 'past' || timing.days <= STALE_DAYS) continue
     alerts.push({
       kind: 'stale',
       id: `stale-${lot.id}`,
       lotId: lot.id,
       lotCode: lot.code,
-      daysSince,
+      daysSince: timing.days,
       hasLastEvent: Boolean(last),
     })
   }
@@ -115,7 +116,7 @@ export function mapOwnerAlertsToOperativas(
         titulo: copy.tempTitle({ code: desc.lotCode }),
         subtexto: copy.tempSubtext({ temp: desc.temp, min: TEMP_MIN, max: TEMP_MAX }),
         color: 'rojo',
-        acciones: [{ label: copy.viewLot(), href: `/dashboard/lotes/${desc.lotId}` }],
+        acciones: [{ label: copy.viewLot(), href: `/dashboard/winemaker/lotes/${desc.lotId}` }],
       }
     }
 
@@ -128,7 +129,7 @@ export function mapOwnerAlertsToOperativas(
         ? copy.staleSubtextWithEvent({ days: desc.daysSince })
         : copy.staleSubtextNoEvent(),
       color: 'amarillo',
-      acciones: [{ label: copy.viewLot(), href: `/dashboard/lotes/${desc.lotId}` }],
+      acciones: [{ label: copy.viewLot(), href: `/dashboard/winemaker/lotes/${desc.lotId}` }],
     }
   })
 }

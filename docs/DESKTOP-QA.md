@@ -120,7 +120,7 @@ Doc: [WINEMAKER-HOME.md](./WINEMAKER-HOME.md) · Cuenta owner winemaker · Viewp
 | O3 | **≥1024**: `WinemakerDesktopHome` — **ningún acordeón**; pipeline + fila inferior visibles sin clicks | Desktop: no accordions; pipeline + bottom row always visible | ☐ |
 | O4 | Pipeline: 6 columnas de etapa siempre visibles; vacías muestran «—» y contador 0 | Empty stages show dash + zero count | ☐ |
 | O5 | Lote con >5 días sin registro se distingue en tarjeta (badge / estilo) sin abrir detalle | Stale lot visible on card without opening detail | ☐ |
-| O6 | Click tarjeta de lote → detalle `/dashboard/lotes/[id]` | Lot card navigates to detail | ☐ |
+| O6 | Click tarjeta de lote → detalle `/dashboard/winemaker/lotes/[id]` | Lot card navigates to detail | ☐ |
 | O7 | Header: pill salud + pill agente (conectado) o CTA conectar (desconectado) | Health + agent pills / connect CTA | ☐ |
 | O8 | Fila inferior: tareas pendientes, calendario hoy, tarjeta agente (token + última tool si hay audit) | Bottom row tasks, calendar, MCP status card | ☐ |
 | O9 | Contenedor desktop max **1280px** centrado; sin scroll horizontal a 1280×800 | Centered 1280px, no horizontal overflow | ☐ |

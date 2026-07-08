@@ -1,4 +1,5 @@
 import { LOT_ETAPA_VALUES, type LotEtapa } from '@/lib/proof/lot-etapa'
+import { relativeDayTiming, type RelativeDayTiming } from '@/lib/proof/format'
 import { lotEligibleForBottling } from '@/lib/proof/record-lot-bottling'
 import type { OwnerLotEventRow } from '@/lib/proof/winemaker-owner-alerts'
 import type { OwnerLotRow } from '@/lib/supabase/winemaker-owner-home'
@@ -25,7 +26,9 @@ export type PipelineLot = {
   varietal: string | null
   container: string | null
   lastMeasurement: string | null
+  /** Days since last record (past only); 0 for today or future. */
   daysSinceLastRecord: number
+  recordTiming: RelativeDayTiming
   needsAttention: boolean
   attentionReasons: PipelineAttentionReason[]
   bottlingPending: boolean
@@ -103,7 +106,8 @@ export function buildPipelineLots(
     const referenceMs = lastEvent
       ? new Date(lastEvent.occurred_at).getTime()
       : new Date(lot.created_at).getTime()
-    const daysSinceLastRecord = Math.floor((now - referenceMs) / (24 * 60 * 60 * 1000))
+    const recordTiming = relativeDayTiming(referenceMs, now)
+    const daysSinceLastRecord = recordTiming.kind === 'past' ? recordTiming.days : 0
 
     let container: string | null = null
     let lastMeasurement: string | null = null
@@ -119,7 +123,7 @@ export function buildPipelineLots(
 
     const attentionReasons: PipelineAttentionReason[] = []
 
-    if (daysSinceLastRecord > PIPELINE_STALE_DAYS) {
+    if (recordTiming.kind === 'past' && daysSinceLastRecord > PIPELINE_STALE_DAYS) {
       attentionReasons.push('stale')
     }
 
@@ -148,6 +152,7 @@ export function buildPipelineLots(
       container,
       lastMeasurement,
       daysSinceLastRecord,
+      recordTiming,
       needsAttention: attentionReasons.length > 0,
       attentionReasons,
       bottlingPending,

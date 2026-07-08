@@ -78,6 +78,26 @@ describe('buildPipelineLots', () => {
     const [pipelineLot] = buildPipelineLots(lots, [], Date.now(), new Set(['lot-1']))
     expect(pipelineLot.bottlingPending).toBe(false)
   })
+
+  it('treats future last event as scheduled, not negative days', () => {
+    const now = new Date('2026-02-10T15:00:00').getTime()
+    const lots = [baseLot()]
+    const events: OwnerLotEventRow[] = [
+      {
+        id: 'ev-future',
+        lot_id: 'lot-1',
+        event_type: 'FERMENTATION_MONITORING',
+        payload: { temp_c: 16 },
+        occurred_at: '2026-04-01T00:00:00',
+      },
+    ]
+
+    const [pipelineLot] = buildPipelineLots(lots, events, now)
+    expect(pipelineLot.recordTiming.kind).toBe('future')
+    expect(pipelineLot.recordTiming.days).toBeGreaterThan(0)
+    expect(pipelineLot.daysSinceLastRecord).toBe(0)
+    expect(pipelineLot.attentionReasons).not.toContain('stale')
+  })
 })
 
 describe('groupPipelineByEtapa', () => {
@@ -91,6 +111,7 @@ describe('groupPipelineByEtapa', () => {
         container: null,
         lastMeasurement: null,
         daysSinceLastRecord: 0,
+        recordTiming: { kind: 'today', days: 0 },
         needsAttention: false,
         attentionReasons: [],
         bottlingPending: false,
@@ -103,6 +124,7 @@ describe('groupPipelineByEtapa', () => {
         container: null,
         lastMeasurement: null,
         daysSinceLastRecord: 0,
+        recordTiming: { kind: 'today', days: 0 },
         needsAttention: false,
         attentionReasons: [],
         bottlingPending: false,

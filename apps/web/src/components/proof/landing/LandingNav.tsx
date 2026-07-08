@@ -41,6 +41,7 @@ export function LandingNav() {
 
   return (
     <header
+      className="proof-landing-nav"
       style={{
         position: 'sticky',
         top: 0,
@@ -51,6 +52,7 @@ export function LandingNav() {
       }}
     >
       <nav
+        className="proof-landing-nav__inner"
         style={{
           maxWidth: 1120,
           margin: '0 auto',
@@ -63,19 +65,19 @@ export function LandingNav() {
       >
         <ProofLogo />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1 }}>
+        <div className="proof-landing-nav__links" style={{ display: 'flex', alignItems: 'center', gap: 20, flex: 1 }}>
           <a href="/#productores" style={navLinkStyle}>
             {t('productores')}
           </a>
-          <a href="/#distribuidores" style={navLinkStyle}>
-            {t('distribuidores')}
+          <a href="/#bodega" style={navLinkStyle}>
+            {t('bodega')}
           </a>
           <a href="/#precios" style={navLinkStyle}>
             {t('precios')}
           </a>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="proof-landing-nav__actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <LandingLocaleToggle />
 
           {sessionChecked && (

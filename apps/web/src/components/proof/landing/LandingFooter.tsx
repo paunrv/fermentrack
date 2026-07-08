@@ -52,8 +52,8 @@ export function LandingFooter() {
                 <a href="/#productores" style={footerLinkStyle}>
                   {tNav('productores')}
                 </a>
-                <a href="/#distribuidores" style={footerLinkStyle}>
-                  {tNav('distribuidores')}
+                <a href="/#bodega" style={footerLinkStyle}>
+                  {tNav('bodega')}
                 </a>
                 <a href="/#precios" style={footerLinkStyle}>
                   {tNav('precios')}

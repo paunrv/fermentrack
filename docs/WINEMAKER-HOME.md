@@ -38,7 +38,7 @@ Cada lote (`PipelineLot`) muestra en tarjeta:
 
 - Código, varietal, contenedor (`vessel_note` del último evento), última medición (temp/brix), días desde último registro
 - Alertas **en la tarjeta** (temp fuera de rango, >5 días sin registro) — no hay sección «Atención ahora» aparte
-- Click → `/dashboard/lotes/[id]`
+- Click → `/dashboard/winemaker/lotes/[id]`
 
 Columnas:
 

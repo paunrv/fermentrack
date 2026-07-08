@@ -9,6 +9,7 @@ export async function generateMetadata(): Promise<Metadata> {
     pathname: '/',
     title: t('title'),
     description: t('description'),
+    absoluteTitle: true,
   })
 }
 

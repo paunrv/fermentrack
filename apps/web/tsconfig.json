@@ -4,6 +4,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@proof/types": [
+        "../../types/proof.ts"
       ]
     },
     "rootDir": ".",

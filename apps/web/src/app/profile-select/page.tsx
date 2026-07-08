@@ -66,8 +66,6 @@ export default function ProfileSelectPage() {
     router.push('/dashboard')
   }
 
-  const canAddMore = allProfiles.length < 5
-
   const loadingScreen = (
     <div
       style={{
@@ -236,34 +234,6 @@ export default function ProfileSelectPage() {
             )
           })}
 
-          {canAddMore && (
-            <button
-              type="button"
-              onClick={() => router.push('/onboarding?mode=add')}
-              onMouseEnter={() => setHoveredKey('__add__')}
-              onMouseLeave={() => setHoveredKey(null)}
-              style={{
-                width: 148,
-                minHeight: 140,
-                background: hoveredKey === '__add__' ? 'var(--panel-2)' : 'var(--ink)',
-                border: `1px dashed ${hoveredKey === '__add__' ? 'var(--line)' : 'var(--hairline)'}`,
-                borderRadius: 'var(--radius-md)',
-                color: 'var(--fg-2)',
-                fontFamily: 'inherit',
-                cursor: 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: 16,
-                transition: 'background 150ms ease, border-color 150ms ease',
-              }}
-            >
-              <div style={{ fontSize: 28, fontWeight: 300, lineHeight: 1 }}>+</div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{t('addProfile')}</div>
-            </button>
-          )}
         </div>
       </div>
     </AuthLocaleBar>

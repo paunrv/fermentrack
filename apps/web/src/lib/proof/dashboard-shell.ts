@@ -109,10 +109,13 @@ export function shouldShowDashboardInnerHeader(options: {
   isOnAssistant: boolean
   profileType: ExtraProfile | null | undefined
   isWinemaker: boolean
+  /** Winemaker mobile uses bottom nav + page-local chrome — no duplicate inner header. */
+  showWinemakerMobileNav?: boolean
 }): boolean {
   const { pathname, isCanvas, isCanvasStyle, isOnAssistant, profileType, isWinemaker } =
     options
 
+  if (options.showWinemakerMobileNav) return false
   if (isCanvas || isCanvasStyle || isOnAssistant) return false
 
   const isDistributor = profileType === 'distributor'

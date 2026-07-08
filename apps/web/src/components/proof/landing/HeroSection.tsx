@@ -26,8 +26,12 @@ export function HeroSection() {
   }[]
 
   return (
-    <section style={{ padding: '80px 24px 96px', maxWidth: 1120, margin: '0 auto' }}>
+    <section
+      className="proof-landing-hero-section"
+      style={{ padding: '80px 24px 96px', maxWidth: 1120, margin: '0 auto' }}
+    >
       <div
+        className="proof-landing-hero-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: '1fr 1fr',
@@ -104,7 +108,7 @@ export function HeroSection() {
           </p>
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href="#demo" style={landingBtnSecondary}>
+            <a href="#productores" style={landingBtnSecondary}>
               {t('ctaDemo')}
             </a>
             <Link href="/sign-in?mode=signup" style={landingBtnPrimary}>
@@ -114,11 +118,13 @@ export function HeroSection() {
           </div>
         </div>
 
-        <HeroMockup
-          userLabel={t('mockup.userLabel')}
-          liveLabel={t('mockup.liveLabel')}
-          alerts={alerts}
-        />
+        <div className="proof-landing-hero-mockup">
+          <HeroMockup
+            userLabel={t('mockup.userLabel')}
+            liveLabel={t('mockup.liveLabel')}
+            alerts={alerts}
+          />
+        </div>
       </div>
     </section>
   )

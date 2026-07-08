@@ -6,8 +6,10 @@ import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { formatNumber } from '@/lib/i18n/format'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
+import { dashboardPageShell } from '@/lib/ui/page-shell'
 import type { WmWineLotRow, WmWineLotStatus } from '@/lib/proof/winemaker-types'
 import { countWineLotsByStatus, fetchWineLots } from '@/lib/supabase/winemaker'
 
@@ -17,6 +19,7 @@ export default function WinemakerLotesPage() {
   const tCommon = useTranslations('winemaker.common')
   const tStatus = useTranslations('winemaker.lotStatus')
   const supabase = useSupabase()
+  const breakpoint = useBreakpoint()
   const { loading: scopeLoading, ok, organizationId } = useWinemakerRouteGuard()
   const [lotes, setLotes] = useState<WmWineLotRow[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
@@ -50,7 +53,7 @@ export default function WinemakerLotesPage() {
   }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 960 }}>
+    <div style={dashboardPageShell(breakpoint, { withBottomNav: true })}>
       <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
       <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14 }}>{t('subtitle')}</p>
 
@@ -103,14 +106,14 @@ export default function WinemakerLotesPage() {
                 border: '0.5px solid var(--border)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <div className="proof-lot-row" style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                 <div>
                   <strong>{l.name || l.lot_code}</strong>
                   <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
                     {l.varietal || t('noVarietal')} · {l.lot_code}
                   </div>
                 </div>
-                <div style={{ textAlign: 'right', fontSize: 13 }}>
+                <div className="proof-lot-row__meta" style={{ textAlign: 'right', fontSize: 13 }}>
                   <div>{tStatus(l.status)}</div>
                   {l.liters_initial != null ? (
                     <div style={{ color: 'var(--fg-2)' }}>

@@ -71,6 +71,20 @@ describe('dashboard-shell', () => {
     ).toBe('winemaker')
   })
 
+  it('hides inner header on winemaker mobile shell (bottom nav)', () => {
+    expect(
+      shouldShowDashboardInnerHeader({
+        pathname: '/dashboard/equipo',
+        isCanvas: false,
+        isCanvasStyle: false,
+        isOnAssistant: false,
+        profileType: 'winemaker',
+        isWinemaker: true,
+        showWinemakerMobileNav: true,
+      })
+    ).toBe(false)
+  })
+
   it('hides inner header on canvas, canvas-style, and assistant routes', () => {
     const base = {
       pathname: '/dashboard/inventario',

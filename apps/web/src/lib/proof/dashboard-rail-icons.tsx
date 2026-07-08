@@ -13,6 +13,7 @@ export type RailIconName =
   | 'producers'
   | 'purchases'
   | 'lots'
+  | 'lab'
   | 'production'
   | 'cellar'
   | 'sales'
@@ -127,6 +128,13 @@ export const RAIL_ICONS: Record<RailIconName, ReactNode> = {
       <path d="M8 22h8" />
       <path d="M12 15v7" />
       <path d="M7 10a5 5 0 0 1 10 0c0 2.5-2 4-2 4H9s-2-1.5-2-4z" />
+    </>
+  ),
+  lab: ic(
+    <>
+      <path d="M9 3h6" />
+      <path d="M10 3v4.5L6 18a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-4-10.5V3" />
+      <path d="M8.5 14h7" />
     </>
   ),
   production: ic(

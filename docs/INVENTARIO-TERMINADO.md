@@ -47,7 +47,7 @@ Helpers TypeScript: `apps/web/src/lib/proof/finished-goods-types.ts` → `comput
 
 ## Embotellado → existencia (D2 — #54)
 
-Al confirmar embotellado en `/dashboard/lotes/[id]`:
+Al confirmar embotellado en `/dashboard/winemaker/lotes/[id]`:
 
 1. Crea o reutiliza `wm_etiquetas`
 2. Inserta `wm_existencias` con `botellas_producidas` fijo

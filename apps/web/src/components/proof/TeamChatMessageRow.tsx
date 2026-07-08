@@ -44,7 +44,7 @@ function MessageBody({
         return (
           <Link
             key={`m-${index}`}
-            href={`/dashboard/lotes/${lotId}`}
+            href={`/dashboard/winemaker/lotes/${lotId}`}
             style={{
               fontWeight: 600,
               color: 'var(--proof-accent)',
@@ -117,7 +117,7 @@ export function TeamChatMessageRow({
         </div>
         {message.lote_code ? (
           <Link
-            href={`/dashboard/lotes/${message.lote_id}`}
+            href={`/dashboard/winemaker/lotes/${message.lote_id}`}
             style={{
               fontSize: 10,
               fontWeight: 600,

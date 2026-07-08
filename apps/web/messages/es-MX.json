@@ -13,20 +13,20 @@
       "backHome": "Volver al inicio"
     },
     "site": {
-      "title": "PROOF · Inteligencia operacional para bebidas",
-      "description": "El sistema operativo para bodegas, cervecerías, destilerías y distribuidores. Cada botella cuenta una historia; nosotros guardamos la evidencia."
+      "title": "Software para bodegas — gestión de lotes e inventario",
+      "description": "PROOF centraliza lotes, inventario terminado y equipo para bodegas independientes. Tecnología accesible para el día a día del enólogo."
     }
   },
   "landing": {
     "meta": {
-      "title": "PROOF · Inteligencia operacional para bebidas",
-      "description": "Memoria operativa para bodegas, cervecerías, destilerías y distribuidores. Menos captura, más evidencia."
+      "title": "PROOF — Software para bodegas | Gestión de lotes e inventario",
+      "description": "Control de lotes, bodega, inventario terminado y equipo en un solo lugar. Tecnología accesible para bodegas independientes. Prueba gratis 90 días."
     },
     "nav": {
-      "productores": "Productores",
-      "distribuidores": "Distribuidores",
+      "productores": "Tu proceso",
+      "bodega": "Tu inventario",
       "precios": "Precios",
-      "logIn": "Log in",
+      "logIn": "Iniciar sesión",
       "startFree": "Empieza gratis",
       "goDashboard": "Ir a mi dashboard"
     },
@@ -52,7 +52,7 @@
           {
             "tone": "info",
             "title": "3 lotes listos para embotellar",
-            "meta": "Viñas del Tigre · esta semana"
+            "meta": "Embotellado · esta semana"
           },
           {
             "tone": "ok",
@@ -81,9 +81,10 @@
       ]
     },
     "productores": {
-      "eyebrow": "Para productores",
+      "eyebrow": "Tu proceso",
       "title": "Un timeline vivo para cada lote",
-      "subtitle": "Vino, cerveza o destilado — PROOF adapta protocolos, etapas y alertas a tu categoría.",
+      "subtitle": "Cada lote sigue un ciclo claro — mueve una etapa con un toque, sin hojas de cálculo.",
+      "cycleAriaLabel": "Etapas del ciclo del lote",
       "tabs": {
         "winemaker": {
           "label": "Winemaker",
@@ -93,33 +94,27 @@
             "🔗 Conecta tu agente MCP — opera PROOF desde Claude Desktop o Cursor",
             "💡 \"¿qué lotes están listos para embotellar?\""
           ],
-          "timelineTitle": "LOT-2026-001 · Chardonnay · Viñas del Tigre",
-          "stages": [
-            {
-              "label": "Cosecha",
-              "status": "done"
-            },
-            {
-              "label": "Análisis",
-              "status": "done"
-            },
-            {
-              "label": "Fermentación",
-              "status": "active"
-            },
-            {
-              "label": "Maloláctica",
-              "status": "pending"
-            },
-            {
-              "label": "Crianza",
-              "status": "pending"
-            },
-            {
-              "label": "Embotellado",
-              "status": "pending"
-            }
-          ]
+          "demo": {
+            "lotCode": "LOT-2026-014",
+            "varietal": "Chardonnay",
+            "defaultActiveIndex": 2,
+            "stages": [
+              "Cosecha",
+              "Análisis",
+              "Fermentación",
+              "Maloláctica",
+              "Crianza",
+              "Embotellado"
+            ],
+            "stageHints": [
+              "Registra todo y avisa a tu equipo en un solo lugar.",
+              "Previene o anticipa — antes de que el problema escale.",
+              "Lleva el control de temperatura, densidad y lecturas durante todo el ciclo.",
+              "Sigue la maloláctica con registro claro de cada decisión.",
+              "Monitorea tiempo en barrica, recipiente y maduración sin hojas de cálculo.",
+              "Pasa a inventario terminado — etiquetas, cajas y botellas listas para salir."
+            ]
+          }
         },
         "brewer": {
           "label": "Brewer",
@@ -129,33 +124,27 @@
             "🌡️ Monitoreo de fermentación y densidad (OG/FG) con alertas",
             "💡 \"¿cuántos litros de IPA tengo disponibles?\""
           ],
-          "timelineTitle": "BATCH-2026-008 · West Coast IPA · Cervecería Norte",
-          "stages": [
-            {
-              "label": "Maceración",
-              "status": "done"
-            },
-            {
-              "label": "Cocción",
-              "status": "done"
-            },
-            {
-              "label": "Fermentación",
-              "status": "active"
-            },
-            {
-              "label": "Dry hopping",
-              "status": "pending"
-            },
-            {
-              "label": "Maduración",
-              "status": "pending"
-            },
-            {
-              "label": "Envasado",
-              "status": "pending"
-            }
-          ]
+          "demo": {
+            "lotCode": "BATCH-2026-008",
+            "varietal": "West Coast IPA",
+            "defaultActiveIndex": 2,
+            "stages": [
+              "Maceración",
+              "Cocción",
+              "Fermentación",
+              "Dry hopping",
+              "Maduración",
+              "Envasado"
+            ],
+            "stageHints": [
+              "Registra grain bill, temperatura de macerado y notas del batch.",
+              "Anota tiempo de hervor, lúpulos y OG en un solo timeline.",
+              "Sigue curvas de fermentación y FG con alertas automáticas.",
+              "Programa días de dry hop y documenta revisiones de aroma.",
+              "Monitorea maduración y objetivos de carbonatación.",
+              "Envasa con códigos de batch ligados a cada barril y lata."
+            ]
+          }
         },
         "distiller": {
           "label": "Destilador",
@@ -165,49 +154,43 @@
             "✂️ Registro de cortes (cabezas, corazón, colas) con decisiones del maestro",
             "💡 \"¿cuánto reposado tengo listo para embotellar?\""
           ],
-          "timelineTitle": "LOTE-2026-003 · Reposado · Destilería Aculla",
-          "stages": [
-            {
-              "label": "Jima",
-              "status": "done"
-            },
-            {
-              "label": "Cocción",
-              "status": "done"
-            },
-            {
-              "label": "Fermentación",
-              "status": "done"
-            },
-            {
-              "label": "Destilación",
-              "status": "active"
-            },
-            {
-              "label": "Reposo",
-              "status": "pending"
-            },
-            {
-              "label": "Envasado",
-              "status": "pending"
-            }
-          ]
+          "demo": {
+            "lotCode": "LOT-2026-003",
+            "varietal": "Reposado",
+            "defaultActiveIndex": 3,
+            "stages": [
+              "Jima",
+              "Cocción",
+              "Fermentación",
+              "Destilación",
+              "Reposo",
+              "Envasado"
+            ],
+            "stageHints": [
+              "Traza origen del agave, fecha de jima y notas de campo desde el día uno.",
+              "Registra ciclos de cocción y brix antes de fermentar.",
+              "Monitorea la fermentación con un registro compartido del equipo.",
+              "Documenta cortes — cabezas, corazón, colas — con decisiones del maestro.",
+              "Sigue tiempo de reposo, barrica y cumplimiento de categoría.",
+              "Envasa con trazabilidad completa del campo a la botella."
+            ]
+          }
         }
       }
     },
-    "distribuidores": {
-      "eyebrow": "Para distribuidores",
-      "title": "Inventario, pedidos y crédito en un solo lugar",
-      "subtitle": "Desde la recepción de mercancía hasta el cobro al cliente.",
+    "bodega": {
+      "eyebrow": "Para tu bodega",
+      "title": "Control absoluto de inventario terminado y salida de pedidos",
+      "subtitle": "Del embotellado a la entrega — existencias, portafolio y saldos en una sola vista operativa.",
       "bullets": [
-        "📦 Recepción inteligente — fotografía el pallet y PROOF cruza contra tu OC",
-        "🛒 Toma de pedidos con stock en tiempo real y reglas de crédito",
-        "💳 Cartera y cobranza — saldo por cliente, límites y alertas de vencimiento",
-        "📊 KPIs operativos — rotación, márgenes y SKUs críticos sin exportar a Excel"
+        "📦 Inventario terminado — etiquetas, cajas y botellas con disponibilidad en vivo",
+        "🚚 Salida de pedidos — envíos con validación de stock y trazabilidad por lote",
+        "💳 Portafolio de clientes — saldos, límites de crédito y alertas de cobranza",
+        "📊 Balance operativo — rotación, márgenes y SKUs críticos sin exportar a Excel"
       ]
     },
     "upload": {
-      "eyebrow": "Upload anything",
+      "eyebrow": "Sube cualquier cosa",
       "title": "Sube lo que tengas. PROOF lo entiende.",
       "subtitle": "Tickets, facturas, notas de remisión, fotos de etiquetas — cualquier formato.",
       "items": [
@@ -296,44 +279,36 @@
   },
   "about": {
     "meta": {
-      "title": "Nosotros · PROOF",
-      "description": "PROOF nació de escuchar a productores de vino, cerveza y destilados. Conoce por qué existimos."
+      "title": "Nosotros",
+      "description": "PROOF lleva tecnología accesible al día a día de la bodega: control de lotes, inventario y equipo sin precios de enterprise."
     },
     "hero": {
-      "eyebrow": "// por qué existimos",
-      "titleLine1": "No nació de una idea de startup.",
-      "titleLine2": "Nació de escuchar.",
-      "p1": "PROOF no salió de un estudio de mercado ni de una junta de inversionistas. Salió de años de conversaciones con personas que dedican su vida a producir vino, cerveza, destilados y otros productos hechos a mano.",
-      "p2": "Una y otra vez aparecían los mismos problemas: inventario repartido en hojas de Excel, producción anotada en papel, compras gestionadas de memoria, y software carísimo diseñado para empresas que no se parecen en nada a un productor independiente."
+      "eyebrow": "// nosotros",
+      "titleLine1": "Tecnología en el día a día",
+      "titleLine2": "de tu bodega.",
+      "p1": "PROOF nació escuchando a enólogos y dueños de bodega que operan con Excel, papel y memoria — y que no pueden pagar software pensado para corporativos.",
+      "p2": "Queremos que lotes, bodega y equipo vivan en un solo lugar: fácil de usar cada mañana, sin curva de aprendizaje absurda ni precios de enterprise."
     },
     "insight": {
-      "eyebrow": "// el insight",
+      "eyebrow": "// por qué",
       "title": "\"¿Por qué este vino terminó siendo así?\"",
-      "p1": "Esa fue la pregunta que escuchamos una y otra vez. No \"cuántos litros produjimos\" — eso ya lo sabían. La pregunta real, la que de verdad les importaba, era por qué un vino de hace diez o quince años terminó siendo exactamente como es.",
-      "p2": "Para responderla hacía falta algo que ningún sistema de inventario guarda: el clima de ese año, el estado de la uva, las decisiones tomadas en el momento, los resultados de laboratorio, las notas que solo quedaron en la memoria de quien las vivió.",
-      "p3": "Ahí entendimos que PROOF no podía ser un sistema de inventario. Tenía que ser la memoria operativa de la producción.",
-      "quote": "\"¿Qué información agradeceré haber guardado dentro de 20 años para entender por qué este producto terminó siendo así?\""
+      "body": "No es cuántos litros produjiste — eso ya lo sabes. Es el clima de ese año, las decisiones en el momento, el laboratorio y las notas que solo quedaron en la cabeza de alguien. PROOF guarda esa memoria operativa para que tu bodega no dependa del recuerdo.",
+      "quote": "\"¿Qué información agradeceré haber guardado dentro de 20 años para entender este vino?\""
     },
     "beliefs": {
-      "eyebrow": "// nuestras creencias",
-      "title": "El oficio merece mejores herramientas.",
-      "body": "La tecnología debería ser invisible. Los datos deberían dar confianza, no complejidad. Los negocios pequeños merecen software de calidad enterprise. El software debería sentirse como una conversación. Nadie debería necesitar un curso para entender su propio negocio."
-    },
-    "audience": {
-      "eyebrow": "// quién lo usa",
-      "title": "Para quien transforma materia prima en algo de lo que está orgulloso.",
-      "p1": "Hoy trabajamos con bodegas, cervecerías y destilerías. Mañana puede ser una quesería artesanal, una tostadora de café, una chocolatería o un productor de aceite de oliva.",
-      "p2": "PROOF no nació limitado por una industria. Nació definido por un tipo de creador: alguien que convierte algo crudo en algo terminado, y que merece entender cada paso de ese proceso."
+      "eyebrow": "// lo que creemos",
+      "title": "Herramientas modernas, precio accesible.",
+      "body": "Una bodega independiente merece control real de su producción — sin pagar como una multinacional. La tecnología debe entrar al turno de mañana, no quedarse en un manual que nadie abre."
     },
     "cta": {
-      "title": "Empieza a construir la memoria de tu producción.",
+      "title": "Lleva PROOF a tu bodega.",
       "button": "Empieza gratis"
     }
   },
   "contact": {
     "meta": {
-      "title": "Contacto · PROOF",
-      "description": "¿Tienes una pregunta? Escríbenos. Te responde alguien que conoce el producto."
+      "title": "Contacto",
+      "description": "Escríbenos sobre PROOF — software para bodegas, gestión de lotes e inventario terminado. Respuesta directa del equipo."
     },
     "eyebrow": "// hablemos",
     "title": "¿Tienes una pregunta? Escríbenos.",
@@ -366,8 +341,8 @@
     "lastUpdatedLabel": "Última actualización:",
     "privacy": {
       "meta": {
-        "title": "Política de privacidad · PROOF",
-        "description": "Cómo PROOF recopila, usa y protege tu información."
+        "title": "Política de privacidad",
+        "description": "Cómo PROOF recopila, usa y protege la información de tu bodega y tu equipo."
       },
       "title": "Política de privacidad",
       "lastUpdated": "30 de junio de 2026",
@@ -435,8 +410,8 @@
     },
     "terms": {
       "meta": {
-        "title": "Términos de servicio · PROOF",
-        "description": "Términos y condiciones de uso de la plataforma PROOF."
+        "title": "Términos de servicio",
+        "description": "Términos y condiciones de uso de PROOF, software de gestión para bodegas."
       },
       "title": "Términos de servicio",
       "lastUpdated": "30 de junio de 2026",
@@ -519,6 +494,10 @@
   },
   "auth": {
     "signIn": {
+      "meta": {
+        "title": "Iniciar sesión",
+        "description": "Accede a tu bodega en PROOF."
+      },
       "eyebrow": "Operational intelligence",
       "subtitle": "Inicia sesión en tu bodega",
       "google": "Continuar con Google",
@@ -533,6 +512,10 @@
       "loading": "Cargando…"
     },
     "signUp": {
+      "meta": {
+        "title": "Crear cuenta",
+        "description": "Regístrate en PROOF — software para bodegas."
+      },
       "placeholder": "Registro próximamente.",
       "backToSignIn": "Volver a iniciar sesión"
     },
@@ -563,6 +546,8 @@
   "onboarding": {
     "step1": {
       "title": "Soy…",
+      "titleTeam": "Tu rol en la bodega",
+      "subtitleTeam": "Elige cómo trabajarás en PROOF",
       "titleAdd": "Nuevo perfil",
       "subtitle": "Elige tu tipo de perfil",
       "subtitleAdd": "Elige el tipo de perfil que quieres agregar",
@@ -575,12 +560,19 @@
       "title": "Tu perfil",
       "orgNameWinemaker": "Nombre de tu bodega",
       "orgNameDefault": "Username",
-      "orgPlaceholderWinemaker": "Ej: Viñas del Tigre",
+      "orgPlaceholderWinemaker": "Inserta el nombre de tu vinícola",
+      "userName": "Tu nombre",
+      "userNamePlaceholder": "Ej. María García",
+      "password": "Contraseña",
+      "passwordPlaceholder": "Crea una contraseña",
+      "accessCode": "Código de acceso",
+      "accessCodePlaceholder": "Código de 4 dígitos del owner",
+      "teamInviteHint": "Usa el nombre de la vinícola y el código que te compartió el owner",
       "productNameBrewer": "Nombre de tu cerveza",
       "productNameWinemaker": "Nombre de tu vino",
       "productNameDistiller": "Nombre de tu destilado",
       "productPlaceholderBrewer": "Ej: Mantis",
-      "productPlaceholderWinemaker": "Ej: El Burro Coyero",
+      "productPlaceholderWinemaker": "Inserta el nombre de alguno de tus vinos",
       "productPlaceholderDistiller": "Ej: London Dry",
       "style": "Estilo",
       "businessName": "Nombre de tu negocio",
@@ -592,7 +584,8 @@
         "destilados": "Destilados"
       },
       "back": "← Atrás",
-      "continue": "Continuar →"
+      "continue": "Continuar →",
+      "joiningOrg": "Te unes a {org}"
     },
     "step3": {
       "title": "Activa tu cámara",
@@ -618,6 +611,10 @@
         "label": "Winemaker",
         "sub": "Vino artesanal"
       },
+      "bodega": {
+        "label": "Equipo de bodega",
+        "sub": "Inventario y etiquetas"
+      },
       "distiller": {
         "label": "Distiller",
         "sub": "Destilados"
@@ -630,11 +627,16 @@
     "roles": {
       "brewer": "Brewer",
       "winemaker": "Winemaker",
+      "bodega": "Equipo de bodega",
       "distiller": "Distiller",
       "distributor": "Distribuidor"
     },
     "errors": {
       "saveFailed": "No se pudo guardar el perfil",
+      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+      "accessCodeInvalid": "Código de acceso inválido. Revisa los 4 dígitos que te dio el owner.",
+      "wineryNameMismatch": "El nombre de la vinícola no coincide con la invitación.",
+      "noPendingInvite": "No hay invitación pendiente. Pide al owner que te invite de nuevo.",
       "networkSuffix": " — revisa tu conexión e intenta de nuevo"
     }
   },
@@ -656,6 +658,7 @@
       "distillerCellar": "Bodega",
       "distillerSales": "Ventas",
       "winemakerLots": "Lotes",
+      "winemakerLab": "Laboratorio",
       "winemakerCellar": "Etiquetas en bodega",
       "winemakerSuppliers": "Proveedores",
       "winemakerDocuments": "Documentos",
@@ -698,7 +701,9 @@
       "distillerCellar": "Bodega",
       "distillerSales": "Ventas",
       "distillerLotDetail": "Detalle lote",
+      "winemakerLotDetail": "Detalle lote",
       "winemakerLots": "Lotes",
+      "winemakerLab": "Laboratorio",
       "winemakerCellar": "Etiquetas en bodega",
       "winemakerSuppliers": "Proveedores",
       "winemakerDocuments": "Documentos",
@@ -899,7 +904,7 @@
     },
     "equipo": {
       "title": "👥 Mi equipo",
-      "description": "Miembros de {org}. Owner y admin pueden invitar con rol admin, member o viewer.",
+      "description": "Miembros de {org}. El owner invita Winemaker o equipo de Bodega con un código de 4 dígitos.",
       "invite": "+ Invitar persona",
       "readOnlyHint": "Solo owner o admin pueden invitar miembros. Tu rol es de lectura o miembro estándar.",
       "loading": "Cargando…",
@@ -909,7 +914,15 @@
       "inviteError": "No se pudo enviar la invitación",
       "email": "Email",
       "name": "Nombre",
-      "role": "Rol en la bodega",
+      "role": "Rol en la plataforma",
+      "platformRoles": {
+        "winemaker": "Winemaker — lotes, lab, producción",
+        "bodega": "Equipo de bodega — inventario y etiquetas"
+      },
+      "inviteSuccessTitle": "Invitación enviada",
+      "inviteSuccessBody": "Comparte con {name}: vinícola «{winery}» y código de acceso",
+      "accessCodeLabel": "Código de acceso",
+      "inviteSuccessHint": "Lo necesitará al crear su cuenta.",
       "emailPlaceholder": "persona@bodega.com",
       "namePlaceholder": "Nombre completo",
       "roles": {
@@ -1838,6 +1851,7 @@
         "noContainer": "—",
         "noMeasurement": "—",
         "daysSinceRecord": "{days, plural, =0 {Registro hoy} one {Último registro hace # día} other {Último registro hace # días}}",
+        "scheduledInDays": "{days, plural, one {Programado en # día} other {Programado en # días}}",
         "alertTemp": "Temp",
         "alertStale": "Sin registro",
         "alertBottling": "Embotellar"

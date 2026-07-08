@@ -74,13 +74,13 @@ function FinalCtaForm() {
 
 export function ProofLanding() {
   const tContrast = useTranslations('landing.contrast')
-  const tDist = useTranslations('landing.distribuidores')
+  const tBodega = useTranslations('landing.bodega')
   const tUpload = useTranslations('landing.upload')
   const tPricing = useTranslations('landing.pricing')
   const tFinal = useTranslations('landing.finalCta')
 
   const contrastCards = tContrast.raw('cards') as { title: string; body: string }[]
-  const distBullets = tDist.raw('bullets') as string[]
+  const bodegaBullets = tBodega.raw('bullets') as string[]
   const uploadItems = tUpload.raw('items') as string[]
   const plans = tPricing.raw('plans') as {
     name: string
@@ -153,7 +153,7 @@ export function ProofLanding() {
         <ProducerTabsSection />
       </div>
 
-      <section id="distribuidores" style={{ background: LANDING.bgDark, color: LANDING.textOnDark, padding: '80px 24px' }}>
+      <section id="bodega" style={{ background: LANDING.bgDark, color: LANDING.textOnDark, padding: '80px 24px' }}>
         <div style={{ maxWidth: 1120, margin: '0 auto' }}>
           <div
             style={{
@@ -165,7 +165,7 @@ export function ProofLanding() {
               color: LANDING.textOnDarkMuted,
             }}
           >
-            {tDist('eyebrow')}
+            {tBodega('eyebrow')}
           </div>
           <h2
             style={{
@@ -176,10 +176,10 @@ export function ProofLanding() {
               maxWidth: 640,
             }}
           >
-            {tDist('title')}
+            {tBodega('title')}
           </h2>
           <p style={{ margin: '0 0 40px', fontSize: 16, color: LANDING.textOnDarkMuted, maxWidth: 560 }}>
-            {tDist('subtitle')}
+            {tBodega('subtitle')}
           </p>
           <ul
             style={{
@@ -191,7 +191,7 @@ export function ProofLanding() {
               gap: 20,
             }}
           >
-            {distBullets.map(bullet => (
+            {bodegaBullets.map(bullet => (
               <li
                 key={bullet}
                 style={{

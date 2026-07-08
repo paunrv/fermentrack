@@ -28,3 +28,31 @@ export function fmtLitros(n: number): string {
   const v = Math.round(n * 10) / 10
   return `${v.toLocaleString('es-MX', { maximumFractionDigits: 1 })} L`
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+function startOfLocalDay(ms: number): number {
+  const d = new Date(ms)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
+/** Bucketed day offset from a reference timestamp (calendar days, local TZ). */
+export type RelativeDayTiming = {
+  kind: 'past' | 'today' | 'future'
+  /** Always non-negative — days ago (past), or days until (future). */
+  days: number
+}
+
+/**
+ * Classify how a record timestamp relates to now:
+ * - past → days since the record
+ * - today → same calendar day
+ * - future → days until the record (never negative)
+ */
+export function relativeDayTiming(referenceMs: number, now = Date.now()): RelativeDayTiming {
+  const dayDiff = Math.round((startOfLocalDay(now) - startOfLocalDay(referenceMs)) / MS_PER_DAY)
+  if (dayDiff > 0) return { kind: 'past', days: dayDiff }
+  if (dayDiff === 0) return { kind: 'today', days: 0 }
+  return { kind: 'future', days: Math.abs(dayDiff) }
+}

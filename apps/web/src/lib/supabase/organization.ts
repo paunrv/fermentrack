@@ -6,6 +6,7 @@ import {
   formatRenewalAnchorDate,
   nextRenewalAnchorDate,
 } from '@/lib/billing/billing-renewal-anchor'
+import type { TeamPlatformProfile } from '@/lib/proof/team-access-code'
 
 export type OrgType = 'winemaker'
 export type OrgPlan = 'regular' | 'pro' | 'enterprise' | 'trial'
@@ -98,6 +99,55 @@ async function fetchActiveMembershipRows(
   return sb.from('organization_members').select(select).eq('user_id', userId).eq('status', 'active')
 }
 
+async function fetchMembershipRows(
+  sb: SupabaseClient,
+  userId: string,
+  select: MembershipSelect,
+  status: OrgMemberStatus
+) {
+  return sb.from('organization_members').select(select).eq('user_id', userId).eq('status', status)
+}
+
+export type PendingWinemakerInvite = {
+  organizationId: string
+  organizationName: string
+  role: OrgMemberRole
+  platformProfile: TeamPlatformProfile | null
+}
+
+/** Pending team invite for onboarding (status = invited). */
+export async function fetchPendingWinemakerInvite(
+  sb: SupabaseClient,
+  userId: string
+): Promise<PendingWinemakerInvite | null> {
+  let legacySchema = false
+  let { data, error } = await fetchMembershipRows(sb, userId, MEMBERSHIP_SELECT_FULL, 'invited')
+
+  if (error && isMissingColumnError(error, 'org_type')) {
+    legacySchema = true
+    ;({ data, error } = await fetchMembershipRows(sb, userId, MEMBERSHIP_SELECT_LEGACY, 'invited'))
+  } else if (error && isMissingColumnError(error, 'features')) {
+    ;({ data, error } = await fetchMembershipRows(sb, userId, MEMBERSHIP_SELECT_NO_FEATURES, 'invited'))
+  }
+
+  if (error) throw error
+  const row = data?.[0]
+  if (!row) return null
+
+  const orgRaw = row.organizations
+  const orgRow = Array.isArray(orgRaw) ? orgRaw[0] : orgRaw
+  if (!orgRow || typeof orgRow !== 'object') return null
+  const org = mapOrganizationRow(orgRow as Record<string, unknown>, { legacySchema })
+  if (!legacySchema && org.org_type !== 'winemaker') return null
+
+  return {
+    organizationId: String(row.organization_id),
+    organizationName: org.name,
+    role: row.role as OrgMemberRole,
+    platformProfile: (row.platform_profile as TeamPlatformProfile | null) ?? null,
+  }
+}
+
 export async function fetchWinemakerOrganizations(
   sb: SupabaseClient,
   userId: string
@@ -173,22 +223,13 @@ export async function createWinemakerOrganization(
   const renewalAnchor = formatRenewalAnchorDate(nextRenewalAnchorDate(now))
 
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { data, error } = await sb
-      .from('organizations')
-      .insert({
-        name: trimmed,
-        slug,
-        org_type: 'winemaker',
-        plan: 'trial',
-        plan_status: 'trialing',
-        trial_ends_at: trialEndsAt.toISOString(),
-        primer_registro_at: now.toISOString(),
-        renewal_anchor: renewalAnchor,
-      })
-      .select(
-        'id, name, slug, org_type, plan, plan_status, trial_ends_at, primer_registro_at, renewal_anchor, created_at'
-      )
-      .single()
+    const { data, error } = await sb.rpc('create_winemaker_organization', {
+      p_name: trimmed,
+      p_slug: slug,
+      p_trial_ends_at: trialEndsAt.toISOString(),
+      p_primer_registro_at: now.toISOString(),
+      p_renewal_anchor: renewalAnchor,
+    })
 
     if (!error && data) {
       return mapOrganizationRow(data as Record<string, unknown>)

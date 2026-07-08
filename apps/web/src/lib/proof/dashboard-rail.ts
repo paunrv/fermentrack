@@ -26,6 +26,7 @@ export type RailBuildContext = {
 const WINEMAKER_OPERACION: RailNavItemDef[] = [
   { href: '/dashboard', labelKey: 'nav.home', icon: 'home' },
   { href: '/dashboard/winemaker/lotes', labelKey: 'nav.winemakerLots', icon: 'lots' },
+  { href: '/dashboard/lab', labelKey: 'nav.winemakerLab', icon: 'lab' },
   { href: '/dashboard/winemaker/bodega', labelKey: 'nav.winemakerCellar', icon: 'cellar' },
   { href: '/dashboard/winemaker/documentos', labelKey: 'nav.winemakerDocuments', icon: 'documents' },
   { href: '/dashboard/winemaker/proveedores', labelKey: 'nav.winemakerSuppliers', icon: 'suppliers' },

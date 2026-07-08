@@ -285,7 +285,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <div
+      className="proof-settings-page"
+      style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}
+    >
       <div
         style={{
           marginBottom: 24,
@@ -298,6 +301,7 @@ export default function SettingsPage() {
       >
         <div>
           <h1
+            className="proof-settings-page__title"
             style={{
               fontSize: 28,
               fontWeight: 800,
@@ -372,7 +376,7 @@ export default function SettingsPage() {
           </div>
 
           <form onSubmit={handleOrgSave} style={{ display: 'grid', gap: 12 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="proof-settings-grid--2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={label}>{t('org.name')}</label>
                 <input
@@ -706,6 +710,7 @@ export default function SettingsPage() {
           </p>
         ) : (
           <div
+            className="proof-settings-profiles-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
@@ -869,6 +874,7 @@ export default function SettingsPage() {
             </div>
 
             <div
+              className="proof-settings-grid--2col"
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
@@ -977,7 +983,7 @@ export default function SettingsPage() {
                   placeholder={t('payment.holderPlaceholder')}
                 />
               </FormField>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="proof-settings-grid--2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <FormField label={t('payment.bank')} htmlFor="banco-deposito">
                   <Input
                     id="banco-deposito"

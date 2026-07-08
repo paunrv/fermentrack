@@ -15,6 +15,11 @@ import {
   INVITE_PRO_REQUIRED_CODE,
   orgCanInviteTeamMembersFromLimits,
 } from '@/lib/proof/plan-team-invites'
+import {
+  generateTeamAccessCode,
+  hashTeamAccessCode,
+  type TeamPlatformProfile,
+} from '@/lib/proof/team-access-code'
 
 export type TeamMemberRow = {
   id: string
@@ -24,6 +29,7 @@ export type TeamMemberRow = {
   orgRole: string
   status: string
   profileType: ExtraProfile | null
+  platformProfile: TeamPlatformProfile | null
   createdAt: string
 }
 
@@ -87,7 +93,7 @@ function inviteRedirectUrl(): string {
   const base =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
-  return `${base}/auth/callback?next=${encodeURIComponent('/onboarding')}`
+  return `${base}/auth/callback?next=${encodeURIComponent('/onboarding?mode=team')}`
 }
 
 async function resolveUserIdByEmail(email: string): Promise<string | null> {
@@ -155,7 +161,7 @@ export async function fetchTeamMembers(organizationId: string): Promise<TeamMemb
 
   const { data: members, error } = await sb
     .from('organization_members')
-    .select('id, user_id, role, status, created_at')
+    .select('id, user_id, role, status, platform_profile, created_at')
     .eq('organization_id', organizationId)
     .order('created_at', { ascending: true })
 
@@ -198,6 +204,7 @@ export async function fetchTeamMembers(organizationId: string): Promise<TeamMemb
     orgRole: member.role,
     status: member.status,
     profileType: proofByUser.get(member.user_id) ?? null,
+    platformProfile: (member.platform_profile as TeamPlatformProfile | null) ?? null,
     createdAt: member.created_at,
   }))
 }
@@ -228,28 +235,42 @@ export async function inviteTeamMember(input: {
   organizationId: string
   email: string
   name: string
-  orgRole: Exclude<OrgMemberRole, 'owner'>
-}): Promise<{ ok: true }> {
+  platformProfile: TeamPlatformProfile
+}): Promise<{ ok: true; accessCode: string; wineryName: string }> {
   const { userId: ownerId, organizationId } = await requireManageContext(input.organizationId)
 
   const email = input.email.trim().toLowerCase()
   const name = input.name.trim()
-  const orgRole = input.orgRole
+  const platformProfile = input.platformProfile
 
   if (!email || !email.includes('@')) throw new Error('Escribe un email válido')
   if (!name) throw new Error('Escribe el nombre de la persona')
+  if (platformProfile !== 'winemaker' && platformProfile !== 'bodega') {
+    throw new Error('Perfil inválido')
+  }
 
   const sb = createServiceSupabase()
+
+  const { data: orgRow, error: orgError } = await sb
+    .from('organizations')
+    .select('name')
+    .eq('id', organizationId)
+    .maybeSingle()
+  if (orgError) throw new Error(orgError.message)
+  if (!orgRow?.name) throw new Error('Organización no encontrada')
 
   const planCtx = await fetchOrgPlanContext(sb, organizationId)
   if (!orgCanInviteTeamMembersFromLimits(planCtx.limits)) {
     throw new Error(INVITE_PRO_REQUIRED_CODE)
   }
 
+  const accessCode = generateTeamAccessCode()
+  const accessCodeHash = hashTeamAccessCode(organizationId, accessCode)
+
   let invitedUserId: string | null = null
 
   const { data: inviteData, error: inviteError } = await sb.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: name },
+    data: { full_name: name, platform_profile: platformProfile },
     redirectTo: inviteRedirectUrl(),
   })
 
@@ -288,17 +309,21 @@ export async function inviteTeamMember(input: {
     }
   }
 
+  const memberPayload = {
+    status: 'invited' as const,
+    invited_by: ownerId,
+    role: 'member' as const,
+    platform_profile: platformProfile,
+    access_code_hash: accessCodeHash,
+  }
+
   if (existingMember) {
     if (existingMember.role === 'owner') {
       throw new Error('Este usuario ya es owner de la organización')
     }
     const { error: updateError } = await sb
       .from('organization_members')
-      .update({
-        status: 'invited',
-        invited_by: ownerId,
-        role: orgRole,
-      })
+      .update(memberPayload)
       .eq('id', existingMember.id)
 
     if (updateError) throw new Error(updateError.message)
@@ -306,13 +331,11 @@ export async function inviteTeamMember(input: {
     const { error: insertError } = await sb.from('organization_members').insert({
       organization_id: organizationId,
       user_id: invitedUserId,
-      role: orgRole,
-      status: 'invited',
-      invited_by: ownerId,
+      ...memberPayload,
     })
 
     if (insertError) throw new Error(insertError.message)
   }
 
-  return { ok: true }
+  return { ok: true, accessCode, wineryName: orgRow.name }
 }

@@ -2,36 +2,40 @@
 
 export const dynamic = 'force-dynamic'
 
-// Onboarding: winemaker → org tenancy (epic #3). Otros tipos → proof_profiles legacy.
+// Onboarding: winemaker owner → org tenancy. Team invite → winemaker | bodega profile.
 // Ver docs/ORG-TENANCY.md
 
 import { useAuth } from '@/hooks/useAuth'
 import { getUserEmail, getUserFirstName } from '@/lib/auth/user'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { upsertProfile } from '@/lib/supabase'
 import { persistActiveProfileType, useProfile } from '@/context/ProfileContext'
 import { useOrganization } from '@/context/OrganizationContext'
 import {
   createWinemakerOrganization,
-  insertFirstWinemakerLot,
+  fetchPendingWinemakerInvite,
+  type PendingWinemakerInvite,
 } from '@/lib/supabase/organization'
 import { useSupabase } from '@/hooks/useSupabase'
 import { AuthLocaleBar } from '@/components/auth/AuthLocaleBar'
+import { completeTeamOnboarding } from '@/app/actions/team-onboarding'
+import { isValidAccessCodeFormat } from '@/lib/proof/team-access-code'
 
-type ProfileType = 'brewer' | 'winemaker' | 'distiller' | 'distributor'
+type LegacyProfileType = 'brewer' | 'distiller' | 'distributor'
+type TeamProfileType = 'winemaker' | 'bodega'
+type ProfileType = TeamProfileType | LegacyProfileType
 type ProducerType = 'brewer' | 'winemaker' | 'distiller'
 type Step = 1 | 2 | 3
 
 const font = 'var(--font-display)'
 
-const PROFILE_TYPES: ProfileType[] = ['brewer', 'winemaker', 'distiller', 'distributor']
-const PROFILE_EMOJI: Record<ProfileType, string> = {
-  brewer: '🍺',
+const TEAM_PROFILE_TYPES: TeamProfileType[] = ['winemaker', 'bodega']
+
+const PROFILE_EMOJI: Record<TeamProfileType, string> = {
   winemaker: '🍷',
-  distiller: '🥃',
-  distributor: '📦',
+  bodega: '📦',
 }
 
 const BEER_STYLES = ['Session IPA', 'IPA', 'Stout', 'Porter', 'Pale Ale', 'Lager', 'Sour', 'Saison']
@@ -55,21 +59,19 @@ function OnboardingContent() {
   const { user } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isAddMode = searchParams.get('mode') === 'add'
-  const { allProfiles, reload: reloadProfiles, switchProfile } = useProfile()
+  const isTeamModeParam = searchParams.get('mode') === 'team'
+  const { reload: reloadProfiles, switchProfile } = useProfile()
   const { reload: reloadOrganizations, switchOrganization } = useOrganization()
   const supabase = useSupabase()
 
-  const existingTypes = new Set(allProfiles.map(p => p.profile_type_v2))
-  const availableTypes = isAddMode
-    ? PROFILE_TYPES.filter(type => {
-        if (type === 'winemaker') return true
-        return !existingTypes.has(type)
-      })
-    : PROFILE_TYPES
-
+  const [bootReady, setBootReady] = useState(false)
+  const [pendingInvite, setPendingInvite] = useState<PendingWinemakerInvite | null>(null)
   const [step, setStep] = useState<Step>(1)
   const [profileType, setProfileType] = useState<ProfileType | null>(null)
+  const [wineryName, setWineryName] = useState('')
+  const [accessCode, setAccessCode] = useState('')
+  const [userName, setUserName] = useState('')
+  const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
   const [productName, setProductName] = useState('')
   const [productStyle, setProductStyle] = useState('')
@@ -78,6 +80,50 @@ function OnboardingContent() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [cameraGranted, setCameraGranted] = useState<boolean | null>(null)
+  const [teamInviteMissing, setTeamInviteMissing] = useState(false)
+
+  const isTeamOnboarding = Boolean(pendingInvite?.platformProfile)
+  const progressSteps: Step[] = [2, 3]
+
+  useEffect(() => {
+    if (!user) return
+
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const invite = await fetchPendingWinemakerInvite(supabase, user.id)
+        if (cancelled) return
+
+        setPendingInvite(invite)
+
+        if (invite?.platformProfile) {
+          setProfileType(invite.platformProfile)
+          setUserName(getUserFirstName(user) || '')
+          setStep(2)
+        } else if (isTeamModeParam) {
+          setTeamInviteMissing(true)
+          setStep(2)
+        } else {
+          setProfileType('winemaker')
+          setUserName(getUserFirstName(user) || '')
+          setStep(2)
+        }
+      } catch {
+        if (!cancelled) {
+          setProfileType('winemaker')
+          setUserName(getUserFirstName(user) || '')
+          setStep(2)
+        }
+      } finally {
+        if (!cancelled) setBootReady(true)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, supabase, isTeamModeParam])
 
   function styleOptions(): string[] {
     if (profileType === 'brewer') return BEER_STYLES
@@ -99,6 +145,18 @@ function OnboardingContent() {
   }
 
   function canContinueStep2(): boolean {
+    if (isTeamOnboarding) {
+      return Boolean(
+        profileType &&
+          wineryName.trim() &&
+          isValidAccessCodeFormat(accessCode) &&
+          userName.trim() &&
+          password.length >= 6
+      )
+    }
+    if (profileType === 'winemaker') {
+      return Boolean(wineryName.trim() && userName.trim())
+    }
     if (!username.trim()) return false
     if (isProducer(profileType)) {
       return Boolean(productName.trim() && productStyle)
@@ -125,23 +183,61 @@ function OnboardingContent() {
 
   async function finishWinemakerOrg() {
     if (!user) return
-    const orgName = username.trim() || getUserFirstName(user) || 'Mi bodega'
+    const orgName = wineryName.trim()
+    if (!orgName) throw new Error(t('step2.orgNameWinemaker'))
+
+    const { error: authError } = await supabase.auth.updateUser({
+      data: { full_name: userName.trim() },
+    })
+    if (authError) throw authError
 
     const org = await createWinemakerOrganization(supabase, { name: orgName })
-
-    if (productName.trim() && productStyle) {
-      await insertFirstWinemakerLot(supabase, {
-        userId: user.id,
-        organizationId: org.id,
-        productName: productName.trim(),
-        varietal: productStyle,
-      })
-    }
 
     await reloadOrganizations()
     switchOrganization(org.id)
     persistActiveProfileType('winemaker')
     router.push('/dashboard')
+  }
+
+  async function finishTeamMember() {
+    if (!user || !profileType || (profileType !== 'winemaker' && profileType !== 'bodega')) return
+
+    const { error: authError } = await supabase.auth.updateUser({
+      password,
+      data: { full_name: userName.trim() },
+    })
+    if (authError) throw authError
+
+    await completeTeamOnboarding({
+      wineryName: wineryName.trim(),
+      accessCode: accessCode.trim(),
+      userName: userName.trim(),
+    })
+
+    await reloadProfiles()
+    await reloadOrganizations()
+    if (pendingInvite?.organizationId) {
+      switchOrganization(pendingInvite.organizationId)
+    }
+    persistActiveProfileType(profileType)
+    router.push('/dashboard')
+  }
+
+  function formatOnboardingError(err: unknown): string {
+    const code =
+      err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : t('errors.saveFailed')
+
+    if (code === 'ACCESS_CODE_INVALID') return t('errors.accessCodeInvalid')
+    if (code === 'WINERY_NAME_MISMATCH') return t('errors.wineryNameMismatch')
+    if (code === 'NO_PENDING_INVITE') return t('errors.noPendingInvite')
+
+    return code.toLowerCase().includes('fetch') || code.toLowerCase().includes('network')
+      ? `${code}${t('errors.networkSuffix')}`
+      : code
   }
 
   async function finishLegacyProfile() {
@@ -178,12 +274,6 @@ function OnboardingContent() {
     }
 
     await reloadProfiles()
-
-    if (isAddMode) {
-      router.push('/profile-select')
-      return
-    }
-
     switchProfile(profileType)
     router.push('/dashboard')
   }
@@ -194,23 +284,15 @@ function OnboardingContent() {
     setSaveError(null)
 
     try {
-      if (profileType === 'winemaker') {
+      if (isTeamOnboarding) {
+        await finishTeamMember()
+      } else if (profileType === 'winemaker') {
         await finishWinemakerOrg()
       } else {
         await finishLegacyProfile()
       }
     } catch (err) {
-      const msg =
-        err && typeof err === 'object' && 'message' in err && typeof err.message === 'string'
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : t('errors.saveFailed')
-      setSaveError(
-        msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')
-          ? `${msg}${t('errors.networkSuffix')}`
-          : msg
-      )
+      setSaveError(formatOnboardingError(err))
     } finally {
       setSaving(false)
     }
@@ -218,6 +300,19 @@ function OnboardingContent() {
 
   const inputClass =
     'w-full bg-white border border-[rgba(55,53,47,0.09)] focus:border-[#2383E2] rounded-md px-4 py-3 text-sm text-[#37352F] outline-none placeholder:text-[#9B9A97] transition-colors'
+
+  if (!bootReady) {
+    return (
+      <AuthLocaleBar variant="light">
+        <div
+          style={{ fontFamily: font }}
+          className="min-h-screen bg-white flex items-center justify-center px-4"
+        >
+          <div className="text-sm text-[#787774]">…</div>
+        </div>
+      </AuthLocaleBar>
+    )
+  }
 
   return (
     <AuthLocaleBar variant="light">
@@ -231,7 +326,7 @@ function OnboardingContent() {
               PRO<span className="text-[#787774] font-light">OF</span>
             </div>
             <div className="flex items-center justify-center gap-2 mt-6">
-              {([1, 2, 3] as const).map(s => (
+              {progressSteps.map(s => (
                 <div
                   key={s}
                   className={`rounded-full transition-all duration-300 ${
@@ -246,184 +341,216 @@ function OnboardingContent() {
             </div>
           </div>
 
-          {step === 1 && (
-            <div>
-              <h1 className="text-2xl font-medium text-[#37352F] text-center mb-2">
-                {isAddMode ? t('step1.titleAdd') : t('step1.title')}
-              </h1>
-              <p className="text-sm text-[#787774] text-center mb-10">
-                {isAddMode ? t('step1.subtitleAdd') : t('step1.subtitle')}
-              </p>
-
-              {isAddMode && availableTypes.length === 0 ? (
-                <div className="bg-[#F7F6F3] border border-[rgba(55,53,47,0.09)] rounded-lg p-8 text-center">
-                  <div className="text-3xl mb-4">✨</div>
-                  <div className="text-sm text-[#37352F] font-medium mb-2">
-                    {t('step1.allProfilesTitle')}
-                  </div>
-                  <div className="text-xs text-[#787774] mb-6">{t('step1.allProfilesBody')}</div>
-                  <button
-                    type="button"
-                    onClick={() => router.push('/profile-select')}
-                    className="w-full py-3 bg-[#37352F] hover:bg-[#787774] text-white text-sm font-medium rounded-md transition-colors"
-                  >
-                    {t('step1.backToProfiles')}
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  {availableTypes.map(type => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => {
-                        setProfileType(type)
-                        setStep(2)
-                      }}
-                      className="bg-[#F7F6F3] border border-[rgba(55,53,47,0.09)] hover:border-[rgba(55,53,47,0.24)] rounded-lg p-6 flex flex-col items-center gap-3 transition-all hover:bg-[#F1F1EF]"
-                    >
-                      <div className="text-4xl">{PROFILE_EMOJI[type]}</div>
-                      <div>
-                        <div className="text-sm font-medium text-[#37352F] text-center">
-                          {t(`profiles.${type}.label`)}
-                        </div>
-                        <div className="text-[11px] text-[#787774] text-center mt-1 leading-snug">
-                          {t(`profiles.${type}.sub`)}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {isAddMode && (
-                <button
-                  type="button"
-                  onClick={() => router.push('/profile-select')}
-                  className="w-full mt-6 py-2 text-xs text-[#787774] hover:text-[#37352F] transition-colors"
-                >
-                  {t('step1.cancelAdd')}
-                </button>
-              )}
-            </div>
-          )}
-
-          {step === 2 && profileType && (
+          {step === 2 && (profileType || teamInviteMissing) && (
             <div>
               <h1 className="text-2xl font-medium text-[#37352F] text-center mb-2">
                 {t('step2.title')}
               </h1>
-              <p className="text-sm text-[#787774] text-center mb-8">
-                {PROFILE_EMOJI[profileType]} {t(`roles.${profileType}`)}
-              </p>
+              {teamInviteMissing ? (
+                <p className="text-sm text-[#EB5757] text-center mb-8">{t('errors.noPendingInvite')}</p>
+              ) : (
+                <p className="text-sm text-[#787774] text-center mb-8">
+                  {PROFILE_EMOJI[profileType as TeamProfileType] ?? '🍷'}{' '}
+                  {profileType ? t(`roles.${profileType}`) : ''}
+                  {isTeamOnboarding && pendingInvite ? (
+                    <>
+                      <br />
+                      <span className="text-xs">
+                        {t('step2.teamInviteHint', { org: pendingInvite.organizationName })}
+                      </span>
+                    </>
+                  ) : null}
+                </p>
+              )}
+              {!teamInviteMissing && profileType ? (
               <div className="bg-[#F7F6F3] border border-[rgba(55,53,47,0.09)] rounded-lg p-6 space-y-5">
-                <div>
-                  <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
-                    {orgNameLabel()}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={
-                      profileType === 'winemaker'
-                        ? t('step2.orgPlaceholderWinemaker')
-                        : getUserFirstName(user) || t('step2.orgNameDefault')
-                    }
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    className={inputClass}
-                  />
-                </div>
-
-                {isProducer(profileType) ? (
+                {isTeamOnboarding ? (
                   <>
                     <div>
                       <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
-                        {productNameLabel()}
+                        {t('step2.orgNameWinemaker')}
                       </label>
                       <input
                         type="text"
-                        placeholder={productNamePlaceholder()}
-                        value={productName}
-                        onChange={e => setProductName(e.target.value)}
+                        placeholder={t('step2.orgPlaceholderWinemaker')}
+                        value={wineryName}
+                        onChange={e => setWineryName(e.target.value)}
                         className={inputClass}
                       />
                     </div>
                     <div>
                       <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
-                        {t('step2.style')}
+                        {t('step2.accessCode')}
                       </label>
-                      <div className="flex flex-wrap gap-2">
-                        {styleOptions().map(style => (
-                          <button
-                            key={style}
-                            type="button"
-                            onClick={() => setProductStyle(style)}
-                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                              productStyle === style
-                                ? 'bg-[#37352F] border-[#1D9E75] text-white'
-                                : 'bg-transparent border-[rgba(55,53,47,0.09)] text-[#787774] hover:border-[rgba(55,53,47,0.24)] hover:text-[#37352F]'
-                            }`}
-                          >
-                            {style}
-                          </button>
-                        ))}
-                      </div>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        placeholder={t('step2.accessCodePlaceholder')}
+                        value={accessCode}
+                        onChange={e => setAccessCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        maxLength={4}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                        {t('step2.userName')}
+                      </label>
+                      <input
+                        type="text"
+                        autoComplete="name"
+                        placeholder={t('step2.userNamePlaceholder')}
+                        value={userName}
+                        onChange={e => setUserName(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                        {t('step2.password')}
+                      </label>
+                      <input
+                        type="password"
+                        autoComplete="new-password"
+                        placeholder={t('step2.passwordPlaceholder')}
+                        value={password}
+                        onChange={e => setPassword(e.target.value)}
+                        minLength={6}
+                        className={inputClass}
+                      />
+                    </div>
+                  </>
+                ) : profileType === 'winemaker' ? (
+                  <>
+                    <div>
+                      <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                        {t('step2.orgNameWinemaker')}
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={t('step2.orgPlaceholderWinemaker')}
+                        value={wineryName}
+                        onChange={e => setWineryName(e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                        {t('step2.userName')}
+                      </label>
+                      <input
+                        type="text"
+                        autoComplete="name"
+                        placeholder={t('step2.userNamePlaceholder')}
+                        value={userName}
+                        onChange={e => setUserName(e.target.value)}
+                        className={inputClass}
+                      />
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
                       <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
-                        {t('step2.businessName')}
+                        {orgNameLabel()}
                       </label>
                       <input
                         type="text"
-                        placeholder={t('step2.businessPlaceholder')}
-                        value={businessName}
-                        onChange={e => setBusinessName(e.target.value)}
+                        placeholder={getUserFirstName(user) || t('step2.orgNameDefault')}
+                        value={username}
+                        onChange={e => setUsername(e.target.value)}
                         className={inputClass}
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-3">
-                        {t('step2.categories')}
-                      </label>
-                      <div className="space-y-2">
-                        {DIST_CATEGORY_KEYS.map(key => (
-                          <label
-                            key={key}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-md border cursor-pointer transition-all ${
-                              categories[key]
-                                ? 'bg-[#0F6E5620] border-[#0F6E56] text-[#37352F]'
-                                : 'bg-white border-[rgba(55,53,47,0.09)] text-[#787774] hover:border-[rgba(55,53,47,0.24)]'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={categories[key]}
-                              onChange={e =>
-                                setCategories(c => ({ ...c, [key]: e.target.checked }))
-                              }
-                              className="w-4 h-4 accent-[#0F6E56]"
-                            />
-                            <span className="text-sm font-medium">
-                              {t(`step2.categoryLabels.${key}`)}
-                            </span>
+
+                    {isProducer(profileType) ? (
+                      <>
+                        <div>
+                          <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                            {productNameLabel()}
                           </label>
-                        ))}
-                      </div>
-                    </div>
+                          <input
+                            type="text"
+                            placeholder={productNamePlaceholder()}
+                            value={productName}
+                            onChange={e => setProductName(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                            {t('step2.style')}
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {styleOptions().map(style => (
+                              <button
+                                key={style}
+                                type="button"
+                                onClick={() => setProductStyle(style)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                  productStyle === style
+                                    ? 'bg-[#37352F] border-[#1D9E75] text-white'
+                                    : 'bg-transparent border-[rgba(55,53,47,0.09)] text-[#787774] hover:border-[rgba(55,53,47,0.24)] hover:text-[#37352F]'
+                                }`}
+                              >
+                                {style}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                            {t('step2.businessName')}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder={t('step2.businessPlaceholder')}
+                            value={businessName}
+                            onChange={e => setBusinessName(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] text-[#787774] uppercase tracking-wider mb-2">
+                            {t('step2.categories')}
+                          </label>
+                          <div className="space-y-2">
+                            {DIST_CATEGORY_KEYS.map(key => (
+                              <label
+                                key={key}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-md border cursor-pointer transition-all ${
+                                  categories[key]
+                                    ? 'bg-[#0F6E5620] border-[#0F6E56] text-[#37352F]'
+                                    : 'bg-white border-[rgba(55,53,47,0.09)] text-[#787774] hover:border-[rgba(55,53,47,0.24)]'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={categories[key]}
+                                  onChange={e =>
+                                    setCategories(c => ({ ...c, [key]: e.target.checked }))
+                                  }
+                                  className="w-4 h-4 accent-[#0F6E56]"
+                                />
+                                <span className="text-sm font-medium">
+                                  {t(`step2.categoryLabels.${key}`)}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
+              ) : null}
+              {!teamInviteMissing ? (
               <div className="flex gap-3 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="px-4 py-3 border border-[rgba(55,53,47,0.09)] text-[#787774] hover:text-[#37352F] text-sm rounded-md transition-colors"
-                >
-                  {t('step2.back')}
-                </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
@@ -433,6 +560,7 @@ function OnboardingContent() {
                   {t('step2.continue')}
                 </button>
               </div>
+              ) : null}
             </div>
           )}
 
@@ -484,13 +612,7 @@ function OnboardingContent() {
                   disabled={saving}
                   className="flex-1 py-3 bg-[#37352F] hover:bg-[#787774] disabled:opacity-40 text-white text-sm font-medium rounded-md transition-colors"
                 >
-                  {saving
-                    ? t('step3.saving')
-                    : isAddMode
-                      ? profileType === 'winemaker'
-                        ? t('step3.finishAddWinemaker')
-                        : t('step3.finishAddProfile')
-                      : t('step3.finish')}
+                  {saving ? t('step3.saving') : t('step3.finish')}
                 </button>
               </div>
               {saveError ? (

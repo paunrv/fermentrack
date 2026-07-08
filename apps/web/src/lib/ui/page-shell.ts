@@ -52,3 +52,31 @@ export const DESKTOP_FORM_GRID: CSSProperties = {
   gridTemplateColumns: 'repeat(2, 1fr)',
   gap: 12,
 }
+
+/** Subpáginas del dashboard — padding tiered; opcional espacio para bottom nav winemaker. */
+export function dashboardPageShell(
+  breakpoint: ShellBreakpoint,
+  options?: { withBottomNav?: boolean; maxWidth?: number }
+): CSSProperties {
+  const horizontal = breakpoint === 'mobile' ? 16 : breakpoint === 'tablet' ? 20 : 28
+  const top = breakpoint === 'mobile' ? 16 : breakpoint === 'tablet' ? 22 : 24
+  const bottom =
+    options?.withBottomNav && breakpoint === 'mobile'
+      ? 'calc(16px + var(--proof-bottom-nav))'
+      : breakpoint === 'mobile'
+        ? 16
+        : breakpoint === 'tablet'
+          ? 32
+          : 48
+
+  const maxWidth = breakpoint === 'mobile' ? undefined : (options?.maxWidth ?? 960)
+
+  return {
+    width: '100%',
+    maxWidth,
+    margin: maxWidth ? '0 auto' : undefined,
+    boxSizing: 'border-box',
+    minWidth: 0,
+    padding: `${top}px ${horizontal}px ${bottom}`,
+  }
+}

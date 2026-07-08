@@ -57,6 +57,7 @@ import {
 import { useTeamChatUnread } from '@/hooks/useTeamChatUnread'
 import { useDashboardRailExpanded } from '@/hooks/useDashboardRailExpanded'
 import { orgHasFeature } from '@/lib/proof/org-features'
+import { LocaleToggle } from '@/components/i18n/LocaleToggle'
 
 type Role = ExtraProfile | 'producer'
 
@@ -321,6 +322,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     isOnAssistant,
     profileType: activeProfile?.profile_type_v2,
     isWinemaker,
+    showWinemakerMobileNav,
   })
 
   return (
@@ -366,6 +368,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}
 
       <main
+        className={isMobile ? 'proof-dashboard-main--mobile' : undefined}
         style={{
           flex: 1,
           minWidth: 0,
@@ -457,6 +460,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {ICONS.infoPersonal}
                 </button>
               )}
+              <LocaleToggle variant="dashboard" />
               <AvatarMenu
                 initials={initials}
                 imageUrl={getUserAvatarUrl(user)}
@@ -559,15 +563,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   />
                 </div>
               )}
-              <AvatarMenu
-                initials={initials}
-                imageUrl={getUserAvatarUrl(user)}
-                accent={theme.accent}
-                canSwitchProfile={allProfiles.length > 1}
-                onSwitchProfile={() => router.push('/profile-select')}
-                onDatosCobro={openDatosCobroSheet}
-                onSignOut={() => void handleSignOut()}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <LocaleToggle variant="dashboard" />
+                <AvatarMenu
+                  initials={initials}
+                  imageUrl={getUserAvatarUrl(user)}
+                  accent={theme.accent}
+                  canSwitchProfile={allProfiles.length > 1}
+                  onSwitchProfile={() => router.push('/profile-select')}
+                  onDatosCobro={openDatosCobroSheet}
+                  onSignOut={() => void handleSignOut()}
+                />
+              </div>
             </div>
             {isMobile && (
               <ProofAskForm
