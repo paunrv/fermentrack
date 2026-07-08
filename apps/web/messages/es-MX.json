@@ -920,6 +920,12 @@
       "unread": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}",
       "upgradeHint": "El chat de equipo está disponible en plan Pro o Enterprise.",
       "readOnlyHint": "Tu rol solo permite leer el chat. Pide al owner acceso de escritura si lo necesitas.",
+      "switcherLabel": "Conversaciones",
+      "channelGeneral": "General",
+      "dmTitle": "Mensaje directo",
+      "dmSubtitle": "Conversación privada",
+      "dmEmpty": "Aún no hay mensajes. Escribe el primero.",
+      "dmPlaceholder": "Mensaje privado…",
       "errors": {
         "empty_body": "Escribe un mensaje antes de enviar.",
         "body_too_long": "El mensaje es demasiado largo (máx. 4000 caracteres).",

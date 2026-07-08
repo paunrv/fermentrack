@@ -30,7 +30,10 @@ export default function WinemakerChatPage() {
   return (
     <div
       style={{
-        minHeight: '100%',
+        height: '100%',
+        maxHeight: '100%',
+        minHeight: 0,
+        overflow: 'hidden',
         background: 'var(--canvas)',
         display: 'flex',
         flexDirection: 'column',

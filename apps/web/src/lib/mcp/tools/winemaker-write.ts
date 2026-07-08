@@ -191,9 +191,9 @@ export async function enviarMensajeTool(
 
     try {
       const message = await recordTeamMessage(sb, {
+        organizationId,
         body: input.body,
         loteId: input.lote_id,
-        organizationId,
         authorId: userId,
         origen: 'mcp',
         org,

@@ -920,6 +920,12 @@
       "unread": "{count, plural, one {# unread message} other {# unread messages}}",
       "upgradeHint": "Team chat is available on Pro or Enterprise plans.",
       "readOnlyHint": "Your role is read-only in team chat. Ask the owner for write access if needed.",
+      "switcherLabel": "Conversations",
+      "channelGeneral": "General",
+      "dmTitle": "Direct message",
+      "dmSubtitle": "Private conversation",
+      "dmEmpty": "No messages yet. Send the first one.",
+      "dmPlaceholder": "Private message…",
       "errors": {
         "empty_body": "Write a message before sending.",
         "body_too_long": "Message is too long (max 4000 characters).",

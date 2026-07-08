@@ -59,6 +59,7 @@ export async function sendTeamMessageAction(
     return await recordTeamMessage(sb, {
       body: input.body,
       loteId: input.loteId,
+      conversationId: input.conversationId,
       organizationId: resolvedOrgId,
       authorId: userId,
       org,

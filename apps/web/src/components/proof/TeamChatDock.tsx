@@ -176,9 +176,13 @@ export function TeamChatDock({
             width: TEAM_CHAT_PANEL_WIDTH_PX,
             flexShrink: 0,
             borderLeft: '0.5px solid var(--hairline)',
+            height: '100%',
+            maxHeight: '100%',
             minHeight: 0,
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
+            alignSelf: 'stretch',
           }}
         >
           <TeamChatPanel

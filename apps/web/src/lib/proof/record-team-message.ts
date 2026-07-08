@@ -3,6 +3,7 @@ import { orgHasFeature } from '@/lib/proof/org-features'
 import type { OrgFeatureSource } from '@/lib/proof/org-features'
 import {
   TEAM_CHAT_BODY_MAX,
+  type TeamMessageBodyInput,
   type SendTeamMessageInput,
   type TeamChatMessage,
   type WmMensajeOrigen,
@@ -12,7 +13,6 @@ import { fetchTeamChatMessageById } from '@/lib/proof/team-chat'
 import { mapPostgresInsertError } from '@/lib/proof/team-chat-errors'
 
 export type RecordTeamMessageParams = SendTeamMessageInput & {
-  organizationId: string
   authorId: string
   origen?: WmMensajeOrigen
   org: OrgFeatureSource
@@ -40,7 +40,7 @@ export class RecordTeamMessageError extends Error {
 }
 
 export function validateTeamMessageInput(
-  input: SendTeamMessageInput
+  input: TeamMessageBodyInput
 ): { ok: true; body: string } | { ok: false; code: RecordTeamMessageValidationCode } {
   const body = input.body.trim()
   if (!body) return { ok: false, code: 'empty_body' }
@@ -72,11 +72,11 @@ export async function recordTeamMessage(
     if (!lot) throw new RecordTeamMessageError('lote_not_found')
   }
 
-  const conversationId = await ensureGeneralConversationId(sb, params.organizationId).catch(
-    () => {
+  const conversationId =
+    params.conversationId?.trim() ||
+    (await ensureGeneralConversationId(sb, params.organizationId).catch(() => {
       throw new RecordTeamMessageError('conversation_create_failed')
-    }
-  )
+    }))
 
   const { data: inserted, error: insertError } = await sb
     .from('wm_mensajes')

@@ -51,4 +51,11 @@ export type SendTeamMessageInput = {
   organizationId: string
   body: string
   loteId?: string | null
+  conversationId?: string | null
 }
+
+export type TeamChatTarget =
+  | { kind: 'general' }
+  | { kind: 'dm'; peerUserId: string; peerName: string | null }
+
+export type TeamMessageBodyInput = Pick<SendTeamMessageInput, 'body' | 'loteId'>

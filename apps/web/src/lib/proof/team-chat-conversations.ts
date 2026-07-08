@@ -47,3 +47,18 @@ export async function ensureGeneralConversationId(
   if (!created) throw new Error('conversation_create_failed')
   return created
 }
+
+export async function getOrCreateDmConversationId(
+  sb: SupabaseClient,
+  organizationId: string,
+  otherUserId: string
+): Promise<string> {
+  const { data, error } = await sb.rpc('get_or_create_wm_dm', {
+    p_organization_id: organizationId,
+    p_other_user_id: otherUserId,
+  })
+
+  if (error) throw error
+  if (typeof data === 'string' && data) return data
+  throw new Error('conversation_create_failed')
+}

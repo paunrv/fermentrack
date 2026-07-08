@@ -8,7 +8,7 @@ import {
 } from '@/lib/proof/dashboard-routes'
 
 /** Ancho del panel de chat de equipo (px). */
-export const TEAM_CHAT_PANEL_WIDTH_PX = 280
+export const TEAM_CHAT_PANEL_WIDTH_PX = 320
 
 /** Ancho del rail lateral desktop (px). */
 export const DASHBOARD_RAIL_WIDTH_PX = 52

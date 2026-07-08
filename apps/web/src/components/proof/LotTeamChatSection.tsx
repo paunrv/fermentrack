@@ -21,8 +21,8 @@ export function LotTeamChatSection({ lotId }: { lotId: string }) {
           border: '0.5px solid var(--hairline)',
           borderRadius: 12,
           overflow: 'hidden',
-          minHeight: 280,
-          maxHeight: 420,
+          height: 360,
+          maxHeight: 'min(420px, 60vh)',
           display: 'flex',
           flexDirection: 'column',
         }}
