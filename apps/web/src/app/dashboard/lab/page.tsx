@@ -1,15 +1,21 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { LabReportCard } from '@/components/proof/LabReportCard'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchLabReports } from '@/lib/proof/fetch-lab-reports'
 import { fetchOwnerOrganizationId } from '@/lib/supabase/winemaker-owner-home'
 import type { LabReportWithSamples } from '@proof/types'
 
 export default function LabReportsPage() {
+  const t = useTranslations('winemaker.lab')
   const supabase = useSupabase()
+  const breakpoint = useBreakpoint()
+  const isMobile = breakpoint === 'mobile'
   const [reports, setReports] = useState<LabReportWithSamples[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,13 +39,12 @@ export default function LabReportsPage() {
         if (!cancelled) setReports(data)
       } catch (err) {
         if (!cancelled) {
-          const message =
-            err instanceof Error && err.message === 'notAuthenticated'
-              ? 'Inicia sesión para ver los informes de laboratorio.'
-              : err instanceof Error && err.message === 'noOrganization'
-                ? 'No hay bodega activa para mostrar análisis.'
-                : 'No se pudieron cargar los informes de laboratorio.'
-          setError(message)
+          const key =
+            err instanceof Error &&
+            ['notAuthenticated', 'noOrganization'].includes(err.message)
+              ? err.message
+              : 'loadFailed'
+          setError(t(`errors.${key}` as 'errors.loadFailed'))
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -50,68 +55,80 @@ export default function LabReportsPage() {
     return () => {
       cancelled = true
     }
-  }, [supabase])
+  }, [supabase, t])
+
+  const backLink = (
+    <Link
+      href="/dashboard"
+      style={{ fontSize: 13, color: 'var(--fg-3)', textDecoration: 'none', fontWeight: 600 }}
+    >
+      {t('back')}
+    </Link>
+  )
+
+  let body: ReactNode
+  if (loading) {
+    body = <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-3)' }}>{t('loading')}</p>
+  } else if (error) {
+    body = <p style={{ margin: 0, fontSize: 14, color: 'var(--crit)' }}>{error}</p>
+  } else if (reports.length === 0) {
+    body = (
+      <div
+        style={{
+          padding: 20,
+          borderRadius: 12,
+          border: '0.5px dashed var(--hairline)',
+          background: 'var(--panel)',
+        }}
+      >
+        <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('empty')}</p>
+        <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--fg-3)' }}>{t('emptyHint')}</p>
+      </div>
+    )
+  } else {
+    body = (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {reports.map(report => (
+          <LabReportCard key={report.id} report={report} />
+        ))}
+      </div>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          minHeight: '100%',
+          background: 'var(--canvas)',
+          color: 'var(--fg-0)',
+          padding: '16px 16px calc(16px + var(--proof-bottom-nav))',
+        }}
+      >
+        {backLink}
+        <header style={{ marginTop: 20, marginBottom: 20 }}>
+          <h1
+            style={{
+              margin: '0 0 6px',
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {t('title')}
+          </h1>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.45 }}>
+            {t('subtitle')}
+          </p>
+        </header>
+        {body}
+      </div>
+    )
+  }
 
   return (
-    <div
-      style={{
-        minHeight: '100%',
-        background: 'var(--canvas)',
-        color: 'var(--fg-0)',
-        padding: '16px 16px calc(16px + var(--proof-bottom-nav))',
-      }}
-    >
-      <Link
-        href="/dashboard"
-        style={{ fontSize: 13, color: 'var(--fg-3)', textDecoration: 'none', fontWeight: 600 }}
-      >
-        ← Inicio
-      </Link>
-
-      <header style={{ marginTop: 20, marginBottom: 20 }}>
-        <h1
-          style={{
-            margin: '0 0 6px',
-            fontSize: 22,
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Análisis de laboratorio
-        </h1>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.45 }}>
-          Informes importados con muestras y parámetros medidos. Solo lectura.
-        </p>
-      </header>
-
-      {loading ? (
-        <p style={{ fontSize: 14, color: 'var(--fg-3)' }}>Cargando informes…</p>
-      ) : error ? (
-        <p style={{ fontSize: 14, color: 'var(--crit)' }}>{error}</p>
-      ) : reports.length === 0 ? (
-        <div
-          style={{
-            padding: 20,
-            borderRadius: 12,
-            border: '0.5px dashed var(--hairline)',
-            background: 'var(--panel)',
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-            Aún no hay informes de laboratorio registrados.
-          </p>
-          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--fg-3)' }}>
-            Cuando importes un PDF de Ardoa, CETyS u otro laboratorio, aparecerá aquí con sus
-            muestras y resultados.
-          </p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {reports.map(report => (
-            <LabReportCard key={report.id} report={report} />
-          ))}
-        </div>
-      )}
-    </div>
+    <VuOpsPage title={t('title')} description={t('subtitle')} actions={backLink}>
+      {body}
+    </VuOpsPage>
   )
 }

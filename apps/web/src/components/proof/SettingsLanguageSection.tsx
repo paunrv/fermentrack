@@ -7,15 +7,7 @@ export function SettingsLanguageSection() {
   const t = useTranslations('dashboard.settings.language')
 
   return (
-    <section
-      style={{
-        border: '1px solid var(--hairline)',
-        padding: 24,
-        marginBottom: 24,
-        background: '#fff',
-        maxWidth: 800,
-      }}
-    >
+    <section style={{ maxWidth: 800 }}>
       <div
         style={{
           fontSize: 11,
@@ -27,7 +19,9 @@ export function SettingsLanguageSection() {
       >
         {t('title')}
       </div>
-      <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.45 }}>{t('description')}</p>
+      <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.45 }}>
+        {t('description')}
+      </p>
       <LocaleToggle variant="dashboard" />
     </section>
   )

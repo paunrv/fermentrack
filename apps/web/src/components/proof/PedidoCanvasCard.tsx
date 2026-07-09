@@ -8,7 +8,7 @@ import {
   parseTomaPedidoNotas,
 } from '@/lib/proof/toma-pedido-client'
 
-const CLIENTE_ACCENT = '#2D6A4F'
+const CLIENTE_ACCENT = 'var(--proof-accent)'
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 const FG = 'var(--fg-0)'
 
@@ -124,7 +124,7 @@ export function PedidoCanvasCard({
           fontSize: 10,
           fontFamily: MONO,
           fontWeight: 600,
-          color: cxc?.estado === 'vencida' ? '#E24B4A' : accent,
+          color: cxc?.estado === 'vencida' ? 'var(--crit)' : accent,
           paddingTop: 6,
           marginTop: 'auto',
           borderTop: `1.5px solid ${accent}`,

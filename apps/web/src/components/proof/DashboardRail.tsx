@@ -28,14 +28,12 @@ function SideRailLink({
   label,
   icon,
   active,
-  accent,
   expanded,
 }: {
   href: string
   label: string
   icon: ReactNode
   active: boolean
-  accent: string
   expanded: boolean
 }) {
   return (
@@ -56,7 +54,7 @@ function SideRailLink({
         padding: expanded ? '0 10px' : 0,
         textDecoration: 'none',
         color: active ? 'var(--fg-0)' : 'var(--fg-3)',
-        background: active ? 'var(--hover)' : 'transparent',
+        background: active ? 'var(--nav-active-bg)' : 'transparent',
         borderRadius: 'var(--radius-sm)',
         transition: 'background 150ms var(--ease-out), color 150ms var(--ease-out)',
       }}
@@ -82,7 +80,7 @@ function SideRailLink({
             width: 2,
             height: 18,
             borderRadius: 1,
-            background: accent,
+            background: 'var(--nav-active-bar)',
           }}
         />
       )}
@@ -109,7 +107,6 @@ function SideRailLink({
 function RailGroupSection({
   group,
   path,
-  accent,
   t,
   chatSlot,
   showChatAfterFirstItem,
@@ -117,7 +114,6 @@ function RailGroupSection({
 }: {
   group: RailGroup
   path: string
-  accent: string
   t: (key: string) => string
   chatSlot?: ReactNode
   showChatAfterFirstItem?: boolean
@@ -138,7 +134,6 @@ function RailGroupSection({
             label={t(item.labelKey)}
             icon={railIcon(item.icon)}
             active={isDashboardNavItemActive(path, item.href)}
-            accent={accent}
             expanded={expanded}
           />
           {showChatAfterFirstItem && index === 0 && chatSlot ? (
@@ -196,7 +191,6 @@ function RailExpandToggle({
 export function DashboardRail({
   path,
   model,
-  accent,
   t,
   chatSlot,
   expanded,
@@ -204,7 +198,8 @@ export function DashboardRail({
 }: {
   path: string
   model: DashboardRailModel
-  accent: string
+  /** @deprecated Profile accent no longer drives rail active state (VU tokens). Kept for call-site compat. */
+  accent?: string
   t: (key: string) => string
   chatSlot?: ReactNode
   expanded: boolean
@@ -302,7 +297,6 @@ export function DashboardRail({
             <RailGroupSection
               group={group}
               path={path}
-              accent={accent}
               t={t}
               expanded={expanded}
             />
@@ -315,7 +309,6 @@ export function DashboardRail({
             <RailGroupSection
               group={equipoGroup}
               path={path}
-              accent={accent}
               t={t}
               chatSlot={model.showChatToggle ? chatSlot : undefined}
               expanded={expanded}
@@ -334,7 +327,6 @@ export function DashboardRail({
         <RailGroupSection
           group={model.configGroup}
           path={path}
-          accent={accent}
           t={t}
           expanded={expanded}
         />

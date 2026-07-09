@@ -26,11 +26,13 @@
   --proof-sidebar: 52px;
 
   /* PROOF redesign aliases */
-  --color-background-tertiary: var(--canvas);
-  --color-background-primary: var(--ink);
+  --color-background-tertiary: var(--page-bg);
+  --color-background-primary: var(--surface-card);
   --color-background-info: var(--info-soft);
   --color-border-tertiary: var(--hairline);
+  --color-border-secondary: var(--line);
   --color-text-primary: var(--fg-0);
+  --color-text-secondary: var(--fg-2);
   --color-text-tertiary: var(--fg-3);
   --color-text-success: var(--ok);
   --color-text-danger: var(--crit);
@@ -843,4 +845,5 @@ select {
   color: var(--fg-3);
   margin: 0;
 }
+
 

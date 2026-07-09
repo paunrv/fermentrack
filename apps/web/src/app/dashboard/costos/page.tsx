@@ -15,6 +15,7 @@ import {
   type ProductionCost,
   type ProductionCostCategory,
 } from '@/lib/supabase'
+import { PageFrame, ContentCard } from '@fermentrack/ui'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
 
@@ -31,7 +32,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -139,7 +140,8 @@ export default function CostosPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <PageFrame style={{ overflow: 'auto' }}>
+      <ContentCard>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
@@ -153,7 +155,7 @@ export default function CostosPage() {
         >
           Costos
         </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>
           Costos de producción por lote
         </p>
       </div>
@@ -319,11 +321,11 @@ export default function CostosPage() {
         Costos del lote
       </h2>
       {loading ? (
-        <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Cargando...</p>
       ) : !batchId ? (
-        <p style={{ fontSize: 13, color: '#888' }}>Selecciona un lote</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Selecciona un lote</p>
       ) : costs.length === 0 ? (
-        <p style={{ fontSize: 13, color: '#888' }}>Sin costos registrados</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Sin costos registrados</p>
       ) : (
         <div style={{ border: '1px solid var(--hairline)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
@@ -373,6 +375,7 @@ export default function CostosPage() {
           </table>
         </div>
       )}
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

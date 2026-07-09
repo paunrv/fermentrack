@@ -8,12 +8,13 @@ import { useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { fmtMoney } from '@/lib/proof/format'
 import { createOrdenCompraDistribuidor } from '@/lib/supabase/distribuidor'
 
 const field: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '0.5px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -116,22 +117,17 @@ export default function NuevaOrdenCompraPage() {
     }
   }
 
+  const backLink = (
+    <Link
+      href="/dashboard"
+      style={{ fontSize: 12, color: '#999', textDecoration: 'none' }}
+    >
+      {t('back')}
+    </Link>
+  )
+
   return (
-    <div style={{ maxWidth: 560, margin: '0 auto', padding: '32px 24px 64px' }}>
-      <Link
-        href="/dashboard"
-        style={{ fontSize: 12, color: '#999', textDecoration: 'none', marginBottom: 24, display: 'inline-block' }}
-      >
-        {t('back')}
-      </Link>
-
-      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 500, color: 'var(--fg-0)' }}>
-        {t('title')}
-      </h1>
-      <p style={{ margin: '0 0 28px', fontSize: 13, color: '#888', lineHeight: 1.5 }}>
-        {t('subtitle')}
-      </p>
-
+    <VuOpsPage title={t('title')} description={t('subtitle')} actions={backLink} narrow>
       <form onSubmit={e => void handleSubmit(e)}>
         <div style={{ marginBottom: 20 }}>
           <label style={label}>{t('fields.supplier')}</label>
@@ -165,7 +161,7 @@ export default function NuevaOrdenCompraPage() {
               padding: '6px 10px',
               borderRadius: 6,
               border: '0.5px solid var(--hairline)',
-              background: '#fff',
+              background: 'var(--surface-card)',
               cursor: 'pointer',
               color: '#666',
             }}
@@ -227,7 +223,7 @@ export default function NuevaOrdenCompraPage() {
                 style={{
                   marginTop: 10,
                   fontSize: 11,
-                  color: '#888',
+                  color: 'var(--fg-3)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
@@ -293,6 +289,6 @@ export default function NuevaOrdenCompraPage() {
           {submitting ? t('creating') : t('create')}
         </button>
       </form>
-    </div>
+    </VuOpsPage>
   )
 }

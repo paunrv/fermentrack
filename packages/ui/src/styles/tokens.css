@@ -1,4 +1,5 @@
-/* @fermentrack/ui design tokens — PROOF Notion-like theme */
+/* @fermentrack/ui design tokens — PROOF (VU page system + Notion-like chrome) */
+/* Spec: docs/PROOF-VU-SYSTEM.md */
 
 :root {
   --ink: #ffffff;
@@ -7,6 +8,11 @@
   --panel-2: #f1f1ef;
   --raised: #ffffff;
   --hover: rgba(55, 53, 47, 0.08);
+
+  /* VU page surfaces — prefer these in new desktop pages */
+  --page-bg: var(--canvas);
+  --surface-card: var(--panel);
+  --surface-muted: var(--panel-2);
 
   --hairline: rgba(55, 53, 47, 0.09);
   --line: rgba(55, 53, 47, 0.16);
@@ -22,6 +28,9 @@
   --proof-accent: #2383e2;
   --gold: var(--proof-accent);
   --gold-soft: color-mix(in srgb, var(--proof-accent) 18%, transparent);
+  --accent-soft: color-mix(in srgb, var(--proof-accent) 12%, transparent);
+  --nav-active-bg: var(--accent-soft);
+  --nav-active-bar: var(--proof-accent);
 
   --ok: #0f7b6c;
   --ok-soft: rgba(15, 123, 108, 0.1);
@@ -37,6 +46,7 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-card: 8px;
+  --radius-page: 12px;
 
   --font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
     'Apple Color Emoji', Arial, sans-serif, 'Segoe UI Emoji', 'Segoe UI Symbol';

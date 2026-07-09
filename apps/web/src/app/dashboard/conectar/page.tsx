@@ -18,8 +18,8 @@ const pageShellStyle: CSSProperties = {
   width: '100%',
   display: 'flex',
   flexDirection: 'column',
-  background: 'var(--color-background-tertiary)',
-  color: 'var(--color-text-primary)',
+  background: 'var(--page-bg)',
+  color: 'var(--fg-0)',
 }
 
 export default function ConectarPage() {

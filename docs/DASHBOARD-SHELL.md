@@ -28,13 +28,15 @@ Resolución: `resolveWinemakerOwnerHomeView()` · doc completa en [WINEMAKER-HOM
 | Área | Rutas | Rail (desktop) | Header |
 |------|-------|----------------|--------|
 | Canvas | `/dashboard` | Sí | Canvas header (PROOF + badge perfil) · **Owner winemaker:** ver [WINEMAKER-HOME.md](./WINEMAKER-HOME.md) |
-| Operativo | inventario, pedidos, winemaker/*, … | Sí | Inner header (título + ask + avatar) |
-| Canvas-style | `/dashboard/credito` | Sí | Sin inner header (contenido full-bleed) |
+| Operativo | inventario, pedidos, winemaker/*, … | Sí | Inner header fino (título + badge + avatar). **Sin Ask bar en desktop/tablet** (VU Fase 1). Ask solo en móvil. |
+| Canvas-style | `/dashboard/credito`, `/dashboard/conectar` | Sí | Sin inner header (contenido full-bleed / PageFrame) |
 | Agente legacy | `/dashboard/agente` | Sí | Sin inner header |
 
 Guards de perfil: `apps/web/src/lib/proof/dashboard-routes.ts`.
 
 Rail agrupado (Epic B): [DASHBOARD-RAIL.md](./DASHBOARD-RAIL.md) · toggle expandido persistido en `localStorage` (`proof_dashboard_rail_expanded`).
+
+**VU shell (Fase 1):** `main` usa `--page-bg` en ≥768; rail active = `--nav-active-bg` + `--nav-active-bar`. Spec: [PROOF-VU-SYSTEM.md](./PROOF-VU-SYSTEM.md).
 
 ## Helpers
 
@@ -51,6 +53,7 @@ Checklist completo: **[DESKTOP-QA.md](./DESKTOP-QA.md)** (es-MX + en-US, viewpor
 Resumen rápido:
 
 - [ ] Rail visible en `/dashboard` y en inventario — mismo ancho, Inicio activo en canvas
-- [ ] Tab recorre rail → settings → compositor ask
+- [ ] Tab recorre rail → settings → avatar (sin Ask en desktop)
 - [ ] Winemaker / distribuidor / destilador: ítems de nav acordes al perfil
-- [ ] Sin salto brusco de fondo header canvas ↔ páginas operativas
+- [ ] Fondo `--page-bg` continuo header ↔ contenido en desktop
+- [ ] Móvil ≤767: Ask strip en inner header intacto (si aplica)

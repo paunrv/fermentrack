@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { decodeProductorSlug } from '@/lib/proof/productores'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 import { formatDate } from '@/lib/i18n/format'
@@ -69,29 +70,30 @@ export default function ProductorDetallePage() {
     })
   }
 
-  return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-      <Link
-        href="/dashboard/productores"
-        style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
-      >
-        {t('back')}
-      </Link>
+  const backLink = (
+    <Link
+      href="/dashboard/productores"
+      style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
+    >
+      {t('back')}
+    </Link>
+  )
 
-      <header style={{ margin: '16px 0 24px' }}>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-          {nombre}
-        </h1>
-        <p className="mono" style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
+  return (
+    <VuOpsPage
+      title={nombre}
+      description={
+        <span className="mono" style={{ fontSize: 12, color: 'var(--fg-3)' }}>
           {t('summary', {
             count: skus.length,
             debt: deudaTotal > 0 ? fmtMoney(deudaTotal) : tList('current'),
           })}
-        </p>
-      </header>
-
+        </span>
+      }
+      actions={backLink}
+    >
       {loading ? (
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13, margin: 0 }}>{tCommon('loading')}</p>
       ) : (
         <>
           <Section title={t('sections.skus')}>
@@ -141,7 +143,7 @@ export default function ProductorDetallePage() {
           </Section>
         </>
       )}
-    </div>
+    </VuOpsPage>
   )
 }
 

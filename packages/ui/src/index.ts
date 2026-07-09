@@ -116,4 +116,15 @@ export {
   type PopoverProps,
 } from './components/Overlay'
 
+export {
+  PageFrame,
+  ContentCard,
+  CopyField,
+  SetupAccordion,
+  type PageFrameProps,
+  type ContentCardProps,
+  type CopyFieldProps,
+  type SetupAccordionProps,
+} from './components/VuPage'
+
 export { ToastProvider, useToast, ToastViewport, type ToastItem } from './components/Toast'

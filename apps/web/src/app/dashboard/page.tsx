@@ -6,11 +6,8 @@ import { Suspense } from 'react'
 import { useEffect, useState, type CSSProperties } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useProfile } from '@/context/ProfileContext'
-import { useOrganization } from '@/context/OrganizationContext'
 import { useWinemakerAccess } from '@/hooks/useWinemakerAccess'
-import { resolveMcpClientProfileType } from '@/lib/mcp/client-profile'
-import { ProofConnectionHub } from '@/components/proof/ProofConnectionHub'
+import { ProofOpsHome } from '@/components/proof/ProofOpsHome'
 import { ProofOrdenCompraPanel } from '@/components/proof/ProofOrdenCompraPanel'
 import { WinemakerDesktopHome } from '@/components/proof/WinemakerDesktopHome'
 import { WinemakerMobileHome } from '@/components/proof/WinemakerMobileHome'
@@ -31,23 +28,10 @@ const pageShellStyle: CSSProperties = {
 export default function DashboardPage() {
   const tHome = useTranslations('distributor.home')
   const searchParams = useSearchParams()
-  const { activeProfile } = useProfile()
-  const { activeOrg } = useOrganization()
-  const {
-    isWinemaker,
-    isWinemakerOrgShell,
-    effectiveProfileType,
-    membership,
-    loading: winemakerAccessLoading,
-    bootTimedOut,
-    bootError,
-  } = useWinemakerAccess()
+  const { effectiveProfileType, membership, loading: winemakerAccessLoading, bootTimedOut, bootError, isWinemaker } =
+    useWinemakerAccess()
 
   const profileType = profileTypeFromV2(effectiveProfileType ?? undefined)
-  const mcpProfileType = resolveMcpClientProfileType({
-    profileType: effectiveProfileType ?? activeProfile?.profile_type_v2,
-    orgType: activeOrg?.org_type,
-  })
   const theme = getProfileTheme(effectiveProfileType ?? undefined)
   const accent = theme.accent
   const isDistributor = profileType === 'distributor'
@@ -174,11 +158,7 @@ export default function DashboardPage() {
         initialOrdenId={isDistributor ? ocFromUrl : null}
         onDismiss={() => setOcFromUrl(null)}
       />
-      <ProofConnectionHub
-        accent={accent}
-        profileType={profileType}
-        mcpProfileType={mcpProfileType}
-      />
+      <ProofOpsHome profileType={profileType} />
     </div>
   )
 }

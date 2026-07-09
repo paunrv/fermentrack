@@ -15,16 +15,12 @@ import { fetchSkus } from '@/lib/supabase'
 import { mapSkuRowToSKU } from '@/lib/proof/sku-state'
 import type { EstadoSKU } from '@/lib/proof/types'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import { CanvasHorizontalSection } from '@/components/proof/CanvasHorizontalSection'
 import { HorizontalChipRail } from '@/components/proof/HorizontalChipRail'
 import { InventarioSkuRailCard } from '@/components/proof/InventarioSkuRailCard'
 import { KpiRailChip } from '@/components/proof/KpiRailChip'
-import { INVENTARIO_ACCENT } from '@/lib/proof/canvas-accents'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import type { CategoriaLiquido } from '@/lib/supabase/distribuidor'
-import { useBreakpoint } from '@/hooks/useBreakpoint'
-import { pageTitleFontSize } from '@/lib/ui/breakpoints'
-import { pagePadding } from '@/lib/ui/page-shell'
 import type { SKU } from '@/lib/proof/types'
 
 type Filtro = 'todos' | 'quiebre' | 'sin_rotar' | 'con_deuda' | 'sobrevendido'
@@ -37,7 +33,6 @@ export default function InventarioPage() {
   const tCat = useTranslations('distributor.liquidCategories')
   const { scope } = useProfile()
   const supabase = useSupabase()
-  const breakpoint = useBreakpoint()
   const [skuRows, setSkuRows] = useState<Awaited<ReturnType<typeof fetchSkus>>>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<Filtro>('todos')
@@ -162,23 +157,43 @@ export default function InventarioPage() {
     [t]
   )
 
-  const proofMsg = t('aiFallback', {
-    value: fmtMoney(kpis.valor),
-    quiebre: kpis.quiebre,
-    deadCapital: fmtMoney(kpis.muertoCapital),
-  })
-
   return (
-    <div style={pagePadding({ withAiBar: true, breakpoint })}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <VuOpsPage
+      title={t('title')}
+      description={t('subtitle')}
+      actions={
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => (showForm ? (resetForm(), setShowForm(false)) : openCreateForm())}
+            className="ui-btn ui-btn--sm"
+            style={{
+              background: showForm ? 'transparent' : 'var(--fg-0)',
+              color: showForm ? 'var(--fg-0)' : 'var(--ink)',
+              border: showForm ? '1px solid var(--hairline)' : 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {showForm ? tCommon('cancel') : t('newSku')}
+          </button>
+          <Link
+            href="/dashboard/recepcion"
+            className="ui-btn ui-btn--primary ui-btn--sm"
+            style={{ textDecoration: 'none' }}
+          >
+            {tCommon('receivingPhoto')}
+          </Link>
+        </div>
+      }
+    >
         {isEmpty && (
           <div
             style={{
-              marginBottom: 20,
+              marginBottom: 4,
               padding: '16px 18px',
-              borderRadius: 'var(--radius-card)',
-              border: '1px solid var(--hairline)',
-              background: 'var(--panel)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px dashed var(--hairline)',
+              background: 'var(--surface-muted)',
             }}
           >
             <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--fg-0)', lineHeight: 1.5 }}>
@@ -186,83 +201,13 @@ export default function InventarioPage() {
             </p>
             <Link
               href="/dashboard/productos/nueva"
-              style={{
-                display: 'inline-block',
-                padding: '10px 16px',
-                background: 'var(--gold)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--ink)',
-                fontSize: 12,
-                fontWeight: 600,
-                textDecoration: 'none',
-              }}
+              className="ui-btn ui-btn--primary ui-btn--sm"
+              style={{ textDecoration: 'none', display: 'inline-flex' }}
             >
               {t('empty.createFirstSku')}
             </Link>
           </div>
         )}
-
-        <header
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 16,
-            marginBottom: 24,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <h1
-              style={{
-                margin: '0 0 6px',
-                fontSize: 28,
-                fontWeight: 800,
-                color: 'var(--fg-0)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {t('title')}
-            </h1>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => (showForm ? (resetForm(), setShowForm(false)) : openCreateForm())}
-              style={{
-                padding: '10px 16px',
-                background: showForm ? 'transparent' : 'var(--gold)',
-                color: showForm ? 'var(--fg-0)' : 'var(--ink)',
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                border: showForm ? '1px solid var(--hairline)' : 'none',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-              }}
-            >
-              {showForm ? tCommon('cancel') : t('newSku')}
-            </button>
-            <Link
-              href="/dashboard/recepcion"
-              style={{
-                padding: '10px 16px',
-                background: 'var(--gold)',
-                color: 'var(--ink)',
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                textDecoration: 'none',
-                borderRadius: 'var(--radius-sm)',
-              }}
-            >
-              {tCommon('receivingPhoto')}
-            </Link>
-          </div>
-        </header>
 
         {showForm && (
           <form
@@ -379,7 +324,7 @@ export default function InventarioPage() {
 
         <div className="proof-canvas-stack">
           <CanvasHorizontalSection
-            accent={INVENTARIO_ACCENT}
+            accent="var(--proof-accent)"
             title={t('sections.summary')}
             subtitle={loading ? tCommon('loading') : t('sections.skuCount', { count: skus.length })}
             loading={loading}
@@ -397,7 +342,7 @@ export default function InventarioPage() {
           </CanvasHorizontalSection>
 
           <CanvasHorizontalSection
-            accent={INVENTARIO_ACCENT}
+            accent="var(--proof-accent)"
             title={t('sections.catalog')}
             subtitle={t('sections.catalogFiltered', { filtered: filtered.length, total: skus.length })}
             toolbar={
@@ -420,7 +365,7 @@ export default function InventarioPage() {
           </CanvasHorizontalSection>
 
           <CanvasHorizontalSection
-            accent={INVENTARIO_ACCENT}
+            accent="var(--proof-accent)"
             title={t('sections.mainWarehouse')}
             subtitle={t('sections.warehouseCount', { count: bodegaPrincipal.length })}
             emptyMessage={t('empty.mainWarehouse')}
@@ -433,7 +378,7 @@ export default function InventarioPage() {
           </CanvasHorizontalSection>
 
           <CanvasHorizontalSection
-            accent={INVENTARIO_ACCENT}
+            accent="var(--proof-accent)"
             title={t('sections.inTransit')}
             subtitle={t('sections.warehouseCount', { count: bodegaTransito.length })}
             emptyMessage={t('empty.inTransit')}
@@ -446,7 +391,7 @@ export default function InventarioPage() {
           </CanvasHorizontalSection>
 
           <CanvasHorizontalSection
-            accent={INVENTARIO_ACCENT}
+            accent="var(--proof-accent)"
             title={t('sections.risk')}
             subtitle={t('sections.riskSubtitle')}
             loading={loading}
@@ -459,15 +404,7 @@ export default function InventarioPage() {
             <RiesgoRailChip title={t('risk.slowDebt')} value={fmtMoney(kpis.deuda)} tone="var(--warn)" />
           </CanvasHorizontalSection>
         </div>
-      </div>
-
-      <ConnectedProofAIBar
-        pantalla="inventario"
-        profileType="distributor"
-        hints={{ pantalla: { kpis, skuCount: skus.length, filtro, isEmpty } }}
-        fallback={{ mensaje: proofMsg, accionLabel: tCommon('analyzeWithProof') }}
-      />
-    </div>
+    </VuOpsPage>
   )
 }
 

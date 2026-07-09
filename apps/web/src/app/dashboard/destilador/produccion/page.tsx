@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { fmtMoney } from '@/lib/proof/format'
 import type { CorridaRow, StockBotellaRow, StockEtiquetaRow } from '@/lib/proof/destilador-types'
 import {
@@ -65,43 +66,33 @@ export default function DestiladorProduccionPage() {
 
   const activas = corridas.filter(c => c.estado === 'activa')
 
+  const newRunLink = (
+    <Link
+      href="/dashboard/destilador/produccion/nueva"
+      style={{
+        padding: '8px 14px',
+        background: 'var(--gold)',
+        color: 'var(--ink)',
+        fontSize: 11,
+        fontWeight: 600,
+        textDecoration: 'none',
+        textTransform: 'uppercase',
+      }}
+    >
+      {t('newRun')}
+    </Link>
+  )
+
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 960, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')}>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 24,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700 }}>{t('title')}</h1>
-        <Link
-          href="/dashboard/destilador/produccion/nueva"
-          style={{
-            padding: '8px 14px',
-            background: 'var(--gold)',
-            color: 'var(--ink)',
-            fontSize: 11,
-            fontWeight: 600,
-            textDecoration: 'none',
-            textTransform: 'uppercase',
-          }}
-        >
-          {t('newRun')}
-        </Link>
-      </header>
-
+    <VuOpsPage title={t('title')} actions={newRunLink}>
       {dataLoading ? (
         <DestiladorSkeleton lines={5} />
       ) : (
@@ -242,6 +233,6 @@ export default function DestiladorProduccionPage() {
           </div>
         </>
       )}
-    </div>
+    </VuOpsPage>
   )
 }

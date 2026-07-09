@@ -186,10 +186,10 @@
 .ui-separator { border: none; border-top: 1px solid var(--hairline); margin: 0; }
 .ui-separator--vertical { border-top: none; border-left: 1px solid var(--hairline); height: 100%; width: 0; }
 .ui-page-shell { min-height: 100vh; background: var(--ink); color: var(--fg-0); font-family: var(--font-display); }
-.ui-page-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
-.ui-page-header__main { min-width: 0; }
-.ui-page-header__title { margin: 0 0 4px; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
-.ui-page-header__description { margin: 0; font-size: 14px; color: var(--fg-2); }
+.ui-page-header { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 0; }
+.ui-page-header__main { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.ui-page-header__title { margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; color: var(--fg-0); }
+.ui-page-header__description { margin: 0; font-size: 15px; line-height: 1.55; color: var(--fg-2); }
 .ui-page-header__actions { display: flex; gap: 8px; flex-shrink: 0; }
 .ui-empty {
   text-align: center;
@@ -500,4 +500,143 @@
   padding: 0;
   font-size: 16px;
   line-height: 1;
+}
+
+/* — VU page system (docs/PROOF-VU-SYSTEM.md) — */
+.ui-page-frame {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 24px 48px;
+  background: var(--page-bg);
+  color: var(--fg-0);
+  font-family: var(--font-display);
+  box-sizing: border-box;
+}
+.ui-page-frame__inner {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ui-page-frame--narrow .ui-page-frame__inner {
+  max-width: 640px;
+}
+
+.ui-content-card {
+  background: var(--surface-card);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-page);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
+}
+
+.ui-copy-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ui-copy-field__label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg-0);
+}
+.ui-copy-field__row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  background: var(--surface-muted);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  padding-left: 12px;
+}
+.ui-copy-field__value {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px 0;
+  color: var(--fg-0);
+  word-break: break-all;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+}
+.ui-copy-field__button {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-card);
+  color: var(--fg-0);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+}
+.ui-copy-field__button:hover:not(:disabled) {
+  background: var(--hover);
+}
+.ui-copy-field__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.ui-copy-field__button:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.ui-setup-accordion {
+  border-top: 1px solid var(--hairline);
+}
+.ui-setup-accordion__summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg-0);
+  font-family: var(--font-display);
+}
+.ui-setup-accordion__summary::-webkit-details-marker {
+  display: none;
+}
+.ui-setup-accordion__chevron {
+  color: var(--fg-3);
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 400;
+  transition: transform 0.15s var(--ease-out);
+}
+.ui-setup-accordion[open] > .ui-setup-accordion__summary .ui-setup-accordion__chevron {
+  transform: rotate(90deg);
+}
+.ui-setup-accordion__body {
+  padding: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--fg-2);
+  line-height: 1.55;
 }

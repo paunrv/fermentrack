@@ -1,3 +1,8 @@
-export const PROVEEDOR_ACCENT = '#1E6FA8'
-export const CLIENTE_ACCENT = '#2D6A4F'
-export const INVENTARIO_ACCENT = '#C2410C'
+/**
+ * @deprecated VU Fase 7 — use `var(--proof-accent)` (set via `proofAccentCssVars` /
+ * profile theme) for chrome accents. Profile colors stay on badges only.
+ * These hex constants remain only for gradual migration of canvas cards.
+ */
+export const PROVEEDOR_ACCENT = 'var(--proof-accent)'
+export const CLIENTE_ACCENT = 'var(--proof-accent)'
+export const INVENTARIO_ACCENT = 'var(--proof-accent)'

@@ -38,7 +38,6 @@ import {
   resolveShellProfileType,
   isWinemakerOrgShellMode,
   shellHorizontalPadding,
-  innerHeaderAskMaxWidth,
 } from '@/lib/proof/dashboard-shell'
 import { pageTitleForPath } from '@/lib/proof/dashboard-nav'
 import { buildDashboardRail } from '@/lib/proof/dashboard-rail'
@@ -156,8 +155,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const shellPadX = shellHorizontalPadding(breakpoint)
   const isWinemakerMobileHome = isWinemakerOrgShell && isCanvas && isMobile
   const isDedicatedChatPage = path.startsWith('/dashboard/winemaker/chat')
+  const isConnectPage = path.startsWith('/dashboard/conectar')
   const showWinemakerMobileNav = shouldShowWinemakerMobileNav(breakpoint, isWinemakerOrgShell)
-  const showTeamChatDock = shouldShowTeamChatDock(breakpoint, isWinemakerOrgShell) && !isDedicatedChatPage
+  const showTeamChatDock =
+    shouldShowTeamChatDock(breakpoint, isWinemakerOrgShell) &&
+    !isDedicatedChatPage &&
+    !isConnectPage
   const showSidebar = shouldShowDesktopRailForBreakpoint(breakpoint)
   const showMobileNav = shouldShowBottomNav(breakpoint, isWinemakerOrgShell)
   const { open: chatOpen, toggle: toggleChat } = useTeamChatDockState()
@@ -414,7 +417,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{
           flex: 1,
           minWidth: 0,
-          background: 'var(--ink)',
+          background: isMobile ? 'var(--ink)' : 'var(--page-bg)',
           position: 'relative',
           zIndex: 2,
           display: 'flex',
@@ -540,10 +543,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             style={{
               position: 'sticky',
               top: 0,
-              padding: isMobile ? '10px 16px' : isTablet ? `12px ${shellPadX}px` : '12px 28px',
+              height: isMobile ? undefined : DASHBOARD_CANVAS_HEADER_HEIGHT_PX,
+              padding: isMobile ? '10px 16px' : isTablet ? `0 ${shellPadX}px` : '0 28px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 10,
+              justifyContent: 'center',
+              gap: isMobile ? 10 : 0,
             }}
           >
             <div
@@ -553,12 +558,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 justifyContent: 'space-between',
                 gap: 12,
                 width: '100%',
+                minHeight: isMobile ? undefined : DASHBOARD_CANVAS_HEADER_HEIGHT_PX,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                 <span
                   style={{
-                    fontSize: isMobile ? 15 : isTablet ? 15 : 16,
+                    fontSize: isMobile ? 15 : 14,
                     fontWeight: 600,
                     letterSpacing: '-0.015em',
                     color: 'var(--fg-0)',
@@ -583,28 +589,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {theme.label.toUpperCase()}
                   </span>
                 )}
-                {!isMobile && (
-                  <span
-                    aria-hidden
-                    className="status-dot ok live"
-                    style={{ width: 5, height: 5, background: 'var(--proof-accent)' }}
-                  />
-                )}
                 {isWinemaker && allOrganizations.length > 1 && (
                   <OrgSwitcher compact />
                 )}
               </div>
-              {!isMobile && (
-                <div style={{ flex: 1, minWidth: 0, maxWidth: innerHeaderAskMaxWidth(breakpoint), margin: '0 auto' }}>
-                  <ProofAskForm
-                    ask={ask}
-                    setAsk={setAsk}
-                    onSubmit={submitAsk}
-                    onCamera={() => askCameraRef.current?.click()}
-                    compact={false}
-                  />
-                </div>
-              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                 <LocaleToggle variant="dashboard" />
                 <AvatarMenu
@@ -618,6 +606,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
               </div>
             </div>
+            {/* Mobile-only ask strip — desktop VU shell has no global Ask (docs/PROOF-VU-SYSTEM.md). */}
             {isMobile && (
               <ProofAskForm
                 ask={ask}
@@ -859,7 +848,7 @@ function AvatarMenu({
             top: 'calc(100% + 8px)',
             right: 0,
             minWidth: 168,
-            background: '#fff',
+            background: 'var(--surface-card)',
             border: '0.5px solid var(--hairline)',
             borderRadius: 10,
             boxShadow: '0 4px 16px rgba(0,0,0,0.08)',

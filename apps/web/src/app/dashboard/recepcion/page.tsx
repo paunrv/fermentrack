@@ -9,7 +9,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import {
   type ItemDetectadoRecepcion,
   buildDiscrepanciasFromItems,
@@ -27,6 +26,7 @@ import {
   type OrdenCompraRow,
 } from '@/lib/supabase'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 const STEP_IDS = ['foto', 'analiza', 'revisar', 'discrepancias', 'confirmar'] as const
 
@@ -246,15 +246,7 @@ export default function RecepcionPage() {
   const vinculoOcDistribuidor = ocVinculo?.source === 'distribuidor'
 
   return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 720, margin: '0 auto' }}>
-      <header style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-          {t('title')}
-        </h1>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-          {t('subtitle')}
-        </p>
-      </header>
+    <VuOpsPage title={t('title')} description={t('subtitle')}>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
         {STEP_IDS.map((stepId, i) => (
@@ -570,28 +562,7 @@ export default function RecepcionPage() {
       )}
 
       {error && <p style={{ color: 'var(--crit)', marginTop: 16, fontSize: 13 }}>{error}</p>}
-
-      <ConnectedProofAIBar
-        pantalla="recepcion"
-        vista={STEP_IDS[step]}
-        profileType="distributor"
-        hints={{
-          pantalla: {
-            step,
-            productor,
-            ordenCompraId: ocVinculo?.id ?? null,
-            ordenCompraSource: ocVinculo?.source ?? null,
-            itemsCount: items.length,
-            totalBotellas,
-            discrepancias: discrepancias.length,
-          },
-        }}
-        fallback={{
-          mensaje: t('aiFallback'),
-          accionLabel: tCommon('askProof'),
-        }}
-      />
-    </div>
+    </VuOpsPage>
   )
 }
 

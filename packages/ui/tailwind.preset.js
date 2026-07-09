@@ -7,6 +7,9 @@ module.exports = {
         canvas: 'var(--canvas)',
         panel: 'var(--panel)',
         hairline: 'var(--hairline)',
+        'page-bg': 'var(--page-bg)',
+        'surface-card': 'var(--surface-card)',
+        'surface-muted': 'var(--surface-muted)',
         fg: {
           0: 'var(--fg-0)',
           1: 'var(--fg-1)',
@@ -18,11 +21,14 @@ module.exports = {
         crit: 'var(--crit)',
         info: 'var(--info)',
         accent: 'var(--proof-accent)',
+        'accent-soft': 'var(--accent-soft)',
+        'nav-active': 'var(--nav-active-bg)',
       },
       borderRadius: {
         sm: 'var(--radius-sm)',
         md: 'var(--radius-md)',
         card: 'var(--radius-card)',
+        page: 'var(--radius-page)',
       },
       fontFamily: {
         display: 'var(--font-display)',

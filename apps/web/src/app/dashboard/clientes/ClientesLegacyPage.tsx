@@ -12,8 +12,7 @@ import {
   type ClientType,
   type PriceTier,
 } from '@/lib/supabase'
-
-
+import { ContentCard, PageFrame, PageHeader } from '@fermentrack/ui'
 
 const TYPE_COLORS: Record<ClientType, string> = {
   restaurante: '#FAC775',
@@ -53,7 +52,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -136,54 +135,32 @@ export default function ClientesLegacyPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
-      <div
-        style={{
-          marginBottom: 32,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1
+    <PageFrame style={{ overflow: 'auto' }}>
+      <PageHeader
+        title="Clientes"
+        description="Cartera de restaurantes, bares, tiendas y sub-distribuidores"
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowForm(v => !v)}
             style={{
-              fontSize: 28,
+              padding: '12px 20px',
+              background: showForm ? 'var(--surface-card)' : 'var(--fg-0)',
+              color: showForm ? 'var(--fg-0)' : '#fff',
+              border: '1px solid var(--hairline)',
+              fontSize: 11,
               fontWeight: 800,
-              letterSpacing: '-.04em',
-              color: 'var(--fg-0)',
-              lineHeight: 1.1,
-              marginBottom: 6,
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-display)',
             }}
           >
-            Clientes
-          </h1>
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-            Cartera de restaurantes, bares, tiendas y sub-distribuidores
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowForm(v => !v)}
-          style={{
-            padding: '12px 20px',
-            background: showForm ? '#fff' : 'var(--fg-0)',
-            color: showForm ? 'var(--fg-0)' : '#fff',
-            border: '1px solid var(--hairline)',
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
-          }}
-        >
-          {showForm ? 'Cancelar' : '+ Nuevo cliente'}
-        </button>
-      </div>
-
+            {showForm ? 'Cancelar' : '+ Nuevo cliente'}
+          </button>
+        }
+      />
+      <ContentCard>
       {showForm && (
         <form
           onSubmit={handleSubmit}
@@ -333,9 +310,9 @@ export default function ClientesLegacyPage() {
 
       <div>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Cargando...</p>
         ) : clients.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>
             Aún no hay clientes. Agrega el primero con el botón &quot;+ Nuevo cliente&quot;.
           </p>
         ) : (
@@ -399,7 +376,7 @@ export default function ClientesLegacyPage() {
                       textTransform: 'uppercase',
                       padding: '5px 8px',
                       border: '1px solid var(--hairline)',
-                      background: '#fff',
+                      background: 'var(--surface-card)',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                     }}
@@ -484,6 +461,7 @@ export default function ClientesLegacyPage() {
           </div>
         )}
       </div>
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

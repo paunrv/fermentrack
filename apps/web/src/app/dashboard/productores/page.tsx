@@ -8,7 +8,6 @@ import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import {
   buildProductoresResumen,
   encodeProductorSlug,
@@ -16,6 +15,7 @@ import {
 } from '@/lib/proof/productores'
 import { fmtMoney } from '@/lib/proof/format'
 import { formatDate } from '@/lib/i18n/format'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import {
   fetchDeudasProductores,
   fetchOrdenesCompraAbiertas,
@@ -66,16 +66,9 @@ export default function ProductoresPage() {
   }
 
   return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-      <header style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-          {t('title')}
-        </h1>
-        <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
-      </header>
-
+    <VuOpsPage title={t('title')} description={t('subtitle')}>
       {loading ? (
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13, margin: 0 }}>{tCommon('loading')}</p>
       ) : rows.length === 0 ? (
         <div
           style={{
@@ -129,7 +122,7 @@ export default function ProductoresPage() {
         </div>
       )}
 
-      <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
+      <p style={{ marginTop: 0, fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
         {t.rich('footer', {
           createOc: chunks => (
             <Link href="/dashboard/distribuidor/compras/nuevo" style={{ color: 'var(--gold)' }}>
@@ -148,16 +141,6 @@ export default function ProductoresPage() {
           ),
         })}
       </p>
-
-      <ConnectedProofAIBar
-        pantalla="productores"
-        profileType="distributor"
-        hints={{ pantalla: { total: rows.length, conDeuda } }}
-        fallback={{
-          mensaje:
-            conDeuda > 0 ? t('aiFallbackWithDebt', { count: conDeuda }) : t('aiFallbackCurrent'),
-        }}
-      />
-    </div>
+    </VuOpsPage>
   )
 }

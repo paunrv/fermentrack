@@ -10,8 +10,7 @@ import { useSupabase } from '@/hooks/useSupabase'
 import { fetchPedidos, type PedidoRow } from '@/lib/supabase'
 import { fmtMoney } from '@/lib/proof/format'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
-import { pageTitleFontSize } from '@/lib/ui/breakpoints'
-import { pagePadding } from '@/lib/ui/page-shell'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 export default function PedidosPage() {
   const t = useTranslations('distributor.pedidos')
@@ -38,55 +37,33 @@ export default function PedidosPage() {
     return () => {
       cancelled = true
     }
-  }, [scope?.user_id, scope?.profile_type_v2])
+  }, [scope?.user_id, scope?.profile_type_v2, supabase])
 
   return (
-    <div style={pagePadding({ breakpoint })}>
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 24,
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1 style={{ margin: '0 0 6px', fontSize: pageTitleFontSize(breakpoint), fontWeight: 700, color: 'var(--fg-0)' }}>
-            {t('title')}
-          </h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
-        </div>
+    <VuOpsPage
+      title={t('title')}
+      description={t('subtitle')}
+      actions={
         <Link
           href="/dashboard/pedidos/nuevo"
-          style={{
-            padding: '10px 16px',
-            background: 'var(--gold)',
-            color: 'var(--ink)',
-            fontWeight: 600,
-            fontSize: 12,
-            textDecoration: 'none',
-            borderRadius: 'var(--radius-sm)',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-          }}
+          className="ui-btn ui-btn--primary ui-btn--sm"
+          style={{ textDecoration: 'none' }}
         >
           {t('newOrder')}
         </Link>
-      </header>
-
+      }
+    >
       {loading ? (
-        <p style={{ color: 'var(--fg-3)' }}>{tCommon('loading')}</p>
+        <p style={{ margin: 0, color: 'var(--fg-3)' }}>{tCommon('loading')}</p>
       ) : rows.length === 0 ? (
-        <p style={{ color: 'var(--fg-2)' }}>
+        <p style={{ margin: 0, color: 'var(--fg-2)' }}>
           {t('empty')}{' '}
-          <Link href="/dashboard/pedidos/nuevo" style={{ color: 'var(--gold)' }}>
+          <Link href="/dashboard/pedidos/nuevo" style={{ color: 'var(--proof-accent)' }}>
             {t('createFirst')}
           </Link>
         </p>
       ) : (
-        <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-card)' }}>
+        <div style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--radius-md)' }}>
           {rows.map((p, i) => (
             <Link
               key={p.id}
@@ -104,11 +81,12 @@ export default function PedidosPage() {
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <span className="mono" style={{ fontSize: 12, color: 'var(--gold)' }}>
+                <span className="mono" style={{ fontSize: 12, color: 'var(--proof-accent)' }}>
                   {p.numero}
                 </span>
                 <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4, lineHeight: 1.45 }}>
-                  {(p as PedidoRow & { clients?: { name: string } }).clients?.name ?? tCommon('clientFallback')}
+                  {(p as PedidoRow & { clients?: { name: string } }).clients?.name ??
+                    tCommon('clientFallback')}
                   {p.etiqueta_nombre ? ` · ${p.etiqueta_nombre}` : ''}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--fg-3)', marginTop: 4 }}>
@@ -130,6 +108,6 @@ export default function PedidosPage() {
           ))}
         </div>
       )}
-    </div>
+    </VuOpsPage>
   )
 }

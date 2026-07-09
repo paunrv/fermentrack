@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { corridaModoLabel } from '@/lib/proof/distiller-i18n'
 import type { DestCorridaModo, DestFormatoBotella, LoteRow } from '@/lib/proof/destilador-types'
 import {
@@ -94,21 +95,22 @@ export default function NuevaCorridaPage() {
     }
   }
 
+  const backLink = (
+    <Link href="/dashboard/destilador/produccion" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+      {tCommon('backToProduction')}
+    </Link>
+  )
+
   if (loading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')} narrow>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/dashboard/destilador/produccion" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        {tCommon('backToProduction')}
-      </Link>
-      <h1 style={{ margin: '16px 0 24px', fontSize: 24 }}>{t('title')}</h1>
-
+    <VuOpsPage title={t('title')} actions={backLink} narrow>
       {lotes.length === 0 ? (
         <p style={{ color: 'var(--fg-2)' }}>
           {t('noLots')}{' '}
@@ -208,7 +210,7 @@ export default function NuevaCorridaPage() {
           </button>
         </form>
       )}
-    </div>
+    </VuOpsPage>
   )
 }
 

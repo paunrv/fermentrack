@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useTranslations } from 'next-intl'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 export default function DestiladorVentasPage() {
   const t = useTranslations('distiller.ventas')
@@ -12,16 +13,15 @@ export default function DestiladorVentasPage() {
 
   if (loading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 960, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')}>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 12px', fontSize: 26, fontWeight: 700 }}>{t('title')}</h1>
-      <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('placeholder')}</p>
-    </div>
+    <VuOpsPage title={t('title')}>
+      <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 14 }}>{t('placeholder')}</p>
+    </VuOpsPage>
   )
 }

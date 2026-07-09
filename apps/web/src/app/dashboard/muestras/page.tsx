@@ -14,6 +14,7 @@ import {
   type Batch,
   type Sample,
 } from '@/lib/supabase'
+import { PageFrame, ContentCard } from '@fermentrack/ui'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
 
@@ -30,7 +31,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -125,14 +126,8 @@ export default function MuestrasPage() {
   }
 
   return (
-    <div
-      style={{
-        fontFamily: 'var(--font-display)',
-        background: '#fff',
-        minHeight: '100vh',
-        padding: 32,
-      }}
-    >
+    <PageFrame style={{ overflow: 'auto' }}>
+      <ContentCard>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
@@ -146,7 +141,7 @@ export default function MuestrasPage() {
         >
           Muestras
         </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>
           Registro de muestras + historial (sin IA hospedada)
         </p>
       </div>
@@ -293,7 +288,7 @@ export default function MuestrasPage() {
             >
               Sube una foto de la muestra
             </div>
-            <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>
+            <div style={{ fontSize: 11, color: 'var(--fg-3)', fontWeight: 500 }}>
               Arrastra o haz clic — JPG, PNG, WEBP
             </div>
             <input
@@ -349,7 +344,7 @@ export default function MuestrasPage() {
         </div>
       </div>
 
-      <div style={{ border: '1px solid var(--hairline)', padding: 24, background: '#fff' }}>
+      <div style={{ border: '1px solid var(--hairline)', padding: 24, background: 'var(--surface-card)' }}>
         <div
           style={{
             fontSize: 11,
@@ -363,7 +358,7 @@ export default function MuestrasPage() {
           Historial de muestras
         </div>
         {samples.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>Sin muestras registradas aún</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>Sin muestras registradas aún</p>
         ) : (
           samples.map((s, i) => (
             <div
@@ -391,7 +386,7 @@ export default function MuestrasPage() {
                   fontWeight: 800,
                   letterSpacing: '.06em',
                   textTransform: 'uppercase',
-                  color: '#888',
+                  color: 'var(--fg-3)',
                   width: 48,
                   flexShrink: 0,
                   marginTop: 2,
@@ -406,7 +401,7 @@ export default function MuestrasPage() {
                 <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--fg-0)', letterSpacing: '-.02em' }}>
                   {s.batch_id} — {s.type}
                 </div>
-                <div style={{ fontSize: 11, color: '#888', marginTop: 4, fontWeight: 500 }}>
+                <div style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4, fontWeight: 500 }}>
                   {s.notes || 'Sin notas'}
                   {s.ph ? ` · pH ${s.ph}` : ''}
                   {s.density ? ` · Dens. ${s.density}` : ''}
@@ -446,6 +441,7 @@ export default function MuestrasPage() {
           ))
         )}
       </div>
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

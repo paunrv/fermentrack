@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
   rpcActualizarEstadoPedido,
@@ -10,19 +11,11 @@ import { PedidoEntregaButton } from '@/components/proof/PedidoEntregaButton'
 
 const ENTREGABLE: EstadoPedido[] = ['confirmado', 'preparando', 'en_ruta', 'parcial']
 
-const AVANCE: Partial<
-  Record<EstadoPedido, { estado: 'preparando' | 'en_ruta'; label: string }>
-> = {
-  confirmado: { estado: 'preparando', label: 'Marcar preparando' },
-  preparando: { estado: 'en_ruta', label: 'Marcar en ruta' },
-  parcial: { estado: 'preparando', label: 'Marcar preparando' },
-}
-
 export function PedidoFulfillmentActions({
   pedidoId,
   numero,
   estado,
-  accent = '#2D6A4F',
+  accent = 'var(--proof-accent)',
   onUpdated,
   fullWidth = false,
 }: {
@@ -33,11 +26,21 @@ export function PedidoFulfillmentActions({
   onUpdated?: () => void
   fullWidth?: boolean
 }) {
+  const t = useTranslations('distributor.pedidos.detail.fulfillment')
+  const tCommon = useTranslations('distributor.common')
   const supabase = useSupabase()
   const [loading, setLoading] = useState<'preparando' | 'en_ruta' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const avance = AVANCE[estado as EstadoPedido]
+  const avanceByEstado: Partial<
+    Record<EstadoPedido, { estado: 'preparando' | 'en_ruta'; label: string }>
+  > = {
+    confirmado: { estado: 'preparando', label: t('markPreparing') },
+    preparando: { estado: 'en_ruta', label: t('markInRoute') },
+    parcial: { estado: 'preparando', label: t('markPreparing') },
+  }
+
+  const avance = avanceByEstado[estado as EstadoPedido]
   const canEntregar = ENTREGABLE.includes(estado as EstadoPedido)
 
   async function handleAvance(target: 'preparando' | 'en_ruta') {
@@ -47,7 +50,7 @@ export function PedidoFulfillmentActions({
       await rpcActualizarEstadoPedido(supabase, pedidoId, target)
       onUpdated?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo actualizar el pedido')
+      setError(e instanceof Error ? e.message : tCommon('errorGeneric'))
     } finally {
       setLoading(null)
     }
@@ -74,7 +77,7 @@ export function PedidoFulfillmentActions({
             cursor: loading ? 'wait' : 'pointer',
           }}
         >
-          {loading === avance.estado ? 'Actualizando…' : avance.label}
+          {loading === avance.estado ? t('updating') : avance.label}
         </button>
       ) : null}
 
@@ -89,7 +92,7 @@ export function PedidoFulfillmentActions({
       ) : null}
 
       {error ? (
-        <p style={{ margin: 0, fontSize: 12, color: '#E24B4A' }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--crit)' }}>
           {numero ? `${numero}: ` : ''}
           {error}
         </p>

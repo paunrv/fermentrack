@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { generarRemisionPedidoAction } from '@/app/actions/remisiones-distribuidor'
 import { rpcEntregarPedido, type EstadoPedido } from '@/lib/supabase/distribuidor'
@@ -10,7 +11,7 @@ const ENTREGABLE: EstadoPedido[] = ['confirmado', 'preparando', 'en_ruta', 'parc
 export function PedidoEntregaButton({
   pedidoId,
   estado,
-  accent = '#2D6A4F',
+  accent = 'var(--proof-accent)',
   onEntregado,
   fullWidth = false,
 }: {
@@ -20,6 +21,8 @@ export function PedidoEntregaButton({
   onEntregado?: () => void
   fullWidth?: boolean
 }) {
+  const t = useTranslations('distributor.pedidos.detail.fulfillment')
+  const tCommon = useTranslations('distributor.common')
   const supabase = useSupabase()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,7 +41,7 @@ export function PedidoEntregaButton({
       }
       onEntregado?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo marcar como entregado')
+      setError(e instanceof Error ? e.message : tCommon('errorGeneric'))
     } finally {
       setLoading(false)
     }
@@ -57,16 +60,16 @@ export function PedidoEntregaButton({
           borderRadius: 10,
           border: 'none',
           background: accent,
-          color: '#fff',
+          color: 'var(--ink)',
           fontSize: 13,
           fontWeight: 600,
           cursor: loading ? 'wait' : 'pointer',
         }}
       >
-        {loading ? 'Entregando…' : 'Marcar entregado'}
+        {loading ? t('delivering') : t('markDelivered')}
       </button>
       {error ? (
-        <p style={{ margin: '8px 0 0', fontSize: 12, color: '#E24B4A' }}>{error}</p>
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--crit)' }}>{error}</p>
       ) : null}
     </div>
   )

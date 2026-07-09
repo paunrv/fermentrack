@@ -18,6 +18,8 @@ import {
 import type { TeamPlatformProfile } from '@/lib/proof/team-access-code'
 import { OrgSwitcher } from '@/components/proof/OrgSwitcher'
 import { ProFeatureLock } from '@/components/proof/ProFeatureLock'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { INVITE_PRO_REQUIRED_CODE } from '@/lib/proof/plan-team-invites'
 import { errorMessageFromUnknown } from '@/lib/errors/unknown'
 
@@ -33,7 +35,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -59,6 +61,8 @@ export default function EquipoPage() {
   const t = useTranslations('dashboard.equipo')
   const tLimits = useTranslations('dashboard.limits')
   const router = useRouter()
+  const breakpoint = useBreakpoint()
+  const isMobile = breakpoint === 'mobile'
   const { activeOrg, loading: orgLoading } = useOrganization()
   const organizationId = activeOrg?.id ?? null
 
@@ -290,38 +294,30 @@ export default function EquipoPage() {
     )
   }
 
-  return (
-    <div style={{ padding: '20px 16px calc(20px + var(--proof-bottom-nav))', maxWidth: 560, margin: '0 auto', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
-      <header style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
-          <OrgSwitcher compact />
-        </div>
-        <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
-          {t('description', { org: activeOrg?.name ?? '' })}
+  const rolesHelp = (
+    <div
+      style={{
+        padding: '12px 14px',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--hairline)',
+        background: 'var(--bg-1)',
+        fontSize: 13,
+        lineHeight: 1.5,
+        color: 'var(--fg-2)',
+      }}
+    >
+      <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--fg-0)' }}>{t('rolesHelpTitle')}</p>
+      <p style={{ margin: 0 }}>{t('rolesHelpBody')}</p>
+      {typeof window !== 'undefined' ? (
+        <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>
+          {t('mobileHint', { url: window.location.origin })}
         </p>
-        <div
-          style={{
-            marginTop: 12,
-            padding: '12px 14px',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--hairline)',
-            background: 'var(--bg-1)',
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: 'var(--fg-2)',
-          }}
-        >
-          <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--fg-0)' }}>{t('rolesHelpTitle')}</p>
-          <p style={{ margin: 0 }}>{t('rolesHelpBody')}</p>
-          {typeof window !== 'undefined' ? (
-            <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>
-              {t('mobileHint', { url: window.location.origin })}
-            </p>
-          ) : null}
-        </div>
-      </header>
+      ) : null}
+    </div>
+  )
 
+  const teamBody = (
+    <>
       {canManage ? (
         <>
           <button
@@ -728,6 +724,54 @@ export default function EquipoPage() {
         </ul>
         </>
       )}
-    </div>
+    </>
+  )
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          padding: '20px 16px calc(20px + var(--proof-bottom-nav))',
+          maxWidth: 560,
+          margin: '0 auto',
+          width: '100%',
+          boxSizing: 'border-box',
+          minWidth: 0,
+        }}
+      >
+        <header style={{ marginBottom: 20 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 8,
+              flexWrap: 'wrap',
+            }}
+          >
+            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
+            <OrgSwitcher compact />
+          </div>
+          <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
+            {t('description', { org: activeOrg?.name ?? '' })}
+          </p>
+          <div style={{ marginTop: 12 }}>{rolesHelp}</div>
+        </header>
+        {teamBody}
+      </div>
+    )
+  }
+
+  return (
+    <VuOpsPage
+      title={t('title')}
+      description={t('description', { org: activeOrg?.name ?? '' })}
+      actions={<OrgSwitcher compact />}
+      narrow
+    >
+      {rolesHelp}
+      {teamBody}
+    </VuOpsPage>
   )
 }

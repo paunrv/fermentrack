@@ -25,7 +25,7 @@ import {
   skuRowsToInventoryRows,
 } from '@/lib/proof/sku-dist-adapter'
 import { fmtMoney } from '@/lib/proof/format'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 type SalidaType = 'venta' | 'donacion' | 'merma' | 'muestra'
 
@@ -259,55 +259,19 @@ export default function MovimientosPage() {
   const typeLabelLower = (movType: SalidaType) => typeLabel(movType).toLowerCase()
 
   return (
-    <div style={{ padding: '28px 28px 100px' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <header
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 16,
-            marginBottom: 24,
-            flexWrap: 'wrap',
-          }}
+    <VuOpsPage
+      title={t('title')}
+      description={t('subtitle', { date: today })}
+      actions={
+        <Link
+          href="/dashboard/recepcion"
+          className="ui-btn ui-btn--sm"
+          style={{ textDecoration: 'none', border: '1px solid var(--hairline)', background: 'transparent', color: 'var(--fg-1)' }}
         >
-          <div>
-            <div className="eyebrow" style={{ color: 'var(--gold)', marginBottom: 8 }}>
-              {t('eyebrow')}
-            </div>
-            <h1
-              style={{
-                margin: '0 0 6px',
-                fontSize: 28,
-                fontWeight: 800,
-                color: 'var(--fg-0)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {t('title')}
-            </h1>
-            <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>
-              {t('subtitle', { date: today })}
-            </p>
-          </div>
-          <Link
-            href="/dashboard/recepcion"
-            style={{
-              padding: '10px 16px',
-              background: 'transparent',
-              color: 'var(--fg-1)',
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
-              borderRadius: 'var(--radius-sm)',
-              border: '1px solid var(--hairline)',
-            }}
-          >
-            {t('receivingLink')}
-          </Link>
-        </header>
+          {t('receivingLink')}
+        </Link>
+      }
+    >
 
         <div
           style={{
@@ -749,16 +713,7 @@ export default function MovimientosPage() {
             )}
           </div>
         </section>
-      </div>
-
-      <ConnectedProofAIBar
-        pantalla="movimientos"
-        vista={type}
-        profileType="distributor"
-        hints={{ pantalla: { summary, salidasCount: salidasHoy.length, today } }}
-        fallback={{ mensaje: proofMsg, accionLabel: tCommon('askProof') }}
-      />
-    </div>
+    </VuOpsPage>
   )
 }
 

@@ -16,7 +16,7 @@ import {
   type ClienteCreditoDetalle,
 } from '@/lib/supabase'
 import { CreditoClienteCanvasCard } from '@/components/proof/CreditoClienteCanvasCard'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
+import { PageFrame, PageHeader } from '@fermentrack/ui'
 import { getProfileTheme } from '@/lib/proof/profile-theme'
 import { fmtMoney } from '@/lib/proof/format'
 
@@ -141,16 +141,11 @@ export default function CreditoPage() {
   const profileBlocked = profilesResolved && !profileLoading && !scope
 
   return (
-    <div style={{ paddingBottom: 100, color: 'var(--fg-0)' }}>
-      <div style={{ padding: '24px 24px 8px' }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 700, color: 'var(--fg-0)' }}>
-          {t('title')}
-        </h1>
-        <p style={{ margin: 0, fontSize: 12, color: '#888' }}>{t('subtitle')}</p>
-      </div>
+    <PageFrame style={{ overflow: 'auto', paddingBottom: 48 }}>
+      <PageHeader title={t('title')} description={t('subtitle')} />
 
       {profileBlocked && (
-        <div style={{ margin: '0 24px 16px', padding: 16, fontSize: 13, color: '#888' }}>
+        <div style={{ margin: '0 0 16px', padding: 16, fontSize: 13, color: 'var(--fg-3)' }}>
           {t('noProfile')}
         </div>
       )}
@@ -204,7 +199,7 @@ export default function CreditoPage() {
             <KpiCard
               label={t('kpis.overdueClients')}
               value={String(resumen.clientesVencidos)}
-              tone={resumen.clientesVencidos > 0 ? '#E24B4A' : '#4CAF7D'}
+              tone={resumen.clientesVencidos > 0 ? 'var(--crit)' : 'var(--ok)'}
             />
             <KpiCard
               label={t('kpis.collectedThisMonth')}
@@ -246,7 +241,7 @@ export default function CreditoPage() {
           ))}
 
         {!showSkeleton && !profileBlocked && deudas.length === 0 && (
-          <p style={{ gridColumn: '1 / -1', color: '#AAA', fontSize: 13, margin: 0 }}>
+          <p style={{ gridColumn: '1 / -1', color: 'var(--fg-3)', fontSize: 13, margin: 0 }}>
             {t('emptyBalances')}
           </p>
         )}
@@ -264,7 +259,7 @@ export default function CreditoPage() {
           ))}
       </div>
 
-      <p style={{ padding: '0 24px', margin: 0, fontSize: 11, color: '#AAA' }}>
+      <p style={{ padding: '0 24px', margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
         {t.rich('producerDebts', {
           link: chunks => (
             <Link href="/dashboard/productores" style={{ color: accent }}>
@@ -305,7 +300,7 @@ export default function CreditoPage() {
               maxHeight: '85vh',
               overflow: 'auto',
               padding: 20,
-              background: '#fff',
+              background: 'var(--surface-card)',
               borderRadius: 12,
               border: '0.5px solid var(--hairline)',
             }}
@@ -436,7 +431,7 @@ export default function CreditoPage() {
               maxWidth: 420,
               width: '100%',
               padding: 20,
-              background: '#fff',
+              background: 'var(--surface-card)',
               borderRadius: 12,
               border: '0.5px solid var(--hairline)',
             }}
@@ -480,24 +475,7 @@ export default function CreditoPage() {
           </div>
         </div>
       )}
-
-      <ConnectedProofAIBar
-        pantalla="credito"
-        vista="me_deben"
-        profileType="distributor"
-        hints={{ pantalla: proofContext }}
-        fallback={{
-          mensaje:
-            resumen && resumen.clientesVencidos > 0
-              ? t('aiFallbackOverdue', { count: resumen.clientesVencidos })
-              : t('aiFallbackDefault'),
-          accionLabel: primerVencido ? t('draftCollection') : t('viewDebts'),
-        }}
-        onActionClick={
-          primerVencido ? () => void onRedactarCobro(primerVencido) : undefined
-        }
-      />
-    </div>
+    </PageFrame>
   )
 }
 
@@ -514,7 +492,7 @@ function KpiCard({
     <div
       style={{
         padding: 14,
-        background: '#fff',
+        background: 'var(--surface-card)',
         border: '0.5px solid var(--hairline)',
         borderRadius: 12,
       }}
@@ -524,7 +502,7 @@ function KpiCard({
           fontSize: 9,
           fontFamily: MONO,
           letterSpacing: '0.08em',
-          color: '#AAA',
+          color: 'var(--fg-3)',
           textTransform: 'uppercase',
           marginBottom: 6,
         }}
@@ -545,7 +523,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
         fontSize: 9,
         fontFamily: MONO,
         letterSpacing: '0.08em',
-        color: '#AAA',
+        color: 'var(--fg-3)',
         textTransform: 'uppercase',
         margin: '16px 0 8px',
       }}
@@ -560,7 +538,7 @@ const btnSmall: React.CSSProperties = {
   fontWeight: 600,
   padding: '6px 10px',
   border: '0.5px solid var(--hairline)',
-  background: '#fff',
+  background: 'var(--surface-card)',
   color: 'var(--fg-0)',
   borderRadius: 6,
   cursor: 'pointer',

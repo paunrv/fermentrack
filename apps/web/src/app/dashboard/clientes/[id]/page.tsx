@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { editarCliente, obtenerCliente } from '@/app/actions/clientes'
 import type { ClienteDetalle, EstadoPago } from '@/lib/supabase/distribuidor'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { fmtDateOnly, fmtMoney } from '@/lib/proof/format'
 
 const DIAS_CREDITO_VALUES = [0, 15, 30, 60, 90] as const
@@ -97,83 +98,71 @@ export default function ClienteDetallePage() {
     }
   }
 
+  const backLink = (
+    <Link
+      href="/dashboard/clientes"
+      style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
+    >
+      {t('back')}
+    </Link>
+  )
+
   if (loading) {
     return (
-      <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
-      </div>
+      <VuOpsPage title={tCommon('loading')} actions={backLink}>
+        <p style={{ margin: 0, color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
+      </VuOpsPage>
     )
   }
 
   if (error || !cliente) {
     return (
-      <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-        <Link
-          href="/dashboard/clientes"
-          style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
-        >
-          {t('back')}
-        </Link>
-        <p style={{ marginTop: 16, color: 'var(--fg-2)' }}>
+      <VuOpsPage title={t('notFound')} actions={backLink}>
+        <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 13 }}>
           {error || t('notFound')}
         </p>
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-      <Link
-        href="/dashboard/clientes"
-        style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
-      >
-        {t('back')}
-      </Link>
-
-      <header
-        style={{
-          margin: '16px 0 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-            {cliente.nombre}
-          </h1>
-          <p className="mono" style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
-            {creditoLabel(cliente.dias_credito)}
-            {cliente.saldo_pendiente > 0
-              ? t('balance', { amount: fmtMoney(cliente.saldo_pendiente) })
-              : t('current')}
-            {cliente.tiene_deuda_vencida ? t('overdueDebt') : ''}
-          </p>
-        </div>
-        {!editing && (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            style={{
-              padding: '10px 16px',
-              background: 'transparent',
-              color: 'var(--fg-0)',
-              fontWeight: 600,
-              fontSize: 12,
-              border: '1px solid var(--hairline)',
-              borderRadius: 'var(--radius-sm)',
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}
-          >
-            {t('edit')}
-          </button>
-        )}
-      </header>
-
+    <VuOpsPage
+      title={cliente.nombre}
+      description={
+        <span className="mono" style={{ fontSize: 12, color: 'var(--fg-3)' }}>
+          {creditoLabel(cliente.dias_credito)}
+          {cliente.saldo_pendiente > 0
+            ? t('balance', { amount: fmtMoney(cliente.saldo_pendiente) })
+            : t('current')}
+          {cliente.tiene_deuda_vencida ? t('overdueDebt') : ''}
+        </span>
+      }
+      actions={
+        <>
+          {backLink}
+          {!editing && (
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              style={{
+                padding: '10px 16px',
+                background: 'transparent',
+                color: 'var(--fg-0)',
+                fontWeight: 600,
+                fontSize: 12,
+                border: '1px solid var(--hairline)',
+                borderRadius: 'var(--radius-sm)',
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+              }}
+            >
+              {t('edit')}
+            </button>
+          )}
+        </>
+      }
+    >
       {editing ? (
         <form
           onSubmit={handleSave}
@@ -450,7 +439,7 @@ export default function ClienteDetallePage() {
           </div>
         )}
       </section>
-    </div>
+    </VuOpsPage>
   )
 }
 

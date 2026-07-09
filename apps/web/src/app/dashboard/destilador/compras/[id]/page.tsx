@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtLitros, fmtMoney } from '@/lib/proof/format'
 import type { ConfirmarLlegadaLinea, ProductoViajeRow, ViajeRow } from '@/lib/proof/destilador-types'
@@ -122,49 +123,54 @@ export default function DetalleViajePage() {
     }
   }
 
+  const backLink = (
+    <Link href="/dashboard/destilador/compras" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+      {tCommon('backToPurchases')}
+    </Link>
+  )
+
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={tCommon('trip')} narrow>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   if (dataLoading) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={tCommon('trip')} narrow>
         <DestiladorSkeleton lines={6} />
-      </div>
+      </VuOpsPage>
     )
   }
 
   if (!viaje) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={tCommon('trip')} actions={backLink} narrow>
         <p style={{ color: 'var(--crit)' }}>{tCommon('notFound.trip')}</p>
-        <Link href="/dashboard/destilador/compras">{tCommon('backToPurchases')}</Link>
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/dashboard/destilador/compras" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        {tCommon('backToPurchases')}
-      </Link>
-
-      <header style={{ margin: '16px 0 24px' }}>
-        <h1 style={{ margin: '0 0 8px', fontSize: 24, color: 'var(--fg-0)' }}>
-          {viaje.palenquero_nombre || tCommon('trip')}
-        </h1>
-        <p className="mono" style={{ margin: 0, fontSize: 12, color: 'var(--fg-2)' }}>
-          {viaje.fecha} · {viaje.region} · {viajeStatusLabel(tViaje, viaje.estado)}
-        </p>
-        {viaje.comunidad && (
-          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--fg-3)' }}>{viaje.comunidad}</p>
-        )}
-      </header>
-
+    <VuOpsPage
+      title={viaje.palenquero_nombre || tCommon('trip')}
+      description={
+        <>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--fg-2)' }}>
+            {viaje.fecha} · {viaje.region} · {viajeStatusLabel(tViaje, viaje.estado)}
+          </span>
+          {viaje.comunidad ? (
+            <span style={{ display: 'block', marginTop: 6, fontSize: 13, color: 'var(--fg-3)' }}>
+              {viaje.comunidad}
+            </span>
+          ) : null}
+        </>
+      }
+      actions={backLink}
+      narrow
+    >
       <section style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t('summary')}</h2>
         <div className="mono" style={{ fontSize: 12, color: 'var(--fg-1)', lineHeight: 1.7 }}>
@@ -366,6 +372,6 @@ export default function DetalleViajePage() {
       ) : (
         <p style={{ color: 'var(--fg-2)', fontSize: 13 }}>{t('cannotConfirm')}</p>
       )}
-    </div>
+    </VuOpsPage>
   )
 }

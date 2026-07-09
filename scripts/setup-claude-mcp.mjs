@@ -114,11 +114,37 @@ Método portapapeles:
 }
 
 const token = validation.token
+
+// Warn if JWT looks expired (best-effort decode; never block on parse errors).
+try {
+  const payloadB64 = token.split('.')[1]
+  if (payloadB64) {
+    const padded = payloadB64 + '='.repeat((4 - (payloadB64.length % 4)) % 4)
+    const payload = JSON.parse(Buffer.from(padded, 'base64url').toString('utf8'))
+    if (typeof payload.exp === 'number' && payload.exp * 1000 <= Date.now()) {
+      console.error(`
+❌ El token ya expiró (exp ${new Date(payload.exp * 1000).toLocaleString()}).
+
+  → En PROOF (/dashboard/conectar) pulsa «Descargar token» de nuevo
+  → Luego: npm run setup:claude-mcp -- --file ~/Downloads/proof-mcp-token.txt
+`)
+      process.exit(1)
+    }
+  }
+} catch {
+  // ignore decode errors — server will reject bad tokens
+}
+
 const url = normalizeMcpUrl(process.env.MCP_URL ?? 'http://localhost:3000')
 
+// Use AUTH_HEADER env so spaces in "Bearer …" are not mangled by Claude Desktop.
+// See mcp-remote README (Claude Desktop / Cursor args escaping bug).
 const proofServer = {
   command: 'npx',
-  args: ['-y', 'mcp-remote', url, '--header', `Authorization: Bearer ${token}`],
+  args: ['-y', 'mcp-remote', url, '--header', 'Authorization:${AUTH_HEADER}'],
+  env: {
+    AUTH_HEADER: `Bearer ${token}`,
+  },
 }
 
 let config = { mcpServers: {} }

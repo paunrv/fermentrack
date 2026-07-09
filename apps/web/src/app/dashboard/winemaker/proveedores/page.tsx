@@ -2,13 +2,14 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { compareStrings } from '@/lib/i18n/locale'
 import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { dashboardPageShell } from '@/lib/ui/page-shell'
 import type { WmSupplyKind } from '@/lib/proof/wm-supply-taxonomy'
 import type { WmSupplierRow } from '@/lib/proof/winemaker-types'
@@ -21,6 +22,7 @@ export default function WinemakerProveedoresPage() {
   const tSupply = useTranslations('winemaker.supplyKind')
   const supabase = useSupabase()
   const breakpoint = useBreakpoint()
+  const isMobile = breakpoint === 'mobile'
   const { loading: scopeLoading, ok, organizationId } = useWinemakerRouteGuard()
   const [suppliers, setSuppliers] = useState<WmSupplierRow[]>([])
   const [insumosBySupplier, setInsumosBySupplier] = useState<Record<string, WmSupplyKind[]>>({})
@@ -71,59 +73,73 @@ export default function WinemakerProveedoresPage() {
     )
   }
 
-  return (
-    <div style={dashboardPageShell(breakpoint, { withBottomNav: true })}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
-      <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
-        {t('subtitle')}
-      </p>
+  let body: ReactNode
+  if (dataLoading) {
+    body = <p style={{ color: 'var(--fg-2)', fontSize: 14, margin: 0 }}>{t('loading')}</p>
+  } else if (sorted.length === 0) {
+    body = (
+      <div
+        style={{
+          padding: 32,
+          borderRadius: 12,
+          border: '1px dashed var(--border)',
+          color: 'var(--fg-2)',
+          fontSize: 14,
+          lineHeight: 1.6,
+        }}
+      >
+        {t('empty')}
+      </div>
+    )
+  } else {
+    body = (
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
+        {sorted.map(s => {
+          const kinds = insumosBySupplier[s.id] ?? []
+          return (
+            <li
+              key={s.id}
+              style={{
+                padding: '14px 16px',
+                borderRadius: 10,
+                background: 'var(--bg-1)',
+                border: '0.5px solid var(--border)',
+              }}
+            >
+              <strong>{s.name}</strong>
+              {kinds.length > 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 6 }}>
+                  {t('suppliesLabel', {
+                    list: kinds.map(kind => tSupply(kind)).join(' · '),
+                  })}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 6 }}>
+                  {t('noClassifiedLines')}
+                </div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
 
-      {dataLoading ? (
-        <p style={{ color: 'var(--fg-2)', fontSize: 14 }}>{t('loading')}</p>
-      ) : sorted.length === 0 ? (
-        <div
-          style={{
-            padding: 32,
-            borderRadius: 12,
-            border: '1px dashed var(--border)',
-            color: 'var(--fg-2)',
-            fontSize: 14,
-            lineHeight: 1.6,
-          }}
-        >
-          {t('empty')}
-        </div>
-      ) : (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
-          {sorted.map(s => {
-            const kinds = insumosBySupplier[s.id] ?? []
-            return (
-              <li
-                key={s.id}
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: 10,
-                  background: 'var(--bg-1)',
-                  border: '0.5px solid var(--border)',
-                }}
-              >
-                <strong>{s.name}</strong>
-                {kinds.length > 0 ? (
-                  <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 6 }}>
-                    {t('suppliesLabel', {
-                      list: kinds.map(kind => tSupply(kind)).join(' · '),
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 6 }}>
-                    {t('noClassifiedLines')}
-                  </div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </div>
+  if (isMobile) {
+    return (
+      <div style={dashboardPageShell(breakpoint, { withBottomNav: true })}>
+        <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600 }}>{t('title')}</h1>
+        <p style={{ margin: '0 0 24px', color: 'var(--fg-2)', fontSize: 14, lineHeight: 1.5 }}>
+          {t('subtitle')}
+        </p>
+        {body}
+      </div>
+    )
+  }
+
+  return (
+    <VuOpsPage title={t('title')} description={t('subtitle')}>
+      {body}
+    </VuOpsPage>
   )
 }

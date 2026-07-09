@@ -29,8 +29,8 @@ import {
   movimientoSkuToDistMovement,
   skuRowToInventoryRow,
 } from '@/lib/proof/sku-dist-adapter'
-
-
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
+import { ContentCard, PageFrame } from '@fermentrack/ui'
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
   cerveza: '#FAC775',
@@ -65,7 +65,7 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -302,55 +302,49 @@ export default function ProductDetailPage() {
     }
   }
 
+  const backLink = (
+    <Link
+      href="/dashboard/productos"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: '.08em',
+        textTransform: 'uppercase',
+        color: 'var(--fg-0)',
+        textDecoration: 'none',
+        border: '1px solid var(--hairline)',
+        padding: '8px 12px',
+      }}
+    >
+      {BackIcon}
+      <span>{t('back')}</span>
+    </Link>
+  )
+
   if (loading) {
     return (
-      <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
-        <p style={{ fontSize: 13, color: '#888' }}>{tCommon('loading')}</p>
-      </div>
+      <VuOpsPage title={tCommon('loading')} actions={backLink}>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)' }}>{tCommon('loading')}</p>
+      </VuOpsPage>
     )
   }
 
   if (notFound || !product) {
     return (
-      <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
-        <Link
-          href="/dashboard/productos"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
-            textTransform: 'uppercase',
-            color: 'var(--fg-0)',
-            textDecoration: 'none',
-            border: '1px solid var(--hairline)',
-            padding: '8px 12px',
-            marginBottom: 16,
-          }}
-        >
-          {BackIcon}
-          <span>{t('back')}</span>
-        </Link>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--fg-0)' }}>
-          {t('notFound')}
-        </h1>
-      </div>
+      <VuOpsPage title={t('notFound')} actions={backLink}>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)' }}>{t('notFound')}</p>
+      </VuOpsPage>
     )
   }
 
   const categoryColor = CATEGORY_COLORS[product.category]
 
   return (
-    <div
-      style={{
-        fontFamily: 'var(--font-display)',
-        background: '#fff',
-        minHeight: '100vh',
-        paddingBottom: 96,
-      }}
-    >
+    <PageFrame style={{ overflow: 'auto', paddingBottom: 96 }}>
+      <ContentCard style={{ padding: 0, overflow: 'hidden' }}>
       {/* Banner */}
       <div
         style={{
@@ -1002,7 +996,8 @@ export default function ProductDetailPage() {
           }}
         />
       )}
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }
 

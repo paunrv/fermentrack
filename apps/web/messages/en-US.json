@@ -1041,7 +1041,8 @@
       "analyzeWithProof": "Analyze with PROOF",
       "askProof": "Ask PROOF",
       "edit": "Edit",
-      "margin": "Margin"
+      "margin": "Margin",
+      "errorGeneric": "Something went wrong. Try again."
     },
     "pedidoEstado": {
       "borrador": "Draft",
@@ -1125,7 +1126,26 @@
         },
         "aiOverstock": "Some items lack sufficient stock. Adjust quantities or wait for intake before confirming.",
         "aiEmpty": "Add bottles to the order. Stock is reserved only when you confirm.",
-        "aiReady": "Ready to confirm · {bottles} bottles · {total}"
+        "aiReady": "Ready to confirm · {bottles} bottles · {total}",
+        "cobro": {
+          "section": "Collection",
+          "balanceDue": "Balance due",
+          "paid": "Paid",
+          "dueDate": "Due",
+          "dueOn": "Due {date}",
+          "registerPayment": "Record payment",
+          "amountPlaceholder": "Amount",
+          "confirmPayment": "Confirm payment",
+          "saving": "Saving…",
+          "cancel": "Cancel"
+        },
+        "fulfillment": {
+          "markPreparing": "Mark preparing",
+          "markInRoute": "Mark in transit",
+          "markDelivered": "Mark delivered",
+          "delivering": "Delivering…",
+          "updating": "Updating…"
+        }
       },
       "tomaDetalle": {
         "back": "← Take order",
@@ -1869,6 +1889,19 @@
         "error": "Could not upload the file."
       }
     },
+    "lab": {
+      "title": "Lab analysis",
+      "subtitle": "Imported reports with samples and measured parameters. Read-only.",
+      "back": "← Home",
+      "loading": "Loading reports…",
+      "empty": "No lab reports registered yet.",
+      "emptyHint": "When you import a PDF from Ardoa, CETyS, or another lab, it will appear here with its samples and results.",
+      "errors": {
+        "notAuthenticated": "Sign in to view lab reports.",
+        "noOrganization": "No active winery to show analyses.",
+        "loadFailed": "Could not load lab reports."
+      }
+    },
     "stage": {
       "none": "No stage",
       "harvest": "Harvest",
@@ -2481,17 +2514,38 @@
       }
     }
   },
+  "opsHome": {
+    "loading": "Loading summary…",
+    "error": "Could not load the summary. Try again.",
+    "empty": "No metrics for this profile yet. Connect your assistant or open a section from the menu.",
+    "subtitle": {
+      "distributor": "Inventory, orders, and receivables at a glance.",
+      "distiller": "Liters, lots, payables, and bottling runs at a glance.",
+      "default": "Your PROOF operations summary."
+    },
+    "kpis": {
+      "stock": "Available stock",
+      "orders": "Active orders",
+      "receivable": "Accounts receivable",
+      "shortage": "SKUs in shortage",
+      "liters": "Bulk liters",
+      "lots": "Lots",
+      "owed": "Owed to palenqueros",
+      "runs": "Active bottling runs"
+    }
+  },
   "connectionHub": {
     "eyebrow": "Bring your own agent",
-    "title": "Connect your external agent",
-    "subtitle": "Use Claude Desktop, Cursor, or any MCP client with your PROOF data. In-app chat has been replaced by this secure connection.",
+    "title": "Connect your AI assistant",
+    "subtitle": "Connect ChatGPT, Claude, Cursor, or Grok to PROOF. Your assistant can query lots, inventory, orders, and operate on your data.",
+    "scopeNote": "The assistant only gets access to your own account and organization.",
     "auth": {
       "checking": "Checking session…",
       "connected": "Signed in",
       "disconnected": "Not signed in"
     },
-    "mcpUrl": "MCP server URL",
-    "copyUrl": "Copy URL",
+    "mcpUrl": "Your account's connection URL",
+    "copyUrl": "Copy",
     "copyToken": "Copy token",
     "downloadToken": "Download token",
     "tokenDownloaded": "Downloaded",
@@ -2509,16 +2563,30 @@
     },
     "oauthHint": "OAuth metadata:",
     "oauthLink": "protected resource",
+    "setupTitle": "Set up your assistant",
+    "advancedTitle": "Advanced options",
     "clients": {
       "cursor": "Cursor",
-      "cursorHint": "Add to MCP settings (~/.cursor/mcp.json):",
-      "claude": "Claude Desktop",
+      "cursorHint": "Add PROOF as an MCP server in Cursor.",
+      "cursorStep1": "Open Cursor Settings → MCP.",
+      "cursorStep2": "Add a server with the connection URL above.",
+      "cursorStep3": "Authenticate with your PROOF session (or paste the token from Advanced options).",
+      "claude": "Claude",
+      "claudeConfigPath": "File (Mac): {path}",
       "claudeStep1": "In PROOF click «Download token» (proof-mcp-token.txt file).",
       "claudeStep2": "In Terminal: npm run setup:claude-mcp -- --file ~/Downloads/proof-mcp-token.txt",
       "claudeStep3": "Quit Claude completely (Cmd+Q) and reopen it.",
       "claudeStep4": "You should see PROOF tools (hammer icon) in chat.",
-      "chatgpt": "ChatGPT / others",
-      "chatgptHint": "Any MCP client with HTTP + Bearer token can use the same URL."
+      "chatgpt": "ChatGPT",
+      "chatgptHint": "Requires a paid plan (Plus/Pro/Business). Use chatgpt.com in the browser — the desktop app sometimes hides Apps.",
+      "chatgptStep1": "On chatgpt.com: Settings → Apps (sometimes «Apps & Connectors»). At the bottom: Advanced settings → turn on Developer mode.",
+      "chatgptStep2": "Go back to Apps and click Create / Create app. Paste the PROOF connection URL.",
+      "chatgptStep3": "Sign in with your PROOF account if prompted. In a new chat: + → More → Developer mode → enable the connector.",
+      "grok": "Grok",
+      "grokStep1": "Open MCP connector settings in Grok.",
+      "grokStep2": "Add a custom connector with the connection URL.",
+      "grokStep3": "Authenticate with your PROOF account and confirm access.",
+      "configPreview": "Config preview (Claude / Cursor)"
     },
     "toolsTitle": "Available tools",
     "catalogLink": "Full catalog in docs",
@@ -2527,8 +2595,8 @@
     "promptsTitle": "Example prompts",
     "manualTitle": "Manual forms",
     "bar": {
-      "message": "Operate PROOF with your external agent via MCP.",
-      "action": "Connect agent"
+      "message": "Connect your AI assistant to PROOF via MCP.",
+      "action": "Connect"
     },
     "tools": {
       "get_session_snapshot": "Profile, orgs, and JSON schemas.",
@@ -2589,12 +2657,12 @@
       "production": "Production"
     },
     "ownerCta": {
-      "title": "Connect external agent",
-      "hint": "Use Claude Desktop or Cursor with your PROOF data via MCP.",
+      "title": "Connect AI assistant",
+      "hint": "Connect ChatGPT, Claude, Cursor, or Grok to your PROOF account.",
       "action": "Open connection",
-      "connectedTitle": "External agent ready",
-      "connectedHint": "Use Claude Desktop to query your winery. This dashboard stays the same — operate from Claude chat.",
-      "connectedAction": "Refresh token or view tools"
+      "connectedTitle": "Assistant ready",
+      "connectedHint": "Operate from your external assistant. This dashboard stays the same.",
+      "connectedAction": "View connection or refresh token"
     }
   },
   "agent": {

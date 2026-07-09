@@ -64,6 +64,7 @@ export function shellHorizontalPadding(breakpoint: ShellBreakpoint): number {
 }
 
 export function innerHeaderAskMaxWidth(breakpoint: ShellBreakpoint): number {
+  /** @deprecated Desktop Ask bar removed (VU Fase 1). Kept for any residual callers. */
   return breakpoint === 'desktop' ? 560 : 480
 }
 
@@ -118,7 +119,9 @@ export function isWinemakerShellMode(options: {
 }
 
 /**
- * Header de página operativa (título + ask bar). Canvas y agente usan su propio chrome.
+ * Header de página operativa (título + chrome fino).
+ * Ask bar solo en móvil (VU: desktop sin Ask global — docs/PROOF-VU-SYSTEM.md).
+ * Canvas y agente usan su propio chrome.
  */
 export function shouldShowDashboardInnerHeader(options: {
   pathname: string

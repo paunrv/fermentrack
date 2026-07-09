@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { PipelineHeader, DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { loteStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtLitros, fmtMoney } from '@/lib/proof/format'
 import type { DestLoteEstado, LoteRow } from '@/lib/proof/destilador-types'
@@ -71,15 +72,14 @@ export default function DestiladorLotesPage() {
 
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 960, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')}>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 20px', fontSize: 26, fontWeight: 700 }}>{t('title')}</h1>
+    <VuOpsPage title={t('title')}>
       {dataLoading ? (
         <DestiladorSkeleton />
       ) : (
@@ -146,6 +146,6 @@ export default function DestiladorLotesPage() {
           </div>
         </>
       )}
-    </div>
+    </VuOpsPage>
   )
 }

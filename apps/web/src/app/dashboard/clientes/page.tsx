@@ -9,13 +9,10 @@ import { crearCliente, obtenerClientes } from '@/app/actions/clientes'
 import type { ClienteConSaldo } from '@/lib/supabase/distribuidor'
 import { fmtMoney } from '@/lib/proof/format'
 import ClientesLegacyPage from './ClientesLegacyPage'
-import { useBreakpoint } from '@/hooks/useBreakpoint'
-import { pageTitleFontSize } from '@/lib/ui/breakpoints'
-import { pagePadding } from '@/lib/ui/page-shell'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { CanvasHorizontalSection } from '@/components/proof/CanvasHorizontalSection'
 import { ClienteRailCard } from '@/components/proof/ClienteRailCard'
 import { KpiRailChip } from '@/components/proof/KpiRailChip'
-import { CLIENTE_ACCENT } from '@/lib/proof/canvas-accents'
 
 const CREDIT_DAY_VALUES = [0, 15, 30, 60, 90] as const
 
@@ -23,7 +20,6 @@ function ClientesDistribuidorPage() {
   const t = useTranslations('distributor.clientes')
   const tCommon = useTranslations('distributor.common')
   const { scope } = useProfile()
-  const breakpoint = useBreakpoint()
   const [rows, setRows] = useState<ClienteConSaldo[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -117,42 +113,25 @@ function ClientesDistribuidorPage() {
   )
 
   return (
-    <div style={pagePadding({ breakpoint })}>
-      <header
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 24,
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1 style={{ margin: '0 0 6px', fontSize: pageTitleFontSize(breakpoint), fontWeight: 700, color: 'var(--fg-0)' }}>
-            {t('title')}
-          </h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
-        </div>
+    <VuOpsPage
+      title={t('title')}
+      description={t('subtitle')}
+      actions={
         <button
           type="button"
           onClick={() => setShowForm(v => !v)}
+          className="ui-btn ui-btn--sm"
           style={{
-            padding: '10px 16px',
-            background: showForm ? 'transparent' : 'var(--gold)',
-            color: 'var(--ink)',
-            fontWeight: 600,
-            fontSize: 12,
+            background: showForm ? 'transparent' : 'var(--fg-0)',
+            color: showForm ? 'var(--fg-0)' : 'var(--ink)',
             border: showForm ? '1px solid var(--hairline)' : 'none',
-            borderRadius: 'var(--radius-sm)',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
             cursor: 'pointer',
           }}
         >
           {showForm ? t('cancel') : t('newClient')}
         </button>
-      </header>
+      }
+    >
 
       {showForm && (
         <form
@@ -271,7 +250,7 @@ function ClientesDistribuidorPage() {
 
       <div className="proof-canvas-stack">
         <CanvasHorizontalSection
-          accent={CLIENTE_ACCENT}
+          accent="var(--proof-accent)"
           title={t('sections.summary')}
           subtitle={loading ? tCommon('loading') : t('sections.clientCount', { count: rows.length })}
           loading={loading}
@@ -279,7 +258,7 @@ function ClientesDistribuidorPage() {
           skeletonCount={3}
         >
           <KpiRailChip label={t('sections.kpiClients')} value={String(rows.length)} />
-          <KpiRailChip label={t('sections.kpiPortfolio')} value={fmtMoney(carteraTotal)} tone={CLIENTE_ACCENT} />
+          <KpiRailChip label={t('sections.kpiPortfolio')} value={fmtMoney(carteraTotal)} tone="var(--proof-accent)" />
           <KpiRailChip
             label={t('sections.kpiOverdue')}
             value={String(vencidos.length)}
@@ -288,7 +267,7 @@ function ClientesDistribuidorPage() {
         </CanvasHorizontalSection>
 
         <CanvasHorizontalSection
-          accent={CLIENTE_ACCENT}
+          accent="var(--proof-accent)"
           title={t('sections.withBalance')}
           subtitle={t('sections.clientCount', { count: conSaldo.length })}
           emptyMessage={t('sections.emptyWithBalance')}
@@ -301,7 +280,7 @@ function ClientesDistribuidorPage() {
         </CanvasHorizontalSection>
 
         <CanvasHorizontalSection
-          accent={CLIENTE_ACCENT}
+          accent="var(--proof-accent)"
           title={t('sections.current')}
           subtitle={t('sections.clientCount', { count: alCorriente.length })}
           emptyMessage={
@@ -315,7 +294,7 @@ function ClientesDistribuidorPage() {
           ))}
         </CanvasHorizontalSection>
       </div>
-    </div>
+    </VuOpsPage>
   )
 }
 

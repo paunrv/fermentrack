@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtMoney } from '@/lib/proof/format'
 import type { DestViajeEstado, NuevoProductoViajeInput } from '@/lib/proof/destilador-types'
@@ -266,21 +267,22 @@ export default function NuevoViajePage() {
     }
   }
 
+  const backLink = (
+    <Link href="/dashboard/destilador/compras" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+      {tCommon('backToPurchases')}
+    </Link>
+  )
+
   if (loading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')} narrow>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/dashboard/destilador/compras" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        {tCommon('backToPurchases')}
-      </Link>
-      <h1 style={{ margin: '16px 0 24px', fontSize: 24, color: 'var(--fg-0)' }}>{t('title')}</h1>
-
+    <VuOpsPage title={t('title')} actions={backLink} narrow>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
@@ -515,6 +517,6 @@ export default function NuevoViajePage() {
           {saving ? t('saving') : recibirEnBodega ? t('submitReceive') : t('submit')}
         </button>
       </form>
-    </div>
+    </VuOpsPage>
   )
 }

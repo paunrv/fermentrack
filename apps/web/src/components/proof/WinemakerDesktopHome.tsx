@@ -6,9 +6,10 @@ import { useLocale, useTranslations } from 'next-intl'
 import {
   Badge,
   Container,
+  ContentCard,
   Inline,
+  PageFrame,
   PageHeader,
-  PageShell,
   Spinner,
   Stack,
 } from '@fermentrack/ui'
@@ -97,34 +98,30 @@ export function WinemakerDesktopHome() {
 
   if (loading) {
     return (
-      <PageShell
+      <PageFrame
         style={{
           ...proofAccentCssVars(theme),
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 12,
         }}
       >
-        <Spinner />
-        <span style={{ fontSize: 14, color: 'var(--fg-3)' }}>{tCommon('loading')}</span>
-      </PageShell>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Spinner />
+          <span style={{ fontSize: 14, color: 'var(--fg-3)' }}>{tCommon('loading')}</span>
+        </div>
+      </PageFrame>
     )
   }
 
   return (
-    <PageShell
+    <PageFrame
       style={{
         ...proofAccentCssVars(theme),
-        flex: 1,
-        minHeight: 0,
         overflow: 'auto',
-        background: 'var(--canvas)',
       }}
     >
-      <Container size="xl" style={{ paddingBlock: 32 }}>
+      <Container size="xl" style={{ paddingInline: 0, width: '100%', maxWidth: '100%' }}>
         <Stack gap={6}>
           <PageHeader
             title={
@@ -151,30 +148,26 @@ export function WinemakerDesktopHome() {
           />
 
           {!mcpConfigured ? (
-            <Link
-              href="/dashboard/conectar"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-                padding: '16px 18px',
-                borderRadius: 12,
-                border: '1px solid var(--hairline)',
-                background: 'var(--panel)',
-                textDecoration: 'none',
-                color: 'inherit',
-              }}
-            >
+            <ContentCard>
               <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg-0)' }}>
                 {tHub('ownerCta.title')}
               </span>
               <span style={{ fontSize: 13, color: 'var(--fg-3)', lineHeight: 1.45 }}>
                 {tHub('ownerCta.hint')}
               </span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#6940A5' }}>
+              <Link
+                href="/dashboard/conectar"
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--proof-accent)',
+                  textDecoration: 'none',
+                  alignSelf: 'flex-start',
+                }}
+              >
                 {tHub('ownerCta.action')} →
-              </span>
-            </Link>
+              </Link>
+            </ContentCard>
           ) : null}
 
           <AgentPromptDock profileType="winemaker" accent={theme.accent} mcpConfigured={mcpConfigured} />
@@ -182,41 +175,40 @@ export function WinemakerDesktopHome() {
           <PlanLimitHomeAlerts warnings={planWarnings} />
 
           {error ? (
-            <div
+            <ContentCard
               role="alert"
               style={{
-                padding: '12px 14px',
-                borderRadius: 10,
                 background: 'var(--crit-soft)',
-                border: '1px solid var(--hairline)',
                 fontSize: 13,
                 color: 'var(--fg-0)',
               }}
             >
               {error}
-            </div>
+            </ContentCard>
           ) : null}
 
           {!organizationId ? (
             <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-3)' }}>{tHome('noOrganization')}</p>
           ) : (
             <>
-              <div>
-                <h2
-                  style={{
-                    margin: '0 0 4px',
-                    fontSize: 18,
-                    fontWeight: 600,
-                    color: 'var(--fg-0)',
-                  }}
-                >
-                  {tDesktop('pipelineTitle')}
-                </h2>
-                <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
-                  {tDesktop('pipelineHint', { count: pipelineLots.length })}
-                </p>
-                <PipelineBodega lots={pipelineLots} etapaLabel={copy.etapaLabel} />
-              </div>
+              <ContentCard>
+                <div>
+                  <h2
+                    style={{
+                      margin: '0 0 4px',
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: 'var(--fg-0)',
+                    }}
+                  >
+                    {tDesktop('pipelineTitle')}
+                  </h2>
+                  <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
+                    {tDesktop('pipelineHint', { count: pipelineLots.length })}
+                  </p>
+                  <PipelineBodega lots={pipelineLots} etapaLabel={copy.etapaLabel} />
+                </div>
+              </ContentCard>
 
               <DesktopHomeBottomRow
                 pendingTasks={pendingTasks}
@@ -232,6 +224,6 @@ export function WinemakerDesktopHome() {
           )}
         </Stack>
       </Container>
-    </PageShell>
+    </PageFrame>
   )
 }

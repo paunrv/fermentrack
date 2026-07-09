@@ -11,6 +11,7 @@ import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { refreshRecepcionFotoUrlsAction } from '@/app/actions/recepciones'
 import { fetchRecepcionRemisionDetalle, type RecepcionRemisionDetalle } from '@/lib/supabase'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { fmtBottles } from '@/lib/proof/format'
 import { formatDate } from '@/lib/i18n/format'
 
@@ -68,111 +69,122 @@ export default function RemisionDetallePage() {
     })
   }
 
+  const backLink = (
+    <Link
+      href="/dashboard/remisiones"
+      style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
+    >
+      {t('back')}
+    </Link>
+  )
+
+  if (loading) {
+    return (
+      <VuOpsPage title={tCommon('loading')} actions={backLink}>
+        <p style={{ margin: 0, color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
+      </VuOpsPage>
+    )
+  }
+
+  if (!rec) {
+    return (
+      <VuOpsPage title={t('notFound')} actions={backLink}>
+        <p style={{ margin: 0, color: 'var(--crit)', fontSize: 13 }}>{t('notFound')}</p>
+      </VuOpsPage>
+    )
+  }
+
   return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-      <Link
-        href="/dashboard/remisiones"
-        style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
-      >
-        {t('back')}
-      </Link>
-
-      {loading ? (
-        <p style={{ marginTop: 24, color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
-      ) : !rec ? (
-        <p style={{ marginTop: 24, color: 'var(--crit)', fontSize: 13 }}>{t('notFound')}</p>
-      ) : (
+    <VuOpsPage
+      title={rec.productor}
+      description={
         <>
-          <header style={{ margin: '16px 0 24px' }}>
-            <div className="mono" style={{ fontSize: 12, color: 'var(--gold)', marginBottom: 6 }}>
-              {rec.codigo}
-            </div>
-            <h1 style={{ margin: '0 0 8px', fontSize: 26, fontWeight: 800, color: 'var(--fg-0)' }}>
-              {rec.productor}
-            </h1>
-            <p className="mono" style={{ margin: 0, fontSize: 11, color: 'var(--fg-3)' }}>
-              {fmtDateTime(rec.fecha_recepcion)} · {t('bottlesReceived', { count: fmtBottles(totalBts) })} ·{' '}
-              {rec.estado}
-            </p>
-          </header>
-
-          {fotos.length > 0 && (
-            <section style={{ marginBottom: 24 }}>
-              <h2 className="eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 10 }}>
-                {t('photoEvidence')}
-              </h2>
-              {fotoError && (
-                <p style={{ fontSize: 11, color: 'var(--warn)', marginBottom: 8 }}>{fotoError}</p>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {fotos.map((url, i) => (
-                  <a
-                    key={i}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'block',
-                      border: '1px solid var(--hairline)',
-                      borderRadius: 'var(--radius-md)',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={url}
-                      alt={t('photoAlt', { index: i + 1 })}
-                      style={{ width: '100%', maxHeight: 360, objectFit: 'contain', background: '#000' }}
-                    />
-                  </a>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <Block title={t('itemsReceived')}>
-            {rec.items_recepcion?.length ? (
-              rec.items_recepcion.map(it => (
-                <Line
-                  key={it.id}
-                  left={it.skus?.nombre || t('skuFallback')}
-                  right={
-                    t('itemLine', {
-                      qty: fmtBottles(it.cantidad_recibida),
-                      lot: it.lote ? t('lotSuffix', { lot: it.lote }) : '',
-                    })
-                  }
-                />
-              ))
-            ) : (
-              <Empty>{t('emptyItems')}</Empty>
-            )}
-          </Block>
-
-          <Block title={t('discrepancies')}>
-            {rec.discrepancias?.length ? (
-              rec.discrepancias.map(d => (
-                <div
-                  key={d.id}
-                  style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid var(--hairline)',
-                    borderLeft: '2px solid var(--warn)',
-                  }}
-                >
-                  <span className="mono" style={{ fontSize: 10, color: 'var(--warn)' }}>
-                    {d.tipo.toUpperCase()}
-                  </span>
-                  <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--fg-1)' }}>{d.descripcion}</p>
-                </div>
-              ))
-            ) : (
-              <Empty>{t('emptyDiscrepancies')}</Empty>
-            )}
-          </Block>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--gold)', display: 'block', marginBottom: 6 }}>
+            {rec.codigo}
+          </span>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--fg-3)' }}>
+            {fmtDateTime(rec.fecha_recepcion)} · {t('bottlesReceived', { count: fmtBottles(totalBts) })} ·{' '}
+            {rec.estado}
+          </span>
         </>
+      }
+      actions={backLink}
+    >
+      {fotos.length > 0 && (
+        <section style={{ marginBottom: 24 }}>
+          <h2 className="eyebrow" style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 10 }}>
+            {t('photoEvidence')}
+          </h2>
+          {fotoError && (
+            <p style={{ fontSize: 11, color: 'var(--warn)', marginBottom: 8 }}>{fotoError}</p>
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {fotos.map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'block',
+                  border: '1px solid var(--hairline)',
+                  borderRadius: 'var(--radius-md)',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={t('photoAlt', { index: i + 1 })}
+                  style={{ width: '100%', maxHeight: 360, objectFit: 'contain', background: '#000' }}
+                />
+              </a>
+            ))}
+          </div>
+        </section>
       )}
-    </div>
+
+      <Block title={t('itemsReceived')}>
+        {rec.items_recepcion?.length ? (
+          rec.items_recepcion.map(it => (
+            <Line
+              key={it.id}
+              left={it.skus?.nombre || t('skuFallback')}
+              right={
+                t('itemLine', {
+                  qty: fmtBottles(it.cantidad_recibida),
+                  lot: it.lote ? t('lotSuffix', { lot: it.lote }) : '',
+                })
+              }
+            />
+          ))
+        ) : (
+          <Empty>{t('emptyItems')}</Empty>
+        )}
+      </Block>
+
+      <Block title={t('discrepancies')}>
+        {rec.discrepancias?.length ? (
+          rec.discrepancias.map(d => (
+            <div
+              key={d.id}
+              style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid var(--hairline)',
+                borderLeft: '2px solid var(--warn)',
+              }}
+            >
+              <span className="mono" style={{ fontSize: 10, color: 'var(--warn)' }}>
+                {d.tipo.toUpperCase()}
+              </span>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--fg-1)' }}>{d.descripcion}</p>
+            </div>
+          ))
+        ) : (
+          <Empty>{t('emptyDiscrepancies')}</Empty>
+        )}
+      </Block>
+    </VuOpsPage>
   )
 }
 

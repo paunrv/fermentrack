@@ -9,6 +9,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import type { CorridaRow } from '@/lib/proof/destilador-types'
 import {
   FORMATO_LITROS,
@@ -85,42 +86,48 @@ export default function CerrarCorridaPage() {
     }
   }
 
+  const backLink = (
+    <Link href="/dashboard/destilador/produccion" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+      {tCommon('backToProduction')}
+    </Link>
+  )
+
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')} narrow>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   if (!corrida) {
     return (
-      <div style={{ padding: 28 }}>
+      <VuOpsPage title={t('title')} actions={backLink} narrow>
         <p>{tCommon('notFound.run')}</p>
-        <Link href="/dashboard/destilador/produccion">{tCommon('backToProduction')}</Link>
-      </div>
+      </VuOpsPage>
     )
   }
 
   if (corrida.estado === 'completada') {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')} narrow>
         <p style={{ color: 'var(--ok)' }}>{t('alreadyCompleted')}</p>
         <Link href={`/dashboard/destilador/lotes/${corrida.lote_id}`}>{t('viewLot')}</Link>
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/dashboard/destilador/produccion" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        {tCommon('backToProduction')}
-      </Link>
-      <h1 style={{ margin: '16px 0 8px', fontSize: 24 }}>{t('title')}</h1>
-      <p className="mono" style={{ fontSize: 12, color: 'var(--fg-2)' }}>
-        {corrida.lotes?.numero_lote} · {corrida.formato_botella} · {corrida.litros_asignados} L
-      </p>
-
+    <VuOpsPage
+      title={t('title')}
+      description={
+        <span className="mono" style={{ fontSize: 12, color: 'var(--fg-2)' }}>
+          {corrida.lotes?.numero_lote} · {corrida.formato_botella} · {corrida.litros_asignados} L
+        </span>
+      }
+      actions={backLink}
+      narrow
+    >
       <form onSubmit={handleCerrar} style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
           <label style={lbl}>{t('fields.producidas')}</label>
@@ -155,7 +162,7 @@ export default function CerrarCorridaPage() {
           {saving ? t('closing') : t('close')}
         </button>
       </form>
-    </div>
+    </VuOpsPage>
   )
 }
 

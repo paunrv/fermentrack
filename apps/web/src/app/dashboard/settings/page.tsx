@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Button, FormField, Input } from '@fermentrack/ui'
+import { Button, FormField, Input, ContentCard, PageFrame, PageHeader } from '@fermentrack/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserEmail, getUserFirstName } from '@/lib/auth/user'
 import { useProfile } from '@/context/ProfileContext'
@@ -63,7 +63,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -323,69 +323,43 @@ export default function SettingsPage() {
 
   if (!isLoaded || loading) {
     return (
-      <div style={{ fontFamily: 'var(--font-display)', padding: 32 }}>
-        <p style={{ fontSize: 13, color: '#888' }}>{t('loading')}</p>
-      </div>
+      <PageFrame style={{ overflow: 'auto' }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', margin: 0 }}>{t('loading')}</p>
+      </PageFrame>
     )
   }
 
-  return (
-    <div
-      className="proof-settings-page"
-      style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}
-    >
-      <div
+  const headerActions = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+      {activeOrg && <OrgSwitcher />}
+      <button
+        type="button"
+        onClick={() => router.push('/profile-select')}
         style={{
-          marginBottom: 24,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          gap: 16,
-          flexWrap: 'wrap',
+          padding: '12px 20px',
+          background: 'var(--surface-card)',
+          color: 'var(--fg-0)',
+          border: '1px solid var(--hairline)',
+          fontSize: 11,
+          fontWeight: 800,
+          letterSpacing: '.08em',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-display)',
         }}
       >
-        <div>
-          <h1
-            className="proof-settings-page__title"
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              letterSpacing: '-.04em',
-              color: 'var(--fg-0)',
-              lineHeight: 1.1,
-              marginBottom: 6,
-            }}
-          >
-            {t('title')}
-          </h1>
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
-            {t('subtitle')}
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          {activeOrg && <OrgSwitcher />}
-          <button
-          type="button"
-          onClick={() => router.push('/profile-select')}
-          style={{
-            padding: '12px 20px',
-            background: '#fff',
-            color: 'var(--fg-0)',
-            border: '1px solid var(--hairline)',
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
-            textTransform: 'uppercase',
-            cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
-          }}
-        >
-          {t('switchProfile')}
-        </button>
-        </div>
-      </div>
+        {t('switchProfile')}
+      </button>
+    </div>
+  )
 
-      <SettingsLanguageSection />
+  return (
+    <PageFrame className="proof-settings-page" style={{ overflow: 'auto' }}>
+      <PageHeader title={t('title')} description={t('subtitle')} actions={headerActions} />
+
+      <ContentCard>
+        <SettingsLanguageSection />
+      </ContentCard>
 
       {activeOrg && orgSettings && (
         <section
@@ -393,7 +367,7 @@ export default function SettingsPage() {
             border: '1px solid var(--hairline)',
             padding: 24,
             marginBottom: 24,
-            background: '#fff',
+            background: 'var(--surface-card)',
             maxWidth: 800,
           }}
         >
@@ -411,7 +385,7 @@ export default function SettingsPage() {
           <div
             style={{
               fontSize: 12,
-              color: '#888',
+              color: 'var(--fg-3)',
               fontWeight: 500,
               marginBottom: 20,
               lineHeight: 1.45,
@@ -493,7 +467,7 @@ export default function SettingsPage() {
                   {orgSaving ? t('org.saving') : t('org.save')}
                 </Button>
                 {orgSavedAt && !orgSaving && (
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#888' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--fg-3)' }}>
                     {t('org.saved')}{' '}
                     {orgSavedAt.toLocaleTimeString(localeTag, {
                       hour: '2-digit',
@@ -503,7 +477,7 @@ export default function SettingsPage() {
                 )}
               </div>
             ) : (
-              <p style={{ margin: 0, fontSize: 12, color: '#888' }}>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>
                 {t('org.readOnlyHint')}
               </p>
             )}
@@ -517,7 +491,7 @@ export default function SettingsPage() {
             border: '1px solid var(--hairline)',
             padding: 24,
             marginBottom: 24,
-            background: '#fff',
+            background: 'var(--surface-card)',
             maxWidth: 800,
           }}
         >
@@ -536,7 +510,7 @@ export default function SettingsPage() {
             style={{
               margin: '0 0 16px',
               fontSize: 12,
-              color: '#888',
+              color: 'var(--fg-3)',
               lineHeight: 1.5,
             }}
           >
@@ -568,12 +542,12 @@ export default function SettingsPage() {
             ) : null}
           </p>
           {orgSettings.renewal_anchor && orgSettings.billing_cycle === 'annual' ? (
-            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
               {t('billing.renewalAnchor', { date: orgSettings.renewal_anchor })}
             </p>
           ) : null}
           {planBilling?.isFoundingMember ? (
-            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
               {t('billing.foundingMember')}
             </p>
           ) : null}
@@ -666,7 +640,7 @@ export default function SettingsPage() {
                 ))}
               </div>
               {billingCycle === 'annual' ? (
-                <p style={{ margin: '8px 0 0', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+                <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
                   {t('billing.annualHint')}
                 </p>
               ) : null}
@@ -731,7 +705,7 @@ export default function SettingsPage() {
                     style={{
                       padding: '10px 16px',
                       border: '1px solid var(--hairline)',
-                      background: '#fff',
+                      background: 'var(--surface-card)',
                       fontSize: 13,
                       fontWeight: 600,
                       cursor: billingLoading ? 'wait' : 'pointer',
@@ -740,7 +714,7 @@ export default function SettingsPage() {
                   >
                     {t('billing.manage')}
                   </button>
-                  <p style={{ width: '100%', margin: '4px 0 0', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+                  <p style={{ width: '100%', margin: '4px 0 0', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
                     {t('billing.downgradeHint')}
                   </p>
                 </>
@@ -754,7 +728,7 @@ export default function SettingsPage() {
           border: '1px solid var(--hairline)',
           padding: 24,
           marginBottom: 24,
-          background: '#fff',
+          background: 'var(--surface-card)',
           maxWidth: 800,
         }}
       >
@@ -772,7 +746,7 @@ export default function SettingsPage() {
           <div
             style={{
               fontSize: 12,
-              color: '#888',
+              color: 'var(--fg-3)',
               fontWeight: 500,
               marginBottom: 16,
             }}
@@ -781,7 +755,7 @@ export default function SettingsPage() {
           </div>
 
         {allProfiles.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>
             {t('profiles.empty')}
           </p>
         ) : (
@@ -922,7 +896,7 @@ export default function SettingsPage() {
             style={{
               border: '1px solid var(--hairline)',
               padding: 24,
-              background: '#fff',
+              background: 'var(--surface-card)',
             }}
           >
             <div
@@ -941,7 +915,7 @@ export default function SettingsPage() {
             <div
               style={{
                 fontSize: 12,
-                color: '#888',
+                color: 'var(--fg-3)',
                 fontWeight: 500,
                 marginBottom: 20,
               }}
@@ -1024,7 +998,7 @@ export default function SettingsPage() {
             style={{
               border: '1px solid var(--hairline)',
               padding: 24,
-              background: '#fff',
+              background: 'var(--surface-card)',
             }}
           >
             <div
@@ -1041,7 +1015,7 @@ export default function SettingsPage() {
             <div
               style={{
                 fontSize: 12,
-                color: '#888',
+                color: 'var(--fg-3)',
                 fontWeight: 500,
                 marginBottom: 16,
                 lineHeight: 1.45,
@@ -1171,7 +1145,7 @@ export default function SettingsPage() {
                   fontWeight: 700,
                   letterSpacing: '.05em',
                   textTransform: 'uppercase',
-                  color: '#888',
+                  color: 'var(--fg-3)',
                 }}
               >
                 {t('saved')}{' '}
@@ -1184,6 +1158,6 @@ export default function SettingsPage() {
           </div>
         </form>
       )}
-    </div>
+    </PageFrame>
   )
 }

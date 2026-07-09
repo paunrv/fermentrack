@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl'
 import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { PipelineHeader, DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtMoney } from '@/lib/proof/format'
 import type { ViajeRow } from '@/lib/proof/destilador-types'
@@ -104,25 +105,34 @@ export default function DestiladorComprasPage() {
     [viajes]
   )
 
+  const newTripLink = (
+    <Link
+      href="/dashboard/destilador/compras/nuevo"
+      style={{
+        padding: '8px 14px',
+        background: 'var(--gold)',
+        color: 'var(--ink)',
+        fontSize: 11,
+        fontWeight: 600,
+        textDecoration: 'none',
+        letterSpacing: '0.06em',
+        textTransform: 'uppercase',
+      }}
+    >
+      {t('newTrip')}
+    </Link>
+  )
+
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
+      <VuOpsPage title={t('title')} description={t('eyebrow')}>
         <DestiladorSkeleton lines={5} />
-      </div>
+      </VuOpsPage>
     )
   }
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 960, margin: '0 auto' }}>
-      <header style={{ marginBottom: 20 }}>
-        <p className="eyebrow" style={{ margin: '0 0 8px', color: 'var(--fg-3)' }}>
-          {t('eyebrow')}
-        </p>
-        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 700, color: 'var(--fg-0)' }}>
-          {t('title')}
-        </h1>
-      </header>
-
+    <VuOpsPage title={t('title')} description={t('eyebrow')} actions={newTripLink}>
       {dataLoading ? (
         <DestiladorSkeleton lines={6} />
       ) : (
@@ -172,21 +182,6 @@ export default function DestiladorComprasPage() {
             <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--fg-1)' }}>
               {t('tripsSection')}
             </h2>
-            <Link
-              href="/dashboard/destilador/compras/nuevo"
-              style={{
-                padding: '8px 14px',
-                background: 'var(--gold)',
-                color: 'var(--ink)',
-                fontSize: 11,
-                fontWeight: 600,
-                textDecoration: 'none',
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {t('newTrip')}
-            </Link>
           </div>
 
           {viajes.length === 0 && !error ? (
@@ -258,7 +253,7 @@ export default function DestiladorComprasPage() {
           )}
         </>
       )}
-    </div>
+    </VuOpsPage>
   )
 }
 

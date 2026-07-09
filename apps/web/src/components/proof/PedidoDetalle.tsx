@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
@@ -29,28 +29,15 @@ import {
 import { PedidoFulfillmentActions } from '@/components/proof/PedidoFulfillmentActions'
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
-const CLIENTE_ACCENT = '#2D6A4F'
-
-function pedidoEstadoLabel(estado: EstadoPedido): string {
-  const labels: Record<EstadoPedido, string> = {
-    borrador: 'Borrador',
-    confirmado: 'Confirmado',
-    preparando: 'Preparando',
-    en_ruta: 'En ruta',
-    entregado: 'Entregado',
-    parcial: 'Parcial',
-    cancelado: 'Cancelado',
-  }
-  return labels[estado] ?? estado
-}
+const CLIENTE_ACCENT = 'var(--proof-accent)'
 
 function pedidoEstadoColor(estado: EstadoPedido): string {
   if (estado === 'confirmado' || estado === 'preparando' || estado === 'en_ruta') {
     return CLIENTE_ACCENT
   }
-  if (estado === 'entregado') return '#4CAF7D'
-  if (estado === 'parcial') return '#E8A020'
-  return '#999'
+  if (estado === 'entregado') return 'var(--ok)'
+  if (estado === 'parcial') return 'var(--warn)'
+  return 'var(--fg-3)'
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -59,7 +46,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       style={{
         margin: '0 0 10px',
         fontSize: 9,
-        color: '#CCC',
+        color: 'var(--fg-3)',
         letterSpacing: '0.1em',
         textTransform: 'uppercase',
         fontFamily: MONO,
@@ -72,7 +59,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function PedidoDetalleSkeleton() {
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '24px 24px 20px' }}>
         <div style={{ height: 10, width: 72, background: 'var(--panel-2)', borderRadius: 4, marginBottom: 12 }} />
         <div style={{ height: 26, width: '55%', background: 'var(--panel-2)', borderRadius: 4 }} />
@@ -100,6 +87,8 @@ async function fetchWithTimeout<T>(promise: Promise<T>, ms = 12_000): Promise<T>
 export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetalleProps) {
   const supabase = useSupabase()
   const locale = useLocale() as AppLocale
+  const t = useTranslations('distributor.pedidos.detail')
+  const tEstado = useTranslations('distributor.pedidoEstado')
   const { scope } = useProfile()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -295,7 +284,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     return (
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface-card)',
           borderBottom: '0.5px solid var(--hairline)',
           padding: 24,
           textAlign: 'center',
@@ -313,7 +302,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '8px 16px',
-            background: '#fff',
+            background: 'var(--surface-card)',
             cursor: 'pointer',
           }}
         >
@@ -331,7 +320,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     Number(cuenta.saldo_pendiente) > 0
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       {/* HERO */}
       <div
         style={{
@@ -352,7 +341,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             height: 28,
             border: '0.5px solid var(--line)',
             borderRadius: 8,
-            background: '#fff',
+            background: 'var(--surface-card)',
             color: '#999',
             cursor: 'pointer',
             fontSize: 16,
@@ -405,11 +394,11 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                   flexShrink: 0,
                 }}
               />
-              <span style={{ fontSize: 11, fontFamily: MONO, color: '#666' }}>
-                {pedidoEstadoLabel(pedido.estado)}
+              <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--fg-2)' }}>
+                {tEstado.has(pedido.estado) ? tEstado(pedido.estado) : pedido.estado}
               </span>
-              <span style={{ fontSize: 11, color: '#CCC' }}>·</span>
-              <span style={{ fontSize: 11, fontFamily: MONO, color: '#888' }}>
+              <span style={{ fontSize: 11, color: 'var(--fg-3)' }}>·</span>
+              <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--fg-3)' }}>
                 {condicionPago}
               </span>
             </div>
@@ -422,10 +411,11 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                     margin: '8px 0 0',
                     fontSize: 11,
                     fontFamily: MONO,
-                    color: cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : '#888',
+                    color:
+                      cuentaVencida || cuenta.estado === 'vencida' ? 'var(--crit)' : 'var(--fg-3)',
                   }}
                 >
-                  Vence {fmtDateOnly(cuenta.fecha_vencimiento)}
+                  {t('cobro.dueOn', { date: fmtDateOnly(cuenta.fecha_vencimiento) })}
                 </p>
               )}
           </div>
@@ -446,7 +436,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       {/* DATOS */}
       <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
         <SectionLabel>Datos</SectionLabel>
-        <p style={{ margin: 0, fontSize: 12, color: '#666', fontFamily: MONO }}>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-2)', fontFamily: MONO }}>
           Pedido {fmtDateOnly(pedido.fecha_creacion ?? pedido.created_at)} · Entrega{' '}
           {fmtDateOnly(pedido.fecha_entrega)}
         </p>
@@ -456,7 +446,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
         <SectionLabel>Productos</SectionLabel>
         {lineas.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 12, color: '#BBB' }}>Sin líneas registradas.</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>Sin líneas registradas.</p>
         ) : (
           lineas.map((l, i) => (
             <div
@@ -473,7 +463,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
               <span style={{ fontSize: 12, color: 'var(--fg-0)', flex: 1, lineHeight: 1.4 }}>
                 {l.nombre}
               </span>
-              <span style={{ fontSize: 11, fontFamily: MONO, color: '#888', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--fg-3)', whiteSpace: 'nowrap' }}>
                 {l.cantidad.toLocaleString('es-MX')} ×{' '}
                 {l.precioUnitario > 0 ? fmtMoney(l.precioUnitario) : '—'}
               </span>
@@ -498,19 +488,19 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       {/* COBRO */}
       {showCobro && cuenta && (
         <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
-          <SectionLabel>Cobro</SectionLabel>
+          <SectionLabel>{t('cobro.section')}</SectionLabel>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px' }}>
             <CobroStat
-              label="Saldo pendiente"
+              label={t('cobro.balanceDue')}
               value={fmtMoney(Number(cuenta.saldo_pendiente))}
-              tone={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : CLIENTE_ACCENT}
+              tone={cuentaVencida || cuenta.estado === 'vencida' ? 'var(--crit)' : CLIENTE_ACCENT}
             />
-            <CobroStat label="Pagado" value={fmtMoney(Number(cuenta.monto_pagado))} />
+            <CobroStat label={t('cobro.paid')} value={fmtMoney(Number(cuenta.monto_pagado))} />
             {cuenta.fecha_vencimiento && (
               <CobroStat
-                label="Vence"
+                label={t('cobro.dueDate')}
                 value={fmtDateOnly(cuenta.fecha_vencimiento)}
-                tone={cuentaVencida || cuenta.estado === 'vencida' ? '#E24B4A' : undefined}
+                tone={cuentaVencida || cuenta.estado === 'vencida' ? 'var(--crit)' : undefined}
               />
             )}
           </div>
@@ -527,15 +517,15 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                 width: '100%',
                 padding: '10px 16px',
                 borderRadius: 8,
-                border: `0.5px solid ${CLIENTE_ACCENT}44`,
-                background: `${CLIENTE_ACCENT}08`,
+                border: '0.5px solid var(--proof-accent)',
+                background: 'var(--accent-soft, var(--panel))',
                 fontSize: 13,
                 fontWeight: 500,
                 color: CLIENTE_ACCENT,
                 cursor: 'pointer',
               }}
             >
-              Registrar pago
+              {t('cobro.registerPayment')}
             </button>
           ) : (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -545,7 +535,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                 step="0.01"
                 value={pagoMonto}
                 onChange={e => setPagoMonto(e.target.value)}
-                placeholder="Monto"
+                placeholder={t('cobro.amountPlaceholder')}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -566,13 +556,13 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                     borderRadius: 8,
                     border: 'none',
                     background: CLIENTE_ACCENT,
-                    color: '#fff',
+                    color: 'var(--ink)',
                     fontSize: 13,
                     fontWeight: 500,
                     cursor: pagoLoading ? 'wait' : 'pointer',
                   }}
                 >
-                  {pagoLoading ? 'Guardando…' : 'Confirmar pago'}
+                  {pagoLoading ? t('cobro.saving') : t('cobro.confirmPayment')}
                 </button>
                 <button
                   type="button"
@@ -584,18 +574,18 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                     padding: '10px 16px',
                     borderRadius: 8,
                     border: '0.5px solid var(--line)',
-                    background: '#fff',
+                    background: 'var(--surface-card)',
                     fontSize: 13,
                     cursor: 'pointer',
                   }}
                 >
-                  Cancelar
+                  {t('cobro.cancel')}
                 </button>
               </div>
             </div>
           )}
           {pagoError && (
-            <p style={{ margin: '8px 0 0', fontSize: 12, color: '#E24B4A' }}>{pagoError}</p>
+            <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--crit)' }}>{pagoError}</p>
           )}
         </div>
       )}
@@ -647,8 +637,8 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             justifyContent: 'center',
             padding: '12px 16px',
             borderRadius: 10,
-            background: '#fff',
-            color: '#666',
+            background: 'var(--surface-card)',
+            color: 'var(--fg-2)',
             fontSize: 13,
             fontWeight: 500,
             textDecoration: 'none',
@@ -679,7 +669,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       </div>
 
       {pdfError && (
-        <p style={{ margin: '0 0 16px', padding: '0 24px', fontSize: 12, color: '#E24B4A' }}>
+        <p style={{ margin: '0 0 16px', padding: '0 24px', fontSize: 12, color: 'var(--crit)' }}>
           {pdfError}
         </p>
       )}

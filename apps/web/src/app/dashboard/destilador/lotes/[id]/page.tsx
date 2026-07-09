@@ -10,6 +10,7 @@ import { useSupabase } from '@/hooks/useSupabase'
 import { useDestiladorScope } from '@/hooks/useDestiladorScope'
 import { useDistillerContextMessage } from '@/hooks/useDistillerContextMessage'
 import { DestiladorSkeleton } from '@/components/destilador/PipelineHeader'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { loteStatusLabel } from '@/lib/proof/distiller-i18n'
 import { fmtLitros, fmtMoney } from '@/lib/proof/format'
 import type { CorridaRow, LoteRow } from '@/lib/proof/destilador-types'
@@ -125,28 +126,33 @@ export default function DetalleLotePage() {
     return { recibidos, granel, embotellado, merma, activa, ultimaCerrada, dias }
   }, [lote, corridas])
 
+  const backLink = (
+    <Link href="/dashboard/destilador/lotes" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
+      {tCommon('backToLots')}
+    </Link>
+  )
+
   if (scopeLoading || !ok) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={tCommon('lot')} narrow>
         <DestiladorSkeleton />
-      </div>
+      </VuOpsPage>
     )
   }
 
   if (dataLoading) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={tCommon('lot')} narrow>
         <DestiladorSkeleton lines={6} />
-      </div>
+      </VuOpsPage>
     )
   }
 
   if (!lote || !stats) {
     return (
-      <div style={{ padding: 28, maxWidth: 720, margin: '0 auto' }}>
+      <VuOpsPage title={tCommon('lot')} actions={backLink} narrow>
         <p style={{ color: 'var(--crit)' }}>{tCommon('notFound.lot')}</p>
-        <Link href="/dashboard/destilador/lotes">{tCommon('backToLots')}</Link>
-      </div>
+      </VuOpsPage>
     )
   }
 
@@ -158,21 +164,21 @@ export default function DetalleLotePage() {
       : null
 
   return (
-    <div style={{ padding: '28px 28px 80px', maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/dashboard/destilador/lotes" style={{ color: 'var(--fg-3)', fontSize: 12 }}>
-        {tCommon('backToLots')}
-      </Link>
-
-      <header style={{ margin: '16px 0 20px' }}>
-        <p className="mono" style={{ margin: 0, fontSize: 13, color: 'var(--gold)' }}>
-          {lote.numero_lote}
-        </p>
-        <h1 style={{ margin: '8px 0 4px', fontSize: 24 }}>{lote.tipo_agave}</h1>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)' }}>
-          {lote.maestro} · {lote.comunidad} · {loteStatusLabel(tStatus, lote.estado)}
-        </p>
-      </header>
-
+    <VuOpsPage
+      title={lote.tipo_agave}
+      description={
+        <>
+          <span className="mono" style={{ fontSize: 13, color: 'var(--gold)' }}>
+            {lote.numero_lote}
+          </span>
+          <span style={{ display: 'block', marginTop: 4, fontSize: 13, color: 'var(--fg-2)' }}>
+            {lote.maestro} · {lote.comunidad} · {loteStatusLabel(tStatus, lote.estado)}
+          </span>
+        </>
+      }
+      actions={backLink}
+      narrow
+    >
       <div
         style={{
           padding: 14,
@@ -256,6 +262,6 @@ export default function DetalleLotePage() {
           {t('newRun')}
         </Link>
       )}
-    </div>
+    </VuOpsPage>
   )
 }

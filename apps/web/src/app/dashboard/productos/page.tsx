@@ -20,6 +20,7 @@ import {
   skuRowToDistProduct,
 } from '@/lib/proof/sku-dist-adapter'
 import { formatCurrencyMxn } from '@/lib/i18n/format'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
   cerveza: '#FAC775',
@@ -48,7 +49,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -147,52 +148,25 @@ export default function ProductosPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
-      <div
-        style={{
-          marginBottom: 32,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: 28,
-              fontWeight: 800,
-              letterSpacing: '-.04em',
-              color: 'var(--fg-0)',
-              lineHeight: 1.1,
-              marginBottom: 6,
-            }}
-          >
-            {t('title')}
-          </h1>
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>{t('subtitle')}</p>
-        </div>
+    <VuOpsPage
+      title={t('title')}
+      description={t('subtitle')}
+      actions={
         <button
           type="button"
           onClick={() => setShowForm(v => !v)}
+          className="ui-btn ui-btn--sm"
           style={{
-            padding: '12px 20px',
-            background: showForm ? '#fff' : 'var(--fg-0)',
-            color: showForm ? 'var(--fg-0)' : '#fff',
-            border: '1px solid var(--hairline)',
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
-            textTransform: 'uppercase',
+            background: showForm ? 'transparent' : 'var(--fg-0)',
+            color: showForm ? 'var(--fg-0)' : 'var(--ink)',
+            border: showForm ? '1px solid var(--hairline)' : 'none',
             cursor: 'pointer',
-            fontFamily: 'var(--font-display)',
           }}
         >
           {showForm ? tCommon('cancel') : t('newProduct')}
         </button>
-      </div>
-
+      }
+    >
       {showForm && (
         <form
           onSubmit={handleSubmit}
@@ -395,9 +369,9 @@ export default function ProductosPage() {
 
       <div>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>{tCommon('loading')}</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>{tCommon('loading')}</p>
         ) : products.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>{t('empty')}</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>{t('empty')}</p>
         ) : (
           <div
             style={{
@@ -463,7 +437,7 @@ export default function ProductosPage() {
                       textTransform: 'uppercase',
                       padding: '5px 8px',
                       border: '1px solid var(--hairline)',
-                      background: '#fff',
+                      background: 'var(--surface-card)',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                     }}
@@ -495,7 +469,7 @@ export default function ProductosPage() {
                       textTransform: 'uppercase',
                       padding: '5px 8px',
                       border: '1px solid var(--hairline)',
-                      background: '#fff',
+                      background: 'var(--surface-card)',
                       color: 'var(--fg-0)',
                     }}
                   >
@@ -510,7 +484,7 @@ export default function ProductosPage() {
                   style={{
                     marginTop: 'auto',
                     border: '1px solid var(--hairline)',
-                    background: '#fff',
+                    background: 'var(--surface-card)',
                     padding: 10,
                   }}
                 >
@@ -520,7 +494,7 @@ export default function ProductosPage() {
                       fontWeight: 800,
                       letterSpacing: '.1em',
                       textTransform: 'uppercase',
-                      color: '#888',
+                      color: 'var(--fg-3)',
                       marginBottom: 4,
                     }}
                   >
@@ -554,7 +528,7 @@ export default function ProductosPage() {
                       fontSize: 10,
                       fontWeight: 700,
                       marginTop: 6,
-                      color: '#888',
+                      color: 'var(--fg-3)',
                       letterSpacing: '.05em',
                       textTransform: 'uppercase',
                     }}
@@ -569,6 +543,6 @@ export default function ProductosPage() {
           </div>
         )}
       </div>
-    </div>
+    </VuOpsPage>
   )
 }

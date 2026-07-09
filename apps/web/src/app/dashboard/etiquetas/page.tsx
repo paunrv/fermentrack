@@ -8,6 +8,7 @@ import { jsPDF } from 'jspdf'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, type Batch } from '@/lib/supabase'
+import { PageFrame, ContentCard } from '@fermentrack/ui'
 
 
 
@@ -26,7 +27,7 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -243,7 +244,8 @@ export default function EtiquetasPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <PageFrame style={{ overflow: 'auto' }}>
+      <ContentCard>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
@@ -257,7 +259,7 @@ export default function EtiquetasPage() {
         >
           Etiquetas
         </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>
           Generador de etiquetas Code128 para cajas (4×6″)
         </p>
       </div>
@@ -275,7 +277,7 @@ export default function EtiquetasPage() {
           style={{
             border: '1px solid var(--hairline)',
             padding: 24,
-            background: '#fff',
+            background: 'var(--surface-card)',
           }}
         >
           <div
@@ -385,7 +387,7 @@ export default function EtiquetasPage() {
                 maxWidth: 280,
                 aspectRatio: '4 / 6',
                 border: '1px solid var(--hairline)',
-                background: '#fff',
+                background: 'var(--surface-card)',
                 padding: 18,
                 display: 'flex',
                 flexDirection: 'column',
@@ -441,7 +443,7 @@ export default function EtiquetasPage() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
-                color: '#888',
+                color: 'var(--fg-3)',
                 fontWeight: 600,
               }}
             >
@@ -450,6 +452,7 @@ export default function EtiquetasPage() {
           )}
         </div>
       </div>
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

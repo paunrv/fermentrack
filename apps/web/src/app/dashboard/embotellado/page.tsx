@@ -29,7 +29,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -139,9 +139,8 @@ export default function EmbotelladoPage() {
   const labels = materialLabels(unitType)
 
   return (
-    <div
-      style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}
-    >
+    <PageFrame style={{ overflow: 'auto' }}>
+      <ContentCard>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
@@ -155,7 +154,7 @@ export default function EmbotelladoPage() {
         >
           Embotellado
         </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>
           Registra materiales y unidades producidas por lote
         </p>
       </div>
@@ -294,7 +293,7 @@ export default function EmbotelladoPage() {
             style={{
               padding: 16,
               border: '1px solid var(--hairline)',
-              background: '#fff',
+              background: 'var(--surface-card)',
             }}
           >
             <div style={label}>Total unidades producidas</div>
@@ -362,9 +361,9 @@ export default function EmbotelladoPage() {
           Historial de embotellados
         </h2>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Cargando...</p>
         ) : history.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Sin registros aún</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Sin registros aún</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {history.map((row, i) => {
@@ -414,6 +413,7 @@ export default function EmbotelladoPage() {
           </div>
         )}
       </div>
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

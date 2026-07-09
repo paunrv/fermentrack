@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -10,6 +10,8 @@ import { LotBottlingForm } from '@/components/proof/LotBottlingForm'
 import { LotLineageCard } from '@/components/proof/LotLineageCard'
 import { LotLabAnalysisSection } from '@/components/proof/LotLabAnalysisSection'
 import { LotTeamChatSection } from '@/components/proof/LotTeamChatSection'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
+import { useBreakpoint } from '@/hooks/useBreakpoint'
 import { useWinemakerRouteGuard } from '@/hooks/useWinemakerRouteGuard'
 import { useWinemakerOwnerCopy } from '@/hooks/useWinemakerOwnerCopy'
 import { useSupabase } from '@/hooks/useSupabase'
@@ -39,6 +41,8 @@ export default function WinemakerLotDetailPage() {
   const t = useTranslations('winemaker.lotDetail')
   const tCommon = useTranslations('winemaker.common')
   const tStatus = useTranslations('winemaker.lotStatus')
+  const breakpoint = useBreakpoint()
+  const isMobile = breakpoint === 'mobile'
   const { loading: scopeLoading, ok } = useWinemakerRouteGuard()
   const [lot, setLot] = useState<LotDetail | null>(null)
   const [lineage, setLineage] = useState<LotLineageViewModel | null>(null)
@@ -120,49 +124,96 @@ export default function WinemakerLotDetailPage() {
   const statusLabel =
     lot && tStatus.has(lot.status) ? tStatus(lot.status) : lot?.status ?? ''
 
-  return (
-    <div
-      style={{
-        minHeight: '100%',
-        background: 'var(--canvas)',
-        color: 'var(--fg-0)',
-        padding: '16px 16px calc(16px + var(--proof-bottom-nav))',
-      }}
+  const backLink = (
+    <Link
+      href="/dashboard/winemaker/lotes"
+      style={{ fontSize: 13, color: 'var(--fg-3)', textDecoration: 'none', fontWeight: 600 }}
     >
-      <Link
-        href="/dashboard/winemaker/lotes"
-        style={{ fontSize: 13, color: 'var(--fg-3)', textDecoration: 'none', fontWeight: 600 }}
-      >
-        {t('back')}
-      </Link>
+      {t('back')}
+    </Link>
+  )
 
-      {loading ? (
-        <p style={{ marginTop: 24, fontSize: 14, color: 'var(--fg-3)' }}>{t('loading')}</p>
-      ) : error || !lot ? (
-        <p style={{ marginTop: 24, fontSize: 14, color: 'var(--crit)' }}>
-          {error ?? t('notFound')}
-        </p>
-      ) : (
-        <div style={{ marginTop: 20 }}>
-          <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-            {lot.code}
-          </h1>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)' }}>
-            {copy.stageLabel(lot.current_stage)}
-            {lot.varietal ? ` · ${lot.varietal}` : ''}
-          </p>
-          <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--fg-2)' }}>
+  let body: ReactNode
+  if (loading) {
+    body = <p style={{ margin: 0, fontSize: 14, color: 'var(--fg-3)' }}>{t('loading')}</p>
+  } else if (error || !lot) {
+    body = (
+      <p style={{ margin: 0, fontSize: 14, color: 'var(--crit)' }}>{error ?? t('notFound')}</p>
+    )
+  } else {
+    body = (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-2)' }}>
             {t('statusLabel', { status: statusLabel })}
           </p>
           {lot.notes ? (
-            <p style={{ margin: '16px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{lot.notes}</p>
+            <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{lot.notes}</p>
           ) : null}
-          {lineage ? <LotLineageCard lineage={lineage} /> : null}
-          <LotLabAnalysisSection samples={labSamples} />
-          <LotBottlingForm lotId={lot.id} />
-          <LotTeamChatSection lotId={lot.id} />
         </div>
-      )}
-    </div>
+        {lineage ? <LotLineageCard lineage={lineage} /> : null}
+        <LotLabAnalysisSection samples={labSamples} />
+        <LotBottlingForm lotId={lot.id} />
+        <LotTeamChatSection lotId={lot.id} />
+      </div>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <div
+        style={{
+          minHeight: '100%',
+          background: 'var(--canvas)',
+          color: 'var(--fg-0)',
+          padding: '16px 16px calc(16px + var(--proof-bottom-nav))',
+        }}
+      >
+        {backLink}
+        {loading ? (
+          <p style={{ marginTop: 24, fontSize: 14, color: 'var(--fg-3)' }}>{t('loading')}</p>
+        ) : error || !lot ? (
+          <p style={{ marginTop: 24, fontSize: 14, color: 'var(--crit)' }}>
+            {error ?? t('notFound')}
+          </p>
+        ) : (
+          <div style={{ marginTop: 20 }}>
+            <h1
+              style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}
+            >
+              {lot.code}
+            </h1>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)' }}>
+              {copy.stageLabel(lot.current_stage)}
+              {lot.varietal ? ` · ${lot.varietal}` : ''}
+            </p>
+            <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--fg-2)' }}>
+              {t('statusLabel', { status: statusLabel })}
+            </p>
+            {lot.notes ? (
+              <p style={{ margin: '16px 0 0', fontSize: 13, color: 'var(--fg-2)' }}>{lot.notes}</p>
+            ) : null}
+            {lineage ? <LotLineageCard lineage={lineage} /> : null}
+            <LotLabAnalysisSection samples={labSamples} />
+            <LotBottlingForm lotId={lot.id} />
+            <LotTeamChatSection lotId={lot.id} />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <VuOpsPage
+      title={lot?.code ?? t('loading')}
+      description={
+        lot
+          ? `${copy.stageLabel(lot.current_stage)}${lot.varietal ? ` · ${lot.varietal}` : ''}`
+          : undefined
+      }
+      actions={backLink}
+    >
+      {body}
+    </VuOpsPage>
   )
 }

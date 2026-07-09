@@ -20,10 +20,10 @@ import {
   type RemisionDistribuidorRow,
   type EstadoPedido,
 } from '@/lib/supabase'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import { PedidoTomaDetalle } from '@/components/proof/PedidoTomaDetalle'
 import { RemisionPedidoActions } from '@/components/proof/RemisionPedidoActions'
 import { PedidoFulfillmentActions } from '@/components/proof/PedidoFulfillmentActions'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { parseTomaPedidoNotas } from '@/lib/proof/toma-pedido-client'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 
@@ -215,18 +215,25 @@ export default function PedidoComposerPage() {
     }
   }
 
+  const backLink = (
+    <Link href="/dashboard/pedidos" style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}>
+      {t('backList')}
+    </Link>
+  )
+
   if (loading) {
     return (
-      <div style={{ padding: 48, color: 'var(--fg-3)' }}>{t('loading')}</div>
+      <VuOpsPage title={t('loading')} actions={backLink} narrow>
+        <p style={{ margin: 0, color: 'var(--fg-3)', fontSize: 13 }}>{t('loading')}</p>
+      </VuOpsPage>
     )
   }
 
   if (!pedido) {
     return (
-      <div style={{ padding: 48 }}>
-        <p>{t('notFound')}</p>
-        <Link href="/dashboard/pedidos">{t('back')}</Link>
-      </div>
+      <VuOpsPage title={t('notFound')} actions={backLink} narrow>
+        <p style={{ margin: 0, color: 'var(--fg-2)', fontSize: 13 }}>{t('notFound')}</p>
+      </VuOpsPage>
     )
   }
 
@@ -245,28 +252,26 @@ export default function PedidoComposerPage() {
   const estadoLabel = (tEstado as (key: string) => string)(pedido.estado) || pedido.estado
 
   return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 720, margin: '0 auto' }}>
-      <Link href="/dashboard/pedidos" style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}>
-        {t('backList')}
-      </Link>
-
-      <header style={{ margin: '16px 0 24px' }}>
-        <div className="mono" style={{ fontSize: 12, color: 'var(--gold)', marginBottom: 6 }}>
-          {pedido.numero}
-        </div>
-        <h1 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 800, color: 'var(--fg-0)' }}>
-          {t('composer')}
-        </h1>
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-2)' }}>
-          {pedido.clients?.name || t('clientFallback')}
-          {pedido.etiqueta_nombre ? ` · ${pedido.etiqueta_nombre}` : ''} · {t('delivery')}{' '}
-          {pedido.fecha_entrega} ·{' '}
-          <span style={{ color: pedido.estado === 'borrador' ? 'var(--warn)' : 'var(--ok)' }}>
-            {estadoLabel}
+    <VuOpsPage
+      title={t('composer')}
+      description={
+        <>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--gold)', display: 'block', marginBottom: 6 }}>
+            {pedido.numero}
           </span>
-        </p>
-      </header>
-
+          <span style={{ fontSize: 13, color: 'var(--fg-2)' }}>
+            {pedido.clients?.name || t('clientFallback')}
+            {pedido.etiqueta_nombre ? ` · ${pedido.etiqueta_nombre}` : ''} · {t('delivery')}{' '}
+            {pedido.fecha_entrega} ·{' '}
+            <span style={{ color: pedido.estado === 'borrador' ? 'var(--warn)' : 'var(--ok)' }}>
+              {estadoLabel}
+            </span>
+          </span>
+        </>
+      }
+      actions={backLink}
+      narrow
+    >
       {editable && (
         <section
           style={{
@@ -437,27 +442,7 @@ export default function PedidoComposerPage() {
           </button>
         </div>
       )}
-
-      <ConnectedProofAIBar
-        pantalla="pedidos"
-        vista="compositor"
-        profileType="distributor"
-        hints={{
-          pantalla: {
-            pedidoId,
-            estado: pedido?.estado,
-            hasOverstock,
-            lineCount: lines.length,
-            total,
-          },
-        }}
-        fallback={{
-          mensaje: proofMessage,
-          accionLabel: hasOverstock ? t('viewInventory') : tCommon('askProof'),
-          accionHref: '/dashboard/inventario',
-        }}
-      />
-    </div>
+    </VuOpsPage>
   )
 }
 

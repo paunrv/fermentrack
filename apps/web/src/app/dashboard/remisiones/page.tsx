@@ -8,9 +8,9 @@ import { useLocale, useTranslations } from 'next-intl'
 import type { AppLocale } from '@/i18n/routing'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
-import { ConnectedProofAIBar } from '@/components/proof/ConnectedProofAIBar'
 import { fmtBottles } from '@/lib/proof/format'
 import { formatDate } from '@/lib/i18n/format'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { fetchRecepcionesRemision, type RecepcionRemisionListRow } from '@/lib/supabase'
 
 export default function RemisionesPage() {
@@ -47,14 +47,9 @@ export default function RemisionesPage() {
   }
 
   return (
-    <div style={{ padding: '28px 28px 100px', maxWidth: 800, margin: '0 auto' }}>
-      <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>
-        {t('title')}
-      </h1>
-      <p style={{ margin: '0 0 24px', fontSize: 14, color: 'var(--fg-2)' }}>{t('subtitle')}</p>
-
+    <VuOpsPage title={t('title')} description={t('subtitle')}>
       {loading ? (
-        <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{tCommon('loading')}</p>
+        <p style={{ color: 'var(--fg-3)', fontSize: 13, margin: 0 }}>{tCommon('loading')}</p>
       ) : rows.length === 0 ? (
         <div
           style={{
@@ -122,13 +117,6 @@ export default function RemisionesPage() {
           ))}
         </div>
       )}
-
-      <ConnectedProofAIBar
-        pantalla="remisiones"
-        profileType="distributor"
-        hints={{ pantalla: { count: rows.length } }}
-        fallback={{ mensaje: t('aiFallback') }}
-      />
-    </div>
+    </VuOpsPage>
   )
 }

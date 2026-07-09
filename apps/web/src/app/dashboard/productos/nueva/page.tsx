@@ -13,8 +13,7 @@ import {
   registrarMovimientoSku,
 } from '@/lib/supabase/distribuidor'
 import { productCategoryToCategoriaSku } from '@/lib/proof/sku-dist-adapter'
-
-
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 const CATEGORIES: { value: ProductCategory; label: string; emoji: string }[] = [
   { value: 'cerveza', label: 'Cerveza', emoji: '🍺' },
@@ -42,7 +41,7 @@ const labelStyle: React.CSSProperties = {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '12px 14px',
   fontSize: 14,
@@ -314,58 +313,38 @@ export default function NuevaProductoPage() {
     }
   }
 
-  return (
-    <div
+  const backLink = (
+    <Link
+      href="/dashboard"
       style={{
-        background: '#fff',
-        minHeight: '100vh',
-        fontFamily: 'var(--font-display)',
-        padding: 32,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        fontSize: 11,
+        fontWeight: 800,
+        letterSpacing: '.08em',
+        textTransform: 'uppercase',
+        color: 'var(--fg-0)',
+        textDecoration: 'none',
+        border: '1px solid var(--hairline)',
+        background: 'var(--surface-card)',
+        padding: '8px 12px',
       }}
+    >
+      {BackIcon}
+      <span>Dashboard</span>
+    </Link>
+  )
+
+  return (
+    <VuOpsPage
+      title="Nueva etiqueta"
+      description="Sube la remisión como evidencia o ingresa los datos manualmente. Para lectura automática, conecta tu agente en el dashboard."
+      actions={backLink}
     >
       <style>{`
         @keyframes nuevaSpin { to { transform: rotate(360deg); } }
       `}</style>
-
-      {/* Header */}
-      <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link
-          href="/dashboard"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: '.08em',
-            textTransform: 'uppercase',
-            color: 'var(--fg-0)',
-            textDecoration: 'none',
-            border: '1px solid var(--hairline)',
-            background: '#fff',
-            padding: '8px 12px',
-          }}
-        >
-          {BackIcon}
-          <span>Dashboard</span>
-        </Link>
-        <div>
-          <h1
-            style={{
-              fontSize: 26,
-              fontWeight: 800,
-              letterSpacing: '-.03em',
-              color: 'var(--fg-0)',
-              lineHeight: 1.1,
-            }}
-          >
-            Nueva etiqueta
-          </h1>
-          <p style={{ fontSize: 12, color: '#888', fontWeight: 500, marginTop: 2 }}>
-            Sube la remisión como evidencia o ingresa los datos manualmente. Para lectura automática, conecta tu agente en el dashboard.
-          </p>
-        </div>
-      </div>
 
       {/* Step indicator */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 24, marginLeft: 0 }}>
@@ -459,7 +438,7 @@ export default function NuevaProductoPage() {
                 style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#888',
+                  color: 'var(--fg-3)',
                   textAlign: 'center',
                   maxWidth: 360,
                   lineHeight: 1.4,
@@ -476,7 +455,7 @@ export default function NuevaProductoPage() {
                   textTransform: 'uppercase',
                   padding: '6px 10px',
                   border: '1px solid var(--hairline)',
-                  background: '#fff',
+                  background: 'var(--surface-card)',
                   color: 'var(--fg-0)',
                 }}
               >
@@ -487,7 +466,7 @@ export default function NuevaProductoPage() {
             <div
               style={{
                 border: '1px solid var(--hairline)',
-                background: '#fff',
+                background: 'var(--surface-card)',
                 padding: 20,
                 display: 'flex',
                 flexDirection: 'column',
@@ -519,7 +498,7 @@ export default function NuevaProductoPage() {
                   style={{
                     padding: '10px 14px',
                     border: '1px solid var(--hairline)',
-                    background: '#fff',
+                    background: 'var(--surface-card)',
                     color: 'var(--fg-0)',
                     fontSize: 11,
                     fontWeight: 800,
@@ -625,7 +604,7 @@ export default function NuevaProductoPage() {
               style={{
                 padding: '14px 18px',
                 border: '1px solid var(--hairline)',
-                background: '#fff',
+                background: 'var(--surface-card)',
                 color: 'var(--fg-0)',
                 fontSize: 12,
                 fontWeight: 800,
@@ -686,7 +665,7 @@ export default function NuevaProductoPage() {
             style={{
               border: '1px solid var(--hairline)',
               padding: 24,
-              background: '#fff',
+              background: 'var(--surface-card)',
               display: 'flex',
               flexDirection: 'column',
               gap: 14,
@@ -900,7 +879,7 @@ export default function NuevaProductoPage() {
                 style={{
                   padding: '14px 18px',
                   border: '1px solid var(--hairline)',
-                  background: '#fff',
+                  background: 'var(--surface-card)',
                   color: 'var(--fg-0)',
                   fontSize: 11,
                   fontWeight: 800,
@@ -937,7 +916,7 @@ export default function NuevaProductoPage() {
           </div>
         </div>
       )}
-    </div>
+    </VuOpsPage>
   )
 }
 

@@ -13,6 +13,7 @@ import {
   type LineaToma,
 } from '@/lib/proof/toma-pedido-client'
 import { PedidoResumenCard } from '@/components/proof/PedidoResumenCard'
+import { VuOpsPage } from '@/components/proof/VuOpsPage'
 
 const MAX_STACK = 5
 
@@ -179,37 +180,29 @@ export default function NuevoPedidoPage() {
     }
   }
 
+  const backLink = (
+    <Link
+      href="/dashboard/pedidos"
+      style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
+    >
+      {t('back')}
+    </Link>
+  )
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: 'calc(100vh - 56px)',
-        maxHeight: 'calc(100dvh - 56px)',
-        overflow: 'hidden',
-      }}
+    <VuOpsPage
+      title={t('title')}
+      description={t('subtitle', { max: MAX_STACK })}
+      actions={backLink}
+      narrow
     >
       <div
         style={{
-          flexShrink: 0,
-          padding: '16px 20px 14px',
-          borderBottom: '1px solid var(--hairline)',
-          background: 'var(--canvas)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
         }}
       >
-        <Link
-          href="/dashboard/pedidos"
-          style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
-        >
-          {t('back')}
-        </Link>
-        <h1 style={{ margin: '8px 0 4px', fontSize: 22, fontWeight: 800, color: 'var(--fg-0)' }}>
-          {t('title')}
-        </h1>
-        <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--fg-2)' }}>
-          {t('subtitle', { max: MAX_STACK })}
-        </p>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <span className="eyebrow">{t('client')}</span>
@@ -363,34 +356,22 @@ export default function NuevoPedidoPage() {
         {error && (
           <p style={{ margin: '10px 0 0', fontSize: 13, color: 'var(--crit)' }}>{error}</p>
         )}
-      </div>
 
-      <div
-        ref={listRef}
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '16px 20px 32px',
-          background: 'var(--bg, #f4f2ee)',
-        }}
-      >
-        {stack.length === 0 ? (
-          <p
-            style={{
-              margin: 0,
-              fontSize: 14,
-              color: 'var(--fg-3)',
-              textAlign: 'center',
-              paddingTop: 48,
-            }}
-          >
-            {t('emptyStack')}
-          </p>
-        ) : (
-          <div
-            style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720, margin: '0 auto' }}
-          >
-            {stack.map(entry => (
+        <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {stack.length === 0 ? (
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                color: 'var(--fg-3)',
+                textAlign: 'center',
+                paddingTop: 24,
+              }}
+            >
+              {t('emptyStack')}
+            </p>
+          ) : (
+            stack.map(entry => (
               <PedidoResumenCard
                 key={entry.key}
                 numero={entry.numero}
@@ -402,11 +383,11 @@ export default function NuevoPedidoPage() {
                 estado={entry.estado}
                 itemsGuardados={entry.itemsGuardados}
               />
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </VuOpsPage>
   )
 }
 
@@ -417,7 +398,7 @@ const inputLarge: React.CSSProperties = {
   fontWeight: 500,
   border: '2px solid var(--hairline)',
   borderRadius: 10,
-  background: '#fff',
+  background: 'var(--surface-card)',
   color: 'var(--fg-0)',
   outline: 'none',
 }
@@ -428,7 +409,7 @@ const inputSmall: React.CSSProperties = {
   fontSize: 14,
   border: '1px solid var(--hairline)',
   borderRadius: 8,
-  background: '#fff',
+  background: 'var(--surface-card)',
   color: 'var(--fg-0)',
 }
 

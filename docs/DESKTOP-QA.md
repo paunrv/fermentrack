@@ -8,8 +8,29 @@ Checklist reproducible antes de cerrar releases de UX desktop. Complementa:
 - [CANVAS-DESKTOP.md](./CANVAS-DESKTOP.md) — canvas ≥1280px
 - [DASHBOARD-BREAKPOINTS.md](./DASHBOARD-BREAKPOINTS.md) — tablet 768–1023
 - [WINEMAKER-HOME.md](./WINEMAKER-HOME.md) — owner pipeline desktop
+- [PROOF-VU-SYSTEM.md](./PROOF-VU-SYSTEM.md) — sistema VU (Fase 0–1 shell)
 
 ---
+
+## Shell VU (Fase 1) · VU shell
+
+Viewports: **768**, **1024**, **1280** · Móvil **375** = sin regresión
+
+| # | Paso | ✓ |
+|---|------|---|
+| V1 | Desktop/tablet: `main` fondo `--page-bg` (gris), no blanco puro | ☐ |
+| V2 | Rail ítem activo: tinte `--nav-active-bg` + barra `--nav-active-bar` | ☐ |
+| V3 | Inner header desktop: título + badge + avatar — **sin** Ask/camera | ☐ |
+| V4 | Móvil ≤767: Ask strip en inner header (si aplica) intacto | ☐ |
+| V5 | `/dashboard/conectar` — PageFrame + ContentCard + CopyField; acordeones setup | ☐ |
+| V6 | `/dashboard` (no owner) — KPIs en cards + CTA a `/conectar` (no hub embebido) | ☐ |
+| V7 | Winemaker owner desktop — `PageFrame` + pipeline en `ContentCard` | ☐ |
+| V8 | Inventario / Pedidos / Recepción / Movimientos / Clientes / Productos — `VuOpsPage`, sin AI bar | ☐ |
+| V9 | Winemaker ≥768: Lotes, Bodega, Documentos, Proveedores, Gastos, Agenda, Lab, Equipo — `VuOpsPage`; móvil ≤767 idéntico | ☐ |
+| V10 | Distiller: Compras / Lotes / Producción / Bodega / Ventas (+ forms) — `VuOpsPage` | ☐ |
+| V11 | Settings — `PageFrame` + cards; Remisiones / Productores — `VuOpsPage`; Crédito — `PageFrame` (canvas KPIs) | ☐ |
+| V12 | Detalle Pedidos / Clientes / Productos (+ nuevo) — shell VU; inputs `--surface-card`; sin AI bar | ☐ |
+| V13 | Hardening: `canvas-accents` resuelve a `--proof-accent`; dropdown avatar `--surface-card` | ☐ |
 
 ## Pre-requisitos · Prerequisites
 
@@ -87,8 +108,8 @@ Perfil: `distributor` · Viewports: 1280×800, 1440×900, 1024×768
 
 | # | Paso · Step | ✓ |
 |---|-------------|---|
-| D1 | **Canvas** `/dashboard` — modos compra/venta/bodega, enviar pregunta | ☐ |
-| D2 | **Inventario** `/dashboard/inventario` — lista SKUs, rail coherente | ☐ |
+| D1 | **Canvas** `/dashboard` — modos compra/venta/bodega (sin Ask en header desktop) | ☐ |
+| D2 | **Inventario** `/dashboard/inventario` — lista SKUs, rail activo con tint `--nav-active-bg`, sin Ask bar desktop | ☐ |
 | D3 | **Pedido nuevo** `/dashboard/pedidos/nuevo` — formulario usable, sin overflow | ☐ |
 | D4 | **Recepción** `/dashboard/recepcion` — pantalla carga sin layout roto | ☐ |
 | D5 | **Crédito** `/dashboard/credito` — canvas-style full-bleed, sin inner header duplicado | ☐ |

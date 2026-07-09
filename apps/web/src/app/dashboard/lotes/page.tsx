@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fetchBatches, createBatch, logActivity, type Batch } from '@/lib/supabase'
+import { PageFrame, ContentCard } from '@fermentrack/ui'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
 
@@ -22,7 +23,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -113,14 +114,8 @@ export default function LotesPage() {
   }
 
   return (
-    <div
-      style={{
-        fontFamily: 'var(--font-display)',
-        background: '#fff',
-        minHeight: '100vh',
-        padding: 32,
-      }}
-    >
+    <PageFrame style={{ overflow: 'auto' }}>
+      <ContentCard>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
         <div>
           <h1
@@ -135,7 +130,7 @@ export default function LotesPage() {
           >
             Lotes
           </h1>
-          <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>
             {loading ? '...' : `${batches.length} lotes registrados`}
           </p>
         </div>
@@ -239,7 +234,7 @@ export default function LotesPage() {
               onClick={() => setShowForm(false)}
               style={{
                 padding: '12px 16px',
-                background: '#fff',
+                background: 'var(--surface-card)',
                 color: 'var(--fg-0)',
                 border: '1px solid var(--hairline)',
                 fontSize: 11,
@@ -257,7 +252,7 @@ export default function LotesPage() {
       )}
 
       {loading ? (
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>Cargando lotes...</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>Cargando lotes...</p>
       ) : (
         batches.map((b, i) => {
           const accent = COLORS[i % COLORS.length]
@@ -269,7 +264,7 @@ export default function LotesPage() {
                 borderLeft: `12px solid ${accent}`,
                 padding: 20,
                 marginBottom: 8,
-                background: '#fff',
+                background: 'var(--surface-card)',
               }}
             >
               <div
@@ -312,9 +307,9 @@ export default function LotesPage() {
                         height: 6,
                         background:
                           b.status === 'active'
-                            ? '#1D9E75'
+                            ? 'var(--ok)'
                             : b.status === 'warn'
-                              ? '#E24B4A'
+                              ? 'var(--crit)'
                               : '#888',
                       }}
                     />
@@ -327,7 +322,7 @@ export default function LotesPage() {
                     fontWeight: 700,
                     letterSpacing: '.08em',
                     textTransform: 'uppercase',
-                    color: '#888',
+                    color: 'var(--fg-3)',
                   }}
                 >
                   Día {b.day} — {b.type}
@@ -355,7 +350,7 @@ export default function LotesPage() {
                     style={{
                       border: '1px solid var(--hairline)',
                       padding: 10,
-                      background: '#fff',
+                      background: 'var(--surface-card)',
                     }}
                   >
                     <div style={{ ...label, marginBottom: 4 }}>{p.label}</div>
@@ -364,13 +359,13 @@ export default function LotesPage() {
                 ))}
               </div>
 
-              <div style={{ border: '1px solid var(--hairline)', height: 8, background: '#fff' }}>
+              <div style={{ border: '1px solid var(--hairline)', height: 8, background: 'var(--surface-card)' }}>
                 <div
                   style={{
                     height: '100%',
                     width: `${b.progress}%`,
                     background:
-                      b.status === 'warn' ? '#E24B4A' : b.status === 'idle' ? '#888' : '#1D9E75',
+                      b.status === 'warn' ? 'var(--crit)' : b.status === 'idle' ? '#888' : 'var(--ok)',
                   }}
                 />
               </div>
@@ -389,6 +384,7 @@ export default function LotesPage() {
           )
         })
       )}
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

@@ -14,6 +14,7 @@ import {
   type Bottling,
   type WarehouseExit,
 } from '@/lib/supabase'
+import { PageFrame, ContentCard } from '@fermentrack/ui'
 
 const COLORS = ['#FAC775', '#9FE1CB', '#F5C4B3', '#B5D4F4', '#C0DD97', '#F4C0D1']
 
@@ -30,7 +31,7 @@ const label: React.CSSProperties = {
 
 const input: React.CSSProperties = {
   width: '100%',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   padding: '10px 12px',
   fontSize: 13,
@@ -154,7 +155,8 @@ export default function BodegaPage() {
   }
 
   return (
-    <div style={{ fontFamily: 'var(--font-display)', background: '#fff', minHeight: '100vh', padding: 32 }}>
+    <PageFrame style={{ overflow: 'auto' }}>
+      <ContentCard>
       <div style={{ marginBottom: 32 }}>
         <h1
           style={{
@@ -168,7 +170,7 @@ export default function BodegaPage() {
         >
           Bodega
         </h1>
-        <p style={{ fontSize: 13, color: '#888', fontWeight: 500 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)', fontWeight: 500 }}>
           Stock actual: embotellado − salidas
         </p>
       </div>
@@ -186,9 +188,9 @@ export default function BodegaPage() {
           Stock disponible
         </h2>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Cargando...</p>
         ) : stockWithInventory.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Sin stock en bodega</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Sin stock en bodega</p>
         ) : (
           <div
             style={{
@@ -356,9 +358,9 @@ export default function BodegaPage() {
           Historial de salidas
         </h2>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Cargando...</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Cargando...</p>
         ) : exits.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#888' }}>Sin salidas registradas</p>
+          <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Sin salidas registradas</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {exits.map((row, i) => {
@@ -396,7 +398,7 @@ export default function BodegaPage() {
                       textTransform: 'uppercase',
                       padding: '8px 12px',
                       border: '1px solid var(--hairline)',
-                      background: '#fff',
+                      background: 'var(--surface-card)',
                     }}
                   >
                     Salida
@@ -407,6 +409,7 @@ export default function BodegaPage() {
           </div>
         )}
       </div>
-    </div>
+      </ContentCard>
+    </PageFrame>
   )
 }

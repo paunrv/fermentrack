@@ -1,0 +1,78 @@
+---
+description: Reglas UI/UX obligatorias PROOF — breakpoints, móvil intocable, desktop, tokens, i18n, estados
+globs: apps/web/**/*.{tsx,ts},packages/ui/**/*,apps/storybook/**/*
+alwaysApply: false
+---
+
+# Reglas UI/UX — fermentrack (PROOF)
+
+Obligatorias en todo PR de interfaz. Breakpoints canónicos: `docs/DASHBOARD-BREAKPOINTS.md`.
+
+## 1. Breakpoints — fuente única de verdad
+
+- **mobile** ≤ 767
+- **tablet** 768–1023
+- **desktop** ≥ 1024
+- **canvas wide** ≥ 1280
+
+Nunca inventes un breakpoint nuevo ni uses valores mágicos (`@media (max-width: 800px)`).
+Si un diseño parece necesitar un breakpoint intermedio, detente y pregunta.
+
+## 2. Móvil es intocable
+
+- **PROHIBIDO** modificar `WinemakerMobileHome.tsx` o cualquier componente/flujo móvil
+  existente al implementar desktop. Cero regresión móvil es criterio de aceptación.
+- **PROHIBIDO** agregar media queries o lógica responsive dentro de componentes móviles
+  para "adaptarlos" a desktop.
+- Patrón correcto: **switch por breakpoint a nivel de ruta/página** —
+  la ruta decide qué componente renderizar (`WinemakerMobileHome` en ≤767,
+  `WinemakerDesktopHome` en ≥1024); cada componente es puro para su contexto.
+- Tablet (768–1023): variante desktop en una columna, salvo spec distinto.
+  Nunca estires el componente móvil.
+
+## 3. Desktop — patrones uniformes
+
+- **Sistema VU**: anatomía de página, tokens y primitivos en `docs/PROOF-VU-SYSTEM.md`
+  (`PageFrame`, `ContentCard`, `CopyField`, `SetupAccordion`).
+- **Contenedor**: `max-width: 1280px` centrado. Nada a sangre completa salvo shell (rail + header).
+- **Sin acordeones en desktop**: todo visible sin clicks. Acordeones = solo móvil
+  (**excepción**: `/dashboard/conectar` — setup por asistente, patrón VU).
+- **Densidad**: datos de un vistazo — métricas, estados, tiempos; no filas vacías con contadores.
+- **Grid**: columna principal + lateral (2fr/1fr) o filas de tarjetas. Referencia: `WinemakerDesktopHome`.
+- **Alertas en contexto**: estado en la tarjeta del elemento (borde/tinte danger), no secciones aparte.
+- **Jerarquía de color**: neutro = sin actividad, accent = en curso, warning = atención, danger = crítico.
+
+## 4. Sistema de diseño — sin excepciones
+
+- Primitivos de `@fermentrack/ui`. Si falta uno, créalo en el paquete (con story en `apps/storybook`),
+  nunca inline en `apps/web`.
+- **Solo tokens del preset Tailwind**. PROHIBIDO: hex hardcodeados, arbitrarios (`text-[13px]`, `bg-[#f5f5f5]`),
+  imports de `notion-styles.ts` (deprecación).
+- Componentes reutilizables nuevos → Storybook en el mismo PR.
+
+## 5. i18n obligatorio
+
+- Cero strings hardcodeados en JSX. Todo por next-intl en `es-MX.json` y `en-US.json`.
+- Incluye tooltips, aria-labels, placeholders, límites de plan y vacíos.
+
+## 6. Estados obligatorios por componente
+
+Antes de cerrar: **loading** (skeleton), **vacío** (mensaje útil), **error** (reintento), **con datos**.
+Vacíos estructurales (etapas pipeline): silenciosos pero visibles — nunca ocultos.
+
+## 7. Checklist de verificación
+
+Anchos: **375, 767, 768, 1023, 1024, 1280, 1440**.
+
+- [ ] 375 y 767: idéntico al móvil previo (cero regresión)
+- [ ] 768–1023: desktop en una columna, sin overflow horizontal
+- [ ] ≥1024: contenedor 1280 centrado, sin acordeones, todo visible
+- [ ] Sin scroll horizontal
+- [ ] loading / vacío / error / datos presentes
+- [ ] Strings en ambos locales
+- [ ] Solo tokens (diff sin `#`, `-[`, `notion-styles`)
+- [ ] Actualizar `docs/DESKTOP-QA.md` si hay superficies nuevas
+
+## 8. Ante ambigüedad
+
+Si el spec no define un breakpoint, **no improvises**: pregunta o marca TODO con issue.
