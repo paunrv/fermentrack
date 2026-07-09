@@ -33,7 +33,7 @@ function PlanLimitProgressBar({
           width: `${pct}%`,
           height: '100%',
           borderRadius: 999,
-          background: isReached ? 'var(--crit, #c0392b)' : 'var(--warn, #b8860b)',
+          background: isReached ? 'var(--crit)' : 'var(--warn)',
           transition: 'width 0.2s ease',
         }}
       />
@@ -67,7 +67,7 @@ function PlanLimitAlertCard({ warning }: { warning: PlanResourceWarning }) {
         gap: 10,
         padding: '14px 16px',
         borderRadius: 12,
-        border: `1px solid ${isReached ? 'color-mix(in srgb, var(--crit, #c0392b) 35%, var(--hairline))' : 'color-mix(in srgb, var(--warn, #b8860b) 35%, var(--hairline))'}`,
+        border: `1px solid ${isReached ? 'color-mix(in srgb, var(--crit) 35%, var(--hairline))' : 'color-mix(in srgb, var(--warn) 35%, var(--hairline))'}`,
         background: isReached ? 'var(--crit-soft, #fdecea)' : 'var(--warn-soft, #fff8e6)',
       }}
     >
@@ -96,7 +96,7 @@ function PlanLimitAlertCard({ warning }: { warning: PlanResourceWarning }) {
             flexShrink: 0,
             fontSize: 12,
             fontWeight: 600,
-            color: 'var(--proof-accent, #6940A5)',
+            color: 'var(--proof-accent)',
             textDecoration: 'none',
             whiteSpace: 'nowrap',
           }}

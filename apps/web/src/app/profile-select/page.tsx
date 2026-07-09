@@ -285,7 +285,7 @@ export default function ProfileSelectPage() {
                 width: 148,
                 minHeight: 140,
                 background: hoveredKey === 'add' ? 'rgba(105, 64, 165, 0.08)' : 'var(--ink)',
-                border: `1px dashed ${hoveredKey === 'add' ? 'var(--proof-accent, #6940A5)' : 'var(--hairline)'}`,
+                border: `1px dashed ${hoveredKey === 'add' ? 'var(--proof-accent)' : 'var(--hairline)'}`,
                 borderRadius: 'var(--radius-md)',
                 color: 'var(--fg-0)',
                 fontFamily: 'inherit',

@@ -521,7 +521,7 @@ export default function SettingsPage() {
             {planBilling?.trialExpired ? (
               <>
                 {' · '}
-                <span style={{ color: 'var(--crit, #c0392b)' }}>{t('billing.trialExpired')}</span>
+                <span style={{ color: 'var(--crit)' }}>{t('billing.trialExpired')}</span>
               </>
             ) : null}
             {orgSettings.plan === 'trial' &&
@@ -627,7 +627,7 @@ export default function SettingsPage() {
                       borderRadius: 8,
                       border:
                         billingCycle === cycle
-                          ? '1px solid var(--proof-accent, #6940A5)'
+                          ? '1px solid var(--proof-accent)'
                           : '1px solid var(--hairline)',
                       background: billingCycle === cycle ? 'rgba(105, 64, 165, 0.08)' : '#fff',
                       fontSize: 13,

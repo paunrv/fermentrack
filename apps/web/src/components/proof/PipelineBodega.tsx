@@ -15,8 +15,8 @@ import type { LotEtapa } from '@/lib/proof/lot-etapa'
 
 const COLUMN_UNDERLINE: Record<PipelineColumnTone, string> = {
   neutral: 'var(--hairline)',
-  accent: 'var(--proof-accent, #6940A5)',
-  danger: 'var(--crit, #c0392b)',
+  accent: 'var(--proof-accent)',
+  danger: 'var(--crit)',
 }
 
 type PipelineBodegaProps = {

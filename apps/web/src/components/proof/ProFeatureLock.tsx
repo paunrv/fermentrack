@@ -21,7 +21,7 @@ export function ProFeatureLock({
         marginBottom: 20,
         padding: '14px 16px',
         borderRadius: 12,
-        border: '1px solid color-mix(in srgb, var(--proof-accent, #6940A5) 25%, var(--hairline))',
+        border: '1px solid color-mix(in srgb, var(--proof-accent) 25%, var(--hairline))',
         background: 'rgba(105, 64, 165, 0.06)',
       }}
     >
@@ -41,7 +41,7 @@ export function ProFeatureLock({
               marginTop: 10,
               fontSize: 13,
               fontWeight: 600,
-              color: 'var(--proof-accent, #6940A5)',
+              color: 'var(--proof-accent)',
               textDecoration: 'none',
             }}
           >

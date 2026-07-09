@@ -144,7 +144,7 @@ export function LotBottlingForm({ lotId }: LotBottlingFormProps) {
           {t('completedBody')}{' '}
           <Link
             href="/dashboard/winemaker/bodega"
-            style={{ color: 'var(--proof-accent, #6940A5)', fontWeight: 600 }}
+            style={{ color: 'var(--proof-accent)', fontWeight: 600 }}
           >
             {t('completedLink')}
           </Link>

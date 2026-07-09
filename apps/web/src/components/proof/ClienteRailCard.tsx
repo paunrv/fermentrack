@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import type { ClienteConSaldo } from '@/lib/supabase/distribuidor'
 import { fmtMoney } from '@/lib/proof/format'
-import { CLIENTE_ACCENT } from '@/lib/proof/canvas-accents'
 
 type Props = {
   cliente: ClienteConSaldo
@@ -96,7 +95,7 @@ export function ClienteRailCard({ cliente }: Props) {
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: saldo > 0 ? CLIENTE_ACCENT : 'var(--fg-3)',
+            color: saldo > 0 ? 'var(--proof-accent)' : 'var(--fg-3)',
           }}
         >
           {saldo > 0 ? fmtMoney(saldo) : t('rail.noBalance')}

@@ -108,12 +108,12 @@ export function AgendaCaptureSection() {
                   padding: '8px 12px',
                   borderRadius: 999,
                   border: active
-                    ? '1px solid var(--proof-accent, #7c5cbf)'
+                    ? '1px solid var(--proof-accent)'
                     : '1px solid var(--border)',
                   background: active
-                    ? 'color-mix(in srgb, var(--proof-accent, #7c5cbf) 12%, var(--bg-2))'
+                    ? 'color-mix(in srgb, var(--proof-accent) 12%, var(--bg-2))'
                     : 'var(--bg-2)',
-                  color: active ? 'var(--proof-accent, #7c5cbf)' : 'var(--fg-1)',
+                  color: active ? 'var(--proof-accent)' : 'var(--fg-1)',
                   fontSize: 12,
                   fontWeight: active ? 600 : 500,
                   cursor: 'pointer',
@@ -210,7 +210,7 @@ const primaryButtonStyle: CSSProperties = {
   padding: '12px 16px',
   borderRadius: 10,
   border: 'none',
-  background: 'var(--proof-accent, #7c5cbf)',
+  background: 'var(--proof-accent)',
   color: '#fff',
   fontSize: 13,
   fontWeight: 600,

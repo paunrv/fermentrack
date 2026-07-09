@@ -42,7 +42,7 @@ function FilterChip({
         padding: '6px 12px',
         borderRadius: 999,
         border: active
-          ? '1px solid var(--proof-accent, #6940A5)'
+          ? '1px solid var(--proof-accent)'
           : '1px solid var(--hairline)',
         background: active ? 'color-mix(in srgb, var(--proof-accent) 12%, var(--panel))' : 'var(--panel)',
         color: active ? 'var(--fg-0)' : 'var(--fg-2)',
@@ -134,7 +134,7 @@ export function WinemakerBodegaInventory({
         {emptyKey === 'empty' ? (
           <p style={{ margin: '12px 0 0', fontSize: 13, color: 'var(--fg-3)' }}>
             {t('emptyHint')}{' '}
-            <Link href="/dashboard" style={{ color: 'var(--proof-accent, #6940A5)' }}>
+            <Link href="/dashboard" style={{ color: 'var(--proof-accent)' }}>
               {t('emptyLink')}
             </Link>
           </p>
@@ -145,7 +145,7 @@ export function WinemakerBodegaInventory({
             style={{
               marginTop: 12,
               fontSize: 13,
-              color: 'var(--proof-accent, #6940A5)',
+              color: 'var(--proof-accent)',
               background: 'none',
               border: 'none',
               cursor: 'pointer',

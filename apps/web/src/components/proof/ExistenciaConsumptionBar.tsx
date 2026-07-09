@@ -39,7 +39,7 @@ export function ExistenciaConsumptionBar({
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: 'var(--warn, #b8860b)',
+              color: 'var(--warn)',
               whiteSpace: 'nowrap',
             }}
           >
@@ -66,7 +66,7 @@ export function ExistenciaConsumptionBar({
             width: `${pct}%`,
             height: '100%',
             borderRadius: 999,
-            background: lowStock ? 'var(--warn, #b8860b)' : 'var(--proof-accent, #6940A5)',
+            background: lowStock ? 'var(--warn)' : 'var(--proof-accent)',
             transition: 'width 0.2s ease',
           }}
         />
