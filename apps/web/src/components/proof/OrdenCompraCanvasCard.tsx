@@ -1,5 +1,7 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import { fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
 import { uniqueCategoriasOrdenCompraItems } from '@/lib/proof/categoria-liquido'
 import { CategoriaLiquidoBadge } from '@/components/proof/CategoriaLiquidoBadge'
@@ -20,19 +22,16 @@ type CardEstado = 'en_transito' | 'recibida' | 'problema'
 const ESTADO_STYLE = {
   en_transito: {
     dot: 'var(--warn)',
-    text: 'En tránsito',
     border: 'color-mix(in srgb, var(--warn) 13%, transparent)',
     line: 'var(--warn)',
   },
   recibida: {
     dot: 'var(--ok)',
-    text: 'Recibida',
     border: 'color-mix(in srgb, var(--ok) 13%, transparent)',
     line: 'var(--ok)',
   },
   problema: {
     dot: 'var(--crit)',
-    text: 'Requiere atención',
     border: 'color-mix(in srgb, var(--crit) 13%, transparent)',
     line: 'var(--crit)',
   },
@@ -58,8 +57,8 @@ function resolveCardEstado(orden: OrdenInput): CardEstado {
   return 'en_transito'
 }
 
-function buildConcepto(items: ItemOrdenCompraDistribuidorRow[]): string {
-  if (items.length === 0) return 'Sin productos'
+function buildConcepto(items: ItemOrdenCompraDistribuidorRow[], emptyProductsLabel: string): string {
+  if (items.length === 0) return emptyProductsLabel
   if (items.length === 1) {
     const it = items[0]!
     if (it.cantidad_ordenada > 1) {
@@ -70,20 +69,24 @@ function buildConcepto(items: ItemOrdenCompraDistribuidorRow[]): string {
   return items.map(i => i.producto_nombre).join(' · ')
 }
 
-function fmtApertura(iso: string): string {
-  return parseDateOnlyLocal(iso).toLocaleDateString('es-MX', {
+function fmtApertura(iso: string, locale: AppLocale): string {
+  return parseDateOnlyLocal(iso).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
   })
 }
 
-function ordinalPago(n: number): string {
-  const map = ['1er', '2do', '3er', '4to', '5to', '6to', '7mo', '8vo', '9no', '10mo']
-  return map[n - 1] ?? `${n}º`
+function ordinalPago(n: number, locale: AppLocale): string {
+  if (locale.startsWith('es')) {
+    const map = ['1er', '2do', '3er', '4to', '5to', '6to', '7mo', '8vo', '9no', '10mo']
+    return map[n - 1] ?? `${n}º`
+  }
+  const map = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th']
+  return map[n - 1] ?? `${n}th`
 }
 
-function fmtPagoFecha(fecha: string): string {
-  return parseDateOnlyLocal(fecha).toLocaleDateString('es-MX', {
+function fmtPagoFecha(fecha: string, locale: AppLocale): string {
+  return parseDateOnlyLocal(fecha).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
   })
@@ -112,11 +115,13 @@ export function OrdenCompraCanvasCard({
   onConfirmIngreso?: (ordenId: string) => void
   confirmingIngreso?: boolean
 }) {
+  const t = useTranslations('distributor.compras.card')
+  const locale = useLocale() as AppLocale
   const cardEstado = resolveCardEstado(orden)
   const style = ESTADO_STYLE[cardEstado]
   const items = orden.items_orden_compra_distribuidor ?? []
   const categorias = uniqueCategoriasOrdenCompraItems(items)
-  const concepto = buildConcepto(items)
+  const concepto = buildConcepto(items, t('emptyProducts'))
   const cxp = isConCxP(orden) ? orden.cxp : null
   const pagos: PagoProveedorRow[] = cxp?.pagos ?? []
   const liquidado = cxp != null && Number(cxp.saldo_pendiente) <= 0
@@ -129,10 +134,10 @@ export function OrdenCompraCanvasCard({
 
   const pagoLabel =
     cardEstado === 'en_transito' || !cxp
-      ? 'Total'
+      ? t('paymentTotal')
       : liquidado
-        ? 'Liquidado'
-        : 'Saldo'
+        ? t('paymentSettled')
+        : t('paymentBalance')
   const pagoValor =
     cardEstado === 'en_transito' || !cxp
       ? montoOrden(orden)
@@ -209,7 +214,7 @@ export function OrdenCompraCanvasCard({
           </div>
         ) : null}
         <div style={{ fontSize: 10, fontFamily: MONO, color: 'var(--fg-3)' }}>
-          {fmtApertura(orden.created_at)}
+          {fmtApertura(orden.created_at, locale)}
         </div>
       </div>
 
@@ -238,7 +243,7 @@ export function OrdenCompraCanvasCard({
               letterSpacing: '0.02em',
             }}
           >
-            {style.text}
+            {t(`status.${cardEstado}`)}
           </span>
         </div>
 
@@ -254,7 +259,7 @@ export function OrdenCompraCanvasCard({
             style={{
               fontSize: 10,
               fontFamily: MONO,
-              color: pagoLabel === 'Liquidado' ? 'var(--ok)' : 'var(--fg-3)',
+              color: pagoLabel === t('paymentSettled') ? 'var(--ok)' : 'var(--fg-3)',
             }}
           >
             {pagoLabel}
@@ -282,7 +287,7 @@ export function OrdenCompraCanvasCard({
                   color: 'var(--fg-3)',
                 }}
               >
-                {ordinalPago(i + 1)} pago {fmtMoney(Number(p.monto))} · {fmtPagoFecha(p.fecha_pago)}
+                {t('paymentLine', { ordinal: ordinalPago(i + 1, locale), amount: fmtMoney(Number(p.monto)), date: fmtPagoFecha(p.fecha_pago, locale) })}
               </div>
             ))}
           </div>
@@ -314,8 +319,8 @@ export function OrdenCompraCanvasCard({
             }}
           >
             {confirmingIngreso
-              ? 'Ingresando…'
-              : `Confirmar ingreso (${pendienteIngreso.toLocaleString('es-MX')} u.)`}
+              ? t('confirmingInbound')
+              : t('confirmInbound', { count: pendienteIngreso.toLocaleString(locale) })}
           </button>
         </div>
       ) : null}

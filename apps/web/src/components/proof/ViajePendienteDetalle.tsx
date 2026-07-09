@@ -1,22 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { fmtLitros, fmtMoney } from '@/lib/proof/format'
-import type { ConfirmarLlegadaLinea, ProductoViajeRow, ViajeRow } from '@/lib/proof/destilador-types'
+import { viajeStatusLabel } from '@/lib/proof/distiller-i18n'
+import type { ConfirmarLlegadaLinea, DestViajeEstado, ProductoViajeRow, ViajeRow } from '@/lib/proof/destilador-types'
 import {
   confirmarLlegadaDestilador,
   fetchProductosForViaje,
   fetchViajeById,
 } from '@/lib/supabase/destilador'
-
-const ESTADO_LABEL: Record<string, string> = {
-  en_negociacion: 'En negociación',
-  confirmado: 'Confirmado',
-  en_transito: 'En tránsito',
-  recibido: 'Recibido',
-}
 
 type LineaForm = ConfirmarLlegadaLinea & { litros_acordados: number }
 
@@ -68,6 +63,8 @@ export function ViajePendienteDetalle({
   onClose: () => void
   onRecibido: (loteId: string) => void
 }) {
+  const t = useTranslations('distiller.common')
+  const tViaje = useTranslations('distiller.status.viaje')
   const supabase = useSupabase()
   const { scope } = useProfile()
   const userId = scope?.user_id
@@ -165,16 +162,16 @@ export function ViajePendienteDetalle({
           textAlign: 'center',
         }}
       >
-        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Viaje no encontrado.</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>{t('notFound.trip')}</p>
         <button type="button" onClick={onClose} style={{ marginTop: 12, fontSize: 12, cursor: 'pointer' }}>
-          Cerrar
+          {t('close')}
         </button>
       </div>
     )
   }
 
-  const nombre = productos[0]?.tipo_agave ?? 'Viaje'
-  const subtitulo = `${viaje.region || '—'} · ${viaje.palenquero_nombre || 'Palenquero'}`
+  const nombre = productos[0]?.tipo_agave ?? t('trip')
+  const subtitulo = `${viaje.region || t('dash')} · ${viaje.palenquero_nombre || t('palenquero')}`
 
   return (
     <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
@@ -188,7 +185,7 @@ export function ViajePendienteDetalle({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar detalle"
+          aria-label={t('closeAria')}
           style={{
             position: 'absolute',
             top: 16,
@@ -224,7 +221,7 @@ export function ViajePendienteDetalle({
               letterSpacing: '0.08em',
             }}
           >
-            {ESTADO_LABEL[viaje.estado] ?? viaje.estado}
+            {viajeStatusLabel(tViaje, viaje.estado as DestViajeEstado)}
           </span>
         </div>
         <h2

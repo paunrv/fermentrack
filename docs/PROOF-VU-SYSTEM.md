@@ -93,7 +93,7 @@ Storybook: `VuPage` stories.
 - [x] Desktop ≥1024; móvil winemaker idéntico al previo (branch ≤767)
 - [x] i18n es-MX + en-US en superficies migradas
 
-Pendiente menor (no bloquea cierre VU): strings hardcodeados en algunos componentes canvas legacy (`PedidoDetalle` cobro) y hex decorativos en cards de color brewer.
+Pendiente menor (no bloquea cierre VU): strings hardcodeados residuales en formularios largos de canvas (`LoteDetalle` KPIs/eventos, `ViajePendienteDetalle` form de llegada) y hex decorativos en cards de color brewer.
 
 ## Roadmap
 

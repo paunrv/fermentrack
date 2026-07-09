@@ -1618,6 +1618,20 @@
       "back": "← Home",
       "title": "New purchase order",
       "subtitle": "Record what you ordered from the producer. When goods arrive, confirm receipt and stock updates.",
+      "card": {
+        "status": {
+          "en_transito": "In transit",
+          "recibida": "Received",
+          "problema": "Needs attention"
+        },
+        "emptyProducts": "No products",
+        "paymentTotal": "Total",
+        "paymentSettled": "Settled",
+        "paymentBalance": "Balance",
+        "paymentLine": "{ordinal} payment {amount} · {date}",
+        "confirmInbound": "Confirm inbound ({count} u.)",
+        "confirmingInbound": "Receiving…"
+      },
       "fields": {
         "supplier": "Supplier / Producer",
         "supplierPlaceholder": "E.g. Silvana, Mezcal Artesanal Oaxaca",
@@ -2314,10 +2328,13 @@
       "trip": "Trip",
       "lot": "Lot",
       "dash": "—",
+      "close": "Close",
+      "closeAria": "Close detail",
       "notFound": {
         "trip": "Trip not found.",
         "lot": "Lot not found.",
-        "run": "Run not found."
+        "run": "Run not found.",
+        "record": "Record not found."
       }
     },
     "status": {

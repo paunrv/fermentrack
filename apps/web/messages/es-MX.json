@@ -1618,6 +1618,20 @@
       "back": "← Inicio",
       "title": "Nueva orden de compra",
       "subtitle": "Registra lo que pediste al productor. Al llegar la mercancía confirmas la recepción y el stock se actualiza.",
+      "card": {
+        "status": {
+          "en_transito": "En tránsito",
+          "recibida": "Recibida",
+          "problema": "Requiere atención"
+        },
+        "emptyProducts": "Sin productos",
+        "paymentTotal": "Total",
+        "paymentSettled": "Liquidado",
+        "paymentBalance": "Saldo",
+        "paymentLine": "{ordinal} pago {amount} · {date}",
+        "confirmInbound": "Confirmar ingreso ({count} u.)",
+        "confirmingInbound": "Ingresando…"
+      },
       "fields": {
         "supplier": "Proveedor / Productor",
         "supplierPlaceholder": "Ej. Silvana, Mezcal Artesanal Oaxaca",
@@ -2314,10 +2328,13 @@
       "trip": "Viaje",
       "lot": "Lote",
       "dash": "—",
+      "close": "Cerrar",
+      "closeAria": "Cerrar detalle",
       "notFound": {
         "trip": "Viaje no encontrado.",
         "lot": "Lote no encontrado.",
-        "run": "Corrida no encontrada."
+        "run": "Corrida no encontrada.",
+        "record": "No se encontró el registro."
       }
     },
     "status": {

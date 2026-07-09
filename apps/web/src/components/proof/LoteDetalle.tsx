@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { KpiConfigDrawer } from '@/components/proof/KpiConfigDrawer'
@@ -647,6 +648,7 @@ function buildDistributorSections(
 }
 
 export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetalleProps) {
+  const t = useTranslations('distiller.common')
   const router = useRouter()
   const supabase = useSupabase()
   const { scope } = useProfile()
@@ -773,7 +775,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
           textAlign: 'center',
         }}
       >
-        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>No se encontró el registro.</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>{t('notFound.record')}</p>
         <button
           type="button"
           onClick={onClose}
@@ -787,7 +789,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
             cursor: 'pointer',
           }}
         >
-          Cerrar
+          {t('close')}
         </button>
       </div>
     )
@@ -816,7 +818,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar detalle"
+          aria-label={t('closeAria')}
           style={{
             position: 'absolute',
             top: 16,
