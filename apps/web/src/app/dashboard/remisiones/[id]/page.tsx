@@ -136,7 +136,7 @@ export default function RemisionDetallePage() {
                 <img
                   src={url}
                   alt={t('photoAlt', { index: i + 1 })}
-                  style={{ width: '100%', maxHeight: 360, objectFit: 'contain', background: '#000' }}
+                  style={{ width: '100%', maxHeight: 360, objectFit: 'contain', background: 'var(--ink)' }}
                 />
               </a>
             ))}

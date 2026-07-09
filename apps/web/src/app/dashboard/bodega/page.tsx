@@ -382,7 +382,7 @@ export default function BodegaPage() {
                     <div style={{ fontSize: 16, fontWeight: 800 }}>
                       {batch?.name || row.batch_id}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: '#333' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: 'var(--fg-1)' }}>
                       {row.units} uds × {formatMoney(row.price_per_unit)} ={' '}
                       {formatMoney(row.units * Number(row.price_per_unit))}
                       {' · '}

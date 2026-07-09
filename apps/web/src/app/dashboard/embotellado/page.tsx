@@ -298,7 +298,7 @@ export default function EmbotelladoPage() {
           >
             <div style={label}>Total unidades producidas</div>
             <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--fg-0)' }}>{totalUnits}</div>
-            <p style={{ fontSize: 11, color: '#666', marginTop: 4, fontWeight: 500 }}>
+            <p style={{ fontSize: 11, color: 'var(--fg-3)', marginTop: 4, fontWeight: 500 }}>
               Calculado desde cantidad de {labels.containers.toLowerCase()}
             </p>
           </div>
@@ -388,7 +388,7 @@ export default function EmbotelladoPage() {
                     <div style={{ fontSize: 16, fontWeight: 800, marginTop: 4 }}>
                       {batch?.name || 'Lote'}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, color: '#333' }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginTop: 6, color: 'var(--fg-1)' }}>
                       {row.total_units} {row.unit_type === 'botella' ? 'botellas' : 'latas'} ·{' '}
                       {new Date(row.created_at).toLocaleDateString('es-MX')}
                       {row.notes ? ` · ${row.notes}` : ''}

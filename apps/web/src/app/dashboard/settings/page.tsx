@@ -862,7 +862,7 @@ export default function SettingsPage() {
                     style={{
                       padding: '8px 12px',
                       background: isActive ? 'transparent' : 'var(--fg-0)',
-                      color: isActive ? '#888' : '#fff',
+                      color: isActive ? 'var(--fg-3)' : '#fff',
                       border: '1px solid var(--hairline)',
                       fontSize: 10,
                       fontWeight: 800,
@@ -1061,7 +1061,7 @@ export default function SettingsPage() {
             style={{
               border: '1px solid var(--hairline)',
               padding: 24,
-              background: isSuperUser ? 'var(--fg-0)' : '#fff',
+              background: isSuperUser ? 'var(--fg-0)' : 'var(--surface-card)',
               color: isSuperUser ? '#fff' : 'var(--fg-0)',
             }}
           >
@@ -1104,7 +1104,7 @@ export default function SettingsPage() {
                   position: 'relative',
                   width: 64,
                   height: 32,
-                  background: isSuperUser ? '#C0DD97' : '#fff',
+                  background: isSuperUser ? 'var(--ok-soft)' : 'var(--surface-card)',
                   border: '1px solid var(--hairline)',
                   padding: 0,
                   cursor: isSuperEmail ? 'not-allowed' : 'pointer',
