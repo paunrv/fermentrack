@@ -29,7 +29,7 @@ const label: React.CSSProperties = {
   fontWeight: 600,
   letterSpacing: '0.08em',
   textTransform: 'uppercase',
-  color: '#999',
+  color: 'var(--fg-3)',
   marginBottom: 6,
 }
 
@@ -120,7 +120,7 @@ export default function NuevaOrdenCompraPage() {
   const backLink = (
     <Link
       href="/dashboard"
-      style={{ fontSize: 12, color: '#999', textDecoration: 'none' }}
+      style={{ fontSize: 12, color: 'var(--fg-3)', textDecoration: 'none' }}
     >
       {t('back')}
     </Link>
@@ -163,7 +163,7 @@ export default function NuevaOrdenCompraPage() {
               border: '0.5px solid var(--hairline)',
               background: 'var(--surface-card)',
               cursor: 'pointer',
-              color: '#666',
+              color: 'var(--fg-3)',
             }}
           >
             {t('fields.add')}
@@ -237,7 +237,7 @@ export default function NuevaOrdenCompraPage() {
                     style={{
                       border: 'none',
                       background: 'transparent',
-                      color: '#C44',
+                      color: 'var(--crit)',
                       fontSize: 11,
                       cursor: 'pointer',
                     }}
@@ -261,12 +261,12 @@ export default function NuevaOrdenCompraPage() {
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 12, color: '#666' }}>{t('orderTotal')}</span>
+          <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{t('orderTotal')}</span>
           <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg-0)' }}>{fmtMoney(total)}</span>
         </div>
 
         {error && (
-          <p style={{ color: '#8B2E2E', fontSize: 12, marginTop: 16 }}>{error}</p>
+          <p style={{ color: 'var(--crit)', fontSize: 12, marginTop: 16 }}>{error}</p>
         )}
 
         <button

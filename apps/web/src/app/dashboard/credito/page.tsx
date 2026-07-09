@@ -37,7 +37,7 @@ function CanvasDivider({ label }: { label: string }) {
       <span
         style={{
           fontSize: 9,
-          color: '#CCC',
+          color: 'var(--fg-3)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           fontFamily: MONO,
@@ -156,10 +156,10 @@ export default function CreditoPage() {
             margin: '0 24px 16px',
             padding: '12px 16px',
             borderRadius: 10,
-            border: '0.5px solid #E8B4B4',
-            background: '#FFF5F5',
+            border: '0.5px solid color-mix(in srgb, var(--crit) 35%, var(--hairline))',
+            background: 'color-mix(in srgb, var(--crit) 8%, var(--surface-card))',
             fontSize: 12,
-            color: '#8B2E2E',
+            color: 'var(--crit)',
             lineHeight: 1.5,
           }}
         >
@@ -204,7 +204,7 @@ export default function CreditoPage() {
             <KpiCard
               label={t('kpis.collectedThisMonth')}
               value={fmtMoney(resumen.cobradoEsteMes)}
-              tone="#4CAF7D"
+              tone="var(--ok)"
             />
           </>
         )}
@@ -307,7 +307,7 @@ export default function CreditoPage() {
             onClick={e => e.stopPropagation()}
           >
             {detalleLoading && !detalle ? (
-              <p style={{ color: '#666', fontSize: 13 }}>{t('detail.loading')}</p>
+              <p style={{ color: 'var(--fg-3)', fontSize: 13 }}>{t('detail.loading')}</p>
             ) : detalle ? (
               <>
                 <div
@@ -327,7 +327,7 @@ export default function CreditoPage() {
 
                 <SectionLabel>{t('detail.ordersWithBalance')}</SectionLabel>
                 {detalle.cuentas.length === 0 ? (
-                  <p style={{ fontSize: 12, color: '#666' }}>{t('detail.noActiveAccounts')}</p>
+                  <p style={{ fontSize: 12, color: 'var(--fg-3)' }}>{t('detail.noActiveAccounts')}</p>
                 ) : (
                   detalle.cuentas.map(c => (
                     <div
@@ -348,7 +348,7 @@ export default function CreditoPage() {
                           {fmtMoney(Number(c.saldo_pendiente))}
                         </span>
                       </div>
-                      <div style={{ fontSize: 10, color: '#666', marginTop: 4 }}>
+                      <div style={{ fontSize: 10, color: 'var(--fg-3)', marginTop: 4 }}>
                         {t('detail.total', { amount: fmtMoney(Number(c.monto_total)) })}
                         {c.fecha_vencimiento ? ` · ${t('detail.due', { date: c.fecha_vencimiento })}` : ''}
                         {c.pedidos?.fecha_entrega
@@ -361,7 +361,7 @@ export default function CreditoPage() {
 
                 <SectionLabel>{t('detail.payments')}</SectionLabel>
                 {detalle.pagos.length === 0 ? (
-                  <p style={{ fontSize: 12, color: '#666' }}>{t('detail.noPayments')}</p>
+                  <p style={{ fontSize: 12, color: 'var(--fg-3)' }}>{t('detail.noPayments')}</p>
                 ) : (
                   detalle.pagos.map(p => (
                     <div
@@ -374,11 +374,11 @@ export default function CreditoPage() {
                         fontSize: 11,
                       }}
                     >
-                      <span style={{ color: '#666' }}>
+                      <span style={{ color: 'var(--fg-3)' }}>
                         {p.fecha_pago} · {p.metodo}
                         {p.referencia ? ` · ${p.referencia}` : ''}
                       </span>
-                      <span style={{ fontFamily: MONO, fontWeight: 600, color: '#4CAF7D' }}>
+                      <span style={{ fontFamily: MONO, fontWeight: 600, color: 'var(--ok)' }}>
                         +{fmtMoney(Number(p.monto))}
                       </span>
                     </div>
@@ -449,7 +449,7 @@ export default function CreditoPage() {
               {t('collection.title', { client: cobroModal.cliente })}
             </div>
             {cobroModal.loading ? (
-              <p style={{ color: '#666' }}>{t('collection.drafting')}</p>
+              <p style={{ color: 'var(--fg-3)' }}>{t('collection.drafting')}</p>
             ) : (
               <>
                 <pre

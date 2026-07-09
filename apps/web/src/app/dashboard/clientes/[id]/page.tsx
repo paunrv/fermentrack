@@ -181,7 +181,7 @@ export default function ClienteDetallePage() {
             {t('editTitle')}
           </h2>
           {saveError && (
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--crit)' }}>
               {saveError}
             </p>
           )}
@@ -398,8 +398,8 @@ export default function ClienteDetallePage() {
                               background:
                                 p.estado === 'vencido'
                                   ? 'rgba(180, 40, 40, 0.12)'
-                                  : 'var(--panel-2, #f5f4f0)',
-                              color: p.estado === 'vencido' ? '#b42828' : 'var(--fg-2)',
+                                  : 'var(--panel-2)',
+                              color: p.estado === 'vencido' ? 'var(--crit)' : 'var(--fg-2)',
                               border: '1px solid var(--hairline)',
                             }}
                           >

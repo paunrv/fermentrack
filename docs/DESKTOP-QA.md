@@ -30,7 +30,7 @@ Viewports: **768**, **1024**, **1280** · Móvil **375** = sin regresión
 | V10 | Distiller: Compras / Lotes / Producción / Bodega / Ventas (+ forms) — `VuOpsPage` | ☐ |
 | V11 | Settings — `PageFrame` + cards; Remisiones / Productores — `VuOpsPage`; Crédito — `PageFrame` (canvas KPIs) | ☐ |
 | V12 | Detalle Pedidos / Clientes / Productos (+ nuevo) — shell VU; inputs `--surface-card`; sin AI bar | ☐ |
-| V13 | Hardening: `canvas-accents` resuelve a `--proof-accent`; dropdown avatar `--surface-card` | ☐ |
+| V13 | Hardening: chrome usa `--proof-accent` (sin `canvas-accents`); dropdown avatar `--surface-card` | ☐ |
 
 ## Pre-requisitos · Prerequisites
 

@@ -151,7 +151,7 @@ function ClientesDistribuidorPage() {
             {t('formTitle')}
           </h2>
           {saveError && (
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--crit)' }}>
               {saveError}
             </p>
           )}
@@ -245,7 +245,7 @@ function ClientesDistribuidorPage() {
       )}
 
       {error && (
-        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--danger, #b00020)' }}>{error}</p>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--crit)' }}>{error}</p>
       )}
 
       <div className="proof-canvas-stack">
