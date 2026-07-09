@@ -472,7 +472,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                 {l.nombre}
               </span>
               <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--fg-3)', whiteSpace: 'nowrap' }}>
-                {l.cantidad.toLocaleString('es-MX')} ×{' '}
+                {l.cantidad.toLocaleString(locale)} ×{' '}
                 {l.precioUnitario > 0 ? fmtMoney(l.precioUnitario) : '—'}
               </span>
               <span

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   generarRemisionPedidoAction,
   obtenerRemisionPedidoAction,
@@ -21,6 +22,7 @@ export function RemisionPedidoActions({
   estado: string
   initialRemision?: RemisionState
 }) {
+  const t = useTranslations('distributor.remisiones.actions')
   const [remision, setRemision] = useState<RemisionState>(initialRemision ?? null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -39,7 +41,7 @@ export function RemisionPedidoActions({
       })
       window.open(result.downloadUrl, '_blank', 'noopener,noreferrer')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo generar la remisión')
+      setError(e instanceof Error ? e.message : t('errors.generateFailed'))
     } finally {
       setLoading(false)
     }
@@ -61,7 +63,7 @@ export function RemisionPedidoActions({
       })
       window.open(row.downloadUrl, '_blank', 'noopener,noreferrer')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al obtener remisión')
+      setError(e instanceof Error ? e.message : t('errors.fetchFailed'))
     } finally {
       setLoading(false)
     }
@@ -81,7 +83,7 @@ export function RemisionPedidoActions({
   return (
     <div style={{ marginTop: 16, marginBottom: 8 }}>
       <div style={{ fontSize: 10, color: 'var(--fg-3)', fontFamily: 'monospace', marginBottom: 8 }}>
-        REMISIÓN DE SALIDA
+        {t('eyebrow')}
       </div>
       {remision?.hasPdf && remision.downloadUrl ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
@@ -92,10 +94,10 @@ export function RemisionPedidoActions({
             disabled={loading}
             onClick={() => void handleDownload()}
           >
-            Descargar remisión
+            {t('download')}
           </button>
           <button type="button" style={btnStyle} disabled={loading} onClick={() => void handleGenerar()}>
-            Regenerar PDF
+            {t('regenerate')}
           </button>
         </div>
       ) : (
@@ -105,7 +107,7 @@ export function RemisionPedidoActions({
           disabled={loading}
           onClick={() => void handleGenerar()}
         >
-          {loading ? 'Generando…' : 'Generar remisión'}
+          {loading ? t('generating') : t('generate')}
         </button>
       )}
       {error && (

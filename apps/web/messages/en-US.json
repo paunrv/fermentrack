@@ -784,6 +784,27 @@
         "ajustes": "Settings"
       }
     },
+    "capturePanel": {
+      "dialogAria": "Capture",
+      "closeAria": "Close capture panel",
+      "customize": "Customize my quick actions",
+      "options": {
+        "voz": { "title": "Voice", "subtitle": "Dictate and PROOF records" },
+        "foto": { "title": "Photo", "subtitle": "PROOF analyzes and captures" },
+        "nota": { "title": "Note", "subtitle": "Free text or log" },
+        "lab": { "title": "Lab", "subtitle": "Upload results" }
+      }
+    },
+    "orgSwitcher": {
+      "label": "Winery",
+      "aria": "Switch winery",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member",
+        "viewer": "Viewer"
+      }
+    },
     "settings": {
       "title": "Settings",
       "subtitle": "User account and, when applicable, your winemaker organization settings",
@@ -894,6 +915,40 @@
         "bankPlaceholder": "BBVA, Santander…",
         "account": "Account / CLABE",
         "accountPlaceholder": "012345678901234567"
+      },
+      "datosCobro": {
+        "title": "My information",
+        "subtitle": "Account and tax certificate — ready to share with clients.",
+        "closeAria": "Close",
+        "closePanelAria": "Close panel",
+        "hide": "Hide",
+        "account": "Account",
+        "depositAccount": "Deposit account",
+        "noClabe": "No CLABE configured",
+        "noAccount": "No account configured",
+        "copyData": "Copy details",
+        "copy": "Copy",
+        "copied": "Copied",
+        "constanciaPdf": "Tax PDF",
+        "noConstancia": "No certificate",
+        "fiscalConstancia": "Tax certificate",
+        "opening": "Opening…",
+        "viewConstancia": "View tax PDF",
+        "uploading": "Uploading…",
+        "replacePdf": "Replace PDF",
+        "uploadPdf": "Upload PDF",
+        "saving": "Saving…",
+        "saveData": "Save details",
+        "holderPlaceholder": "Account holder name",
+        "holderPlaceholderWithUser": "Holder (empty = {username})",
+        "bankPlaceholder": "Bank (e.g. BBVA)",
+        "accountPlaceholder": "CLABE or account number",
+        "errors": {
+          "loadFailed": "Could not load your information",
+          "saveFailed": "Could not save",
+          "uploadFailed": "Could not upload the PDF",
+          "openFailed": "Could not open the certificate"
+        }
       },
       "superUser": {
         "title": "Super user",
@@ -1042,7 +1097,16 @@
       "askProof": "Ask PROOF",
       "edit": "Edit",
       "margin": "Margin",
-      "errorGeneric": "Something went wrong. Try again."
+      "confirm": "Confirm",
+      "errorGeneric": "Something went wrong. Try again.",
+      "categoriaAria": "Product category",
+      "kpi": {
+        "configureAria": "Configure KPI",
+        "changeDatum": "Change this metric",
+        "applyTo": "Apply to:",
+        "scopeSingle": "This lot only",
+        "scopeAll": "All my lots"
+      }
     },
     "pedidoEstado": {
       "borrador": "Draft",
@@ -1065,7 +1129,18 @@
       "discrepancy": "{count, plural, one {# discrepancy} other {# discrepancies}}",
       "photoBadge": "PHOTO",
       "withDiscrepanciesBadge": "W/ DISC.",
-      "aiFallback": "Delivery notes reflect confirmed receipts with evidence in Storage."
+      "aiFallback": "Delivery notes reflect confirmed receipts with evidence in Storage.",
+      "actions": {
+        "eyebrow": "Outbound delivery note",
+        "generate": "Generate delivery note",
+        "generating": "Generating…",
+        "download": "Download delivery note",
+        "regenerate": "Regenerate PDF",
+        "errors": {
+          "generateFailed": "Could not generate the delivery note",
+          "fetchFailed": "Failed to fetch delivery note"
+        }
+      }
     },
     "pedidos": {
       "title": "Orders",
@@ -1313,7 +1388,8 @@
         "timeout": "PROOF took too long. Try again.",
         "noResponse": "PROOF did not respond. Try again or pick a mode to start.",
         "general": "PROOF could not process your request. Try again.",
-        "emptyResults": "No results found for that search."
+        "emptyResults": "No results found for that search.",
+        "emptySection": "No records."
       },
       "modes": {
         "compra": {
@@ -1433,6 +1509,10 @@
       "editSku": "Edit SKU",
       "createSku": "Create SKU",
       "saveError": "Could not save SKU",
+      "skuCard": {
+        "configureAria": "Configure card data",
+        "imageAria": "Add or change image"
+      },
       "fields": {
         "name": "Name",
         "namePlaceholder": "Trade name",
@@ -1636,6 +1716,7 @@
           "problema": "Needs attention"
         },
         "emptyProducts": "No products",
+        "supplierFallback": "Supplier",
         "paymentTotal": "Total",
         "paymentSettled": "Settled",
         "paymentBalance": "Balance",
@@ -1997,6 +2078,12 @@
         "notAuthenticated": "Sign in to view lab reports.",
         "noOrganization": "No active winery to show analyses.",
         "loadFailed": "Could not load lab reports."
+      },
+      "lotSection": {
+        "title": "Lab analysis",
+        "sampledOn": "Sampled {date}",
+        "viewFullReport": "View full report →",
+        "criticalParam": "Critical parameter"
       }
     },
     "stage": {
@@ -2319,6 +2406,22 @@
           "limit_reached_etiquetas": "Label catalog limit reached for your plan",
           "limit_reached_memoria": "Memory limit reached — upgrade to record more events"
         }
+      },
+      "lineage": {
+        "blendComposition": "Blend composition",
+        "events": "Decisions and events",
+        "finishedProduct": "Finished goods",
+        "ofTotal": "{contributed} of {total}",
+        "totalLiters": "{liters} total",
+        "blendCompleted": "Blend completed · {date}",
+        "winemakerNoteFallback": "Winemaker note · {date}",
+        "cases": "{count} cases",
+        "casesDash": "— cases",
+        "bottles": "{count} bottles",
+        "bottlesDash": "— bottles",
+        "bottledSummary": "Bottled · {cases} · {bottles}",
+        "caseLine": "{cases} cases × {perCase} = {bottles} bottles",
+        "bottledOn": "Bottled {date}"
       }
     },
     "bodega": {
@@ -2400,6 +2503,13 @@
       "closeAria": "Close detail",
       "confirmArrival": "Confirm arrival",
       "bottlesOn": "Bottle {date}",
+      "kpi": {
+        "configureAria": "Configure KPI",
+        "changeDatum": "Change this metric",
+        "applyTo": "Apply to:",
+        "scopeSingle": "This lot only",
+        "scopeAll": "All my lots"
+      },
       "notFound": {
         "trip": "Trip not found.",
         "lot": "Lot not found.",
@@ -2866,6 +2976,20 @@
       "noReply": "I could not generate a reply. Can you try again?",
       "connectionError": "I had a connection problem: {detail}. Shall we try again?",
       "reconnectFailed": "could not reconnect"
+    },
+    "bar": {
+      "conversationAria": "Conversation with PROOF",
+      "attachAria": "Attach image",
+      "attachTitle": "Attach image",
+      "attachReadyTitle": "Image ready — type to send",
+      "sendAria": "Send",
+      "placeholder": "Ask PROOF…",
+      "noResponse": "No response received. Try again.",
+      "timeout": "PROOF took too long. Reload the page or try again.",
+      "imageAttached": "📎 image attached",
+      "imagePrompt": "add this image to the sku",
+      "analyzing": "PROOF analyzing…",
+      "analyzingLong": "PROOF analyzing your operation…"
     },
     "api": {
       "unauthenticated": "Not authenticated",

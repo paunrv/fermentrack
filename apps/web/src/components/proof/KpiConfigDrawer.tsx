@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { metricsForProfile, type ProfileType } from '@/lib/proof/kpi-metrics'
 
 export type KpiDrawerScope = 'all' | 'single'
@@ -22,6 +23,9 @@ export function KpiConfigDrawer({
   onSelect: (metric: string, scope: KpiDrawerScope) => void
   onClose: () => void
 }) {
+  const t = useTranslations(
+    profileType === 'distributor' ? 'distributor.common.kpi' : 'distiller.common.kpi'
+  )
   const [scope, setScope] = useState<KpiDrawerScope>(currentScope)
   const options = metricsForProfile(profileType)
 
@@ -33,7 +37,7 @@ export function KpiConfigDrawer({
   return (
     <div
       role="dialog"
-      aria-label="Configurar KPI"
+      aria-label={t('configureAria')}
       style={{
         marginTop: 8,
         background: 'var(--panel-2)',
@@ -45,14 +49,14 @@ export function KpiConfigDrawer({
       <div
         style={{
           fontSize: 10,
-          color: '#AAA',
+          color: 'var(--fg-3)',
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           marginBottom: 10,
         }}
       >
-        Cambiar este dato
+        {t('changeDatum')}
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -68,20 +72,20 @@ export function KpiConfigDrawer({
                 borderRadius: 16,
                 padding: '4px 12px',
                 border: selected ? '0.5px solid var(--fg-0)' : '0.5px solid var(--line)',
-                background: selected ? 'var(--fg-0)' : '#fff',
-                color: selected ? '#fff' : '#888',
+                background: selected ? 'var(--fg-0)' : 'var(--surface-card)',
+                color: selected ? 'var(--ink)' : 'var(--fg-3)',
                 cursor: 'pointer',
                 transition: 'border-color 0.12s ease, color 0.12s ease, background 0.12s ease',
               }}
               onMouseEnter={e => {
                 if (selected) return
-                e.currentTarget.style.borderColor = '#BBB'
-                e.currentTarget.style.color = '#555'
+                e.currentTarget.style.borderColor = 'var(--fg-3)'
+                e.currentTarget.style.color = 'var(--fg-1)'
               }}
               onMouseLeave={e => {
                 if (selected) return
                 e.currentTarget.style.borderColor = 'var(--line)'
-                e.currentTarget.style.color = '#888'
+                e.currentTarget.style.color = 'var(--fg-3)'
               }}
             >
               {opt.label}
@@ -94,18 +98,18 @@ export function KpiConfigDrawer({
         <div
           style={{
             fontSize: 10,
-            color: '#BBB',
+            color: 'var(--fg-3)',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             marginBottom: 6,
           }}
         >
-          Aplicar a:
+          {t('applyTo')}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {(
             [
-              { key: 'single' as const, label: 'Solo este lote' },
-              { key: 'all' as const, label: 'Todos mis lotes' },
+              { key: 'single' as const, label: t('scopeSingle') },
+              { key: 'all' as const, label: t('scopeAll') },
             ] as const
           ).map(opt => {
             const active = scope === opt.key
@@ -119,8 +123,8 @@ export function KpiConfigDrawer({
                   borderRadius: 16,
                   padding: '4px 12px',
                   border: active ? `0.5px solid ${accent}44` : '0.5px solid var(--line)',
-                  background: active ? `${accent}18` : '#fff',
-                  color: active ? accent : '#888',
+                  background: active ? `${accent}18` : 'var(--surface-card)',
+                  color: active ? accent : 'var(--fg-3)',
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                 }}

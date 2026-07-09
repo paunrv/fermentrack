@@ -784,6 +784,27 @@
         "ajustes": "Ajustes"
       }
     },
+    "capturePanel": {
+      "dialogAria": "Capturar",
+      "closeAria": "Cerrar panel de captura",
+      "customize": "Personalizar mis accesos rápidos",
+      "options": {
+        "voz": { "title": "Voz", "subtitle": "Dicta y PROOF registra" },
+        "foto": { "title": "Foto", "subtitle": "PROOF analiza y captura" },
+        "nota": { "title": "Nota", "subtitle": "Texto libre o bitácora" },
+        "lab": { "title": "Lab", "subtitle": "Carga resultados" }
+      }
+    },
+    "orgSwitcher": {
+      "label": "Bodega",
+      "aria": "Cambiar bodega",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Miembro",
+        "viewer": "Viewer"
+      }
+    },
     "settings": {
       "title": "Ajustes",
       "subtitle": "Cuenta de usuario y, si aplica, configuración de tu bodega winemaker",
@@ -894,6 +915,40 @@
         "bankPlaceholder": "BBVA, Santander…",
         "account": "Cuenta / CLABE",
         "accountPlaceholder": "012345678901234567"
+      },
+      "datosCobro": {
+        "title": "Mi información",
+        "subtitle": "Cuenta y constancia fiscal — listos para compartir con clientes.",
+        "closeAria": "Cerrar",
+        "closePanelAria": "Cerrar panel",
+        "hide": "Ocultar",
+        "account": "Cuenta",
+        "depositAccount": "Cuenta de depósito",
+        "noClabe": "Sin CLABE configurada",
+        "noAccount": "Sin cuenta configurada",
+        "copyData": "Copiar datos",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "constanciaPdf": "Constancia PDF",
+        "noConstancia": "Sin constancia",
+        "fiscalConstancia": "Constancia fiscal",
+        "opening": "Abriendo…",
+        "viewConstancia": "Ver constancia PDF",
+        "uploading": "Subiendo…",
+        "replacePdf": "Reemplazar PDF",
+        "uploadPdf": "Subir PDF",
+        "saving": "Guardando…",
+        "saveData": "Guardar datos",
+        "holderPlaceholder": "Nombre del titular de la cuenta",
+        "holderPlaceholderWithUser": "Titular (vacío = {username})",
+        "bankPlaceholder": "Banco (ej. BBVA)",
+        "accountPlaceholder": "CLABE o número de cuenta",
+        "errors": {
+          "loadFailed": "No se pudo cargar tu información",
+          "saveFailed": "No se pudo guardar",
+          "uploadFailed": "No se pudo subir el PDF",
+          "openFailed": "No se pudo abrir la constancia"
+        }
       },
       "superUser": {
         "title": "Super usuario",
@@ -1042,7 +1097,16 @@
       "askProof": "Preguntar a PROOF",
       "edit": "Editar",
       "margin": "Margen",
-      "errorGeneric": "Algo salió mal. Intenta de nuevo."
+      "confirm": "Confirmar",
+      "errorGeneric": "Algo salió mal. Intenta de nuevo.",
+      "categoriaAria": "Categoría del producto",
+      "kpi": {
+        "configureAria": "Configurar KPI",
+        "changeDatum": "Cambiar este dato",
+        "applyTo": "Aplicar a:",
+        "scopeSingle": "Solo este lote",
+        "scopeAll": "Todos mis lotes"
+      }
     },
     "pedidoEstado": {
       "borrador": "Borrador",
@@ -1065,7 +1129,18 @@
       "discrepancy": "{count, plural, one {# discrepancia} other {# discrepancias}}",
       "photoBadge": "FOTO",
       "withDiscrepanciesBadge": "CON DISC.",
-      "aiFallback": "Las remisiones reflejan recepciones confirmadas con evidencia en Storage."
+      "aiFallback": "Las remisiones reflejan recepciones confirmadas con evidencia en Storage.",
+      "actions": {
+        "eyebrow": "Remisión de salida",
+        "generate": "Generar remisión",
+        "generating": "Generando…",
+        "download": "Descargar remisión",
+        "regenerate": "Regenerar PDF",
+        "errors": {
+          "generateFailed": "No se pudo generar la remisión",
+          "fetchFailed": "Error al obtener remisión"
+        }
+      }
     },
     "pedidos": {
       "title": "Pedidos",
@@ -1313,7 +1388,8 @@
         "timeout": "PROOF tardó demasiado. Intenta de nuevo.",
         "noResponse": "PROOF no respondió. Intenta de nuevo o elige un modo para empezar.",
         "general": "PROOF no pudo procesar tu solicitud. Intenta de nuevo.",
-        "emptyResults": "No encontré resultados para esa búsqueda."
+        "emptyResults": "No encontré resultados para esa búsqueda.",
+        "emptySection": "Sin registros."
       },
       "modes": {
         "compra": {
@@ -1433,6 +1509,10 @@
       "editSku": "Editar SKU",
       "createSku": "Crear SKU",
       "saveError": "No se pudo guardar el SKU",
+      "skuCard": {
+        "configureAria": "Configurar datos del card",
+        "imageAria": "Agregar o cambiar imagen"
+      },
       "fields": {
         "name": "Nombre",
         "namePlaceholder": "Nombre comercial",
@@ -1636,6 +1716,7 @@
           "problema": "Requiere atención"
         },
         "emptyProducts": "Sin productos",
+        "supplierFallback": "Proveedor",
         "paymentTotal": "Total",
         "paymentSettled": "Liquidado",
         "paymentBalance": "Saldo",
@@ -1997,6 +2078,12 @@
         "notAuthenticated": "Inicia sesión para ver los informes de laboratorio.",
         "noOrganization": "No hay bodega activa para mostrar análisis.",
         "loadFailed": "No se pudieron cargar los informes de laboratorio."
+      },
+      "lotSection": {
+        "title": "Análisis de laboratorio",
+        "sampledOn": "Muestreo {date}",
+        "viewFullReport": "Ver informe completo →",
+        "criticalParam": "Parámetro crítico"
       }
     },
     "stage": {
@@ -2319,6 +2406,22 @@
           "limit_reached_etiquetas": "Límite de etiquetas alcanzado en tu plan",
           "limit_reached_memoria": "Memoria llena — mejora el plan para registrar más eventos"
         }
+      },
+      "lineage": {
+        "blendComposition": "Composición del blend",
+        "events": "Decisiones y eventos",
+        "finishedProduct": "Producto terminado",
+        "ofTotal": "{contributed} de {total}",
+        "totalLiters": "{liters} totales",
+        "blendCompleted": "Blend realizado · {date}",
+        "winemakerNoteFallback": "Nota del enólogo · {date}",
+        "cases": "{count} cajas",
+        "casesDash": "— cajas",
+        "bottles": "{count} botellas",
+        "bottlesDash": "— botellas",
+        "bottledSummary": "Embotellado · {cases} · {bottles}",
+        "caseLine": "{cases} cajas × {perCase} = {bottles} botellas",
+        "bottledOn": "Embotellado {date}"
       }
     },
     "bodega": {
@@ -2400,6 +2503,13 @@
       "closeAria": "Cerrar detalle",
       "confirmArrival": "Confirmar llegada",
       "bottlesOn": "Embotella {date}",
+      "kpi": {
+        "configureAria": "Configurar KPI",
+        "changeDatum": "Cambiar este dato",
+        "applyTo": "Aplicar a:",
+        "scopeSingle": "Solo este lote",
+        "scopeAll": "Todos mis lotes"
+      },
       "notFound": {
         "trip": "Viaje no encontrado.",
         "lot": "Lote no encontrado.",
@@ -2866,6 +2976,20 @@
       "noReply": "No pude generar una respuesta. ¿Puedes intentar de nuevo?",
       "connectionError": "Tuve un problema de conexión: {detail}. ¿Probamos de nuevo?",
       "reconnectFailed": "no logré reconectar"
+    },
+    "bar": {
+      "conversationAria": "Conversación con PROOF",
+      "attachAria": "Adjuntar imagen",
+      "attachTitle": "Adjuntar imagen",
+      "attachReadyTitle": "Imagen lista — escribe para enviar",
+      "sendAria": "Enviar",
+      "placeholder": "Pregúntale a PROOF…",
+      "noResponse": "No obtuve respuesta. Intenta de nuevo.",
+      "timeout": "PROOF tardó demasiado. Recarga la página o intenta otra vez.",
+      "imageAttached": "📎 imagen adjunta",
+      "imagePrompt": "agrega esta imagen al sku",
+      "analyzing": "PROOF analizando…",
+      "analyzingLong": "PROOF analizando tu operación…"
     },
     "api": {
       "unauthenticated": "No autenticado",

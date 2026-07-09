@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Children, type ReactNode } from 'react'
 
 export function CanvasHorizontalSection({
@@ -9,7 +10,7 @@ export function CanvasHorizontalSection({
   subtitle,
   ctaLabel,
   ctaHref,
-  emptyMessage = 'Sin registros.',
+  emptyMessage,
   itemWidth = 168,
   loading = false,
   skeletonCount = 2,
@@ -30,9 +31,11 @@ export function CanvasHorizontalSection({
   hideHeader?: boolean
   children?: ReactNode
 }) {
+  const t = useTranslations('distributor.canvas.errors')
   const router = useRouter()
   const items = Children.toArray(children).filter(Boolean)
   const isEmpty = !loading && items.length === 0
+  const resolvedEmpty = emptyMessage ?? t('emptySection')
 
   return (
     <section style={{ marginBottom: 28 }}>
@@ -114,7 +117,7 @@ export function CanvasHorizontalSection({
         </div>
       ) : isEmpty ? (
         <p style={{ margin: 0, padding: '0 16px', fontSize: 13, color: 'var(--fg-3)' }}>
-          {emptyMessage}
+          {resolvedEmpty}
         </p>
       ) : (
         <div className="proof-canvas-rail">

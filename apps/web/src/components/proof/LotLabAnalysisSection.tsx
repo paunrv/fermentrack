@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { CollapsibleSection } from '@/components/proof/CollapsibleSection'
 import { LabSampleResultsTable } from '@/components/proof/LabSampleResultsTable'
 import { fmtDateOnly } from '@/lib/proof/format'
@@ -8,6 +9,8 @@ import { labProductionStageLabel } from '@/lib/proof/lab-display'
 import type { LotLabSample } from '@/lib/proof/fetch-lab-reports'
 
 export function LotLabAnalysisSection({ samples }: { samples: LotLabSample[] }) {
+  const t = useTranslations('winemaker.lab.lotSection')
+
   if (samples.length === 0) {
     return null
   }
@@ -22,7 +25,7 @@ export function LotLabAnalysisSection({ samples }: { samples: LotLabSample[] }) 
     >
       <CollapsibleSection
         emoji="🧪"
-        title="Análisis de laboratorio"
+        title={t('title')}
         badge={samples.length}
         defaultOpen={false}
       >
@@ -71,7 +74,7 @@ export function LotLabAnalysisSection({ samples }: { samples: LotLabSample[] }) 
                       color: 'var(--proof-accent)',
                     }}
                   >
-                    Muestreo {fmtDateOnly(report.sampled_at)}
+                    {t('sampledOn', { date: fmtDateOnly(report.sampled_at) })}
                   </p>
                 </div>
 
@@ -102,7 +105,7 @@ export function LotLabAnalysisSection({ samples }: { samples: LotLabSample[] }) 
                     textDecoration: 'none',
                   }}
                 >
-                  Ver informe completo →
+                  {t('viewFullReport')}
                 </Link>
 
                 <LabSampleResultsTable results={sample.lab_results} />

@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { LabResult } from '@proof/types'
 import {
   formatLabResultValue,
@@ -9,6 +10,7 @@ import {
 import { useIsMobile } from '@/hooks/useBreakpoint'
 
 function ResultRow({ result }: { result: LabResult }) {
+  const t = useTranslations('winemaker.lab.lotSection')
   const critical = isCriticalLabParameter(result.parameter)
 
   return (
@@ -149,7 +151,7 @@ export function LabSampleResultsTable({ results }: { results: LabResult[] }) {
                     {critical ? (
                       <span
                         aria-hidden
-                        title="Parámetro crítico"
+                        title={t('criticalParam')}
                         style={{ color: 'var(--proof-accent)', fontSize: 12 }}
                       >
                         ●

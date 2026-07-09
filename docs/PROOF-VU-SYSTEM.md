@@ -93,7 +93,7 @@ Storybook: `VuPage` stories.
 - [x] Desktop ≥1024; móvil winemaker idéntico al previo (branch ≤767)
 - [x] i18n es-MX + en-US en superficies migradas
 
-Pendiente menor (no bloquea cierre VU): hex decorativos en paletas `COLORS` de cards brewer legacy (intencional). Canvas form i18n (`LoteDetalle`, `ViajePendienteDetalle`, `OrdenCompraDocumentCard`, `PedidoCanvasCard`, `BotellaCard`) ✅.
+Pendiente menor (no bloquea cierre VU): hex decorativos en paletas `COLORS` de cards brewer legacy (intencional). Ops/shell i18n residual (datos cobro, capture panel, org switcher, remisiones, KPI, lab/lineage) ✅.
 
 ## Roadmap
 

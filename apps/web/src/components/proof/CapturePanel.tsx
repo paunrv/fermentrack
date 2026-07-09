@@ -1,20 +1,18 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export type CaptureOptionId = 'voz' | 'foto' | 'nota' | 'lab'
 
-const CAPTURE_OPTIONS: {
-  id: CaptureOptionId
-  emoji: string
-  title: string
-  subtitle: string
-}[] = [
-  { id: 'voz', emoji: '🎙️', title: 'Voz', subtitle: 'Dicta y PROOF registra' },
-  { id: 'foto', emoji: '📷', title: 'Foto', subtitle: 'PROOF analiza y captura' },
-  { id: 'nota', emoji: '✍️', title: 'Nota', subtitle: 'Texto libre o bitácora' },
-  { id: 'lab', emoji: '🧪', title: 'Lab', subtitle: 'Carga resultados' },
-]
+const CAPTURE_IDS: CaptureOptionId[] = ['voz', 'foto', 'nota', 'lab']
+
+const CAPTURE_EMOJI: Record<CaptureOptionId, string> = {
+  voz: '🎙️',
+  foto: '📷',
+  nota: '✍️',
+  lab: '🧪',
+}
 
 export function CapturePanel({
   open,
@@ -27,25 +25,37 @@ export function CapturePanel({
   onSelect?: (id: CaptureOptionId) => void
   customizeHref?: string
 }) {
+  const t = useTranslations('dashboard.capturePanel')
+
   return (
     <div className="proof-capture-panel-root proof-mobile-only" data-open={open ? 'true' : 'false'} aria-hidden={!open}>
-      <button type="button" className="proof-capture-backdrop" aria-label="Cerrar panel de captura" onClick={onClose} tabIndex={open ? 0 : -1} />
+      <button
+        type="button"
+        className="proof-capture-backdrop"
+        aria-label={t('closeAria')}
+        onClick={onClose}
+        tabIndex={open ? 0 : -1}
+      />
 
-      <div role="dialog" aria-label="Capturar" aria-modal="true" className="proof-capture-sheet">
+      <div role="dialog" aria-label={t('dialogAria')} aria-modal="true" className="proof-capture-sheet">
         <div className="proof-capture-grid">
-          {CAPTURE_OPTIONS.map(opt => (
+          {CAPTURE_IDS.map(id => (
             <button
-              key={opt.id}
+              key={id}
               type="button"
               className="proof-capture-option"
               onClick={() => {
-                onSelect?.(opt.id)
+                onSelect?.(id)
                 onClose()
               }}
             >
-              <span style={{ fontSize: 22, lineHeight: 1 }}>{opt.emoji}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)' }}>{opt.title}</span>
-              <span style={{ fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.35 }}>{opt.subtitle}</span>
+              <span style={{ fontSize: 22, lineHeight: 1 }}>{CAPTURE_EMOJI[id]}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-0)' }}>
+                {t(`options.${id}.title`)}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.35 }}>
+                {t(`options.${id}.subtitle`)}
+              </span>
             </button>
           ))}
         </div>
@@ -67,7 +77,7 @@ export function CapturePanel({
             borderRadius: 'var(--radius-md)',
           }}
         >
-          ⚙️ Personalizar mis accesos rápidos
+          ⚙️ {t('customize')}
         </Link>
       </div>
     </div>

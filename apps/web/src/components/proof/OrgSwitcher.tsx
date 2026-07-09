@@ -1,16 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useOrganization } from '@/context/OrganizationContext'
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Owner',
-  admin: 'Admin',
-  member: 'Miembro',
-  viewer: 'Viewer',
-}
-
 export function OrgSwitcher({ compact = false }: { compact?: boolean }) {
+  const t = useTranslations('dashboard.orgSwitcher')
   const router = useRouter()
   const { allOrganizations, activeOrg, membership, switchOrganization } = useOrganization()
 
@@ -22,6 +17,12 @@ export function OrgSwitcher({ compact = false }: { compact?: boolean }) {
     switchOrganization(nextId)
     router.refresh()
   }
+
+  const roleKey = membership?.role
+  const roleLabel =
+    roleKey === 'owner' || roleKey === 'admin' || roleKey === 'member' || roleKey === 'viewer'
+      ? t(`roles.${roleKey}`)
+      : roleKey
 
   return (
     <label
@@ -43,19 +44,19 @@ export function OrgSwitcher({ compact = false }: { compact?: boolean }) {
             flexShrink: 0,
           }}
         >
-          Bodega
+          {t('label')}
         </span>
       )}
       <select
         value={activeOrg.id}
         onChange={handleChange}
-        aria-label="Cambiar bodega"
+        aria-label={t('aria')}
         style={{
           maxWidth: compact ? 140 : 220,
           padding: compact ? '4px 8px' : '6px 10px',
           borderRadius: 8,
           border: '0.5px solid var(--hairline)',
-          background: 'var(--panel, #fff)',
+          background: 'var(--panel, var(--surface-card))',
           color: 'var(--fg-0)',
           fontSize: compact ? 12 : 13,
           fontWeight: 500,
@@ -78,10 +79,9 @@ export function OrgSwitcher({ compact = false }: { compact?: boolean }) {
             flexShrink: 0,
           }}
         >
-          {ROLE_LABEL[membership.role] ?? membership.role}
+          {roleLabel}
         </span>
       )}
     </label>
   )
-
 }

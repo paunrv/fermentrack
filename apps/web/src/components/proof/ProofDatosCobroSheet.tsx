@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
@@ -16,7 +17,15 @@ import {
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
 
-function CopyButton({ value, label }: { value: string; label: string }) {
+function CopyButton({
+  value,
+  label,
+  copiedLabel,
+}: {
+  value: string
+  label: string
+  copiedLabel: string
+}) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -39,7 +48,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         padding: '8px 12px',
         borderRadius: 8,
         border: '0.5px solid var(--hairline)',
-        background: '#fff',
+        background: 'var(--surface-card)',
         fontSize: 11,
         fontWeight: 600,
         color: value.trim() ? 'var(--fg-0)' : 'var(--fg-4)',
@@ -48,7 +57,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
         whiteSpace: 'nowrap',
       }}
     >
-      {copied ? 'Copiado' : label}
+      {copied ? copiedLabel : label}
     </button>
   )
 }
@@ -67,6 +76,7 @@ export function ProofDatosCobroSheet({
   /** sheet = panel lateral; strip = barra bajo header canvas */
   variant?: 'sheet' | 'strip'
 }) {
+  const t = useTranslations('dashboard.settings.datosCobro')
   const supabase = useSupabase()
   const { reload, scope } = useProfile()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -100,9 +110,9 @@ export function ProofDatosCobroSheet({
       }
       setError(null)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo cargar tu información')
+      setError(e instanceof Error ? e.message : t('errors.loadFailed'))
     }
-  }, [scope?.user_id, profile, supabase])
+  }, [scope?.user_id, profile, supabase, t])
 
   useEffect(() => {
     if (!open) return
@@ -133,7 +143,7 @@ export function ProofDatosCobroSheet({
       await reload({ silent: true })
       await syncFromScope()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar')
+      setError(e instanceof Error ? e.message : t('errors.saveFailed'))
     } finally {
       setSaving(false)
     }
@@ -172,7 +182,7 @@ export function ProofDatosCobroSheet({
       await reload({ silent: true })
       await syncFromScope()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo subir el PDF')
+      setError(e instanceof Error ? e.message : t('errors.uploadFailed'))
     } finally {
       setUploading(false)
     }
@@ -186,7 +196,7 @@ export function ProofDatosCobroSheet({
       const url = await signedConstanciaFiscalUrl(supabase, constanciaPath)
       if (url) window.open(url, '_blank', 'noopener,noreferrer')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo abrir la constancia')
+      setError(e instanceof Error ? e.message : t('errors.openFailed'))
     } finally {
       setOpeningPdf(false)
     }
@@ -228,7 +238,7 @@ export function ProofDatosCobroSheet({
               fontFamily: 'var(--font-display)',
             }}
           >
-            Mi información
+            {t('title')}
           </h2>
           {!compactStrip ? (
             <p
@@ -240,7 +250,7 @@ export function ProofDatosCobroSheet({
                 fontFamily: 'var(--font-display)',
               }}
             >
-              Cuenta y constancia fiscal — listos para compartir con clientes.
+              {t('subtitle')}
             </p>
           ) : null}
         </div>
@@ -248,7 +258,7 @@ export function ProofDatosCobroSheet({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar"
+            aria-label={t('closeAria')}
             style={{
               border: 'none',
               background: 'transparent',
@@ -269,14 +279,14 @@ export function ProofDatosCobroSheet({
               padding: '6px 10px',
               borderRadius: 8,
               border: '0.5px solid var(--hairline)',
-              background: '#fff',
+              background: 'var(--surface-card)',
               fontSize: 11,
               color: 'var(--fg-3)',
               cursor: 'pointer',
               fontFamily: 'var(--font-display)',
             }}
           >
-            Ocultar
+            {t('hide')}
           </button>
         )}
       </div>
@@ -292,7 +302,7 @@ export function ProofDatosCobroSheet({
           }}
         >
           <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-            <div style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 2 }}>Cuenta</div>
+            <div style={{ fontSize: 10, color: 'var(--fg-3)', marginBottom: 2 }}>{t('account')}</div>
             {hasCuenta || titularDisplay ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {titularDisplay ? (
@@ -310,14 +320,14 @@ export function ProofDatosCobroSheet({
                     </span>
                   </div>
                 ) : (
-                  <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>Sin CLABE configurada</span>
+                  <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{t('noClabe')}</span>
                 )}
               </div>
             ) : (
-              <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>Sin cuenta configurada</span>
+              <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{t('noAccount')}</span>
             )}
           </div>
-          <CopyButton value={clipboardText} label="Copiar datos" />
+          <CopyButton value={clipboardText} label={t('copyData')} copiedLabel={t('copied')} />
           <button
             type="button"
             disabled={!constanciaPath || openingPdf}
@@ -327,14 +337,14 @@ export function ProofDatosCobroSheet({
               borderRadius: 8,
               border: 'none',
               background: constanciaPath ? accent : 'var(--fg-5)',
-              color: constanciaPath ? '#fff' : 'var(--fg-3)',
+              color: constanciaPath ? 'var(--ink)' : 'var(--fg-3)',
               fontSize: 11,
               fontWeight: 600,
               cursor: constanciaPath && !openingPdf ? 'pointer' : 'default',
               fontFamily: 'var(--font-display)',
             }}
           >
-            {constanciaPath ? 'Constancia PDF' : 'Sin constancia'}
+            {constanciaPath ? t('constanciaPdf') : t('noConstancia')}
           </button>
         </div>
       ) : (
@@ -351,7 +361,7 @@ export function ProofDatosCobroSheet({
             fontFamily: 'var(--font-display)',
           }}
         >
-          Cuenta de depósito
+          {t('depositAccount')}
         </div>
         <div style={{ display: 'grid', gap: 8 }}>
           <input
@@ -360,8 +370,8 @@ export function ProofDatosCobroSheet({
             onChange={e => setTitular(e.target.value)}
             placeholder={
               targetProfile?.username
-                ? `Titular (vacío = ${targetProfile.username})`
-                : 'Nombre del titular de la cuenta'
+                ? t('holderPlaceholderWithUser', { username: targetProfile.username })
+                : t('holderPlaceholder')
             }
             style={{
               width: '100%',
@@ -376,7 +386,7 @@ export function ProofDatosCobroSheet({
             type="text"
             value={banco}
             onChange={e => setBanco(e.target.value)}
-            placeholder="Banco (ej. BBVA)"
+            placeholder={t('bankPlaceholder')}
             style={{
               width: '100%',
               padding: '10px 12px',
@@ -391,7 +401,7 @@ export function ProofDatosCobroSheet({
               type="text"
               value={cuenta}
               onChange={e => setCuenta(e.target.value)}
-              placeholder="CLABE o número de cuenta"
+              placeholder={t('accountPlaceholder')}
               style={{
                 flex: 1,
                 padding: '10px 12px',
@@ -401,7 +411,7 @@ export function ProofDatosCobroSheet({
                 fontFamily: MONO,
               }}
             />
-            <CopyButton value={clipboardText} label="Copiar" />
+            <CopyButton value={clipboardText} label={t('copy')} copiedLabel={t('copied')} />
           </div>
           {canCopy ? (
             <pre
@@ -436,7 +446,7 @@ export function ProofDatosCobroSheet({
             fontFamily: 'var(--font-display)',
           }}
         >
-          Constancia fiscal
+          {t('fiscalConstancia')}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <button
@@ -448,14 +458,14 @@ export function ProofDatosCobroSheet({
               borderRadius: 8,
               border: 'none',
               background: constanciaPath ? accent : 'var(--fg-5)',
-              color: constanciaPath ? '#fff' : 'var(--fg-3)',
+              color: constanciaPath ? 'var(--ink)' : 'var(--fg-3)',
               fontSize: 12,
               fontWeight: 600,
               cursor: constanciaPath && !openingPdf ? 'pointer' : 'default',
               fontFamily: 'var(--font-display)',
             }}
           >
-            {openingPdf ? 'Abriendo…' : constanciaPath ? 'Ver constancia PDF' : 'Sin constancia'}
+            {openingPdf ? t('opening') : constanciaPath ? t('viewConstancia') : t('noConstancia')}
           </button>
           <button
             type="button"
@@ -465,7 +475,7 @@ export function ProofDatosCobroSheet({
               padding: '9px 14px',
               borderRadius: 8,
               border: `0.5px solid ${accent}55`,
-              background: `color-mix(in srgb, ${accent} 8%, #fff)`,
+              background: `color-mix(in srgb, ${accent} 8%, var(--surface-card))`,
               color: accent,
               fontSize: 12,
               fontWeight: 600,
@@ -473,7 +483,7 @@ export function ProofDatosCobroSheet({
               fontFamily: 'var(--font-display)',
             }}
           >
-            {uploading ? 'Subiendo…' : constanciaPath ? 'Reemplazar PDF' : 'Subir PDF'}
+            {uploading ? t('uploading') : constanciaPath ? t('replacePdf') : t('uploadPdf')}
           </button>
         </div>
         <input
@@ -490,7 +500,7 @@ export function ProofDatosCobroSheet({
       </section>
 
       {error ? (
-        <p style={{ margin: '0 0 12px', fontSize: 12, color: '#8B2E2E' }}>{error}</p>
+        <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--crit)' }}>{error}</p>
       ) : null}
 
       <button
@@ -503,14 +513,14 @@ export function ProofDatosCobroSheet({
           borderRadius: 10,
           border: 'none',
           background: accent,
-          color: '#fff',
+          color: 'var(--ink)',
           fontSize: 13,
           fontWeight: 600,
           cursor: saving ? 'wait' : 'pointer',
           fontFamily: 'var(--font-display)',
         }}
       >
-        {saving ? 'Guardando…' : 'Guardar datos'}
+        {saving ? t('saving') : t('saveData')}
       </button>
         </>
       )}
@@ -526,7 +536,7 @@ export function ProofDatosCobroSheet({
           left: 0,
           right: 0,
           zIndex: 29,
-          background: '#fff',
+          background: 'var(--surface-card)',
           borderBottom: '1px solid var(--hairline)',
           boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
           padding: '14px 24px',
@@ -541,7 +551,7 @@ export function ProofDatosCobroSheet({
     <>
       <button
         type="button"
-        aria-label="Cerrar panel"
+        aria-label={t('closePanelAria')}
         onClick={onClose}
         style={{
           position: 'fixed',
@@ -554,7 +564,7 @@ export function ProofDatosCobroSheet({
       />
       <aside
         role="dialog"
-        aria-label="Mi información"
+        aria-label={t('title')}
         style={{
           position: 'fixed',
           top: 0,
@@ -562,7 +572,7 @@ export function ProofDatosCobroSheet({
           zIndex: 41,
           width: 'min(100%, 380px)',
           height: '100%',
-          background: '#fff',
+          background: 'var(--surface-card)',
           borderLeft: '0.5px solid var(--hairline)',
           boxShadow: '-8px 0 32px rgba(0,0,0,0.08)',
           padding: '20px 20px 24px',

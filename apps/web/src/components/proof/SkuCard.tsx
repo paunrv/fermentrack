@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useTranslations } from 'next-intl'
 import { normalizeCategoriaLiquido } from '@/lib/proof/categoria-liquido'
 import { CategoriaLiquidoBadge } from '@/components/proof/CategoriaLiquidoBadge'
 import type { CategoriaLiquido, EstadoSku } from '@/lib/supabase/distribuidor'
@@ -145,6 +146,7 @@ export function SkuCard({
   openImagePicker?: boolean
   onImagePickerOpened?: () => void
 }) {
+  const t = useTranslations('distributor.inventario.skuCard')
   const fileRef = useRef<HTMLInputElement>(null)
   const fileInputId = useId()
   const categoria = normalizeCategoriaLiquido(categoriaLiquido)
@@ -248,7 +250,7 @@ export function SkuCard({
         {onConfigClick && (
           <button
             type="button"
-            aria-label="Configurar datos del card"
+            aria-label={t('configureAria')}
             aria-expanded={configOpen}
             onClick={e => {
               e.stopPropagation()
@@ -382,7 +384,7 @@ export function SkuCard({
             <label
               htmlFor={fileInputId}
               className="sku-camera-btn"
-              aria-label="Agregar o cambiar imagen"
+              aria-label={t('imageAria')}
               onClick={e => {
                 e.stopPropagation()
                 console.log('[SkuCard] camera click', nombre, { input: fileRef.current?.id })

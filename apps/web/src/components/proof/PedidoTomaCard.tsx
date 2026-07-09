@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { SkuRow } from '@/lib/supabase/distribuidor'
 import { fmtBottles, fmtMoney } from '@/lib/proof/format'
 
@@ -50,6 +51,7 @@ export function PedidoTomaCard({
   onSave,
   onConfirm,
 }: Props) {
+  const t = useTranslations('distributor.common')
   const editable = estado === 'borrador'
   const skuMap = new Map(skus.map(s => [s.id, s]))
 
@@ -223,7 +225,7 @@ export function PedidoTomaCard({
         {editable && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button type="button" onClick={onSave} disabled={saving} style={btnSecondary}>
-              {saving ? '…' : 'Guardar'}
+              {saving ? '…' : t('save')}
             </button>
             <button
               type="button"
@@ -234,7 +236,7 @@ export function PedidoTomaCard({
                 opacity: confirming || hasOverstock || lines.length === 0 ? 0.45 : 1,
               }}
             >
-              {confirming ? '…' : 'Confirmar'}
+              {confirming ? '…' : t('confirm')}
             </button>
           </div>
         )}

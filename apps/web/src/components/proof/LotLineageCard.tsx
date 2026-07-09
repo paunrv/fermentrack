@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { CollapsibleSection } from '@/components/proof/CollapsibleSection'
+import type { AppLocale } from '@/i18n/routing'
 import { fmtDateOnly, fmtLitros } from '@/lib/proof/format'
 import type { LotLineageEvent, LotLineageViewModel } from '@/lib/proof/fetch-lot-lineage'
 
@@ -9,25 +11,33 @@ function formatEventDate(iso: string): string {
   return fmtDateOnly(iso.slice(0, 10))
 }
 
-function formatEventLine(event: LotLineageEvent): string {
+function formatEventLine(
+  event: LotLineageEvent,
+  t: (key: string, values?: Record<string, string | number>) => string,
+  locale: AppLocale
+): string {
   const date = formatEventDate(event.occurredAt)
   switch (event.eventType) {
     case 'BLEND_COMPLETED':
-      return `Blend realizado · ${date}`
+      return t('blendCompleted', { date })
     case 'WINEMAKER_NOTE': {
       const text = event.payload.text
-      return typeof text === 'string' && text.trim() ? text.trim() : `Nota del enólogo · ${date}`
+      return typeof text === 'string' && text.trim()
+        ? text.trim()
+        : t('winemakerNoteFallback', { date })
     }
     case 'BOTTLED': {
       const caseCount = event.payload.case_count
       const totalBottles = event.payload.total_bottles
       const cases =
-        typeof caseCount === 'number' ? `${caseCount.toLocaleString('es-MX')} cajas` : '— cajas'
+        typeof caseCount === 'number'
+          ? t('cases', { count: caseCount.toLocaleString(locale) })
+          : t('casesDash')
       const bottles =
         typeof totalBottles === 'number'
-          ? `${totalBottles.toLocaleString('es-MX')} botellas`
-          : '— botellas'
-      return `Embotellado · ${cases} · ${bottles}`
+          ? t('bottles', { count: totalBottles.toLocaleString(locale) })
+          : t('bottlesDash')
+      return t('bottledSummary', { cases, bottles })
     }
     default:
       return date
@@ -41,7 +51,8 @@ function BlendCompositionRow({
   volumeLitersContributed,
   totalVolumeLiters,
   proportionPct,
-}: LotLineageViewModel['blendParents'][number]) {
+  ofTotalLabel,
+}: LotLineageViewModel['blendParents'][number] & { ofTotalLabel: string }) {
   return (
     <Link
       href={`/dashboard/winemaker/lotes/${parentLotId}`}
@@ -91,9 +102,7 @@ function BlendCompositionRow({
           >
             {proportionPct.toFixed(1)}%
           </p>
-          <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--fg-3)' }}>
-            {fmtLitros(volumeLitersContributed)} de {fmtLitros(totalVolumeLiters)}
-          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--fg-3)' }}>{ofTotalLabel}</p>
         </div>
       </div>
 
@@ -111,8 +120,9 @@ function BlendCompositionRow({
             height: '100%',
             width: `${Math.min(100, Math.max(0, proportionPct))}%`,
             borderRadius: 999,
-            background: 'linear-gradient(90deg, var(--proof-accent) 0%, #8B5FCF 100%)',
-            boxShadow: '0 0 0 1px rgba(105, 64, 165, 0.12)',
+            background:
+              'linear-gradient(90deg, var(--proof-accent) 0%, color-mix(in srgb, var(--proof-accent) 55%, var(--info)) 100%)',
+            boxShadow: '0 0 0 1px color-mix(in srgb, var(--proof-accent) 12%, transparent)',
             transition: 'width 320ms var(--ease-out)',
           }}
         />
@@ -122,6 +132,8 @@ function BlendCompositionRow({
 }
 
 export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
+  const t = useTranslations('winemaker.lotDetail.lineage')
+  const locale = useLocale() as AppLocale
   const { blendParents, events, finishedProduct } = lineage
   const isBlend = blendParents.length > 0
   const hasEvents = events.length > 0
@@ -145,10 +157,17 @@ export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
       }}
     >
       {isBlend ? (
-        <CollapsibleSection emoji="🍷" title="Composición del blend" defaultOpen>
+        <CollapsibleSection emoji="🍷" title={t('blendComposition')} defaultOpen>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {blendParents.map(parent => (
-              <BlendCompositionRow key={parent.parentLotId} {...parent} />
+              <BlendCompositionRow
+                key={parent.parentLotId}
+                {...parent}
+                ofTotalLabel={t('ofTotal', {
+                  contributed: fmtLitros(parent.volumeLitersContributed),
+                  total: fmtLitros(parent.totalVolumeLiters),
+                })}
+              />
             ))}
           </div>
           {totalVolume != null ? (
@@ -162,7 +181,7 @@ export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
                 color: 'var(--fg-0)',
               }}
             >
-              {fmtLitros(totalVolume)} totales
+              {t('totalLiters', { liters: fmtLitros(totalVolume) })}
             </p>
           ) : null}
         </CollapsibleSection>
@@ -171,7 +190,7 @@ export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
       {hasEvents ? (
         <CollapsibleSection
           emoji="📋"
-          title="Decisiones y eventos"
+          title={t('events')}
           badge={events.length}
           defaultOpen={false}
         >
@@ -205,7 +224,7 @@ export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
                     whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {formatEventLine(event)}
+                  {formatEventLine(event, t, locale)}
                 </p>
               </li>
             ))}
@@ -214,7 +233,7 @@ export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
       ) : null}
 
       {hasFinishedProduct && finishedProduct ? (
-        <CollapsibleSection emoji="📦" title="Producto terminado" defaultOpen>
+        <CollapsibleSection emoji="📦" title={t('finishedProduct')} defaultOpen>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--fg-0)' }}>
@@ -232,14 +251,16 @@ export function LotLineageCard({ lineage }: { lineage: LotLineageViewModel }) {
               >
                 {labelCase.case_count != null && labelCase.total_bottles != null ? (
                   <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-0)' }}>
-                    {labelCase.case_count.toLocaleString('es-MX')} cajas ×{' '}
-                    {labelCase.bottles_per_case} ={' '}
-                    {labelCase.total_bottles.toLocaleString('es-MX')} botellas
+                    {t('caseLine', {
+                      cases: labelCase.case_count.toLocaleString(locale),
+                      perCase: labelCase.bottles_per_case,
+                      bottles: labelCase.total_bottles.toLocaleString(locale),
+                    })}
                   </p>
                 ) : null}
                 {labelCase.bottled_at ? (
                   <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--fg-3)' }}>
-                    Embotellado {fmtDateOnly(labelCase.bottled_at)}
+                    {t('bottledOn', { date: fmtDateOnly(labelCase.bottled_at) })}
                   </p>
                 ) : null}
               </div>

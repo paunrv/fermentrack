@@ -193,7 +193,7 @@ export function OrdenCompraCanvasCard({
             marginBottom: 6,
           }}
         >
-          {orden.numero_orden} · {orden.proveedor_nombre || 'Proveedor'}
+          {orden.numero_orden} · {orden.proveedor_nombre || t('supplierFallback')}
         </div>
         <div
           style={{

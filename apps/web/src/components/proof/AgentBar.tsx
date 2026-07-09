@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 
 export type AgentQuickAction = {
   label: string
@@ -19,19 +21,19 @@ export interface Message {
 
 const chipStyle: React.CSSProperties = {
   fontSize: 11,
-  color: '#999',
+  color: 'var(--fg-3)',
   border: '0.5px solid var(--line)',
   borderRadius: 20,
   padding: '5px 14px',
-  background: '#fff',
+  background: 'var(--surface-card)',
   cursor: 'pointer',
   textDecoration: 'none',
   display: 'inline-block',
   transition: 'color 0.15s ease, border-color 0.15s ease',
 }
 
-function formatTime(d: Date) {
-  return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })
+function formatTime(d: Date, locale: AppLocale) {
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })
 }
 
 function newId() {
@@ -71,6 +73,8 @@ export function AgentBar({
   /** Pregunta inyectada desde ?q= en la URL (layout → dashboard) */
   queryFromUrl?: string | null
 }) {
+  const t = useTranslations('agent.bar')
+  const locale = useLocale() as AppLocale
   const [messages, setMessages] = useState<Message[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -123,8 +127,8 @@ export function AgentBar({
     const text = response?.trim()
     if (
       !text ||
-      text === 'PROOF analizando…' ||
-      text === 'PROOF analizando tu operación…'
+      text === t('analyzing') ||
+      text === t('analyzingLong')
     ) {
       setMessages(prev => {
         const last = prev[prev.length - 1]
@@ -134,7 +138,7 @@ export function AgentBar({
           {
             id: newId(),
             role: 'agent',
-            content: 'No obtuve respuesta. Intenta de nuevo.',
+            content: t('noResponse'),
             timestamp: new Date(),
           },
         ]
@@ -149,11 +153,11 @@ export function AgentBar({
       return [...prev, { id: newId(), role: 'agent', content: text, timestamp: new Date() }]
     })
     scrollToEnd()
-  }, [response, loading, scrollToEnd])
+  }, [response, loading, scrollToEnd, t])
 
   useEffect(() => {
     if (!isTyping || pendingSendRef.current === 0) return
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       if (pendingSendRef.current === 0) return
       pendingSendRef.current = 0
       setIsTyping(false)
@@ -162,13 +166,13 @@ export function AgentBar({
         {
           id: newId(),
           role: 'agent',
-          content: 'PROOF tardó demasiado. Recarga la página o intenta otra vez.',
+          content: t('timeout'),
           timestamp: new Date(),
         },
       ])
     }, 45_000)
-    return () => window.clearTimeout(t)
-  }, [isTyping])
+    return () => window.clearTimeout(timer)
+  }, [isTyping, t])
 
   useEffect(() => {
     if (hasMessages) scrollToEnd()
@@ -187,7 +191,7 @@ export function AgentBar({
     const trimmed = text.trim()
     if ((!trimmed && !pendingImage) || isTyping) return
 
-    const content = trimmed || '📎 imagen adjunta'
+    const content = trimmed || t('imageAttached')
     const userMsg: Message = {
       id: newId(),
       role: 'user',
@@ -200,7 +204,7 @@ export function AgentBar({
     setInputValue('')
     setIsTyping(true)
     pendingSendRef.current += 1
-    onSend(trimmed || 'agrega esta imagen al sku', nextConversation, pendingImage)
+    onSend(trimmed || t('imagePrompt'), nextConversation, pendingImage)
     setPendingImage(null)
     scrollToEnd()
   }
@@ -276,13 +280,13 @@ export function AgentBar({
           ref={chatScrollRef}
           className="proof-agent-chat"
           aria-live="polite"
-          aria-label="Conversación con PROOF"
+          aria-label={t('conversationAria')}
           style={{
             maxHeight: hasMessages ? 260 : 0,
             overflowY: chatScrollable ? 'auto' : 'hidden',
             overflowX: 'hidden',
             transition: 'max-height 0.25s ease',
-            background: '#fff',
+            background: 'var(--surface-card)',
             border: hasMessages ? '0.5px solid var(--hairline)' : 'none',
             borderBottom: 'none',
             borderRadius: hasMessages ? '16px 16px 0 0' : 0,
@@ -316,7 +320,7 @@ export function AgentBar({
                   ...(msg.role === 'user'
                     ? {
                         background: 'var(--proof-accent)',
-                        color: '#fff',
+                        color: 'var(--ink)',
                         borderRadius: '10px 10px 2px 10px',
                       }
                     : {
@@ -338,7 +342,7 @@ export function AgentBar({
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 }}
               >
-                {formatTime(msg.timestamp)}
+                {formatTime(msg.timestamp, locale)}
               </span>
             </div>
           ))}
@@ -373,7 +377,7 @@ export function AgentBar({
           onSubmit={handleSubmit}
           style={{
             width: '100%',
-            background: '#fff',
+            background: 'var(--surface-card)',
             border: '0.5px solid var(--line)',
             borderTop: hasMessages ? '0.5px solid var(--hairline)' : undefined,
             borderRadius: hasMessages ? '0 0 16px 16px' : 16,
@@ -411,15 +415,15 @@ export function AgentBar({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isTyping}
-            aria-label="Adjuntar imagen"
-            title={pendingImage ? 'Imagen lista — escribe para enviar' : 'Adjuntar imagen'}
+            aria-label={t('attachAria')}
+            title={pendingImage ? t('attachReadyTitle') : t('attachTitle')}
             style={{
               width: 44,
               height: 44,
               borderRadius: 8,
               border: 'none',
               background: pendingImage ? accent : 'transparent',
-              color: pendingImage ? '#fff' : '#999',
+              color: pendingImage ? 'var(--ink)' : 'var(--fg-3)',
               display: 'grid',
               placeItems: 'center',
               cursor: isTyping ? 'default' : 'pointer',
@@ -433,7 +437,7 @@ export function AgentBar({
             type="text"
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
-            placeholder="Pregúntale a PROOF…"
+            placeholder={t('placeholder')}
             disabled={isTyping}
             style={{
               flex: 1,
@@ -447,7 +451,7 @@ export function AgentBar({
           <button
             type="submit"
             disabled={(!inputValue.trim() && !pendingImage) || isTyping}
-            aria-label="Enviar"
+            aria-label={t('sendAria')}
             className="proof-agent-send"
             style={{
               width: 44,
@@ -455,7 +459,7 @@ export function AgentBar({
               borderRadius: 8,
               border: 'none',
               background: 'var(--fg-0)',
-              color: '#fff',
+              color: 'var(--ink)',
               display: 'grid',
               placeItems: 'center',
               cursor: (inputValue.trim() || pendingImage) && !isTyping ? 'pointer' : 'default',
@@ -491,7 +495,7 @@ export function AgentBar({
                   e.currentTarget.style.borderColor = `${accent}44`
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = '#999'
+                  e.currentTarget.style.color = 'var(--fg-3)'
                   e.currentTarget.style.borderColor = 'var(--line)'
                 }}
               >
@@ -514,7 +518,7 @@ export function AgentBar({
                   e.currentTarget.style.borderColor = `${accent}44`
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = '#999'
+                  e.currentTarget.style.color = 'var(--fg-3)'
                   e.currentTarget.style.borderColor = 'var(--line)'
                 }}
               >

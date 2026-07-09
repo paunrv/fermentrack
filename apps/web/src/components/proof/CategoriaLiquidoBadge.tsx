@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import {
   CATEGORIA_LIQUIDO_BADGE,
   CORE_CATEGORIA_LIQUIDO,
@@ -52,6 +53,7 @@ export function CategoriaLiquidoPicker({
   disabled?: boolean
   saving?: boolean
 }) {
+  const t = useTranslations('distributor.common')
   const current = normalizeCategoriaLiquido(value ?? undefined)
   const options =
     current === 'otro'
@@ -63,7 +65,7 @@ export function CategoriaLiquidoPicker({
   return (
     <div
       role="group"
-      aria-label="Categoría del producto"
+      aria-label={t('categoriaAria')}
       style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}
     >
       {options.map(cat => {
