@@ -256,7 +256,7 @@ export function LotBottlingForm({ lotId }: LotBottlingFormProps) {
             <Input
               value={formatoCustom}
               onChange={e => setFormatoCustom(e.target.value)}
-              placeholder="750ml"
+              placeholder={t('formatoPlaceholder')}
               required
             />
           </FormField>

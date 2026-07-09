@@ -1436,6 +1436,8 @@
       "suggestedRepliesAria": "Suggested replies",
       "resultsAria": "PROOF results",
       "deleteFailed": "Could not delete",
+      "deleteDevAria": "Delete {name} (dev)",
+      "deleteDevTitle": "Delete (dev only)",
       "analyzingShort": "PROOF analyzing…",
       "analyzingLong": "PROOF analyzing your operation…",
       "errors": {
@@ -2276,6 +2278,8 @@
       "suggestedRepliesAria": "Suggested replies",
       "resultsAria": "PROOF results",
       "deleteFailed": "Could not delete",
+      "deleteDevAria": "Delete {name} (dev)",
+      "deleteDevTitle": "Delete (dev only)",
       "analyzingShort": "PROOF analyzing…",
       "analyzingLong": "PROOF analyzing your operation…",
       "ticketUploaded": "Uploaded receipt: {fileName}",
@@ -2488,7 +2492,8 @@
           "event_create_failed": "Could not record bottling event",
           "limit_reached_etiquetas": "Label catalog limit reached for your plan",
           "limit_reached_memoria": "Memory limit reached — upgrade to record more events"
-        }
+        },
+        "formatoPlaceholder": "750ml"
       },
       "lineage": {
         "blendComposition": "Blend composition",
@@ -2993,7 +2998,8 @@
     "manualTitle": "Manual forms",
     "bar": {
       "message": "Connect your AI assistant to PROOF via MCP.",
-      "action": "Connect"
+      "action": "Connect",
+      "seeMore": "See more"
     },
     "tools": {
       "get_session_snapshot": "Profile, orgs, and JSON schemas.",

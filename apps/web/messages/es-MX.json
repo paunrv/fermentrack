@@ -1436,6 +1436,8 @@
       "suggestedRepliesAria": "Respuestas sugeridas",
       "resultsAria": "Resultados PROOF",
       "deleteFailed": "No se pudo eliminar",
+      "deleteDevAria": "Eliminar {name} (dev)",
+      "deleteDevTitle": "Eliminar (solo dev)",
       "analyzingShort": "PROOF analizando…",
       "analyzingLong": "PROOF analizando tu operación…",
       "errors": {
@@ -2276,6 +2278,8 @@
       "suggestedRepliesAria": "Respuestas sugeridas",
       "resultsAria": "Resultados PROOF",
       "deleteFailed": "No se pudo eliminar",
+      "deleteDevAria": "Eliminar {name} (dev)",
+      "deleteDevTitle": "Eliminar (solo dev)",
       "analyzingShort": "PROOF analizando…",
       "analyzingLong": "PROOF analizando tu operación…",
       "ticketUploaded": "Subí ticket: {fileName}",
@@ -2488,7 +2492,8 @@
           "event_create_failed": "No se pudo registrar el evento de embotellado",
           "limit_reached_etiquetas": "Límite de etiquetas alcanzado en tu plan",
           "limit_reached_memoria": "Memoria llena — mejora el plan para registrar más eventos"
-        }
+        },
+        "formatoPlaceholder": "750ml"
       },
       "lineage": {
         "blendComposition": "Composición del blend",
@@ -2993,7 +2998,8 @@
     "manualTitle": "Formularios manuales",
     "bar": {
       "message": "Conecta tu asistente de IA a PROOF vía MCP.",
-      "action": "Conectar"
+      "action": "Conectar",
+      "seeMore": "Ver más"
     },
     "tools": {
       "get_session_snapshot": "Perfil, orgs y schemas JSON.",

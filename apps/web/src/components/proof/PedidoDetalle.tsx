@@ -93,6 +93,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
   const locale = useLocale() as AppLocale
   const t = useTranslations('distributor.pedidos.detail')
   const tEstado = useTranslations('distributor.pedidoEstado')
+  const tCommon = useTranslations('distributor.common')
   const { scope } = useProfile()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -191,7 +192,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
 
   const subtotal = useMemo(() => lineas.reduce((s, l) => s + l.subtotal, 0), [lineas])
   const total = pedido ? Number(pedido.total) : 0
-  const clienteNombre = pedido?.clients?.name ?? 'Cliente'
+  const clienteNombre = pedido?.clients?.name ?? tCommon('clientFallback')
   const displayTotal = total > 0 ? total : subtotal
 
   const shareText = useMemo(() => {

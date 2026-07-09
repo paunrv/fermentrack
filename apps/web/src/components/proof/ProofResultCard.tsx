@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import type { CardItem, CardItemStatus } from '@/lib/proof/agent-response-types'
 
 const STATUS_COLOR: Record<CardItemStatus, string> = {
@@ -31,8 +32,11 @@ export function ProofResultCard({
   onAction: (prompt: string) => void
   onDelete?: (itemId: string) => void | Promise<void>
 }) {
+  const t = useTranslations('distributor.canvas')
   const status = item.status ?? 'neutral'
   const showDelete = Boolean(item.devDeletable && onDelete)
+  const aria = t('deleteDevAria', { name: item.name })
+  const title = t('deleteDevTitle')
 
   return (
     <article
@@ -51,8 +55,8 @@ export function ProofResultCard({
       {showDelete ? (
         <button
           type="button"
-          aria-label={`Eliminar ${item.name} (dev)`}
-          title="Eliminar (solo dev)"
+          aria-label={aria}
+          title={title}
           onClick={() => void onDelete!(item.id)}
           style={{
             position: 'absolute',

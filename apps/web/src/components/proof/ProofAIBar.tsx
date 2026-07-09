@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 export function ProofAIBar({
   message,
-  actionLabel = 'Ver más',
+  actionLabel,
   actionHref = '/dashboard',
   onActionClick,
 }: {
@@ -13,6 +14,9 @@ export function ProofAIBar({
   actionHref?: string
   onActionClick?: () => void
 }) {
+  const t = useTranslations('connectionHub.bar')
+  const resolvedActionLabel = actionLabel ?? t('seeMore')
+
   const actionStyle: React.CSSProperties = {
     flexShrink: 0,
     fontSize: 12,
@@ -64,11 +68,11 @@ export function ProofAIBar({
       <div className="proof-ai-bar__actions">
         {onActionClick ? (
           <button type="button" onClick={onActionClick} style={actionStyle}>
-            {actionLabel} ↗
+            {resolvedActionLabel} ↗
           </button>
         ) : (
           <Link href={actionHref || '/dashboard/agente'} style={actionStyle}>
-            {actionLabel} ↗
+            {resolvedActionLabel} ↗
           </Link>
         )}
       </div>
