@@ -1145,6 +1145,21 @@
           "markDelivered": "Marcar entregado",
           "delivering": "Entregando…",
           "updating": "Actualizando…"
+        },
+        "panel": {
+          "notFound": "No se encontró el pedido.",
+          "close": "Cerrar",
+          "closeAria": "Cerrar detalle",
+          "dataSection": "Datos",
+          "datesLine": "Pedido {created} · Entrega {delivery}",
+          "productsSection": "Productos",
+          "emptyLines": "Sin líneas registradas.",
+          "whatsapp": "WhatsApp",
+          "email": "Correo",
+          "pdf": "PDF",
+          "pdfGenerating": "Generando…",
+          "pdfError": "No se pudo obtener el PDF",
+          "invalidAmount": "Ingresa un monto válido"
         }
       },
       "tomaDetalle": {

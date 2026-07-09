@@ -1145,6 +1145,21 @@
           "markDelivered": "Mark delivered",
           "delivering": "Delivering…",
           "updating": "Updating…"
+        },
+        "panel": {
+          "notFound": "Order not found.",
+          "close": "Close",
+          "closeAria": "Close detail",
+          "dataSection": "Details",
+          "datesLine": "Order {created} · Delivery {delivery}",
+          "productsSection": "Products",
+          "emptyLines": "No line items recorded.",
+          "whatsapp": "WhatsApp",
+          "email": "Email",
+          "pdf": "PDF",
+          "pdfGenerating": "Generating…",
+          "pdfError": "Could not get the PDF",
+          "invalidAmount": "Enter a valid amount"
         }
       },
       "tomaDetalle": {

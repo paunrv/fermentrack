@@ -76,31 +76,31 @@ function fmtDateTime(d: string): string {
 }
 
 function movimientoTone(tipo: string): string {
-  if (tipo.includes('entrada') || tipo.includes('recepcion')) return '#4CAF7D'
-  if (tipo.includes('venta') || tipo.includes('salida')) return '#378ADD'
-  if (tipo.includes('merma')) return '#E24B4A'
-  return '#999'
+  if (tipo.includes('entrada') || tipo.includes('recepcion')) return 'var(--ok)'
+  if (tipo.includes('venta') || tipo.includes('salida')) return 'var(--info)'
+  if (tipo.includes('merma')) return 'var(--crit)'
+  return 'var(--fg-3)'
 }
 
 function distMovementTone(type: string): string {
   switch (type) {
     case 'entrada':
-      return '#4CAF7D'
+      return 'var(--ok)'
     case 'venta':
-      return '#378ADD'
+      return 'var(--info)'
     case 'merma':
-      return '#E24B4A'
+      return 'var(--crit)'
     case 'donacion':
     case 'muestra':
-      return '#9B8FE0'
+      return 'var(--info)'
     default:
-      return '#999'
+      return 'var(--fg-3)'
   }
 }
 
 function LoteDetalleSkeleton() {
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '28px 24px 24px' }}>
         <div
           style={{
@@ -191,7 +191,7 @@ function CollapsibleSection({
   const pairs = section.pairs
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
@@ -215,14 +215,14 @@ function CollapsibleSection({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <span style={{ color: '#BBB', display: 'flex', flexShrink: 0 }}>{section.icon}</span>
+          <span style={{ color: 'var(--fg-3)', display: 'flex', flexShrink: 0 }}>{section.icon}</span>
           <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--fg-0)' }}>{section.title}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <span
             style={{
               fontSize: 11,
-              color: '#CCC',
+              color: 'var(--fg-3)',
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
               maxWidth: 180,
               overflow: 'hidden',
@@ -254,7 +254,7 @@ function CollapsibleSection({
               borderBottom: i < pairs.length - 1 ? '0.5px solid var(--panel-2)' : 'none',
             }}
           >
-            <span style={{ fontSize: 12, color: '#AAA' }}>{pair.label}</span>
+            <span style={{ fontSize: 12, color: 'var(--fg-3)' }}>{pair.label}</span>
             <span
               style={{
                 fontSize: 13,
@@ -272,7 +272,7 @@ function CollapsibleSection({
             <div
               style={{
                 height: 4,
-                background: '#F0EEE9',
+                background: 'var(--surface-muted, var(--panel))',
                 borderRadius: 2,
                 overflow: 'hidden',
               }}
@@ -336,11 +336,11 @@ function CollapsibleSection({
               }}
             />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, color: '#666' }}>{ev.detail}</div>
+              <div style={{ fontSize: 12, color: 'var(--fg-2)' }}>{ev.detail}</div>
               <div
                 style={{
                   fontSize: 10,
-                  color: '#CCC',
+                  color: 'var(--fg-3)',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                   marginTop: 2,
                 }}
@@ -373,9 +373,9 @@ function KpiCell({
   const [hover, setHover] = useState(false)
   const semantic =
     value.includes('%') && parseFloat(value) > 15
-      ? '#E24B4A'
+      ? 'var(--crit)'
       : value === '—' || value === '0'
-        ? '#BBB'
+        ? 'var(--fg-3)'
         : accent
 
   return (
@@ -398,7 +398,7 @@ function KpiCell({
       >
         {value}
       </div>
-      <div style={{ fontSize: 10, color: '#BBB', marginTop: 4 }}>{label}</div>
+      <div style={{ fontSize: 10, color: 'var(--fg-3)', marginTop: 4 }}>{label}</div>
       <button
         type="button"
         aria-label="Configurar KPI"
@@ -411,7 +411,7 @@ function KpiCell({
           height: 14,
           border: 'none',
           background: 'transparent',
-          color: '#BBB',
+          color: 'var(--fg-3)',
           cursor: 'pointer',
           opacity: hover || drawerOpen ? 1 : 0,
           transition: 'opacity 0.15s ease',
@@ -452,7 +452,7 @@ function buildDistillerSections(
     id: `corrida-${c.id}`,
     date: fmtDate(c.created_at),
     detail: `Corrida ${c.formato_botella} · ${c.estado} · ${c.botellas_producidas} bot.`,
-    tone: c.estado === 'completada' ? '#4CAF7D' : '#378ADD',
+    tone: c.estado === 'completada' ? 'var(--ok)' : 'var(--info)',
   }))
   const movEvents: TimelineEvent[] = movimientos.map(m => ({
     id: m.id,
@@ -523,7 +523,7 @@ function buildDistillerSections(
       ],
       progress: {
         pct: stats.mermaPct,
-        color: stats.mermaPct > 15 ? '#E24B4A' : 'var(--proof-accent)',
+        color: stats.mermaPct > 15 ? 'var(--crit)' : 'var(--proof-accent)',
       },
     },
     {
@@ -616,7 +616,7 @@ function buildDistributorSections(
           sku.stock_minimo > 0
             ? Math.min(100, (100 * sku.stock_disponible) / sku.stock_minimo)
             : 100,
-        color: sku.stock_disponible <= sku.stock_minimo ? '#EF9F27' : '#4CAF7D',
+        color: sku.stock_disponible <= sku.stock_minimo ? 'var(--warn)' : 'var(--ok)',
       },
     },
     {
@@ -767,13 +767,13 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
     return (
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface-card)',
           borderBottom: '0.5px solid var(--hairline)',
           padding: 24,
           textAlign: 'center',
         }}
       >
-        <p style={{ fontSize: 13, color: '#999' }}>No se encontró el registro.</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>No se encontró el registro.</p>
         <button
           type="button"
           onClick={onClose}
@@ -783,7 +783,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
             border: '0.5px solid var(--line)',
             borderRadius: 8,
             padding: '8px 16px',
-            background: '#fff',
+            background: 'var(--surface-card)',
             cursor: 'pointer',
           }}
         >
@@ -805,7 +805,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
     : `${sku!.codigo} · ${sku!.productor}`
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       <div
         style={{
           padding: '28px 24px 24px',
@@ -825,8 +825,8 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
             height: 28,
             border: '0.5px solid var(--line)',
             borderRadius: 8,
-            background: '#fff',
-            color: '#999',
+            background: 'var(--surface-card)',
+            color: 'var(--fg-3)',
             cursor: 'pointer',
             fontSize: 16,
             lineHeight: 1,
@@ -848,7 +848,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
               fontSize: 10,
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
               textTransform: 'uppercase',
-              color: '#999',
+              color: 'var(--fg-3)',
               letterSpacing: '0.08em',
             }}
           >
@@ -871,7 +871,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
           style={{
             margin: '6px 0 0',
             fontSize: 11,
-            color: '#BBB',
+            color: 'var(--fg-3)',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           }}
         >
@@ -919,7 +919,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
 
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface-card)',
           borderTop: '0.5px solid var(--hairline)',
           padding: '20px 24px',
           display: 'flex',
@@ -939,8 +939,8 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
               padding: '10px 14px',
               cursor: 'pointer',
               border: action.primary ? 'none' : '0.5px solid var(--line)',
-              background: action.primary ? 'var(--fg-0)' : '#fff',
-              color: action.primary ? 'var(--ink)' : '#666',
+              background: action.primary ? 'var(--fg-0)' : 'var(--surface-card)',
+              color: action.primary ? 'var(--ink)' : 'var(--fg-2)',
               transition: 'background 0.15s ease, border-color 0.15s ease, color 0.15s ease',
             }}
             onMouseEnter={e => {
@@ -948,7 +948,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
                 e.currentTarget.style.background = accent
                 e.currentTarget.style.borderColor = accent
               } else {
-                e.currentTarget.style.borderColor = '#999'
+                e.currentTarget.style.borderColor = 'var(--fg-3)'
                 e.currentTarget.style.color = 'var(--fg-0)'
               }
             }}
@@ -958,7 +958,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
                 e.currentTarget.style.borderColor = 'transparent'
               } else {
                 e.currentTarget.style.borderColor = 'var(--line)'
-                e.currentTarget.style.color = '#666'
+                e.currentTarget.style.color = 'var(--fg-2)'
               }
             }}
           >
@@ -977,7 +977,7 @@ function TiChevronDown({ open }: { open: boolean }) {
       height="14"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#CCC"
+      stroke="var(--fg-3)"
       strokeWidth="2"
       style={{
         transform: open ? 'rotate(180deg)' : 'rotate(0deg)',

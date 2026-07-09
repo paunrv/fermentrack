@@ -14,10 +14,10 @@ export type SkuCardDataItem = {
 }
 
 const ESTADO_DOT: Record<SkuCardEstado, string> = {
-  ok: '#4CAF7D',
-  bajo: '#EF9F27',
-  sin_stock: '#E24B4A',
-  sobrevendido: '#E24B4A',
+  ok: 'var(--ok)',
+  bajo: 'var(--warn)',
+  sin_stock: 'var(--crit)',
+  sobrevendido: 'var(--crit)',
 }
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace'
@@ -46,7 +46,7 @@ function IconPhoto() {
       height="22"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#DDD"
+      stroke="var(--hairline)"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -86,7 +86,7 @@ function IconAdjustments() {
       height="11"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#888"
+      stroke="var(--fg-3)"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -185,7 +185,7 @@ export function SkuCard({
       aria-label={`${nombre}, ${proveedorNombre}${selected ? ', seleccionado' : ''}`}
       style={{
         width: '100%',
-        background: selected ? 'var(--panel-2)' : '#fff',
+        background: selected ? 'var(--panel-2)' : 'var(--surface-card)',
         border: selected ? '0.5px solid var(--fg-0)' : '0.5px solid var(--hairline)',
         borderRadius: 12,
         padding: 0,
@@ -295,7 +295,7 @@ export function SkuCard({
                 right: 0,
                 bottom: 0,
                 background: 'linear-gradient(to top, rgba(0,0,0,0.65), transparent)',
-                color: '#fff',
+                color: 'var(--ink)',
                 fontSize: 11,
                 fontWeight: 500,
                 padding: '20px 8px 8px',
@@ -348,7 +348,7 @@ export function SkuCard({
             <div
               style={{
                 fontSize: 9,
-                color: '#CCC',
+                color: 'var(--fg-3)',
                 fontFamily: MONO,
               }}
             >
@@ -405,7 +405,7 @@ export function SkuCard({
               }}
             >
               {uploading ? (
-                <span style={{ fontSize: 8, color: '#999' }}>…</span>
+                <span style={{ fontSize: 8, color: 'var(--fg-3)' }}>…</span>
               ) : (
                 <IconCamera />
               )}
@@ -418,7 +418,7 @@ export function SkuCard({
         <div
           style={{
             fontSize: 10,
-            color: '#AAA',
+            color: 'var(--fg-3)',
             fontFamily: MONO,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -446,7 +446,7 @@ export function SkuCard({
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#CCC',
+                    color: 'var(--fg-3)',
                     fontFamily: MONO,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',

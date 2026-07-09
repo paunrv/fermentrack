@@ -19,22 +19,22 @@ type CardEstado = 'en_transito' | 'recibida' | 'problema'
 
 const ESTADO_STYLE = {
   en_transito: {
-    dot: '#F59E0B',
+    dot: 'var(--warn)',
     text: 'En tránsito',
-    border: '#F59E0B22',
-    line: '#F59E0B',
+    border: 'color-mix(in srgb, var(--warn) 13%, transparent)',
+    line: 'var(--warn)',
   },
   recibida: {
-    dot: '#4CAF7D',
+    dot: 'var(--ok)',
     text: 'Recibida',
-    border: '#4CAF7D22',
-    line: '#4CAF7D',
+    border: 'color-mix(in srgb, var(--ok) 13%, transparent)',
+    line: 'var(--ok)',
   },
   problema: {
-    dot: '#E24B4A',
+    dot: 'var(--crit)',
     text: 'Requiere atención',
-    border: '#E24B4A22',
-    line: '#E24B4A',
+    border: 'color-mix(in srgb, var(--crit) 13%, transparent)',
+    line: 'var(--crit)',
   },
 } as const
 
@@ -152,7 +152,7 @@ export function OrdenCompraCanvasCard({
       style={{
         width: '100%',
         textAlign: 'left',
-        background: selected ? 'var(--panel-2)' : '#fff',
+        background: selected ? 'var(--panel-2)' : 'var(--surface-card)',
         border: selected ? `1.5px solid ${FG}` : `0.5px solid ${borderColor}`,
         borderRadius: 12,
         padding: 0,
@@ -183,7 +183,7 @@ export function OrdenCompraCanvasCard({
           style={{
             fontSize: 9,
             fontFamily: MONO,
-            color: '#AAA',
+            color: 'var(--fg-3)',
             letterSpacing: '0.04em',
             marginBottom: 6,
           }}
@@ -208,7 +208,7 @@ export function OrdenCompraCanvasCard({
             ))}
           </div>
         ) : null}
-        <div style={{ fontSize: 10, fontFamily: MONO, color: '#CCC' }}>
+        <div style={{ fontSize: 10, fontFamily: MONO, color: 'var(--fg-3)' }}>
           {fmtApertura(orden.created_at)}
         </div>
       </div>
@@ -254,7 +254,7 @@ export function OrdenCompraCanvasCard({
             style={{
               fontSize: 10,
               fontFamily: MONO,
-              color: pagoLabel === 'Liquidado' ? '#4CAF7D' : '#AAA',
+              color: pagoLabel === 'Liquidado' ? 'var(--ok)' : 'var(--fg-3)',
             }}
           >
             {pagoLabel}
@@ -279,7 +279,7 @@ export function OrdenCompraCanvasCard({
                 style={{
                   fontSize: 10,
                   fontFamily: MONO,
-                  color: '#BBB',
+                  color: 'var(--fg-3)',
                 }}
               >
                 {ordinalPago(i + 1)} pago {fmtMoney(Number(p.monto))} · {fmtPagoFecha(p.fecha_pago)}
@@ -305,7 +305,7 @@ export function OrdenCompraCanvasCard({
               borderRadius: 8,
               border: 'none',
               background: accent,
-              color: '#fff',
+              color: 'var(--ink)',
               fontSize: 11,
               fontWeight: 600,
               cursor: confirmingIngreso ? 'wait' : 'pointer',

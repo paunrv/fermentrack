@@ -244,7 +244,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         locale,
       })
     } catch (e) {
-      setPdfError(e instanceof Error ? e.message : 'No se pudo obtener el PDF')
+      setPdfError(e instanceof Error ? e.message : t('panel.pdfError'))
     } finally {
       setPdfLoading(false)
     }
@@ -254,7 +254,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     if (!cuenta) return
     const monto = Number(pagoMonto.replace(/,/g, ''))
     if (!Number.isFinite(monto) || monto <= 0) {
-      setPagoError('Ingresa un monto válido')
+      setPagoError(t('panel.invalidAmount'))
       return
     }
     setPagoLoading(true)
@@ -290,8 +290,8 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
           textAlign: 'center',
         }}
       >
-        <p style={{ fontSize: 13, color: '#999' }}>
-          {loadError ?? 'No se encontró el pedido.'}
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>
+          {loadError ?? t('panel.notFound')}
         </p>
         <button
           type="button"
@@ -306,7 +306,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             cursor: 'pointer',
           }}
         >
-          Cerrar
+          {t('panel.close')}
         </button>
       </div>
     )
@@ -332,7 +332,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar detalle"
+          aria-label={t('panel.closeAria')}
           style={{
             position: 'absolute',
             top: 16,
@@ -342,7 +342,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             border: '0.5px solid var(--line)',
             borderRadius: 8,
             background: 'var(--surface-card)',
-            color: '#999',
+            color: 'var(--fg-3)',
             cursor: 'pointer',
             fontSize: 16,
             lineHeight: 1,
@@ -366,7 +366,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
                 margin: '0 0 6px',
                 fontSize: 9,
                 fontFamily: MONO,
-                color: '#AAA',
+                color: 'var(--fg-3)',
                 letterSpacing: '0.06em',
               }}
             >
@@ -435,18 +435,20 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
 
       {/* DATOS */}
       <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
-        <SectionLabel>Datos</SectionLabel>
+        <SectionLabel>{t('panel.dataSection')}</SectionLabel>
         <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-2)', fontFamily: MONO }}>
-          Pedido {fmtDateOnly(pedido.fecha_creacion ?? pedido.created_at)} · Entrega{' '}
-          {fmtDateOnly(pedido.fecha_entrega)}
+          {t('panel.datesLine', {
+            created: fmtDateOnly(pedido.fecha_creacion ?? pedido.created_at),
+            delivery: fmtDateOnly(pedido.fecha_entrega),
+          })}
         </p>
       </div>
 
       {/* PRODUCTOS */}
       <div style={{ padding: '14px 24px', borderBottom: '0.5px solid var(--hairline)' }}>
-        <SectionLabel>Productos</SectionLabel>
+        <SectionLabel>{t('panel.productsSection')}</SectionLabel>
         {lineas.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>Sin líneas registradas.</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-3)' }}>{t('panel.emptyLines')}</p>
         ) : (
           lineas.map((l, i) => (
             <div
@@ -619,14 +621,14 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             justifyContent: 'center',
             padding: '12px 16px',
             borderRadius: 10,
-            background: '#25D366',
-            color: '#fff',
+            background: 'var(--ok)',
+            color: 'var(--ink)',
             fontSize: 13,
             fontWeight: 500,
             textDecoration: 'none',
           }}
         >
-          WhatsApp
+          {t('panel.whatsapp')}
         </a>
         <a
           href={pedidoMailtoUrl(pedido.numero, clienteNombre, shareText)}
@@ -645,7 +647,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             border: '0.5px solid var(--line)',
           }}
         >
-          Correo
+          {t('panel.email')}
         </a>
         <button
           type="button"
@@ -656,14 +658,14 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
             padding: '12px 16px',
             borderRadius: 10,
             background: 'var(--fg-0)',
-            color: '#fff',
+            color: 'var(--ink)',
             fontSize: 13,
             fontWeight: 500,
             border: 'none',
             cursor: pdfLoading ? 'wait' : 'pointer',
           }}
         >
-          {pdfLoading ? 'Generando…' : 'PDF'}
+          {pdfLoading ? t('panel.pdfGenerating') : t('panel.pdf')}
         </button>
         </div>
       </div>
@@ -688,7 +690,7 @@ function CobroStat({
 }) {
   return (
     <div>
-      <div style={{ fontSize: 9, fontFamily: MONO, color: '#AAA', letterSpacing: '0.06em' }}>
+      <div style={{ fontSize: 9, fontFamily: MONO, color: 'var(--fg-3)', letterSpacing: '0.06em' }}>
         {label}
       </div>
       <div style={{ fontSize: 14, fontFamily: MONO, fontWeight: 600, color: tone, marginTop: 2 }}>

@@ -245,7 +245,7 @@ export function PedidoTomaCard({
 
 const fieldStyle: React.CSSProperties = {
   padding: '8px 10px',
-  background: '#fff',
+  background: 'var(--surface-card)',
   border: '1px solid var(--hairline)',
   borderRadius: 8,
   color: 'var(--fg-0)',

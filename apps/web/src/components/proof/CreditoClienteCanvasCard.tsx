@@ -26,7 +26,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
         padding: 14,
         borderRadius: 12,
         border: selected ? `1.5px solid ${accent}` : '0.5px solid var(--hairline)',
-        background: selected ? `${accent}08` : '#fff',
+        background: selected ? 'var(--accent-soft, var(--panel))' : 'var(--surface-card)',
         cursor: 'pointer',
         minHeight: 140,
         display: 'flex',
@@ -45,7 +45,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
         style={{
           fontSize: 9,
           fontFamily: MONO,
-          color: vencido ? '#E24B4A' : accent,
+          color: vencido ? 'var(--crit)' : accent,
           letterSpacing: '0.06em',
         }}
       >
@@ -54,12 +54,12 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg-0)', lineHeight: 1.2 }}>
         {deuda.cliente_nombre}
       </span>
-      <span style={{ fontSize: 11, color: '#666', lineHeight: 1.45, flex: 1, whiteSpace: 'pre-line' }}>
+      <span style={{ fontSize: 11, color: 'var(--fg-2)', lineHeight: 1.45, flex: 1, whiteSpace: 'pre-line' }}>
         {t('ordersWithBalance', { count: deuda.cuentas_count })}
         {deuda.fecha_vencimiento ? `\n${t('due', { date: deuda.fecha_vencimiento })}` : ''}
       </span>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span style={{ fontSize: 10, color: '#AAA', fontFamily: MONO }}>
+        <span style={{ fontSize: 10, color: 'var(--fg-3)', fontFamily: MONO }}>
           {fmtMoney(deuda.monto_total)}
         </span>
         <span
@@ -67,7 +67,7 @@ export function CreditoClienteCanvasCard({ deuda, accent, selected, onClick }: P
             fontSize: 12,
             fontWeight: 600,
             fontFamily: MONO,
-            color: vencido ? '#E24B4A' : 'var(--fg-0)',
+            color: vencido ? 'var(--crit)' : 'var(--fg-0)',
           }}
         >
           {fmtMoney(deuda.saldo_pendiente)}

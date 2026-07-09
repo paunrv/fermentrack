@@ -21,14 +21,14 @@ const ESTADO_LABEL: Record<string, string> = {
 type LineaForm = ConfirmarLlegadaLinea & { litros_acordados: number }
 
 function mermaTone(pct: number): string {
-  if (pct <= 5) return '#4CAF7D'
-  if (pct <= 8) return '#D4A017'
-  return '#E24B4A'
+  if (pct <= 5) return 'var(--ok)'
+  if (pct <= 8) return 'var(--warn)'
+  return 'var(--crit)'
 }
 
 function DetalleSkeleton() {
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       <div style={{ padding: '28px 24px 24px' }}>
         <div
           style={{
@@ -159,13 +159,13 @@ export function ViajePendienteDetalle({
     return (
       <div
         style={{
-          background: '#fff',
+          background: 'var(--surface-card)',
           borderBottom: '0.5px solid var(--hairline)',
           padding: 24,
           textAlign: 'center',
         }}
       >
-        <p style={{ fontSize: 13, color: '#999' }}>Viaje no encontrado.</p>
+        <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>Viaje no encontrado.</p>
         <button type="button" onClick={onClose} style={{ marginTop: 12, fontSize: 12, cursor: 'pointer' }}>
           Cerrar
         </button>
@@ -177,7 +177,7 @@ export function ViajePendienteDetalle({
   const subtitulo = `${viaje.region || '—'} · ${viaje.palenquero_nombre || 'Palenquero'}`
 
   return (
-    <div style={{ background: '#fff', borderBottom: '0.5px solid var(--hairline)' }}>
+    <div style={{ background: 'var(--surface-card)', borderBottom: '0.5px solid var(--hairline)' }}>
       <div
         style={{
           padding: '28px 24px 24px',
@@ -197,8 +197,8 @@ export function ViajePendienteDetalle({
             height: 28,
             border: '0.5px solid var(--line)',
             borderRadius: 8,
-            background: '#fff',
-            color: '#999',
+            background: 'var(--surface-card)',
+            color: 'var(--fg-3)',
             cursor: 'pointer',
             fontSize: 16,
             lineHeight: 1,
@@ -212,7 +212,7 @@ export function ViajePendienteDetalle({
               width: 5,
               height: 5,
               borderRadius: '50%',
-              background: '#D4A017',
+              background: 'var(--warn)',
             }}
           />
           <span
@@ -220,7 +220,7 @@ export function ViajePendienteDetalle({
               fontSize: 10,
               fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
               textTransform: 'uppercase',
-              color: '#999',
+              color: 'var(--fg-3)',
               letterSpacing: '0.08em',
             }}
           >
@@ -243,7 +243,7 @@ export function ViajePendienteDetalle({
           style={{
             margin: '6px 0 0',
             fontSize: 11,
-            color: '#BBB',
+            color: 'var(--fg-3)',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
           }}
         >
@@ -252,7 +252,7 @@ export function ViajePendienteDetalle({
       </div>
 
       <div style={{ padding: '20px 24px 28px' }}>
-        <div style={{ fontSize: 12, color: '#666', lineHeight: 1.7, marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: 'var(--fg-2)', lineHeight: 1.7, marginBottom: 20 }}>
           <div>Fecha: {viaje.fecha}</div>
           <div>Flete: {fmtMoney(Number(viaje.costo_flete))}</div>
           <div>Litros acordados: {fmtLitros(totalLitrosAcordados)}</div>
@@ -265,11 +265,11 @@ export function ViajePendienteDetalle({
               padding: '12px 0',
               borderTop: i ? '0.5px solid var(--hairline)' : undefined,
               fontSize: 12,
-              color: '#444',
+              color: 'var(--fg-1)',
             }}
           >
             <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{p.tipo_agave}</div>
-            <div style={{ marginTop: 4, color: '#888' }}>
+            <div style={{ marginTop: 4, color: 'var(--fg-3)' }}>
               {fmtLitros(Number(p.litros_acordados))} · {fmtMoney(Number(p.precio_por_litro))}/L
             </div>
           </div>
@@ -278,7 +278,7 @@ export function ViajePendienteDetalle({
         {puedeConfirmar ? (
           <section style={{ marginTop: 24 }}>
             <h3 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600 }}>Confirmar llegada</h3>
-            <p style={{ margin: '0 0 16px', fontSize: 12, color: '#888', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
               Al confirmar se crea el lote en bodega y aparece en el canvas como Espadín.
             </p>
 
@@ -305,7 +305,7 @@ export function ViajePendienteDetalle({
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div>
-                      <label style={{ fontSize: 10, color: '#999', textTransform: 'uppercase' }}>
+                      <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
                         Litros salida
                       </label>
                       <input
@@ -320,7 +320,7 @@ export function ViajePendienteDetalle({
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: 10, color: '#999', textTransform: 'uppercase' }}>
+                      <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
                         Litros recibidos
                       </label>
                       <input
@@ -343,7 +343,7 @@ export function ViajePendienteDetalle({
             })}
 
             {error && (
-              <p style={{ color: '#8B2E2E', fontSize: 12, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: 'var(--crit)', fontSize: 12, marginBottom: 12 }}>{error}</p>
             )}
 
             <button
@@ -366,7 +366,7 @@ export function ViajePendienteDetalle({
             </button>
           </section>
         ) : (
-          <p style={{ marginTop: 16, fontSize: 12, color: '#999' }}>
+          <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)' }}>
             Este viaje ya fue recibido o no se puede confirmar desde aquí.
           </p>
         )}

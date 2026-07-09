@@ -72,7 +72,7 @@ export function RemisionPedidoActions({
     padding: '10px 16px',
     borderRadius: 8,
     border: '0.5px solid var(--hairline)',
-    background: '#fff',
+    background: 'var(--surface-card)',
     color: 'var(--fg-0)',
     cursor: loading ? 'wait' : 'pointer',
     fontWeight: 500,
@@ -80,15 +80,15 @@ export function RemisionPedidoActions({
 
   return (
     <div style={{ marginTop: 16, marginBottom: 8 }}>
-      <div style={{ fontSize: 10, color: '#AAA', fontFamily: 'monospace', marginBottom: 8 }}>
+      <div style={{ fontSize: 10, color: 'var(--fg-3)', fontFamily: 'monospace', marginBottom: 8 }}>
         REMISIÓN DE SALIDA
       </div>
       {remision?.hasPdf && remision.downloadUrl ? (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: '#666' }}>{remision.numero}</span>
+          <span style={{ fontSize: 12, color: 'var(--fg-2)' }}>{remision.numero}</span>
           <button
             type="button"
-            style={{ ...btnStyle, borderColor: '#C2410C', color: '#C2410C' }}
+            style={{ ...btnStyle, borderColor: 'var(--proof-accent)', color: 'var(--proof-accent)' }}
             disabled={loading}
             onClick={() => void handleDownload()}
           >
@@ -101,7 +101,7 @@ export function RemisionPedidoActions({
       ) : (
         <button
           type="button"
-          style={{ ...btnStyle, borderColor: '#C2410C', color: '#C2410C' }}
+          style={{ ...btnStyle, borderColor: 'var(--proof-accent)', color: 'var(--proof-accent)' }}
           disabled={loading}
           onClick={() => void handleGenerar()}
         >
@@ -109,7 +109,7 @@ export function RemisionPedidoActions({
         </button>
       )}
       {error && (
-        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--crit, #E24B4A)' }}>{error}</p>
+        <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--crit)' }}>{error}</p>
       )}
     </div>
   )
