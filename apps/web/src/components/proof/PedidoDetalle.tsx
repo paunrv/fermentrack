@@ -75,11 +75,15 @@ export interface PedidoDetalleProps {
   onClose: () => void
 }
 
-async function fetchWithTimeout<T>(promise: Promise<T>, ms = 12_000): Promise<T> {
+async function fetchWithTimeout<T>(
+  promise: Promise<T>,
+  ms = 12_000,
+  timeoutMessage = 'Request timed out'
+): Promise<T> {
   return Promise.race([
     promise,
     new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error('La consulta tardó demasiado')), ms)
+      setTimeout(() => reject(new Error(timeoutMessage)), ms)
     }),
   ])
 }
@@ -119,14 +123,16 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         scope
           ? fetchCuentaPorCobrarByPedidoId(supabase, pedidoId, scope).catch(() => null)
           : Promise.resolve(null),
-      ])
+      ]),
+      12_000,
+      t('panel.timeout')
     )
       .then(([row, cxcRow]) => {
         if (cancelled) return
         if (row && scope && row.user_id !== scope.user_id) {
           setPedido(null)
           setCuenta(null)
-          setLoadError('No se encontró el pedido.')
+          setLoadError(t('panel.notFound'))
           return
         }
         setPedido(row)
@@ -136,7 +142,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
         if (cancelled) return
         console.error('[PedidoDetalle] load', e)
         if (!silent) setPedido(null)
-        setLoadError(e instanceof Error ? e.message : 'Error al cargar pedido')
+        setLoadError(e instanceof Error ? e.message : t('panel.loadFailed'))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -145,7 +151,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
     return () => {
       cancelled = true
     }
-  }, [supabase, pedidoId, refreshKey, refreshTick, scope?.user_id])
+  }, [supabase, pedidoId, refreshKey, refreshTick, scope?.user_id, t])
 
   const toma = useMemo(
     () => parseTomaPedidoNotas(pedido?.notas ?? null),
@@ -265,7 +271,7 @@ export function PedidoDetalle({ pedidoId, refreshKey = 0, onClose }: PedidoDetal
       setPagoOpen(false)
       setPagoMonto('')
     } catch (e) {
-      setPagoError(e instanceof Error ? e.message : 'No se pudo registrar el pago')
+      setPagoError(e instanceof Error ? e.message : t('panel.paymentFailed'))
     } finally {
       setPagoLoading(false)
     }

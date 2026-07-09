@@ -1,12 +1,14 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import {
   CategoriaLiquidoBadge,
   CategoriaLiquidoPicker,
 } from '@/components/proof/CategoriaLiquidoBadge'
+import type { AppLocale } from '@/i18n/routing'
 import { fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
 import {
   resolveOrdenCompraItemCategoria,
@@ -47,11 +49,7 @@ const field: React.CSSProperties = {
   outline: 'none',
 }
 
-const METODOS_PAGO: { value: MetodoPagoProveedor; label: string }[] = [
-  { value: 'transferencia', label: 'Transferencia' },
-  { value: 'efectivo', label: 'Efectivo' },
-  { value: 'cheque', label: 'Cheque' },
-]
+const METODO_VALUES: MetodoPagoProveedor[] = ['transferencia', 'efectivo', 'cheque']
 
 type LineaForm = {
   item_id: string
@@ -84,16 +82,19 @@ function DetalleSkeleton() {
   )
 }
 
-function estadoLabel(estado: string): string {
+function estadoLabel(
+  estado: string,
+  t: (key: string) => string
+): string {
   switch (estado) {
     case 'recibida':
-      return 'Recibida'
+      return t('status.recibida')
     case 'parcial':
-      return 'Recepción parcial'
+      return t('status.parcial')
     case 'cancelada':
-      return 'Cancelada'
+      return t('status.cancelada')
     default:
-      return 'En tránsito'
+      return t('status.en_transito')
   }
 }
 
@@ -108,6 +109,8 @@ export function OrdenCompraDocumentCard({
   onClose?: () => void
   onUpdated?: () => void
 }) {
+  const t = useTranslations('distributor.compras.document')
+  const locale = useLocale() as AppLocale
   const supabase = useSupabase()
   const { scope } = useProfile()
   const [loading, setLoading] = useState(true)
@@ -163,11 +166,11 @@ export function OrdenCompraDocumentCard({
         setPagos([])
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando orden')
+      setError(e instanceof Error ? e.message : t('errors.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [ordenId, supabase])
+  }, [ordenId, supabase, t])
 
   useEffect(() => {
     void reload()
@@ -214,7 +217,7 @@ export function OrdenCompraDocumentCard({
       await reload()
       onUpdated?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo confirmar la llegada')
+      setError(e instanceof Error ? e.message : t('errors.confirmFailed'))
     } finally {
       setConfirming(false)
     }
@@ -234,7 +237,7 @@ export function OrdenCompraDocumentCard({
       await reload()
       onUpdated?.()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo actualizar la categoría')
+      setError(e instanceof Error ? e.message : t('errors.categoryFailed'))
     } finally {
       setSavingCategoriaSkuId(null)
     }
@@ -245,11 +248,11 @@ export function OrdenCompraDocumentCard({
     const monto =
       montoOverride ?? Number(String(pagoMonto).replace(/,/g, '').trim())
     if (!Number.isFinite(monto) || monto <= 0) {
-      setPagoError('Ingresa un monto válido')
+      setPagoError(t('errors.invalidAmount'))
       return
     }
     if (monto > cxp.saldo_pendiente + 0.01) {
-      setPagoError(`El monto no puede superar el saldo (${fmtMoney(cxp.saldo_pendiente)})`)
+      setPagoError(t('errors.amountExceedsBalance', { amount: fmtMoney(cxp.saldo_pendiente) }))
       return
     }
     setPagoLoading(true)
@@ -260,7 +263,7 @@ export function OrdenCompraDocumentCard({
       await reload()
       onUpdated?.()
     } catch (e) {
-      setPagoError(e instanceof Error ? e.message : 'No se pudo registrar el pago')
+      setPagoError(e instanceof Error ? e.message : t('errors.paymentFailed'))
     } finally {
       setPagoLoading(false)
     }
@@ -282,7 +285,7 @@ export function OrdenCompraDocumentCard({
           borderBottom: '0.5px solid var(--color-border-tertiary)',
         }}
       >
-        <p style={{ margin: 0, fontSize: 13, color: '#888' }}>Orden no encontrada.</p>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--fg-3)' }}>{t('notFound')}</p>
       </div>
     )
   }
@@ -290,8 +293,10 @@ export function OrdenCompraDocumentCard({
   const itemsDisplay = orden.items_orden_compra_distribuidor ?? []
   const categoriasOrden = uniqueCategoriasOrdenCompraItems(itemsDisplay)
   const titulo =
-    itemsDisplay.length === 1 ? itemsDisplay[0]!.producto_nombre : `${itemsDisplay.length} productos`
-  const fechaOrden = parseDateOnlyLocal(orden.created_at).toLocaleDateString('es-MX', {
+    itemsDisplay.length === 1
+      ? itemsDisplay[0]!.producto_nombre
+      : t('productsCount', { count: itemsDisplay.length })
+  const fechaOrden = parseDateOnlyLocal(orden.created_at).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -299,7 +304,7 @@ export function OrdenCompraDocumentCard({
 
   return (
     <article
-      aria-label={`Orden de compra ${orden.numero_orden}`}
+      aria-label={t('ariaLabel', { numero: orden.numero_orden })}
       style={{
         background: 'var(--color-background-primary)',
         borderBottom: '0.5px solid var(--color-border-tertiary)',
@@ -311,7 +316,7 @@ export function OrdenCompraDocumentCard({
             <button
               type="button"
               onClick={onClose}
-              aria-label="Cerrar"
+              aria-label={t('closeAria')}
               style={{
                 position: 'absolute',
                 top: 16,
@@ -337,7 +342,7 @@ export function OrdenCompraDocumentCard({
               marginBottom: 8,
             }}
           >
-            Orden de compra · {orden.numero_orden}
+            {t('eyebrow', { numero: orden.numero_orden })}
           </div>
           <h2
             style={{
@@ -370,7 +375,7 @@ export function OrdenCompraDocumentCard({
               color: accent,
             }}
           >
-            {estadoLabel(orden.estado)}
+            {estadoLabel(orden.estado, t)}
           </p>
           {categoriasOrden.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
@@ -410,10 +415,13 @@ export function OrdenCompraDocumentCard({
               ) : null}
               <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-tertiary)' }}>
                 {recibida && it.cantidad_recibida != null
-                  ? `${it.cantidad_recibida} / ${it.cantidad_ordenada} uds`
-                  : `${it.cantidad_ordenada} uds`}
+                  ? t('unitsReceived', {
+                      received: it.cantidad_recibida,
+                      ordered: it.cantidad_ordenada,
+                    })
+                  : t('unitsOrdered', { count: it.cantidad_ordenada })}
                 {Number(it.costo_unitario) > 0
-                  ? ` · ${fmtMoney(Number(it.costo_unitario))}/ud`
+                  ? t('unitCost', { amount: fmtMoney(Number(it.costo_unitario)) })
                   : ''}
               </div>
             </div>
@@ -441,7 +449,7 @@ export function OrdenCompraDocumentCard({
                 lineHeight: 1.45,
               }}
             >
-              {pendienteIngreso.toLocaleString('es-MX')} u. pendientes de ingreso a bodega
+              {t('pendingInbound', { count: pendienteIngreso.toLocaleString(locale) })}
             </p>
             <p
               style={{
@@ -452,11 +460,10 @@ export function OrdenCompraDocumentCard({
                 fontFamily: 'var(--font-display)',
               }}
             >
-              Al confirmar, el stock queda disponible para vender. Después podrás registrar pagos al
-              proveedor.
+              {t('confirmHint')}
             </p>
             {error ? (
-              <p style={{ color: '#8B2E2E', fontSize: 12, marginBottom: 10 }}>{error}</p>
+              <p style={{ color: 'var(--crit)', fontSize: 12, marginBottom: 10 }}>{error}</p>
             ) : null}
             <button
               type="button"
@@ -468,7 +475,7 @@ export function OrdenCompraDocumentCard({
                 borderRadius: 10,
                 border: 'none',
                 background: accent,
-                color: '#fff',
+                color: 'var(--ink)',
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: confirming ? 'wait' : 'pointer',
@@ -477,8 +484,10 @@ export function OrdenCompraDocumentCard({
               }}
             >
               {confirming
-                ? 'Ingresando a bodega…'
-                : `Confirmar ingreso (${pendienteIngreso.toLocaleString('es-MX')} u.)`}
+                ? t('confirmingInbound')
+                : t('confirmInbound', {
+                    count: pendienteIngreso.toLocaleString(locale),
+                  })}
             </button>
             <button
               type="button"
@@ -497,7 +506,7 @@ export function OrdenCompraDocumentCard({
                 fontFamily: 'var(--font-display)',
               }}
             >
-              {showAjusteRecepcion ? 'Ocultar ajuste de cantidades' : 'Ajustar cantidades'}
+              {showAjusteRecepcion ? t('hideAdjustQty') : t('adjustQty')}
             </button>
           </section>
         ) : null}
@@ -515,12 +524,12 @@ export function OrdenCompraDocumentCard({
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: 'var(--color-text-tertiary)' }}>Total</span>
+                <span style={{ color: 'var(--color-text-tertiary)' }}>{t('total')}</span>
                 <span style={{ fontWeight: 600 }}>{fmtMoney(cxp.monto_total)}</span>
               </div>
               {cxp.monto_pagado > 0 ? (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ color: 'var(--color-text-tertiary)' }}>Pagado</span>
+                  <span style={{ color: 'var(--color-text-tertiary)' }}>{t('paid')}</span>
                   <span style={{ fontWeight: 500 }}>{fmtMoney(cxp.monto_pagado)}</span>
                 </div>
               ) : null}
@@ -535,10 +544,17 @@ export function OrdenCompraDocumentCard({
                   }}
                 >
                   <span>
-                    Pago · {p.metodo} ·{' '}
-                    {parseDateOnlyLocal(p.fecha_pago).toLocaleDateString('es-MX', {
-                      day: 'numeric',
-                      month: 'short',
+                    {t('paymentLine', {
+                      metodo:
+                        p.metodo === 'efectivo'
+                          ? t('methods.efectivo')
+                          : p.metodo === 'cheque'
+                            ? t('methods.cheque')
+                            : t('methods.transferencia'),
+                      date: parseDateOnlyLocal(p.fecha_pago).toLocaleDateString(locale, {
+                        day: 'numeric',
+                        month: 'short',
+                      }),
                     })}
                   </span>
                   <span>{fmtMoney(Number(p.monto))}</span>
@@ -554,11 +570,11 @@ export function OrdenCompraDocumentCard({
                     color: 'var(--color-text-primary)',
                   }}
                 >
-                  <span>Saldo</span>
+                  <span>{t('balance')}</span>
                   <span>{fmtMoney(cxp.saldo_pendiente)}</span>
                 </div>
               ) : (
-                <div style={{ marginTop: 8, color: '#4CAF7D', fontWeight: 500 }}>Liquidada</div>
+                <div style={{ marginTop: 8, color: 'var(--ok)', fontWeight: 500 }}>{t('settled')}</div>
               )}
             </section>
 
@@ -582,10 +598,13 @@ export function OrdenCompraDocumentCard({
                     lineHeight: 1.45,
                   }}
                 >
-                  Saldo pendiente con {orden.proveedor_nombre}: {fmtMoney(cxp.saldo_pendiente)}
+                  {t('balanceDue', {
+                    supplier: orden.proveedor_nombre,
+                    amount: fmtMoney(cxp.saldo_pendiente),
+                  })}
                 </p>
                 {pagoError ? (
-                  <p style={{ color: '#8B2E2E', fontSize: 12, marginBottom: 10 }}>{pagoError}</p>
+                  <p style={{ color: 'var(--crit)', fontSize: 12, marginBottom: 10 }}>{pagoError}</p>
                 ) : null}
                 <button
                   type="button"
@@ -597,7 +616,7 @@ export function OrdenCompraDocumentCard({
                     borderRadius: 10,
                     border: 'none',
                     background: accent,
-                    color: '#fff',
+                    color: 'var(--ink)',
                     fontSize: 13,
                     fontWeight: 600,
                     cursor: pagoLoading ? 'wait' : 'pointer',
@@ -606,8 +625,8 @@ export function OrdenCompraDocumentCard({
                   }}
                 >
                   {pagoLoading
-                    ? 'Registrando pago…'
-                    : `Registrar pago · ${fmtMoney(cxp.saldo_pendiente)}`}
+                    ? t('registeringPayment')
+                    : t('registerPayment', { amount: fmtMoney(cxp.saldo_pendiente) })}
                 </button>
                 <button
                   type="button"
@@ -626,7 +645,7 @@ export function OrdenCompraDocumentCard({
                     fontFamily: 'var(--font-display)',
                   }}
                 >
-                  {showAjustePago ? 'Ocultar ajuste de pago' : 'Pago parcial u otro método'}
+                  {showAjustePago ? t('hidePartialPayment') : t('partialPayment')}
                 </button>
 
                 {showAjustePago ? (
@@ -640,7 +659,7 @@ export function OrdenCompraDocumentCard({
                         marginBottom: 4,
                       }}
                     >
-                      Monto
+                      {t('amount')}
                     </label>
                     <input
                       type="number"
@@ -653,17 +672,17 @@ export function OrdenCompraDocumentCard({
                     />
                     <div
                       role="group"
-                      aria-label="Método de pago"
+                      aria-label={t('paymentMethodAria')}
                       style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}
                     >
-                      {METODOS_PAGO.map(m => {
-                        const selected = pagoMetodo === m.value
+                      {METODO_VALUES.map(value => {
+                        const selected = pagoMetodo === value
                         return (
                           <button
-                            key={m.value}
+                            key={value}
                             type="button"
                             disabled={pagoLoading}
-                            onClick={() => setPagoMetodo(m.value)}
+                            onClick={() => setPagoMetodo(value)}
                             aria-pressed={selected}
                             style={{
                               padding: '6px 10px',
@@ -681,7 +700,11 @@ export function OrdenCompraDocumentCard({
                               fontFamily: 'var(--font-display)',
                             }}
                           >
-                            {m.label}
+                            {value === 'efectivo'
+                              ? t('methods.efectivo')
+                              : value === 'cheque'
+                                ? t('methods.cheque')
+                                : t('methods.transferencia')}
                           </button>
                         )
                       })}
@@ -704,7 +727,7 @@ export function OrdenCompraDocumentCard({
                         fontFamily: 'var(--font-display)',
                       }}
                     >
-                      Confirmar pago parcial
+                      {t('confirmPartialPayment')}
                     </button>
                   </div>
                 ) : null}
@@ -720,7 +743,7 @@ export function OrdenCompraDocumentCard({
               fontFamily: 'var(--font-display)',
             }}
           >
-            Los pagos al proveedor estarán disponibles después de confirmar la llegada.
+            {t('paymentsAfterArrival')}
           </p>
         ) : null}
 
@@ -744,14 +767,14 @@ export function OrdenCompraDocumentCard({
               padding: '10px 14px',
               borderRadius: 8,
               background: '#25D366',
-              color: '#fff',
+              color: 'var(--ink)',
               fontSize: 12,
               fontWeight: 500,
               textDecoration: 'none',
               fontFamily: 'var(--font-display)',
             }}
           >
-            WhatsApp
+            {t('whatsapp')}
           </a>
           <a
             href={ordenCompraMailtoUrl(orden.numero_orden, orden.proveedor_nombre, shareText)}
@@ -771,7 +794,7 @@ export function OrdenCompraDocumentCard({
               fontFamily: 'var(--font-display)',
             }}
           >
-            Correo
+            {t('email')}
           </a>
         </div>
 
@@ -785,7 +808,7 @@ export function OrdenCompraDocumentCard({
                 fontFamily: 'var(--font-display)',
               }}
             >
-              Ajustar recepción
+              {t('adjustReception')}
             </h3>
             <p
               style={{
@@ -796,7 +819,7 @@ export function OrdenCompraDocumentCard({
                 fontFamily: 'var(--font-display)',
               }}
             >
-              Indica el total recibido por producto (acumulado).
+              {t('adjustReceptionHint')}
             </p>
 
             {lineas.map((l, i) => (
@@ -822,19 +845,19 @@ export function OrdenCompraDocumentCard({
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
-                    <label style={{ fontSize: 10, color: '#999', textTransform: 'uppercase' }}>
-                      Ordenado
+                    <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
+                      {t('ordered')}
                     </label>
                     <input
                       type="number"
                       readOnly
                       value={l.cantidad_ordenada}
-                      style={{ ...field, color: '#888' }}
+                      style={{ ...field, color: 'var(--fg-3)' }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: 10, color: '#999', textTransform: 'uppercase' }}>
-                      Recibido
+                    <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
+                      {t('received')}
                     </label>
                     <input
                       type="number"
@@ -854,7 +877,7 @@ export function OrdenCompraDocumentCard({
             ))}
 
             {showAjusteRecepcion && error ? (
-              <p style={{ color: '#8B2E2E', fontSize: 12, marginBottom: 12 }}>{error}</p>
+              <p style={{ color: 'var(--crit)', fontSize: 12, marginBottom: 12 }}>{error}</p>
             ) : null}
 
             <button
@@ -874,7 +897,7 @@ export function OrdenCompraDocumentCard({
                 borderRadius: 10,
                 border: 'none',
                 background: accent,
-                color: '#fff',
+                color: 'var(--ink)',
                 fontSize: 13,
                 fontWeight: 600,
                 cursor: confirming || totalRecibido <= 0 ? 'not-allowed' : 'pointer',
@@ -883,8 +906,8 @@ export function OrdenCompraDocumentCard({
               }}
             >
               {confirming
-                ? 'Actualizando stock…'
-                : `Recibir ${totalRecibido} unidades en bodega`}
+                ? t('updatingStock')
+                : t('receiveUnits', { count: totalRecibido })}
             </button>
           </section>
         ) : null}

@@ -1,6 +1,8 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import { AgaveCardIcon } from '@/components/proof/AgaveCardIcon'
+import type { AppLocale } from '@/i18n/routing'
 import { parseDateOnlyLocal } from '@/lib/proof/format'
 import type { DestLoteEstado } from '@/lib/proof/destilador-types'
 
@@ -13,10 +15,10 @@ export type BotellaCardEstado =
 
 const ESTADO_DOT: Record<BotellaCardEstado, string> = {
   crudo: 'var(--proof-accent)',
-  produccion: '#378ADD',
-  terminado: '#4CAF7D',
-  vendido_parcial: '#9B8FE0',
-  pendiente: '#D4A017',
+  produccion: 'var(--info)',
+  terminado: 'var(--ok)',
+  vendido_parcial: 'var(--proof-accent)',
+  pendiente: 'var(--warn)',
 }
 
 export function mapLoteEstadoToBotella(estado: DestLoteEstado): BotellaCardEstado {
@@ -60,6 +62,8 @@ export function BotellaCard({
   accent: string
   onClick: () => void
 }) {
+  const t = useTranslations('distiller.common')
+  const locale = useLocale() as AppLocale
   const stockParts: string[] = []
   if (litrosDisponibles != null) stockParts.push(`${litrosDisponibles} L`)
   if (botellasDisponibles != null) stockParts.push(`${botellasDisponibles} bts`)
@@ -67,11 +71,11 @@ export function BotellaCard({
     if (!fechaEmbotelladoProgramada) return null
     const d = parseDateOnlyLocal(fechaEmbotelladoProgramada)
     if (Number.isNaN(d.getTime())) return null
-    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })
   })()
   const title = [
     maestro,
-    fechaLabel ? `Embotella ${fechaLabel}` : null,
+    fechaLabel ? t('bottlesOn', { date: fechaLabel }) : null,
     stockParts.length > 0 ? stockParts.join(' · ') : null,
   ]
     .filter(Boolean)
@@ -85,11 +89,11 @@ export function BotellaCard({
       aria-label={`${nombre}, ${id}${selected ? ', seleccionado' : ''}`}
       style={{
         width: '100%',
-        background: selected ? 'var(--panel-2)' : '#fff',
+        background: selected ? 'var(--panel-2)' : 'var(--surface-card)',
         border: selected
           ? '0.5px solid var(--fg-0)'
           : dashed
-            ? '0.5px dashed #D4A017'
+            ? '0.5px dashed var(--warn)'
             : '0.5px solid var(--hairline)',
         borderRadius: 12,
         padding: '16px 12px 12px',
@@ -106,7 +110,7 @@ export function BotellaCard({
       }}
       onMouseLeave={e => {
         if (selected) return
-        e.currentTarget.style.borderColor = dashed ? '#D4A017' : 'var(--hairline)'
+        e.currentTarget.style.borderColor = dashed ? 'var(--warn)' : 'var(--hairline)'
         e.currentTarget.style.transform = 'translateY(0)'
       }}
     >
@@ -145,7 +149,7 @@ export function BotellaCard({
         <div
           style={{
             fontSize: 9,
-            color: '#999',
+            color: 'var(--fg-3)',
             fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
             marginTop: 2,
             overflow: 'hidden',
@@ -159,14 +163,14 @@ export function BotellaCard({
           <div
             style={{
               fontSize: 8,
-              color: estado === 'pendiente' ? '#B8860B' : accent,
+              color: estado === 'pendiente' ? 'var(--warn)' : accent,
               marginTop: 4,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
             }}
           >
-            {estado === 'pendiente' ? 'Confirmar llegada' : fechaLabel}
+            {estado === 'pendiente' ? t('confirmArrival') : fechaLabel}
           </div>
         )}
       </div>

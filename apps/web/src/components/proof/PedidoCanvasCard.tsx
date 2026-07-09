@@ -1,5 +1,7 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
+import type { AppLocale } from '@/i18n/routing'
 import type { PedidoRow } from '@/lib/supabase'
 import { fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
 import type { EstadoCuentaPorCobrar } from '@/lib/supabase/distribuidor'
@@ -26,8 +28,8 @@ type Props = {
   onClick: () => void
 }
 
-function fmtApertura(iso: string): string {
-  return parseDateOnlyLocal(iso).toLocaleDateString('es-MX', {
+function fmtApertura(iso: string, locale: AppLocale): string {
+  return parseDateOnlyLocal(iso).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
   })
@@ -35,12 +37,13 @@ function fmtApertura(iso: string): string {
 
 function buildConcepto(
   pedido: PedidoRow,
-  lineas: NonNullable<ReturnType<typeof parseTomaPedidoNotas>>['lineas']
+  lineas: NonNullable<ReturnType<typeof parseTomaPedidoNotas>>['lineas'],
+  emptyProducts: string
 ): string {
   if (lineas.length > 0) {
     return lineas.map(l => `${l.etiqueta} · ${formatLineaToma(l)}`).join(' · ')
   }
-  return pedido.etiqueta_nombre ?? 'Sin productos'
+  return pedido.etiqueta_nombre ?? emptyProducts
 }
 
 export function PedidoCanvasCard({
@@ -50,17 +53,20 @@ export function PedidoCanvasCard({
   selected,
   onClick,
 }: Props) {
+  const t = useTranslations('distributor.pedidos.canvasCard')
+  const locale = useLocale() as AppLocale
   const toma = parseTomaPedidoNotas(pedido.notas)
-  const cliente = pedido.clients?.name ?? 'Cliente'
+  const cliente = pedido.clients?.name ?? t('clientFallback')
   const lineas = toma?.lineas ?? []
-  const concepto = buildConcepto(pedido, lineas)
+  const concepto = buildConcepto(pedido, lineas, t('emptyProducts'))
   const entregado = pedido.estado === 'entregado' || pedido.estado === 'parcial'
 
-  const statusLine = cxc && cxc.saldo_pendiente > 0 && entregado
-    ? `CxC ${fmtMoney(cxc.saldo_pendiente)}`
-    : entregado
-      ? 'Entregado'
-      : `Entrega ${pedido.fecha_entrega ?? '—'}`
+  const statusLine =
+    cxc && cxc.saldo_pendiente > 0 && entregado
+      ? t('cxc', { amount: fmtMoney(cxc.saldo_pendiente) })
+      : entregado
+        ? t('delivered')
+        : t('delivery', { date: pedido.fecha_entrega ?? '—' })
 
   return (
     <button
@@ -72,7 +78,7 @@ export function PedidoCanvasCard({
         padding: 14,
         borderRadius: 12,
         border: selected ? `1.5px solid ${FG}` : `0.5px solid ${accent}22`,
-        background: selected ? 'var(--panel-2)' : '#fff',
+        background: selected ? 'var(--panel-2)' : 'var(--surface-card)',
         cursor: 'pointer',
         minHeight: 140,
         display: 'flex',
@@ -92,7 +98,7 @@ export function PedidoCanvasCard({
           style={{
             fontSize: 9,
             fontFamily: MONO,
-            color: '#AAA',
+            color: 'var(--fg-3)',
             letterSpacing: '0.04em',
             marginBottom: 6,
           }}
@@ -114,8 +120,8 @@ export function PedidoCanvasCard({
         >
           {concepto}
         </div>
-        <div style={{ fontSize: 10, fontFamily: MONO, color: '#CCC' }}>
-          {fmtApertura(pedido.fecha_creacion || pedido.created_at)}
+        <div style={{ fontSize: 10, fontFamily: MONO, color: 'var(--fg-3)' }}>
+          {fmtApertura(pedido.fecha_creacion || pedido.created_at, locale)}
         </div>
       </div>
 
@@ -131,7 +137,7 @@ export function PedidoCanvasCard({
         }}
       >
         {statusLine}
-        {pedido.anticipo ? ' · Anticipo' : ''}
+        {pedido.anticipo ? t('advanceSuffix') : ''}
       </span>
     </button>
   )

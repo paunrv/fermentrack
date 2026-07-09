@@ -1159,8 +1159,19 @@
           "pdf": "PDF",
           "pdfGenerating": "Generating…",
           "pdfError": "Could not get the PDF",
-          "invalidAmount": "Enter a valid amount"
+          "invalidAmount": "Enter a valid amount",
+          "loadFailed": "Failed to load order",
+          "timeout": "The request timed out",
+          "paymentFailed": "Could not record payment"
         }
+      },
+      "canvasCard": {
+        "emptyProducts": "No products",
+        "clientFallback": "Client",
+        "delivered": "Delivered",
+        "delivery": "Delivery {date}",
+        "cxc": "AR {amount}",
+        "advanceSuffix": " · Deposit"
       },
       "tomaDetalle": {
         "back": "← Take order",
@@ -1652,6 +1663,63 @@
         "supplier": "Enter supplier or producer",
         "items": "Add at least one product with valid quantity",
         "create": "Could not create order"
+      },
+      "document": {
+        "notFound": "Order not found.",
+        "closeAria": "Close",
+        "eyebrow": "Purchase order · {numero}",
+        "ariaLabel": "Purchase order {numero}",
+        "productsCount": "{count} products",
+        "status": {
+          "recibida": "Received",
+          "parcial": "Partial receipt",
+          "cancelada": "Cancelled",
+          "en_transito": "In transit"
+        },
+        "unitsOrdered": "{count} u.",
+        "unitsReceived": "{received} / {ordered} u.",
+        "unitCost": " · {amount}/u.",
+        "pendingInbound": "{count} u. pending warehouse inbound",
+        "confirmHint": "On confirm, stock becomes available to sell. You can then record supplier payments.",
+        "confirmingInbound": "Receiving into warehouse…",
+        "confirmInbound": "Confirm inbound ({count} u.)",
+        "adjustQty": "Adjust quantities",
+        "hideAdjustQty": "Hide quantity adjustment",
+        "total": "Total",
+        "paid": "Paid",
+        "paymentLine": "Payment · {metodo} · {date}",
+        "balance": "Balance",
+        "settled": "Settled",
+        "balanceDue": "Balance due with {supplier}: {amount}",
+        "registeringPayment": "Recording payment…",
+        "registerPayment": "Record payment · {amount}",
+        "partialPayment": "Partial payment or other method",
+        "hidePartialPayment": "Hide payment adjustment",
+        "amount": "Amount",
+        "paymentMethodAria": "Payment method",
+        "confirmPartialPayment": "Confirm partial payment",
+        "paymentsAfterArrival": "Supplier payments will be available after confirming arrival.",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "adjustReception": "Adjust receipt",
+        "adjustReceptionHint": "Enter the total received per product (cumulative).",
+        "ordered": "Ordered",
+        "received": "Received",
+        "updatingStock": "Updating stock…",
+        "receiveUnits": "Receive {count} units in warehouse",
+        "methods": {
+          "transferencia": "Transfer",
+          "efectivo": "Cash",
+          "cheque": "Check"
+        },
+        "errors": {
+          "loadFailed": "Failed to load order",
+          "confirmFailed": "Could not confirm arrival",
+          "categoryFailed": "Could not update category",
+          "invalidAmount": "Enter a valid amount",
+          "amountExceedsBalance": "Amount cannot exceed the balance ({amount})",
+          "paymentFailed": "Could not record payment"
+        }
       }
     },
     "recepcion": {
@@ -2330,6 +2398,8 @@
       "dash": "—",
       "close": "Close",
       "closeAria": "Close detail",
+      "confirmArrival": "Confirm arrival",
+      "bottlesOn": "Bottle {date}",
       "notFound": {
         "trip": "Trip not found.",
         "lot": "Lot not found.",

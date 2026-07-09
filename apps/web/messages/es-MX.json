@@ -1159,8 +1159,19 @@
           "pdf": "PDF",
           "pdfGenerating": "Generando…",
           "pdfError": "No se pudo obtener el PDF",
-          "invalidAmount": "Ingresa un monto válido"
+          "invalidAmount": "Ingresa un monto válido",
+          "loadFailed": "Error al cargar pedido",
+          "timeout": "La consulta tardó demasiado",
+          "paymentFailed": "No se pudo registrar el pago"
         }
+      },
+      "canvasCard": {
+        "emptyProducts": "Sin productos",
+        "clientFallback": "Cliente",
+        "delivered": "Entregado",
+        "delivery": "Entrega {date}",
+        "cxc": "CxC {amount}",
+        "advanceSuffix": " · Anticipo"
       },
       "tomaDetalle": {
         "back": "← Toma de pedidos",
@@ -1652,6 +1663,63 @@
         "supplier": "Indica el proveedor o productor",
         "items": "Agrega al menos un producto con cantidad válida",
         "create": "No se pudo crear la orden"
+      },
+      "document": {
+        "notFound": "Orden no encontrada.",
+        "closeAria": "Cerrar",
+        "eyebrow": "Orden de compra · {numero}",
+        "ariaLabel": "Orden de compra {numero}",
+        "productsCount": "{count} productos",
+        "status": {
+          "recibida": "Recibida",
+          "parcial": "Recepción parcial",
+          "cancelada": "Cancelada",
+          "en_transito": "En tránsito"
+        },
+        "unitsOrdered": "{count} uds",
+        "unitsReceived": "{received} / {ordered} uds",
+        "unitCost": " · {amount}/ud",
+        "pendingInbound": "{count} u. pendientes de ingreso a bodega",
+        "confirmHint": "Al confirmar, el stock queda disponible para vender. Después podrás registrar pagos al proveedor.",
+        "confirmingInbound": "Ingresando a bodega…",
+        "confirmInbound": "Confirmar ingreso ({count} u.)",
+        "adjustQty": "Ajustar cantidades",
+        "hideAdjustQty": "Ocultar ajuste de cantidades",
+        "total": "Total",
+        "paid": "Pagado",
+        "paymentLine": "Pago · {metodo} · {date}",
+        "balance": "Saldo",
+        "settled": "Liquidada",
+        "balanceDue": "Saldo pendiente con {supplier}: {amount}",
+        "registeringPayment": "Registrando pago…",
+        "registerPayment": "Registrar pago · {amount}",
+        "partialPayment": "Pago parcial u otro método",
+        "hidePartialPayment": "Ocultar ajuste de pago",
+        "amount": "Monto",
+        "paymentMethodAria": "Método de pago",
+        "confirmPartialPayment": "Confirmar pago parcial",
+        "paymentsAfterArrival": "Los pagos al proveedor estarán disponibles después de confirmar la llegada.",
+        "whatsapp": "WhatsApp",
+        "email": "Correo",
+        "adjustReception": "Ajustar recepción",
+        "adjustReceptionHint": "Indica el total recibido por producto (acumulado).",
+        "ordered": "Ordenado",
+        "received": "Recibido",
+        "updatingStock": "Actualizando stock…",
+        "receiveUnits": "Recibir {count} unidades en bodega",
+        "methods": {
+          "transferencia": "Transferencia",
+          "efectivo": "Efectivo",
+          "cheque": "Cheque"
+        },
+        "errors": {
+          "loadFailed": "Error cargando orden",
+          "confirmFailed": "No se pudo confirmar la llegada",
+          "categoryFailed": "No se pudo actualizar la categoría",
+          "invalidAmount": "Ingresa un monto válido",
+          "amountExceedsBalance": "El monto no puede superar el saldo ({amount})",
+          "paymentFailed": "No se pudo registrar el pago"
+        }
       }
     },
     "recepcion": {
@@ -2330,6 +2398,8 @@
       "dash": "—",
       "close": "Cerrar",
       "closeAria": "Cerrar detalle",
+      "confirmArrival": "Confirmar llegada",
+      "bottlesOn": "Embotella {date}",
       "notFound": {
         "trip": "Viaje no encontrado.",
         "lot": "Lote no encontrado.",
