@@ -1127,7 +1127,33 @@
         "changeDatum": "Change this metric",
         "applyTo": "Apply to:",
         "scopeSingle": "This lot only",
-        "scopeAll": "All my lots"
+        "scopeAll": "All my lots",
+        "metrics": {
+          "stock_disponible": "Available stock",
+          "stock_reservado": "Reserved stock",
+          "stock_total": "Total stock",
+          "pedidos_activos": "Active orders",
+          "costo_unidad": "Cost/unit",
+          "precio_venta": "Sale price",
+          "margen": "Margin",
+          "ultima_venta": "Last sale",
+          "por_cobrar": "Receivables",
+          "dias_sin_movimiento": "Days without movement",
+          "unidades_vendidas_mes": "Units sold this month"
+        },
+        "metricsShort": {
+          "stock_disponible": "stock",
+          "stock_reservado": "reserved",
+          "stock_total": "total",
+          "pedidos_activos": "orders",
+          "costo_unidad": "cost",
+          "precio_venta": "price",
+          "margen": "margin",
+          "ultima_venta": "last sale",
+          "por_cobrar": "receivable",
+          "dias_sin_movimiento": "no mov.",
+          "unidades_vendidas_mes": "sold"
+        }
       }
     },
     "pedidoEstado": {
@@ -1404,6 +1430,7 @@
       "welcome": "Hi, I'm PROOF. What do you need to do today?",
       "hint": "Or type your question in the field below.",
       "conversationAria": "Conversation with PROOF",
+      "workspaceAria": "PROOF workspace",
       "modesAria": "PROOF modes",
       "sendAria": "Send",
       "suggestedRepliesAria": "Suggested replies",
@@ -2564,7 +2591,23 @@
         "changeDatum": "Change this metric",
         "applyTo": "Apply to:",
         "scopeSingle": "This lot only",
-        "scopeAll": "All my lots"
+        "scopeAll": "All my lots",
+        "metrics": {
+          "litros_crudo": "Raw liters",
+          "litros_totales": "Total liters",
+          "costo_litro": "Cost/liter",
+          "deuda_palenquero": "Palenquero debt",
+          "merma_pct": "Shrinkage %",
+          "botellas_inventario": "Bottles in inventory",
+          "botellas_vendidas": "Bottles sold",
+          "costo_botella": "Cost/bottle",
+          "valor_bodega": "Cellar value",
+          "dias_bodega": "Days in cellar",
+          "margen_botella": "Margin/bottle",
+          "total_cobrado": "Total collected",
+          "por_cobrar": "Receivables",
+          "proxima_entrega": "Next delivery"
+        }
       },
       "notFound": {
         "trip": "Trip not found.",

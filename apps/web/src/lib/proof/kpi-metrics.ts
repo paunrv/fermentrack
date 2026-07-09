@@ -33,6 +33,7 @@ export type DistributorMetric =
 
 export type KpiMetric = DistillerMetric | DistributorMetric
 
+/** Spanish fallbacks for non-React / agent paths. UI should use next-intl `*.common.kpi.metrics`. */
 export const DISTILLER_METRICS: { key: DistillerMetric; label: string }[] = [
   { key: 'litros_crudo', label: 'Litros en crudo' },
   { key: 'litros_totales', label: 'Litros totales' },
@@ -50,6 +51,7 @@ export const DISTILLER_METRICS: { key: DistillerMetric; label: string }[] = [
   { key: 'proxima_entrega', label: 'Próxima entrega' },
 ]
 
+/** Spanish fallbacks for non-React / agent paths. UI should use next-intl `*.common.kpi.metrics`. */
 export const DISTRIBUTOR_METRICS: { key: DistributorMetric; label: string }[] = [
   { key: 'stock_disponible', label: 'Stock disponible' },
   { key: 'stock_reservado', label: 'Stock reservado' },
@@ -102,4 +104,8 @@ export function metricCardLabel(profileType: ProfileType, metric: KpiMetric): st
 export function metricsForProfile(profileType: ProfileType) {
   if (profileType === 'distiller' || profileType === 'winemaker') return DISTILLER_METRICS
   return DISTRIBUTOR_METRICS
+}
+
+export function kpiMetricsNamespace(profileType: ProfileType): 'distributor.common.kpi' | 'distiller.common.kpi' {
+  return profileType === 'distributor' ? 'distributor.common.kpi' : 'distiller.common.kpi'
 }

@@ -52,6 +52,10 @@ export type ProofSubHub =
   | 'wm_bodega'
   | 'wm_agenda'
 
+/**
+ * Spanish fallbacks when `canvasCopies` is omitted.
+ * Live UI should pass copy from `useDistributorCanvasCopy` / `useWinemakerCanvasCopy`.
+ */
 export const PROOF_COPIES = {
   placeholder: 'Pregúntale a PROOF…',
   welcome: {
@@ -67,6 +71,12 @@ export const PROOF_COPIES = {
       'Pídele a PROOF que te muestre tu bodega, lotes activos o viajes pendientes.',
     winemaker: 'Sube tickets, consulta bodega o revisa tiempos en la agenda.',
   },
+  analyzing: ['PROOF analizando…', 'PROOF analizando tu operación…'] as const,
+  workspaceAria: 'Espacio de trabajo PROOF',
+  ticketUploaded: (fileName: string) => `Subí ticket: ${fileName}`,
+  ticketUploadFailed: 'No se pudo subir el ticket. Intenta de nuevo.',
+  ticketFallbackPrompt: 'quiero registrar este ticket de compra',
+  deleteFailed: 'No se pudo eliminar',
   errors: {
     timeout: 'PROOF tardó demasiado. Intenta de nuevo.',
     noResponse: 'PROOF no respondió. Intenta de nuevo o elige un modo para empezar.',
@@ -75,6 +85,7 @@ export const PROOF_COPIES = {
   },
 } as const
 
+/** Structural defaults / tests — live labels come from next-intl canvas hooks. */
 export const DISTRIBUTOR_MODE_ACTIONS: ProofModeAction[] = [
   {
     label: 'Comprar a proveedor',

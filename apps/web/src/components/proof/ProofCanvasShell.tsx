@@ -30,8 +30,6 @@ export type { ProofModeAction }
 export type { ProofHubLensAction }
 export type { ProofBodegaLensAction } from '@/lib/proof/proof-canvas-copy'
 
-const ANALYZING = ['PROOF analizando…', 'PROOF analizando tu operación…']
-
 export type ProofCanvasCopySet = {
   placeholder: string
   welcome: string
@@ -111,10 +109,16 @@ export function ProofCanvasShell({
     placeholder: PROOF_COPIES.placeholder,
     welcome: PROOF_COPIES.welcome.distributor,
     hint: PROOF_COPIES.hint.distributor,
-    analyzing: ANALYZING,
+    conversationAria: undefined,
+    workspaceAria: PROOF_COPIES.workspaceAria,
+    analyzing: PROOF_COPIES.analyzing,
+    ticketUploaded: PROOF_COPIES.ticketUploaded,
+    ticketUploadFailed: PROOF_COPIES.ticketUploadFailed,
+    ticketFallbackPrompt: PROOF_COPIES.ticketFallbackPrompt,
+    deleteFailed: PROOF_COPIES.deleteFailed,
     errors: PROOF_COPIES.errors,
   }
-  const analyzingTexts = [...ANALYZING, ...copies.analyzing]
+  const analyzingTexts = [...copies.analyzing]
 
   const hasUserMessage = messages.some(m => m.role === 'user')
   const showWelcome = !hasUserMessage
@@ -308,7 +312,7 @@ export function ProofCanvasShell({
     const userMsg: ProofMessage = {
       id: newProofMessageId(),
       role: 'user',
-      content: copies.ticketUploaded?.(file.name) ?? `Subí ticket: ${file.name}`,
+      content: (copies.ticketUploaded ?? PROOF_COPIES.ticketUploaded)(file.name),
     }
     setActiveSubHub(null)
     const nextConversation = [...stripMessageReplies(messages), userMsg]
@@ -324,7 +328,7 @@ export function ProofCanvasShell({
         const detail =
           err instanceof Error && err.message.trim()
             ? err.message.trim()
-            : copies.ticketUploadFailed ?? 'No se pudo subir el ticket. Intenta de nuevo.'
+            : (copies.ticketUploadFailed ?? PROOF_COPIES.ticketUploadFailed)
         setMessages(prev => [
           ...prev,
           {
@@ -335,7 +339,10 @@ export function ProofCanvasShell({
         ])
       })
     } else {
-      onSend(copies.ticketFallbackPrompt ?? 'quiero registrar este ticket de compra', nextConversation)
+      onSend(
+        copies.ticketFallbackPrompt ?? PROOF_COPIES.ticketFallbackPrompt,
+        nextConversation
+      )
     }
   }
 
@@ -364,7 +371,7 @@ export function ProofCanvasShell({
 
       <div
         className="proof-canvas-workspace"
-        aria-label={copies.workspaceAria ?? 'Espacio de trabajo PROOF'}
+        aria-label={copies.workspaceAria ?? PROOF_COPIES.workspaceAria}
         style={{
           flex: 1,
           minHeight: 0,

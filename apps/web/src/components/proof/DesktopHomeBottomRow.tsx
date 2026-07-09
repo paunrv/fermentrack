@@ -175,7 +175,7 @@ function AgentExternalPanel({
           <EmptyPanelMessage>{tDesktop('agentDisconnected')}</EmptyPanelMessage>
           <Link
             href="/dashboard/conectar"
-            style={{ fontSize: 12, fontWeight: 600, color: '#6940A5', textDecoration: 'none' }}
+            style={{ fontSize: 12, fontWeight: 600, color: 'var(--proof-accent)', textDecoration: 'none' }}
           >
             {tHub('ownerCta.action')} →
           </Link>

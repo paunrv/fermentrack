@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl'
 import {
   CATEGORIA_LIQUIDO_BADGE,
   CORE_CATEGORIA_LIQUIDO,
-  categoriaLiquidoLabel,
   normalizeCategoriaLiquido,
 } from '@/lib/proof/categoria-liquido'
 import type { CategoriaLiquido } from '@/lib/proof/types'
@@ -16,6 +15,7 @@ export function CategoriaLiquidoBadge({
   categoria: CategoriaLiquido | string | null | undefined
   size?: 'sm' | 'xs'
 }) {
+  const tCat = useTranslations('distributor.liquidCategories')
   const value = normalizeCategoriaLiquido(categoria ?? undefined)
   const tone = CATEGORIA_LIQUIDO_BADGE[value]
   const fontSize = size === 'xs' ? 7 : 8
@@ -37,7 +37,7 @@ export function CategoriaLiquidoBadge({
         whiteSpace: 'nowrap',
       }}
     >
-      {categoriaLiquidoLabel(value)}
+      {tCat(value)}
     </span>
   )
 }
@@ -54,6 +54,7 @@ export function CategoriaLiquidoPicker({
   saving?: boolean
 }) {
   const t = useTranslations('distributor.common')
+  const tCat = useTranslations('distributor.liquidCategories')
   const current = normalizeCategoriaLiquido(value ?? undefined)
   const options =
     current === 'otro'
@@ -95,7 +96,7 @@ export function CategoriaLiquidoPicker({
               fontFamily: 'var(--font-display)',
             }}
           >
-            {categoriaLiquidoLabel(cat)}
+            {tCat(cat)}
           </button>
         )
       })}

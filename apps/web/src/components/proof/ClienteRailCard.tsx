@@ -55,7 +55,7 @@ export function ClienteRailCard({ cliente }: Props) {
               padding: '3px 6px',
               borderRadius: 'var(--radius-sm)',
               background: 'rgba(180, 40, 40, 0.12)',
-              color: '#b42828',
+              color: 'var(--crit)',
               border: '1px solid rgba(180, 40, 40, 0.25)',
             }}
           >

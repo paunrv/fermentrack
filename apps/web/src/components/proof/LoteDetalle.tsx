@@ -19,7 +19,7 @@ import {
 import { fmtLitros, fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
 import type { CorridaRow, LoteRow } from '@/lib/proof/destilador-types'
 import {
-  metricLabel,
+  kpiMetricsNamespace,
   type KpiMetric,
   type ProfileType,
 } from '@/lib/proof/kpi-metrics'
@@ -686,6 +686,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
   const t = useTranslations('distiller.common')
   const tDetail = useTranslations('distiller.lotes.detail')
   const tSku = useTranslations('distiller.lotes.skuDetail')
+  const tKpi = useTranslations(kpiMetricsNamespace(profileType))
   const locale = useLocale() as AppLocale
   const router = useRouter()
   const supabase = useSupabase()
@@ -941,7 +942,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
           >
             <KpiCell
               value={kpiLoading ? '…' : kpi.value}
-              label={metricLabel(profileType, kpi.metric as KpiMetric)}
+              label={tKpi(`metrics.${kpi.metric as KpiMetric}` as 'metrics.stock_disponible')}
               accent={accent}
               configureKpiLabel={tDetail('configureKpi')}
               drawerOpen={kpiDrawerSlot === kpi.slot}

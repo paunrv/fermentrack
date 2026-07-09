@@ -798,10 +798,22 @@
       "closeAria": "Cerrar panel de captura",
       "customize": "Personalizar mis accesos rápidos",
       "options": {
-        "voz": { "title": "Voz", "subtitle": "Dicta y PROOF registra" },
-        "foto": { "title": "Foto", "subtitle": "PROOF analiza y captura" },
-        "nota": { "title": "Nota", "subtitle": "Texto libre o bitácora" },
-        "lab": { "title": "Lab", "subtitle": "Carga resultados" }
+        "voz": {
+          "title": "Voz",
+          "subtitle": "Dicta y PROOF registra"
+        },
+        "foto": {
+          "title": "Foto",
+          "subtitle": "PROOF analiza y captura"
+        },
+        "nota": {
+          "title": "Nota",
+          "subtitle": "Texto libre o bitácora"
+        },
+        "lab": {
+          "title": "Lab",
+          "subtitle": "Carga resultados"
+        }
       }
     },
     "orgSwitcher": {
@@ -1115,7 +1127,33 @@
         "changeDatum": "Cambiar este dato",
         "applyTo": "Aplicar a:",
         "scopeSingle": "Solo este lote",
-        "scopeAll": "Todos mis lotes"
+        "scopeAll": "Todos mis lotes",
+        "metrics": {
+          "stock_disponible": "Stock disponible",
+          "stock_reservado": "Stock reservado",
+          "stock_total": "Stock total",
+          "pedidos_activos": "Pedidos activos",
+          "costo_unidad": "Costo/unidad",
+          "precio_venta": "Precio venta",
+          "margen": "Margen",
+          "ultima_venta": "Última venta",
+          "por_cobrar": "Por cobrar",
+          "dias_sin_movimiento": "Días sin movimiento",
+          "unidades_vendidas_mes": "Unidades vendidas mes"
+        },
+        "metricsShort": {
+          "stock_disponible": "stock",
+          "stock_reservado": "reservado",
+          "stock_total": "total",
+          "pedidos_activos": "pedidos",
+          "costo_unidad": "costo",
+          "precio_venta": "precio",
+          "margen": "margen",
+          "ultima_venta": "última venta",
+          "por_cobrar": "por cobrar",
+          "dias_sin_movimiento": "sin mov.",
+          "unidades_vendidas_mes": "vendidas"
+        }
       }
     },
     "pedidoEstado": {
@@ -1392,6 +1430,7 @@
       "welcome": "Hola, soy PROOF. ¿Qué necesitas hacer hoy?",
       "hint": "O escribe tu pregunta en el campo de abajo.",
       "conversationAria": "Conversación con PROOF",
+      "workspaceAria": "Espacio de trabajo PROOF",
       "modesAria": "Modos de PROOF",
       "sendAria": "Enviar",
       "suggestedRepliesAria": "Respuestas sugeridas",
@@ -2552,7 +2591,23 @@
         "changeDatum": "Cambiar este dato",
         "applyTo": "Aplicar a:",
         "scopeSingle": "Solo este lote",
-        "scopeAll": "Todos mis lotes"
+        "scopeAll": "Todos mis lotes",
+        "metrics": {
+          "litros_crudo": "Litros en crudo",
+          "litros_totales": "Litros totales",
+          "costo_litro": "Costo/litro",
+          "deuda_palenquero": "Deuda palenquero",
+          "merma_pct": "Merma %",
+          "botellas_inventario": "Botellas en inventario",
+          "botellas_vendidas": "Botellas vendidas",
+          "costo_botella": "Costo/botella",
+          "valor_bodega": "Valor en bodega",
+          "dias_bodega": "Días en bodega",
+          "margen_botella": "Margen/botella",
+          "total_cobrado": "Total cobrado",
+          "por_cobrar": "Por cobrar",
+          "proxima_entrega": "Próxima entrega"
+        }
       },
       "notFound": {
         "trip": "Viaje no encontrado.",

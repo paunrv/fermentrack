@@ -32,6 +32,7 @@ export function useDistributorCanvasCopy() {
       welcome: t('welcome'),
       hint: t('hint'),
       conversationAria: t('conversationAria'),
+      workspaceAria: t('workspaceAria'),
       modesAria: t('modesAria'),
       sendAria: t('sendAria'),
       suggestedRepliesAria: t('suggestedRepliesAria'),

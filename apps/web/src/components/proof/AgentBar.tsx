@@ -338,7 +338,7 @@ export function AgentBar({
                 style={{
                   marginTop: 4,
                   fontSize: 9,
-                  color: '#CCC',
+                  color: 'var(--fg-3)',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 }}
               >

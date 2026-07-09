@@ -1,5 +1,6 @@
 import type { CategoriaLiquido } from './types'
 
+/** Spanish fallbacks for agent/server paths. UI uses `distributor.liquidCategories`. */
 export const CATEGORIA_LIQUIDO_OPTIONS: { value: CategoriaLiquido; label: string }[] = [
   { value: 'cerveza', label: 'Cerveza' },
   { value: 'vino', label: 'Vino' },

@@ -27,7 +27,7 @@ async function uploadCapture(
   const res = await fetch('/api/winemaker/documentos', { method: 'POST', body: form })
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as { error?: string } | null
-    throw new Error(body?.error ?? 'No se pudo subir el archivo')
+    throw new Error(body?.error ?? 'UPLOAD_FAILED')
   }
 }
 
@@ -61,7 +61,8 @@ export function AgendaCaptureSection() {
       })
       setMessage(t('success'))
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('error'))
+      const raw = err instanceof Error ? err.message : ''
+      setError(raw && raw !== 'UPLOAD_FAILED' ? raw : t('error'))
     } finally {
       setUploading(null)
     }

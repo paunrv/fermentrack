@@ -135,7 +135,7 @@ export function ProofResultsZone({
         return items.length > 0 ? { ...prev, items } : null
       })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : (deleteFailed ?? 'No se pudo eliminar')
+      const msg = e instanceof Error ? e.message : (deleteFailed ?? 'Could not delete')
       setDeleteError(msg)
     } finally {
       setDeletingId(null)

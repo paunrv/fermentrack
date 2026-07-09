@@ -2,7 +2,11 @@
 
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { metricsForProfile, type ProfileType } from '@/lib/proof/kpi-metrics'
+import {
+  kpiMetricsNamespace,
+  metricsForProfile,
+  type ProfileType,
+} from '@/lib/proof/kpi-metrics'
 
 export type KpiDrawerScope = 'all' | 'single'
 
@@ -23,9 +27,7 @@ export function KpiConfigDrawer({
   onSelect: (metric: string, scope: KpiDrawerScope) => void
   onClose: () => void
 }) {
-  const t = useTranslations(
-    profileType === 'distributor' ? 'distributor.common.kpi' : 'distiller.common.kpi'
-  )
+  const t = useTranslations(kpiMetricsNamespace(profileType))
   const [scope, setScope] = useState<KpiDrawerScope>(currentScope)
   const options = metricsForProfile(profileType)
 
@@ -88,7 +90,7 @@ export function KpiConfigDrawer({
                 e.currentTarget.style.color = 'var(--fg-3)'
               }}
             >
-              {opt.label}
+              {t(`metrics.${opt.key}` as 'metrics.stock_disponible')}
             </button>
           )
         })}
