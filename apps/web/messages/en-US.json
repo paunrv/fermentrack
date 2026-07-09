@@ -2447,19 +2447,27 @@
         "lotsLink": "Lots",
         "confirmTitle": "Confirm arrival",
         "confirmDescription": "Record output and received liters per agave. Shrinkage and proportional freight are calculated; one lot is created per product.",
+        "confirmDescriptionCanvas": "On confirm, the lot is created in the cellar and appears on the canvas.",
         "litrosSalida": "Output liters",
         "litrosRecibidos": "Received liters",
         "abv": "ABV %",
         "mermaLine": "Shrinkage {litros} ({pct}%)",
         "mermaAlert": "· Alert >8%",
         "fleteEst": "Est. freight:",
+        "metaFecha": "Date: {date}",
+        "metaFlete": "Freight: {amount}",
+        "metaLitros": "Agreed liters: {liters}",
+        "pricePerLiterShort": "{price}/L",
         "confirming": "Confirming…",
         "confirmButton": "Confirm arrival and create lots",
+        "confirmButtonSingular": "Confirm arrival and create lot",
         "cannotConfirm": "Trip must be confirmed or in transit to record arrival.",
+        "alreadyReceived": "This trip was already received or cannot be confirmed here.",
         "receivedSuccess": "Received: {lots}",
         "errors": {
           "loadFailed": "Failed to load",
-          "confirmFailed": "Could not confirm arrival"
+          "confirmFailed": "Could not confirm arrival",
+          "lotNotCreated": "Lot was not created in the cellar"
         }
       }
     },
@@ -2480,7 +2488,85 @@
         "costMezcal": "Mezcal cost:",
         "costPerBottle": "Actual cost / bottle:",
         "closeActiveRun": "Close active run",
-        "newRun": "New run"
+        "newRun": "New run",
+        "configureKpi": "Configure KPI",
+        "sections": {
+          "origen": "Origin",
+          "produccion": "Production",
+          "costo": "Actual cost",
+          "movimientos": "Movements"
+        },
+        "fields": {
+          "maestro": "Master",
+          "comunidad": "Community",
+          "agave": "Agave",
+          "fechaCompra": "Purchase date",
+          "litrosAcordados": "Agreed liters",
+          "litrosRecibidos": "Received liters",
+          "mermaTransito": "Transit shrinkage",
+          "precioLitro": "Price/liter",
+          "saldoPalenquero": "Palenquero balance",
+          "fechaEmbotellado": "Bottling date",
+          "formato": "Format",
+          "abv": "ABV",
+          "litrosEmbotellados": "Bottled liters",
+          "botellasProducidas": "Bottles produced",
+          "botellasDefectuosas": "Defective bottles",
+          "mermaPct": "Shrinkage %",
+          "litrosGarrafon": "Remaining bulk liters",
+          "modoEmbotellado": "Bottling mode",
+          "materiaPrima": "Raw material",
+          "fleteProporcional": "Proportional freight",
+          "botellas": "Bottles",
+          "etiquetas": "Labels",
+          "corrida": "Run",
+          "costoBotella": "Cost/bottle"
+        },
+        "preview": {
+          "produccion": "{bottles} btl · {merma}% shrinkage",
+          "costoBotella": "{amount} / bottle",
+          "movimientos": "{count} events"
+        },
+        "timeline": {
+          "corrida": "Run {formato} · {estado} · {botellas} btl."
+        },
+        "actions": {
+          "bulkSale": "Bulk sale",
+          "exportPdf": "Export PDF",
+          "sellBottles": "Sell bottles →",
+          "viewMovements": "View movements",
+          "newOrder": "New order →"
+        }
+      },
+      "skuDetail": {
+        "sections": {
+          "producto": "Product",
+          "inventario": "Inventory",
+          "precios": "Pricing",
+          "movimientos": "Movements"
+        },
+        "fields": {
+          "sku": "SKU",
+          "categoria": "Category",
+          "proveedor": "Supplier",
+          "formato": "Format",
+          "unidadesCaja": "Units/case",
+          "formatoCaja": "{count} btl/case",
+          "stockTotal": "Total stock",
+          "disponible": "Available",
+          "reservado": "Reserved",
+          "bodega": "Warehouse",
+          "ultimaEntrada": "Last inbound",
+          "diasSinMovimiento": "Days without movement",
+          "costo": "Cost",
+          "precioVenta": "Sale price",
+          "margen": "Margin",
+          "historial": "History"
+        },
+        "preview": {
+          "disponible": "{count} avail.",
+          "movimientos": "{count} events"
+        }
       },
       "context": {
         "enBodegaCrudoStale": "{days} days raw without bottling. Each day is opportunity cost.",

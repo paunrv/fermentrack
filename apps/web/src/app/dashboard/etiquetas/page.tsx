@@ -53,7 +53,7 @@ function generateBarcodeDataUrl(value: string): Promise<string> {
         fontSize: 12,
         font: 'monospace',
         margin: 6,
-        background: '#ffffff',
+        background: 'var(--surface-card)',
         lineColor: '#000000',
       })
       resolve(canvas.toDataURL('image/png'))
@@ -193,7 +193,7 @@ export default function EtiquetasPage() {
           displayValue: true,
           fontSize: 11,
           margin: 4,
-          background: '#ffffff',
+          background: 'var(--surface-card)',
           lineColor: '#000000',
         })
       } catch {
@@ -352,7 +352,7 @@ export default function EtiquetasPage() {
               width: '100%',
               padding: '14px 20px',
               background: 'var(--fg-0)',
-              color: '#fff',
+              color: 'var(--ink)',
               border: '1px solid var(--hairline)',
               fontSize: 11,
               fontWeight: 800,

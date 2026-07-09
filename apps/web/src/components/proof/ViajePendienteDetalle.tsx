@@ -65,6 +65,7 @@ export function ViajePendienteDetalle({
 }) {
   const t = useTranslations('distiller.common')
   const tViaje = useTranslations('distiller.status.viaje')
+  const tDetail = useTranslations('distiller.compras.detail')
   const supabase = useSupabase()
   const { scope } = useProfile()
   const userId = scope?.user_id
@@ -103,11 +104,11 @@ export function ViajePendienteDetalle({
       }
     } catch (e) {
       console.error('[ViajePendienteDetalle] load', e)
-      setError(e instanceof Error ? e.message : 'Error al cargar')
+      setError(e instanceof Error ? e.message : tDetail('errors.loadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [supabase, userId, viajeId])
+  }, [supabase, userId, viajeId, tDetail])
 
   useEffect(() => {
     void load()
@@ -141,10 +142,10 @@ export function ViajePendienteDetalle({
         }))
       )
       const created = rows[0]
-      if (!created?.lote_id) throw new Error('No se generó el lote en bodega')
+      if (!created?.lote_id) throw new Error(tDetail('errors.lotNotCreated'))
       onRecibido(created.lote_id)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo confirmar la llegada')
+      setError(e instanceof Error ? e.message : tDetail('errors.confirmFailed'))
     } finally {
       setConfirming(false)
     }
@@ -250,9 +251,9 @@ export function ViajePendienteDetalle({
 
       <div style={{ padding: '20px 24px 28px' }}>
         <div style={{ fontSize: 12, color: 'var(--fg-2)', lineHeight: 1.7, marginBottom: 20 }}>
-          <div>Fecha: {viaje.fecha}</div>
-          <div>Flete: {fmtMoney(Number(viaje.costo_flete))}</div>
-          <div>Litros acordados: {fmtLitros(totalLitrosAcordados)}</div>
+          <div>{tDetail('metaFecha', { date: viaje.fecha })}</div>
+          <div>{tDetail('metaFlete', { amount: fmtMoney(Number(viaje.costo_flete)) })}</div>
+          <div>{tDetail('metaLitros', { liters: fmtLitros(totalLitrosAcordados) })}</div>
         </div>
 
         {productos.map((p, i) => (
@@ -267,16 +268,19 @@ export function ViajePendienteDetalle({
           >
             <div style={{ fontWeight: 600, color: 'var(--fg-0)' }}>{p.tipo_agave}</div>
             <div style={{ marginTop: 4, color: 'var(--fg-3)' }}>
-              {fmtLitros(Number(p.litros_acordados))} · {fmtMoney(Number(p.precio_por_litro))}/L
+              {fmtLitros(Number(p.litros_acordados))} ·{' '}
+              {tDetail('pricePerLiterShort', { price: fmtMoney(Number(p.precio_por_litro)) })}
             </div>
           </div>
         ))}
 
         {puedeConfirmar ? (
           <section style={{ marginTop: 24 }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600 }}>Confirmar llegada</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600 }}>
+              {tDetail('confirmTitle')}
+            </h3>
             <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--fg-3)', lineHeight: 1.5 }}>
-              Al confirmar se crea el lote en bodega y aparece en el canvas como Espadín.
+              {tDetail('confirmDescriptionCanvas')}
             </p>
 
             {lineas.map((l, i) => {
@@ -303,7 +307,7 @@ export function ViajePendienteDetalle({
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <div>
                       <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
-                        Litros salida
+                        {tDetail('litrosSalida')}
                       </label>
                       <input
                         type="number"
@@ -318,7 +322,7 @@ export function ViajePendienteDetalle({
                     </div>
                     <div>
                       <label style={{ fontSize: 10, color: 'var(--fg-3)', textTransform: 'uppercase' }}>
-                        Litros recibidos
+                        {tDetail('litrosRecibidos')}
                       </label>
                       <input
                         type="number"
@@ -333,7 +337,10 @@ export function ViajePendienteDetalle({
                     </div>
                   </div>
                   <div style={{ fontSize: 11, marginTop: 10, color: mermaTone(mermaPct) }}>
-                    Merma {fmtLitros(merma)} ({mermaPct.toFixed(1)}%)
+                    {tDetail('mermaLine', {
+                      litros: fmtLitros(merma),
+                      pct: mermaPct.toFixed(1),
+                    })}
                   </div>
                 </div>
               )
@@ -359,12 +366,12 @@ export function ViajePendienteDetalle({
                 cursor: confirming ? 'wait' : 'pointer',
               }}
             >
-              {confirming ? 'Confirmando…' : 'Confirmar llegada y crear lote'}
+              {confirming ? tDetail('confirming') : tDetail('confirmButtonSingular')}
             </button>
           </section>
         ) : (
           <p style={{ marginTop: 16, fontSize: 12, color: 'var(--fg-3)' }}>
-            Este viaje ya fue recibido o no se puede confirmar desde aquí.
+            {tDetail('alreadyReceived')}
           </p>
         )}
       </div>

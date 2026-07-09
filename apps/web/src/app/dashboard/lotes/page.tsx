@@ -140,7 +140,7 @@ export default function LotesPage() {
           style={{
             padding: '12px 16px',
             background: 'var(--fg-0)',
-            color: '#fff',
+            color: 'var(--ink)',
             border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
@@ -216,7 +216,7 @@ export default function LotesPage() {
               style={{
                 padding: '12px 16px',
                 background: 'var(--fg-0)',
-                color: '#fff',
+                color: 'var(--ink)',
                 border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 800,
@@ -310,7 +310,7 @@ export default function LotesPage() {
                             ? 'var(--ok)'
                             : b.status === 'warn'
                               ? 'var(--crit)'
-                              : '#888',
+                              : 'var(--fg-3)',
                       }}
                     />
                     {b.status === 'active' ? 'Activo' : b.status === 'warn' ? 'Alerta' : 'Terminado'}
@@ -365,7 +365,7 @@ export default function LotesPage() {
                     height: '100%',
                     width: `${b.progress}%`,
                     background:
-                      b.status === 'warn' ? 'var(--crit)' : b.status === 'idle' ? '#888' : 'var(--ok)',
+                      b.status === 'warn' ? 'var(--crit)' : b.status === 'idle' ? 'var(--fg-3)' : 'var(--ok)',
                   }}
                 />
               </div>

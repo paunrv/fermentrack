@@ -330,7 +330,7 @@ export default function BodegaPage() {
             marginTop: 16,
             padding: '12px 20px',
             background: 'var(--fg-0)',
-            color: '#fff',
+            color: 'var(--ink)',
             border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,

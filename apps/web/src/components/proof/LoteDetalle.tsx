@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { KpiConfigDrawer } from '@/components/proof/KpiConfigDrawer'
@@ -16,7 +16,7 @@ import {
   skuEstadoColor,
   skuEstadoLabel,
 } from '@/lib/proof/canvas-kpi'
-import { fmtDateOnly, fmtLitros, fmtMoney } from '@/lib/proof/format'
+import { fmtLitros, fmtMoney, parseDateOnlyLocal } from '@/lib/proof/format'
 import type { CorridaRow, LoteRow } from '@/lib/proof/destilador-types'
 import {
   metricLabel,
@@ -32,6 +32,7 @@ import {
   fetchMovimientosInventarioByLote,
   type MovimientoInventarioRow,
 } from '@/lib/supabase/destilador'
+import type { AppLocale } from '@/i18n/routing'
 export interface LoteDetalleProps {
   loteId: string
   profileType: ProfileType
@@ -62,13 +63,15 @@ interface CollapsibleSectionData {
   timeline?: TimelineEvent[]
 }
 
-function fmtDate(d: string): string {
-  if (/^\d{4}-\d{2}-\d{2}/.test(d)) return fmtDateOnly(d)
-  return new Date(d).toLocaleDateString('es-MX')
+function fmtDate(d: string, locale: string): string {
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) {
+    return parseDateOnlyLocal(d).toLocaleDateString(locale)
+  }
+  return new Date(d).toLocaleDateString(locale)
 }
 
-function fmtDateTime(d: string): string {
-  return new Date(d).toLocaleString('es-MX', {
+function fmtDateTime(d: string, locale: string): string {
+  return new Date(d).toLocaleString(locale, {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -363,6 +366,7 @@ function KpiCell({
   drawerOpen,
   onEditPencil,
   drawer,
+  configureKpiLabel,
 }: {
   value: string
   label: string
@@ -370,6 +374,7 @@ function KpiCell({
   drawerOpen: boolean
   onEditPencil: () => void
   drawer: React.ReactNode
+  configureKpiLabel: string
 }) {
   const [hover, setHover] = useState(false)
   const semantic =
@@ -402,7 +407,7 @@ function KpiCell({
       <div style={{ fontSize: 10, color: 'var(--fg-3)', marginTop: 4 }}>{label}</div>
       <button
         type="button"
-        aria-label="Configurar KPI"
+        aria-label={configureKpiLabel}
         onClick={onEditPencil}
         style={{
           position: 'absolute',
@@ -428,10 +433,14 @@ function KpiCell({
   )
 }
 
+type DetailT = ReturnType<typeof useTranslations>
+
 function buildDistillerSections(
   lote: LoteRow,
   corridas: CorridaRow[],
-  movimientos: MovimientoInventarioRow[]
+  movimientos: MovimientoInventarioRow[],
+  tDetail: DetailT,
+  locale: string
 ): CollapsibleSectionData[] {
   const pv = lote.productos_viaje
   const stats = corridaStats(lote, corridas)
@@ -451,13 +460,17 @@ function buildDistillerSections(
 
   const corridaEvents: TimelineEvent[] = corridas.map(c => ({
     id: `corrida-${c.id}`,
-    date: fmtDate(c.created_at),
-    detail: `Corrida ${c.formato_botella} · ${c.estado} · ${c.botellas_producidas} bot.`,
+    date: fmtDate(c.created_at, locale),
+    detail: tDetail('timeline.corrida', {
+      formato: c.formato_botella,
+      estado: c.estado,
+      botellas: c.botellas_producidas,
+    }),
     tone: c.estado === 'completada' ? 'var(--ok)' : 'var(--info)',
   }))
   const movEvents: TimelineEvent[] = movimientos.map(m => ({
     id: m.id,
-    date: fmtDateTime(m.timestamp),
+    date: fmtDateTime(m.timestamp, locale),
     detail: m.notas?.trim() || `${m.tipo} · ${m.metodo}`,
     tone: movimientoTone(m.tipo),
   }))
@@ -469,25 +482,31 @@ function buildDistillerSections(
     {
       id: 'origen',
       icon: <IconMapPin />,
-      title: 'Origen',
-      preview: `${lote.comunidad ?? lote.tipo_agave} · ${fmtDate(lote.fecha_recepcion)}`,
+      title: tDetail('sections.origen'),
+      preview: `${lote.comunidad ?? lote.tipo_agave} · ${fmtDate(lote.fecha_recepcion, locale)}`,
       pairs: [
-        { label: 'Maestro', value: lote.maestro ?? '—' },
-        { label: 'Comunidad', value: lote.comunidad ?? '—' },
-        { label: 'Agave', value: lote.tipo_agave },
-        { label: 'Fecha compra', value: fmtDate(lote.fecha_recepcion) },
-        { label: 'Litros acordados', value: pv ? fmtLitros(Number(pv.litros_acordados)) : '—' },
-        { label: 'Litros recibidos', value: fmtLitros(stats.recibidos) },
+        { label: tDetail('fields.maestro'), value: lote.maestro ?? '—' },
+        { label: tDetail('fields.comunidad'), value: lote.comunidad ?? '—' },
+        { label: tDetail('fields.agave'), value: lote.tipo_agave },
+        { label: tDetail('fields.fechaCompra'), value: fmtDate(lote.fecha_recepcion, locale) },
         {
-          label: 'Merma tránsito',
+          label: tDetail('fields.litrosAcordados'),
+          value: pv ? fmtLitros(Number(pv.litros_acordados)) : '—',
+        },
+        { label: tDetail('fields.litrosRecibidos'), value: fmtLitros(stats.recibidos) },
+        {
+          label: tDetail('fields.mermaTransito'),
           value:
             mermaTransitoPct != null
               ? `${fmtLitros(mermaTransitoL)} · ${mermaTransitoPct}%`
               : fmtLitros(mermaTransitoL),
         },
-        { label: 'Precio/litro', value: pv ? fmtMoney(Number(pv.precio_por_litro)) : '—' },
         {
-          label: 'Saldo palenquero',
+          label: tDetail('fields.precioLitro'),
+          value: pv ? fmtMoney(Number(pv.precio_por_litro)) : '—',
+        },
+        {
+          label: tDetail('fields.saldoPalenquero'),
           value:
             pv?.saldo_pendiente != null ? fmtMoney(Number(pv.saldo_pendiente)) : '—',
         },
@@ -496,31 +515,34 @@ function buildDistillerSections(
     {
       id: 'produccion',
       icon: <IconBottle />,
-      title: 'Producción',
-      preview: `${botellasProd} bts · ${stats.mermaPct.toFixed(1)}% merma`,
+      title: tDetail('sections.produccion'),
+      preview: tDetail('preview.produccion', {
+        bottles: botellasProd,
+        merma: stats.mermaPct.toFixed(1),
+      }),
       pairs: [
         {
-          label: 'Fecha embotellado',
+          label: tDetail('fields.fechaEmbotellado'),
           value: lote.fecha_embotellado_programada
-            ? fmtDate(lote.fecha_embotellado_programada)
+            ? fmtDate(lote.fecha_embotellado_programada, locale)
             : ultima
-              ? fmtDate(ultima.created_at)
+              ? fmtDate(ultima.created_at, locale)
               : '—',
         },
-        { label: 'Formato', value: ultima?.formato_botella ?? '—' },
-        { label: 'ABV', value: lote.abv != null ? `${lote.abv}%` : '—' },
-        { label: 'Litros embotellados', value: fmtLitros(stats.embotellado) },
+        { label: tDetail('fields.formato'), value: ultima?.formato_botella ?? '—' },
+        { label: tDetail('fields.abv'), value: lote.abv != null ? `${lote.abv}%` : '—' },
+        { label: tDetail('fields.litrosEmbotellados'), value: fmtLitros(stats.embotellado) },
         {
-          label: 'Botellas producidas',
+          label: tDetail('fields.botellasProducidas'),
           value: ultima ? String(ultima.botellas_producidas) : '—',
         },
         {
-          label: 'Botellas defectuosas',
+          label: tDetail('fields.botellasDefectuosas'),
           value: ultima ? String(ultima.botellas_defectuosas) : '—',
         },
-        { label: 'Merma %', value: `${stats.mermaPct.toFixed(1)}%` },
-        { label: 'Litros garrafón restantes', value: fmtLitros(stats.granel) },
-        { label: 'Modo embotellado', value: ultima?.modo ?? '—' },
+        { label: tDetail('fields.mermaPct'), value: `${stats.mermaPct.toFixed(1)}%` },
+        { label: tDetail('fields.litrosGarrafon'), value: fmtLitros(stats.granel) },
+        { label: tDetail('fields.modoEmbotellado'), value: ultima?.modo ?? '—' },
       ],
       progress: {
         pct: stats.mermaPct,
@@ -530,30 +552,32 @@ function buildDistillerSections(
     {
       id: 'costo',
       icon: <IconReceipt />,
-      title: 'Costo real',
+      title: tDetail('sections.costo'),
       preview:
         ultima?.costo_real_por_botella != null
-          ? `${fmtMoney(Number(ultima.costo_real_por_botella))} / botella`
+          ? tDetail('preview.costoBotella', {
+              amount: fmtMoney(Number(ultima.costo_real_por_botella)),
+            })
           : '—',
       pairs: [
         {
-          label: 'Materia prima',
+          label: tDetail('fields.materiaPrima'),
           value: materiaPrima != null ? fmtMoney(materiaPrima) : '—',
         },
         {
-          label: 'Flete proporcional',
+          label: tDetail('fields.fleteProporcional'),
           value: pv?.flete_proporcional ? fmtMoney(Number(pv.flete_proporcional)) : '—',
         },
-        { label: 'Botellas', value: '—' },
-        { label: 'Etiquetas', value: '—' },
+        { label: tDetail('fields.botellas'), value: '—' },
+        { label: tDetail('fields.etiquetas'), value: '—' },
         {
-          label: 'Corrida',
+          label: tDetail('fields.corrida'),
           value: ultima?.costo_corrida != null ? fmtMoney(Number(ultima.costo_corrida)) : '—',
         },
       ],
       highlight: ultima?.costo_real_por_botella
         ? {
-            label: 'Costo/botella',
+            label: tDetail('fields.costoBotella'),
             value: fmtMoney(Number(ultima.costo_real_por_botella)),
           }
         : undefined,
@@ -561,8 +585,8 @@ function buildDistillerSections(
     {
       id: 'movimientos',
       icon: <IconHistory />,
-      title: 'Movimientos',
-      preview: `${timeline.length} eventos`,
+      title: tDetail('sections.movimientos'),
+      preview: tDetail('preview.movimientos', { count: timeline.length }),
       pairs: [],
       timeline,
     },
@@ -571,11 +595,13 @@ function buildDistillerSections(
 
 function buildDistributorSections(
   sku: SkuRow,
-  movements: DistMovementWithRefs[]
+  movements: DistMovementWithRefs[],
+  tSku: DetailT,
+  locale: string
 ): CollapsibleSectionData[] {
   const timeline: TimelineEvent[] = movements.map(m => ({
     id: m.id,
-    date: fmtDate(m.movement_date),
+    date: fmtDate(m.movement_date, locale),
     detail: `${m.movement_type} · ${m.cases} cj + ${m.loose_units} uds${
       m.clients?.name ? ` · ${m.clients.name}` : ''
     }`,
@@ -586,31 +612,37 @@ function buildDistributorSections(
     {
       id: 'producto',
       icon: <IconPackage />,
-      title: 'Producto',
+      title: tSku('sections.producto'),
       preview: sku.codigo,
       pairs: [
-        { label: 'SKU', value: sku.codigo },
-        { label: 'Categoría', value: sku.categoria },
-        { label: 'Proveedor', value: sku.productor },
-        { label: 'Formato', value: `${sku.botellas_por_caja} bts/caja` },
-        { label: 'Unidades/caja', value: String(sku.botellas_por_caja) },
+        { label: tSku('fields.sku'), value: sku.codigo },
+        { label: tSku('fields.categoria'), value: sku.categoria },
+        { label: tSku('fields.proveedor'), value: sku.productor },
+        {
+          label: tSku('fields.formato'),
+          value: tSku('fields.formatoCaja', { count: sku.botellas_por_caja }),
+        },
+        { label: tSku('fields.unidadesCaja'), value: String(sku.botellas_por_caja) },
       ],
     },
     {
       id: 'inventario',
       icon: <IconArchive />,
-      title: 'Inventario',
-      preview: `${sku.stock_disponible} disp.`,
+      title: tSku('sections.inventario'),
+      preview: tSku('preview.disponible', { count: sku.stock_disponible }),
       pairs: [
-        { label: 'Stock total', value: String(sku.stock_total) },
-        { label: 'Disponible', value: String(sku.stock_disponible) },
-        { label: 'Reservado', value: String(sku.stock_reservado) },
-        { label: 'Bodega', value: sku.bodega },
+        { label: tSku('fields.stockTotal'), value: String(sku.stock_total) },
+        { label: tSku('fields.disponible'), value: String(sku.stock_disponible) },
+        { label: tSku('fields.reservado'), value: String(sku.stock_reservado) },
+        { label: tSku('fields.bodega'), value: sku.bodega },
         {
-          label: 'Última entrada',
-          value: sku.ultimo_movimiento ? fmtDate(sku.ultimo_movimiento) : '—',
+          label: tSku('fields.ultimaEntrada'),
+          value: sku.ultimo_movimiento ? fmtDate(sku.ultimo_movimiento, locale) : '—',
         },
-        { label: 'Días sin movimiento', value: String(sku.dias_sin_movimiento) },
+        {
+          label: tSku('fields.diasSinMovimiento'),
+          value: String(sku.dias_sin_movimiento),
+        },
       ],
       progress: {
         pct:
@@ -623,24 +655,27 @@ function buildDistributorSections(
     {
       id: 'precios',
       icon: <IconReceipt />,
-      title: 'Precios',
+      title: tSku('sections.precios'),
       preview: fmtMoney(sku.precio_venta),
       pairs: [
-        { label: 'Costo', value: fmtMoney(sku.costo_unitario) },
-        { label: 'Precio venta', value: fmtMoney(sku.precio_venta) },
-        { label: 'Margen', value: `${Number(sku.margen_porcentaje).toFixed(0)}%` },
-        { label: 'Historial', value: '—' },
+        { label: tSku('fields.costo'), value: fmtMoney(sku.costo_unitario) },
+        { label: tSku('fields.precioVenta'), value: fmtMoney(sku.precio_venta) },
+        {
+          label: tSku('fields.margen'),
+          value: `${Number(sku.margen_porcentaje).toFixed(0)}%`,
+        },
+        { label: tSku('fields.historial'), value: '—' },
       ],
       highlight: {
-        label: 'Margen',
+        label: tSku('fields.margen'),
         value: `${Number(sku.margen_porcentaje).toFixed(0)}%`,
       },
     },
     {
       id: 'movimientos',
       icon: <IconHistory />,
-      title: 'Movimientos',
-      preview: `${timeline.length} eventos`,
+      title: tSku('sections.movimientos'),
+      preview: tSku('preview.movimientos', { count: timeline.length }),
       pairs: [],
       timeline,
     },
@@ -649,6 +684,9 @@ function buildDistributorSections(
 
 export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetalleProps) {
   const t = useTranslations('distiller.common')
+  const tDetail = useTranslations('distiller.lotes.detail')
+  const tSku = useTranslations('distiller.lotes.skuDetail')
+  const locale = useLocale() as AppLocale
   const router = useRouter()
   const supabase = useSupabase()
   const { scope } = useProfile()
@@ -730,18 +768,26 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
   }, [kpiConfig, profileType, isDistiller, lote, corridas, sku])
 
   const sections = useMemo(() => {
-    if (isDistiller && lote) return buildDistillerSections(lote, corridas, movimientos)
-    if (!isDistiller && sku) return buildDistributorSections(sku, distMovements)
+    if (isDistiller && lote) return buildDistillerSections(lote, corridas, movimientos, tDetail, locale)
+    if (!isDistiller && sku) return buildDistributorSections(sku, distMovements, tSku, locale)
     return []
-  }, [isDistiller, lote, corridas, movimientos, sku, distMovements])
+  }, [isDistiller, lote, corridas, movimientos, sku, distMovements, tDetail, tSku, locale])
 
   const actions = useMemo(() => {
     if (isDistiller) {
       return [
-        { label: 'Venta granel', primary: false, onClick: () => router.push('/dashboard') },
-        { label: 'Exportar PDF', primary: false, onClick: () => window.print() },
         {
-          label: 'Vender botellas →',
+          label: tDetail('actions.bulkSale'),
+          primary: false,
+          onClick: () => router.push('/dashboard'),
+        },
+        {
+          label: tDetail('actions.exportPdf'),
+          primary: false,
+          onClick: () => window.print(),
+        },
+        {
+          label: tDetail('actions.sellBottles'),
           primary: true,
           onClick: () => router.push('/dashboard/destilador/ventas'),
         },
@@ -749,18 +795,22 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
     }
     return [
       {
-        label: 'Ver movimientos',
+        label: tDetail('actions.viewMovements'),
         primary: false,
         onClick: () => router.push('/dashboard/movimientos'),
       },
-      { label: 'Exportar PDF', primary: false, onClick: () => window.print() },
       {
-        label: 'Nuevo pedido →',
+        label: tDetail('actions.exportPdf'),
+        primary: false,
+        onClick: () => window.print(),
+      },
+      {
+        label: tDetail('actions.newOrder'),
         primary: true,
         onClick: () => router.push('/dashboard/pedidos/nuevo'),
       },
     ]
-  }, [isDistiller, router])
+  }, [isDistiller, router, tDetail])
 
   if (loading) return <LoteDetalleSkeleton />
 
@@ -893,6 +943,7 @@ export function LoteDetalle({ loteId, profileType, accent, onClose }: LoteDetall
               value={kpiLoading ? '…' : kpi.value}
               label={metricLabel(profileType, kpi.metric as KpiMetric)}
               accent={accent}
+              configureKpiLabel={tDetail('configureKpi')}
               drawerOpen={kpiDrawerSlot === kpi.slot}
               onEditPencil={() =>
                 setKpiDrawerSlot(prev => (prev === kpi.slot ? null : (kpi.slot as 0 | 1 | 2)))

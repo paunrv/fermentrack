@@ -2447,19 +2447,27 @@
         "lotsLink": "Lotes",
         "confirmTitle": "Confirmar llegada",
         "confirmDescription": "Registra litros de salida y recibidos por agave. Se calcula merma y flete proporcional; se genera un lote por producto.",
+        "confirmDescriptionCanvas": "Al confirmar se crea el lote en bodega y aparece en el canvas.",
         "litrosSalida": "Litros salida",
         "litrosRecibidos": "Litros recibidos",
         "abv": "ABV %",
         "mermaLine": "Merma {litros} ({pct}%)",
         "mermaAlert": "· Alerta >8%",
         "fleteEst": "Flete est.:",
+        "metaFecha": "Fecha: {date}",
+        "metaFlete": "Flete: {amount}",
+        "metaLitros": "Litros acordados: {liters}",
+        "pricePerLiterShort": "{price}/L",
         "confirming": "Confirmando…",
         "confirmButton": "Confirmar llegada y crear lotes",
+        "confirmButtonSingular": "Confirmar llegada y crear lote",
         "cannotConfirm": "El viaje debe estar confirmado o en tránsito para registrar la llegada.",
+        "alreadyReceived": "Este viaje ya fue recibido o no se puede confirmar desde aquí.",
         "receivedSuccess": "Recibido: {lots}",
         "errors": {
           "loadFailed": "Error al cargar",
-          "confirmFailed": "No se pudo confirmar la llegada"
+          "confirmFailed": "No se pudo confirmar la llegada",
+          "lotNotCreated": "No se generó el lote en bodega"
         }
       }
     },
@@ -2480,7 +2488,85 @@
         "costMezcal": "Costo mezcal:",
         "costPerBottle": "Costo real / botella:",
         "closeActiveRun": "Cerrar corrida activa",
-        "newRun": "Nueva corrida"
+        "newRun": "Nueva corrida",
+        "configureKpi": "Configurar KPI",
+        "sections": {
+          "origen": "Origen",
+          "produccion": "Producción",
+          "costo": "Costo real",
+          "movimientos": "Movimientos"
+        },
+        "fields": {
+          "maestro": "Maestro",
+          "comunidad": "Comunidad",
+          "agave": "Agave",
+          "fechaCompra": "Fecha compra",
+          "litrosAcordados": "Litros acordados",
+          "litrosRecibidos": "Litros recibidos",
+          "mermaTransito": "Merma tránsito",
+          "precioLitro": "Precio/litro",
+          "saldoPalenquero": "Saldo palenquero",
+          "fechaEmbotellado": "Fecha embotellado",
+          "formato": "Formato",
+          "abv": "ABV",
+          "litrosEmbotellados": "Litros embotellados",
+          "botellasProducidas": "Botellas producidas",
+          "botellasDefectuosas": "Botellas defectuosas",
+          "mermaPct": "Merma %",
+          "litrosGarrafon": "Litros garrafón restantes",
+          "modoEmbotellado": "Modo embotellado",
+          "materiaPrima": "Materia prima",
+          "fleteProporcional": "Flete proporcional",
+          "botellas": "Botellas",
+          "etiquetas": "Etiquetas",
+          "corrida": "Corrida",
+          "costoBotella": "Costo/botella"
+        },
+        "preview": {
+          "produccion": "{bottles} bts · {merma}% merma",
+          "costoBotella": "{amount} / botella",
+          "movimientos": "{count} eventos"
+        },
+        "timeline": {
+          "corrida": "Corrida {formato} · {estado} · {botellas} bot."
+        },
+        "actions": {
+          "bulkSale": "Venta granel",
+          "exportPdf": "Exportar PDF",
+          "sellBottles": "Vender botellas →",
+          "viewMovements": "Ver movimientos",
+          "newOrder": "Nuevo pedido →"
+        }
+      },
+      "skuDetail": {
+        "sections": {
+          "producto": "Producto",
+          "inventario": "Inventario",
+          "precios": "Precios",
+          "movimientos": "Movimientos"
+        },
+        "fields": {
+          "sku": "SKU",
+          "categoria": "Categoría",
+          "proveedor": "Proveedor",
+          "formato": "Formato",
+          "unidadesCaja": "Unidades/caja",
+          "formatoCaja": "{count} bts/caja",
+          "stockTotal": "Stock total",
+          "disponible": "Disponible",
+          "reservado": "Reservado",
+          "bodega": "Bodega",
+          "ultimaEntrada": "Última entrada",
+          "diasSinMovimiento": "Días sin movimiento",
+          "costo": "Costo",
+          "precioVenta": "Precio venta",
+          "margen": "Margen",
+          "historial": "Historial"
+        },
+        "preview": {
+          "disponible": "{count} disp.",
+          "movimientos": "{count} eventos"
+        }
       },
       "context": {
         "enBodegaCrudoStale": "Lleva {days} días en crudo sin embotellar. Cada día es costo de oportunidad.",

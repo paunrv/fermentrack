@@ -259,7 +259,7 @@ export default function CostosPage() {
             marginTop: 16,
             padding: '12px 20px',
             background: 'var(--fg-0)',
-            color: '#fff',
+            color: 'var(--ink)',
             border: '1px solid var(--hairline)',
             fontSize: 11,
             fontWeight: 800,
@@ -330,7 +330,7 @@ export default function CostosPage() {
         <div style={{ border: '1px solid var(--hairline)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: 'var(--fg-0)', color: '#fff' }}>
+              <tr style={{ background: 'var(--fg-0)', color: 'var(--ink)' }}>
                 {['Fecha', 'Categoría', 'Descripción', 'Monto'].map(h => (
                   <th
                     key={h}
@@ -350,7 +350,7 @@ export default function CostosPage() {
             </thead>
             <tbody>
               {costs.map((row, i) => (
-                <tr key={row.id} style={{ background: i % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                <tr key={row.id} style={{ background: i % 2 === 0 ? 'var(--surface-card)' : 'var(--panel-2)' }}>
                   <td style={{ padding: '12px 14px', borderTop: '1px solid var(--hairline)' }}>
                     {new Date(row.cost_date).toLocaleDateString('es-MX')}
                   </td>
