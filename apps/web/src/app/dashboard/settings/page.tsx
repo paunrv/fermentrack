@@ -406,7 +406,7 @@ export default function SettingsPage() {
                   style={{
                     ...input,
                     ...(!orgSettings.canManage
-                      ? { background: '#f4f4f4', color: '#666', cursor: 'not-allowed' }
+                      ? { background: 'var(--panel-2)', color: 'var(--fg-3)', cursor: 'not-allowed' }
                       : {}),
                   }}
                   required
@@ -420,8 +420,8 @@ export default function SettingsPage() {
                   readOnly
                   style={{
                     ...input,
-                    background: '#f4f4f4',
-                    color: '#666',
+                    background: 'var(--panel-2)',
+                    color: 'var(--fg-3)',
                     cursor: 'not-allowed',
                     fontFamily: 'ui-monospace, monospace',
                   }}
@@ -435,8 +435,8 @@ export default function SettingsPage() {
                   readOnly
                   style={{
                     ...input,
-                    background: '#f4f4f4',
-                    color: '#666',
+                    background: 'var(--panel-2)',
+                    color: 'var(--fg-3)',
                     cursor: 'not-allowed',
                   }}
                 />
@@ -449,8 +449,8 @@ export default function SettingsPage() {
                   readOnly
                   style={{
                     ...input,
-                    background: '#f4f4f4',
-                    color: '#666',
+                    background: 'var(--panel-2)',
+                    color: 'var(--fg-3)',
                     cursor: 'not-allowed',
                   }}
                 />
@@ -559,7 +559,7 @@ export default function SettingsPage() {
                 padding: '12px 14px',
                 borderRadius: 10,
                 border: '1px solid var(--hairline)',
-                background: 'var(--warn-soft, #fff8e6)',
+                background: 'var(--warn-soft)',
                 fontSize: 13,
                 color: 'var(--fg-1)',
                 lineHeight: 1.5,
@@ -585,7 +585,7 @@ export default function SettingsPage() {
               margin: '0 0 20px',
               paddingLeft: 18,
               fontSize: 12,
-              color: '#666',
+              color: 'var(--fg-3)',
               lineHeight: 1.6,
             }}
           >
@@ -629,7 +629,7 @@ export default function SettingsPage() {
                         billingCycle === cycle
                           ? '1px solid var(--proof-accent)'
                           : '1px solid var(--hairline)',
-                      background: billingCycle === cycle ? 'rgba(105, 64, 165, 0.08)' : '#fff',
+                      background: billingCycle === cycle ? 'var(--accent-soft)' : 'var(--surface-card)',
                       fontSize: 13,
                       fontWeight: billingCycle === cycle ? 600 : 500,
                       cursor: 'pointer',
@@ -950,8 +950,8 @@ export default function SettingsPage() {
                   readOnly
                   style={{
                     ...input,
-                    background: '#f4f4f4',
-                    color: '#666',
+                    background: 'var(--panel-2)',
+                    color: 'var(--fg-3)',
                     cursor: 'not-allowed',
                   }}
                 />
@@ -985,8 +985,8 @@ export default function SettingsPage() {
                   readOnly
                   style={{
                     ...input,
-                    background: '#f4f4f4',
-                    color: '#666',
+                    background: 'var(--panel-2)',
+                    color: 'var(--fg-3)',
                     cursor: 'not-allowed',
                   }}
                 />
@@ -1089,7 +1089,7 @@ export default function SettingsPage() {
                   style={{
                     fontSize: 12,
                     fontWeight: 500,
-                    color: isSuperUser ? '#aaa' : '#888',
+                    color: 'var(--fg-3)',
                     lineHeight: 1.4,
                   }}
                 >

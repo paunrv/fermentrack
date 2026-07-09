@@ -183,7 +183,7 @@ export default function ClientesLegacyPage() {
             Nuevo cliente
           </div>
           {saveError && (
-            <p style={{ margin: '0 0 12px', fontSize: 13, color: '#b00020', fontWeight: 600 }}>
+            <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--crit)', fontWeight: 600 }}>
               {saveError}
             </p>
           )}
@@ -361,7 +361,7 @@ export default function ClientesLegacyPage() {
                           fontSize: 12,
                           fontWeight: 600,
                           marginTop: 4,
-                          color: '#333',
+                          color: 'var(--fg-1)',
                         }}
                       >
                         {client.contact_name}
@@ -408,7 +408,7 @@ export default function ClientesLegacyPage() {
                     </div>
                   )}
                   {client.address && (
-                    <div style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--fg-1)', lineHeight: 1.4 }}>
                       {client.address}
                     </div>
                   )}
@@ -444,7 +444,7 @@ export default function ClientesLegacyPage() {
                       style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: '#333',
+                        color: 'var(--fg-1)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',

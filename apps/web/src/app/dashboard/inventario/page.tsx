@@ -233,7 +233,7 @@ export default function InventarioPage() {
               {editingId ? t('editSku') : t('newSku').replace(/^\+\s*/, '')}
             </h2>
             {saveError && (
-              <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--danger, #b00020)' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--crit)' }}>
                 {saveError}
               </p>
             )}

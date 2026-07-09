@@ -536,7 +536,7 @@ export default function ProductDetailPage() {
                   fontWeight: 800,
                   letterSpacing: '.08em',
                   textTransform: 'uppercase',
-                  color: '#888',
+                  color: 'var(--fg-3)',
                 }}
               >
                 {tUnit(product.unit_type)} ·{' '}
@@ -553,7 +553,7 @@ export default function ProductDetailPage() {
                   textTransform: 'uppercase',
                   padding: '6px 10px',
                   border: '3px solid #fff',
-                  background: '#E24B4A',
+                  background: 'var(--crit)',
                   color: '#fff',
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
@@ -579,7 +579,7 @@ export default function ProductDetailPage() {
                   fontWeight: 800,
                   letterSpacing: '.1em',
                   textTransform: 'uppercase',
-                  color: '#888',
+                  color: 'var(--fg-3)',
                 }}
               >
                 {t('warehouseBottles')}
@@ -590,7 +590,7 @@ export default function ProductDetailPage() {
                   fontWeight: 700,
                   letterSpacing: '.05em',
                   textTransform: 'uppercase',
-                  color: '#888',
+                  color: 'var(--fg-3)',
                 }}
               >
                 {t('pctOfInitial', { pct: stats?.pct ?? 0 })}
@@ -607,7 +607,7 @@ export default function ProductDetailPage() {
               >
                 {stats?.currentBottles ?? 0}
               </span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#888' }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-3)' }}>
                 / {stats?.initialBottles ?? 0}
               </span>
             </div>
@@ -626,7 +626,7 @@ export default function ProductDetailPage() {
                 style={{
                   width: `${Math.min(100, stats?.pct ?? 0)}%`,
                   height: '100%',
-                  background: stats && stats.pct <= 20 ? '#E24B4A' : '#FAC775',
+                  background: stats && stats.pct <= 20 ? 'var(--crit)' : 'var(--warn)',
                   transition: 'width .35s ease, background .25s ease',
                 }}
               />
@@ -830,7 +830,7 @@ export default function ProductDetailPage() {
             </Link>
           </div>
           {lastFive.length === 0 ? (
-            <p style={{ fontSize: 13, color: '#888' }}>
+            <p style={{ fontSize: 13, color: 'var(--fg-3)' }}>
               {t('emptyMovements')}
             </p>
           ) : (
@@ -906,14 +906,14 @@ export default function ProductDetailPage() {
                         style={{
                           fontSize: 11,
                           fontWeight: 600,
-                          color: '#666',
+                          color: 'var(--fg-3)',
                           marginTop: 2,
                         }}
                       >
                         <span
                           style={{
                             fontWeight: 800,
-                            color: type === 'entrada' ? '#1D9E75' : '#E24B4A',
+                            color: type === 'entrada' ? 'var(--ok)' : 'var(--crit)',
                           }}
                         >
                           {type === 'entrada' ? '+' : '−'}
@@ -933,7 +933,7 @@ export default function ProductDetailPage() {
                       style={{
                         fontSize: 10,
                         fontWeight: 700,
-                        color: '#888',
+                        color: 'var(--fg-3)',
                         letterSpacing: '.05em',
                         textTransform: 'uppercase',
                         flexShrink: 0,
@@ -1091,7 +1091,7 @@ function StatCard({
           fontWeight: 800,
           letterSpacing: '.1em',
           textTransform: 'uppercase',
-          color: '#888',
+          color: 'var(--fg-3)',
           marginBottom: 4,
         }}
       >
@@ -1104,7 +1104,7 @@ function StatCard({
             marginTop: 2,
             fontSize: 10,
             fontWeight: 700,
-            color: '#888',
+            color: 'var(--fg-3)',
             letterSpacing: '.04em',
           }}
         >
@@ -1295,7 +1295,7 @@ function MovementModal({
                 marginTop: 4,
                 fontSize: 11,
                 fontWeight: 700,
-                color: '#888',
+                color: 'var(--fg-3)',
                 letterSpacing: '.05em',
                 textTransform: 'uppercase',
               }}

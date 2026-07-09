@@ -422,7 +422,7 @@ export default function ProductosPage() {
                           fontSize: 12,
                           fontWeight: 600,
                           marginTop: 4,
-                          color: '#333',
+                          color: 'var(--fg-1)',
                         }}
                       >
                         {product.producer}
@@ -508,7 +508,7 @@ export default function ProductosPage() {
                       fontSize: 11,
                       fontWeight: 600,
                       marginTop: 8,
-                      color: '#333',
+                      color: 'var(--fg-1)',
                       display: 'flex',
                       justifyContent: 'space-between',
                       gap: 8,

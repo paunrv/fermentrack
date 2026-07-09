@@ -360,7 +360,7 @@ export default function NuevaProductoPage() {
                 flex: 1,
                 padding: '14px 16px',
                 marginLeft: n === 2 ? -3 : 0,
-                border: active ? '1px solid var(--hairline)' : '3px dashed #bbb',
+                border: active ? '1px solid var(--hairline)' : '3px dashed var(--hairline)',
                 background: active ? 'var(--fg-0)' : '#fff',
                 color: active ? '#fff' : '#888',
                 fontSize: 11,
@@ -380,8 +380,8 @@ export default function NuevaProductoPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   background: active ? '#fff' : 'transparent',
-                  color: active ? 'var(--fg-0)' : '#888',
-                  border: active ? '3px solid #fff' : '3px dashed #bbb',
+                  color: active ? 'var(--fg-0)' : 'var(--fg-3)',
+                  border: active ? '3px solid #fff' : '3px dashed var(--hairline)',
                   fontSize: 11,
                   fontWeight: 800,
                   flexShrink: 0,
@@ -476,7 +476,7 @@ export default function NuevaProductoPage() {
               <div
                 style={{
                   border: '1px solid var(--hairline)',
-                  background: '#f4f4f4',
+                  background: 'var(--panel-2)',
                   height: 320,
                   display: 'flex',
                   alignItems: 'center',
@@ -641,7 +641,7 @@ export default function NuevaProductoPage() {
             <div
               style={{
                 border: '1px solid var(--hairline)',
-                background: '#f4f4f4',
+                background: 'var(--panel-2)',
                 width: 180,
                 height: 200,
                 display: 'flex',
@@ -848,7 +848,7 @@ export default function NuevaProductoPage() {
               style={{
                 marginTop: 8,
                 padding: 12,
-                background: '#fafafa',
+                background: 'var(--panel-2)',
                 border: '1px solid var(--hairline)',
                 fontSize: 11,
                 fontWeight: 700,

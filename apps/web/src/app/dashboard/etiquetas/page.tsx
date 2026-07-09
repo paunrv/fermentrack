@@ -436,7 +436,7 @@ export default function EtiquetasPage() {
           ) : (
             <div
               style={{
-                border: '3px dashed #ccc',
+                border: '3px dashed var(--hairline)',
                 aspectRatio: '4 / 6',
                 maxWidth: 280,
                 display: 'flex',
