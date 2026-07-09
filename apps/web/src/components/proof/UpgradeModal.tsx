@@ -63,7 +63,7 @@ function UpgradeModalPanel({ onClose }: { onClose: () => void }) {
     >
       <button
         type="button"
-        aria-label="Cerrar"
+        aria-label={t('closeAria')}
         onClick={onClose}
         style={{
           position: 'absolute',

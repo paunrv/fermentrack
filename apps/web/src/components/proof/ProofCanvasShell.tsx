@@ -38,6 +38,11 @@ export type ProofCanvasCopySet = {
   hint: string
   conversationAria?: string
   workspaceAria?: string
+  modesAria?: string
+  sendAria?: string
+  suggestedRepliesAria?: string
+  resultsAria?: string
+  deleteFailed?: string
   analyzing: readonly string[]
   ticketUploaded?: (fileName: string) => string
   ticketUploadFailed?: string
@@ -373,6 +378,8 @@ export function ProofCanvasShell({
           wideLayout={wideLayout}
           onAction={prompt => sendPrompt(prompt, false)}
           onDeleteCard={onDeleteCard}
+          resultsAria={copies.resultsAria}
+          deleteFailed={copies.deleteFailed}
         />
       </div>
 
@@ -389,6 +396,8 @@ export function ProofCanvasShell({
           wideLayout={wideLayout}
           welcomeText={copies.welcome}
           conversationAria={copies.conversationAria}
+          modesAria={copies.modesAria}
+          suggestedRepliesAria={copies.suggestedRepliesAria}
           hubLensCopy={hubLensCopy}
           onModeAction={action => {
             setActiveSubHub(null)
@@ -415,6 +424,7 @@ export function ProofCanvasShell({
           wideLayout={wideLayout}
           placeholder={copies.placeholder}
           hintText={copies.hint}
+          sendAria={copies.sendAria}
         />
       </div>
     </div>

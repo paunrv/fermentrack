@@ -51,12 +51,16 @@ export function ProofResultsZone({
   wideLayout,
   onAction,
   onDeleteCard,
+  resultsAria,
+  deleteFailed,
 }: {
   displayCards: DisplayCards | null
   loading: boolean
   wideLayout?: boolean
   onAction: (prompt: string) => void
   onDeleteCard?: (itemId: string) => void | Promise<void>
+  resultsAria?: string
+  deleteFailed?: string
 }) {
   const [visibleCards, setVisibleCards] = useState<DisplayCards | null>(null)
   const [contentOpacity, setContentOpacity] = useState(1)
@@ -131,7 +135,7 @@ export function ProofResultsZone({
         return items.length > 0 ? { ...prev, items } : null
       })
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'No se pudo eliminar'
+      const msg = e instanceof Error ? e.message : (deleteFailed ?? 'No se pudo eliminar')
       setDeleteError(msg)
     } finally {
       setDeletingId(null)
@@ -146,7 +150,7 @@ export function ProofResultsZone({
     <section
       ref={zoneRef}
       aria-live="polite"
-      aria-label="Resultados PROOF"
+      aria-label={resultsAria}
       tabIndex={-1}
       className={`proof-results-zone${wideLayout ? ' proof-results-zone--wide' : ''}`}
       style={{

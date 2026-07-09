@@ -7,6 +7,8 @@ import type {
   ProofModeAction,
   ProofSubHub,
 } from '@/lib/proof/proof-canvas-copy'
+import type { ProofCanvasCopySet } from '@/components/proof/ProofCanvasShell'
+import type { ProofHubLensCopy } from '@/hooks/useWinemakerCanvasCopy'
 
 function lensFromMessages(
   t: ReturnType<typeof useTranslations<'distributor.canvas'>>,
@@ -24,12 +26,17 @@ function lensFromMessages(
 export function useDistributorCanvasCopy() {
   const t = useTranslations('distributor.canvas')
 
-  const copies = useMemo(
+  const copies: ProofCanvasCopySet = useMemo(
     () => ({
       placeholder: t('placeholder'),
       welcome: t('welcome'),
       hint: t('hint'),
       conversationAria: t('conversationAria'),
+      modesAria: t('modesAria'),
+      sendAria: t('sendAria'),
+      suggestedRepliesAria: t('suggestedRepliesAria'),
+      resultsAria: t('resultsAria'),
+      deleteFailed: t('deleteFailed'),
       analyzing: [t('analyzingShort'), t('analyzingLong')] as const,
       errors: {
         timeout: t('errors.timeout'),
@@ -74,5 +81,26 @@ export function useDistributorCanvasCopy() {
     [t]
   )
 
-  return { copies, modeActions, hubLenses }
+  const hubLensCopy: Partial<Record<ProofSubHub, ProofHubLensCopy>> = useMemo(
+    () => ({
+      compra: {
+        title: t('hubs.compra.title'),
+        aria: t('hubs.compra.aria'),
+        back: t('hubs.compra.back'),
+      },
+      venta: {
+        title: t('hubs.venta.title'),
+        aria: t('hubs.venta.aria'),
+        back: t('hubs.venta.back'),
+      },
+      bodega: {
+        title: t('hubs.bodega.title'),
+        aria: t('hubs.bodega.aria'),
+        back: t('hubs.bodega.back'),
+      },
+    }),
+    [t]
+  )
+
+  return { copies, modeActions, hubLenses, hubLensCopy }
 }

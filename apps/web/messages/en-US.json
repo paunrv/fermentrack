@@ -274,7 +274,8 @@
       "title": "This feature is part of the Pro plan",
       "body": "Team chat, more lots, and extended memory from $899/mo ($666/mo billed annually).",
       "seePlans": "See plans",
-      "stayBasic": "Stay on Regular"
+      "stayBasic": "Stay on Regular",
+      "closeAria": "Close"
     }
   },
   "about": {
@@ -737,6 +738,14 @@
       "railSettings": "Settings",
       "askPlaceholder": "Ask PROOF — stock, products, deliveries…",
       "askPlaceholderCompact": "Ask PROOF…",
+      "topbar": {
+        "settingsAria": "Settings",
+        "profiles": {
+          "distiller": "DISTILLER",
+          "distributor": "DISTRIBUTOR",
+          "winemaker": "WINEMAKER"
+        }
+      },
       "askSubmit": "Ask",
       "uploadPhoto": "Upload photo to PROOF",
       "personalInfo": "Personal information",
@@ -789,10 +798,22 @@
       "closeAria": "Close capture panel",
       "customize": "Customize my quick actions",
       "options": {
-        "voz": { "title": "Voice", "subtitle": "Dictate and PROOF records" },
-        "foto": { "title": "Photo", "subtitle": "PROOF analyzes and captures" },
-        "nota": { "title": "Note", "subtitle": "Free text or log" },
-        "lab": { "title": "Lab", "subtitle": "Upload results" }
+        "voz": {
+          "title": "Voice",
+          "subtitle": "Dictate and PROOF records"
+        },
+        "foto": {
+          "title": "Photo",
+          "subtitle": "PROOF analyzes and captures"
+        },
+        "nota": {
+          "title": "Note",
+          "subtitle": "Free text or log"
+        },
+        "lab": {
+          "title": "Lab",
+          "subtitle": "Upload results"
+        }
       }
     },
     "orgSwitcher": {
@@ -972,6 +993,7 @@
       "you": "You",
       "member": "Member",
       "toggle": "Show or hide team chat",
+      "dockAria": "Team chat",
       "unread": "{count, plural, one {# unread message} other {# unread messages}}",
       "upgradeHint": "Team chat is available on Pro or Enterprise plans.",
       "readOnlyHint": "Your role is read-only in team chat. Ask the owner for write access if needed.",
@@ -1382,6 +1404,11 @@
       "welcome": "Hi, I'm PROOF. What do you need to do today?",
       "hint": "Or type your question in the field below.",
       "conversationAria": "Conversation with PROOF",
+      "modesAria": "PROOF modes",
+      "sendAria": "Send",
+      "suggestedRepliesAria": "Suggested replies",
+      "resultsAria": "PROOF results",
+      "deleteFailed": "Could not delete",
       "analyzingShort": "PROOF analyzing…",
       "analyzingLong": "PROOF analyzing your operation…",
       "errors": {
@@ -1460,6 +1487,30 @@
           "description": "Debt to suppliers",
           "message": "show accounts payable to suppliers"
         }
+      },
+      "hubs": {
+        "compra": {
+          "title": "Supplier purchases — what do you need?",
+          "aria": "Purchase order actions",
+          "back": "← Back to modes"
+        },
+        "venta": {
+          "title": "Customer sales — what do you need?",
+          "aria": "Sales order actions",
+          "back": "← Back to modes"
+        },
+        "bodega": {
+          "title": "Warehouse status — what do you want to review?",
+          "aria": "Warehouse view",
+          "back": "← Back to modes"
+        }
+      },
+      "ocPanel": {
+        "title": "Pending purchase orders",
+        "aria": "Pending purchase orders",
+        "newOc": "+ New PO",
+        "hide": "Hide",
+        "hideAria": "Hide purchase orders"
       }
     },
     "liquidCategories": {
@@ -2193,6 +2244,11 @@
       "hint": "Upload receipts, check the winery, or review the schedule.",
       "conversationAria": "Conversation with PROOF",
       "workspaceAria": "PROOF workspace",
+      "modesAria": "PROOF modes",
+      "sendAria": "Send",
+      "suggestedRepliesAria": "Suggested replies",
+      "resultsAria": "PROOF results",
+      "deleteFailed": "Could not delete",
       "analyzingShort": "PROOF analyzing…",
       "analyzingLong": "PROOF analyzing your operation…",
       "ticketUploaded": "Uploaded receipt: {fileName}",

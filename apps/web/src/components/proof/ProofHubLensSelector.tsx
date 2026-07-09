@@ -175,33 +175,6 @@ function LensIcon({
   )
 }
 
-const HUB_COPY: Record<ProofSubHub, { title: string; aria: string }> = {
-  compra: {
-    title: 'Compras a proveedor — ¿qué necesitas?',
-    aria: 'Acciones de orden de compra',
-  },
-  venta: {
-    title: 'Ventas a cliente — ¿qué necesitas?',
-    aria: 'Acciones de pedido de venta',
-  },
-  bodega: {
-    title: 'Estado de bodega — ¿qué quieres revisar?',
-    aria: 'Vista de bodega',
-  },
-  wm_ticket: {
-    title: 'Tickets y documentos — ¿qué necesitas?',
-    aria: 'Acciones de tickets y gastos',
-  },
-  wm_bodega: {
-    title: 'Tu bodega — ¿qué quieres consultar?',
-    aria: 'Consulta de bodega winemaker',
-  },
-  wm_agenda: {
-    title: 'Agenda y tiempos — ¿qué revisamos?',
-    aria: 'Agenda de la bodega',
-  },
-}
-
 export function ProofHubLensSelector({
   accent,
   hub,
@@ -222,9 +195,9 @@ export function ProofHubLensSelector({
   hubCopy?: { title: string; aria: string; back?: string }
 }) {
   if (actions.length === 0) return null
+  if (!hubCopy) return null
 
-  const defaults = HUB_COPY[hub]
-  const copy: { title: string; aria: string; back?: string } = hubCopy ?? defaults
+  const copy = hubCopy
   const columns =
     hub === 'compra' || hub === 'wm_ticket' || hub === 'wm_agenda' ? 2 : 3
 
@@ -334,7 +307,7 @@ export function ProofHubLensSelector({
         ))}
       </div>
 
-      {onBack && !compact ? (
+      {onBack && !compact && copy.back ? (
         <button
           type="button"
           disabled={disabled}
@@ -351,7 +324,7 @@ export function ProofHubLensSelector({
             fontFamily: 'var(--font-display)',
           }}
         >
-          {copy.back ?? '← Volver a modos'}
+          {copy.back}
         </button>
       ) : null}
     </div>

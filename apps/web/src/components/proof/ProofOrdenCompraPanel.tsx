@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
 import { OrdenCompraDocumentCard } from '@/components/proof/OrdenCompraDocumentCard'
@@ -26,6 +27,7 @@ export function ProofOrdenCompraPanel({
   onIngresoConfirmado?: () => void
   className?: string
 }) {
+  const t = useTranslations('distributor.canvas.ocPanel')
   const supabase = useSupabase()
   const { scope } = useProfile()
   const [ordenes, setOrdenes] = useState<OrdenCompraDistribuidorWithItems[]>([])
@@ -145,7 +147,7 @@ export function ProofOrdenCompraPanel({
 
   return (
     <section
-      aria-label="Órdenes de compra pendientes"
+      aria-label={t('aria')}
       className={className ? `${className} proof-canvas-oc-panel` : 'proof-canvas-oc-panel'}
       style={{
         flexShrink: 0,
@@ -176,7 +178,7 @@ export function ProofOrdenCompraPanel({
             fontFamily: 'var(--font-display)',
           }}
         >
-          Órdenes de compra pendientes
+          {t('title')}
         </h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <Link
@@ -188,12 +190,12 @@ export function ProofOrdenCompraPanel({
               textDecoration: 'none',
             }}
           >
-            + Nueva OC
+            {t('newOc')}
           </Link>
           <button
             type="button"
             onClick={() => setCollapsed(true)}
-            aria-label="Ocultar órdenes de compra"
+            aria-label={t('hideAria')}
             style={{
               fontSize: 12,
               color: 'var(--color-text-tertiary)',
@@ -202,7 +204,7 @@ export function ProofOrdenCompraPanel({
               cursor: 'pointer',
             }}
           >
-            Ocultar
+            {t('hide')}
           </button>
         </div>
       </div>

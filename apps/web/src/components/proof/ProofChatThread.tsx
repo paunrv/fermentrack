@@ -46,16 +46,18 @@ function SuggestedReplies({
   replies,
   disabled,
   onSelect,
+  suggestedRepliesAria,
 }: {
   accent: string
   replies: ProofSuggestedReply[]
   disabled?: boolean
   onSelect: (message: string) => void
+  suggestedRepliesAria?: string
 }) {
   return (
     <div
       role="group"
-      aria-label="Respuestas sugeridas"
+      aria-label={suggestedRepliesAria}
       style={{
         display: 'flex',
         flexWrap: 'wrap',
@@ -137,6 +139,8 @@ export function ProofChatThread({
   onSuggestedReply,
   welcomeText: welcomeTextProp,
   conversationAria,
+  modesAria,
+  suggestedRepliesAria,
   hubLensCopy,
   wideLayout,
 }: {
@@ -156,6 +160,8 @@ export function ProofChatThread({
   onSuggestedReply?: (message: string) => void
   welcomeText?: string
   conversationAria?: string
+  modesAria?: string
+  suggestedRepliesAria?: string
   wideLayout?: boolean
   hubLensCopy?: Partial<
     Record<ProofSubHub, { title: string; aria: string; back: string }>
@@ -217,7 +223,7 @@ export function ProofChatThread({
         ref={scrollRef}
         className="proof-chat-thread"
         aria-live="polite"
-        aria-label={conversationAria ?? 'Conversación con PROOF'}
+        aria-label={conversationAria}
         style={{
           maxWidth: contentMaxWidth,
           margin: wideLayout ? undefined : '0 auto',
@@ -281,6 +287,7 @@ export function ProofChatThread({
                 actions={modeActions!}
                 disabled={modeActionsDisabled}
                 activeSubHub={activeSubHub}
+                modesAria={modesAria}
                 onSelect={action => {
                   const hub = subHubForModeAction(action)
                   if (hub) {
@@ -364,6 +371,7 @@ export function ProofChatThread({
                   accent={accent}
                   replies={msg.suggestedReplies!}
                   disabled={modeActionsDisabled}
+                  suggestedRepliesAria={suggestedRepliesAria}
                   onSelect={onSuggestedReply!}
                 />
               ) : null}

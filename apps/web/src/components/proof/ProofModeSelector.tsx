@@ -101,12 +101,14 @@ export function ProofModeSelector({
   disabled,
   onSelect,
   activeSubHub,
+  modesAria,
 }: {
   accent: string
   actions: ProofModeAction[]
   disabled?: boolean
   onSelect: (action: ProofModeAction) => void
   activeSubHub?: ProofSubHub | null
+  modesAria?: string
 }) {
   if (actions.length === 0) return null
 
@@ -114,7 +116,7 @@ export function ProofModeSelector({
     <div
       className="proof-mode-selector"
       role="group"
-      aria-label="Modos de PROOF"
+      aria-label={modesAria}
       style={{ width: '100%' }}
     >
       <style>{`

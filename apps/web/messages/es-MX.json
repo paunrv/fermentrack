@@ -274,7 +274,8 @@
       "title": "Esta función es parte del plan Pro",
       "body": "Chat de equipo, más lotes y memoria extendida desde $899/mes ($666/mes pagando anual).",
       "seePlans": "Ver planes",
-      "stayBasic": "Seguir en Regular"
+      "stayBasic": "Seguir en Regular",
+      "closeAria": "Cerrar"
     }
   },
   "about": {
@@ -737,6 +738,14 @@
       "railSettings": "Ajustes",
       "askPlaceholder": "Pregúntale a PROOF — stock, productos, entregas…",
       "askPlaceholderCompact": "Pregunta a PROOF…",
+      "topbar": {
+        "settingsAria": "Ajustes",
+        "profiles": {
+          "distiller": "DESTILADOR",
+          "distributor": "DISTRIBUIDOR",
+          "winemaker": "WINEMAKER"
+        }
+      },
       "askSubmit": "Preguntar",
       "uploadPhoto": "Subir foto a PROOF",
       "personalInfo": "Información personal",
@@ -972,6 +981,7 @@
       "you": "Tú",
       "member": "Miembro",
       "toggle": "Mostrar u ocultar chat de equipo",
+      "dockAria": "Chat de equipo",
       "unread": "{count, plural, one {# mensaje sin leer} other {# mensajes sin leer}}",
       "upgradeHint": "El chat de equipo está disponible en plan Pro o Enterprise.",
       "readOnlyHint": "Tu rol solo permite leer el chat. Pide al owner acceso de escritura si lo necesitas.",
@@ -1382,6 +1392,11 @@
       "welcome": "Hola, soy PROOF. ¿Qué necesitas hacer hoy?",
       "hint": "O escribe tu pregunta en el campo de abajo.",
       "conversationAria": "Conversación con PROOF",
+      "modesAria": "Modos de PROOF",
+      "sendAria": "Enviar",
+      "suggestedRepliesAria": "Respuestas sugeridas",
+      "resultsAria": "Resultados PROOF",
+      "deleteFailed": "No se pudo eliminar",
       "analyzingShort": "PROOF analizando…",
       "analyzingLong": "PROOF analizando tu operación…",
       "errors": {
@@ -1460,6 +1475,30 @@
           "description": "Deuda con proveedores",
           "message": "muéstrame cuentas por pagar a proveedores"
         }
+      },
+      "hubs": {
+        "compra": {
+          "title": "Compras a proveedor — ¿qué necesitas?",
+          "aria": "Acciones de orden de compra",
+          "back": "← Volver a modos"
+        },
+        "venta": {
+          "title": "Ventas a cliente — ¿qué necesitas?",
+          "aria": "Acciones de pedido de venta",
+          "back": "← Volver a modos"
+        },
+        "bodega": {
+          "title": "Estado de bodega — ¿qué quieres revisar?",
+          "aria": "Vista de bodega",
+          "back": "← Volver a modos"
+        }
+      },
+      "ocPanel": {
+        "title": "Órdenes de compra pendientes",
+        "aria": "Órdenes de compra pendientes",
+        "newOc": "+ Nueva OC",
+        "hide": "Ocultar",
+        "hideAria": "Ocultar órdenes de compra"
       }
     },
     "liquidCategories": {
@@ -2193,6 +2232,11 @@
       "hint": "Sube tickets, consulta bodega o revisa tiempos en la agenda.",
       "conversationAria": "Conversación con PROOF",
       "workspaceAria": "Espacio de trabajo PROOF",
+      "modesAria": "Modos de PROOF",
+      "sendAria": "Enviar",
+      "suggestedRepliesAria": "Respuestas sugeridas",
+      "resultsAria": "Resultados PROOF",
+      "deleteFailed": "No se pudo eliminar",
       "analyzingShort": "PROOF analizando…",
       "analyzingLong": "PROOF analizando tu operación…",
       "ticketUploaded": "Subí ticket: {fileName}",

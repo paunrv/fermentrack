@@ -46,6 +46,7 @@ export function ProofComposer({
   docked = false,
   placeholder: placeholderProp,
   hintText: hintTextProp,
+  sendAria,
   wideLayout,
 }: {
   accent: string
@@ -61,6 +62,7 @@ export function ProofComposer({
   docked?: boolean
   placeholder?: string
   hintText?: string
+  sendAria?: string
   wideLayout?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -163,7 +165,7 @@ export function ProofComposer({
         <button
           type="submit"
           disabled={!inputValue.trim() || disabled}
-          aria-label="Enviar"
+          aria-label={sendAria}
           style={{
             width: 36,
             height: 36,

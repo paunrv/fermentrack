@@ -1,22 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserAvatarUrl, getUserInitials } from '@/lib/auth/user'
 import type { ProfileType } from '@/lib/proof/kpi-metrics'
 import type { DestMembresia } from '@/lib/proof/destilador-types'
-
-const BADGE_LABEL: Record<ProfileType, string> = {
-  distiller: 'DESTILADOR',
-  distributor: 'DISTRIBUIDOR',
-  winemaker: 'WINEMAKER',
-}
-
-const MEMBRESIA_LABEL: Record<DestMembresia, string> = {
-  basico: 'Básico',
-  profesional: 'Profesional',
-  premium: 'Premium',
-}
 
 export function ProofTopbar({
   accent,
@@ -31,6 +20,8 @@ export function ProofTopbar({
 }) {
   const { user } = useAuth()
   const router = useRouter()
+  const tTopbar = useTranslations('dashboard.shell.topbar')
+  const tMembership = useTranslations('dashboard.shell.membership')
 
   const initials = getUserInitials(user)
   const avatarUrl = getUserAvatarUrl(user)
@@ -74,7 +65,7 @@ export function ProofTopbar({
             letterSpacing: '0.06em',
           }}
         >
-          {BADGE_LABEL[profileType]}
+          {tTopbar(`profiles.${profileType}`)}
         </span>
       </div>
 
@@ -83,18 +74,18 @@ export function ProofTopbar({
           <span
             style={{
               fontSize: 10,
-              color: '#BBB',
+              color: 'var(--fg-3)',
               fontFamily: 'var(--font-mono)',
             }}
           >
-            {MEMBRESIA_LABEL[membresia]}
+            {tMembership(membresia)}
           </span>
         )}
         {profileLabel && profileType === 'distributor' && (
           <span
             style={{
               fontSize: 10,
-              color: '#BBB',
+              color: 'var(--fg-3)',
               fontFamily: 'var(--font-mono)',
             }}
           >
@@ -104,7 +95,7 @@ export function ProofTopbar({
         <button
           type="button"
           onClick={() => router.push('/dashboard/settings')}
-          aria-label="Ajustes"
+          aria-label={tTopbar('settingsAria')}
           style={{
             width: 28,
             height: 28,
@@ -152,7 +143,7 @@ export function CanvasDivider({ label }: { label: string }) {
       <div
         style={{
           fontSize: 9,
-          color: '#CCC',
+          color: 'var(--fg-3)',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           fontFamily: 'var(--font-mono)',

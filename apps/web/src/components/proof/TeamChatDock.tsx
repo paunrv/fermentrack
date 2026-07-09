@@ -164,6 +164,8 @@ export function TeamChatDock({
   children: React.ReactNode
   onUnreadChange?: (count: number) => void
 }) {
+  const t = useTranslations('dashboard.teamChat')
+
   return (
     <div style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0 }}>
       <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -171,7 +173,7 @@ export function TeamChatDock({
       </div>
       {open && enabled ? (
         <aside
-          aria-label="Team chat"
+          aria-label={t('dockAria')}
           style={{
             width: TEAM_CHAT_PANEL_WIDTH_PX,
             flexShrink: 0,
