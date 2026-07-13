@@ -21,6 +21,12 @@ Guía corta para la visita con enólogos. Actualizado con el prep de issues `pil
 - [ ] Device: laptop desktop (≥1024px) + teléfono para captura
 - [ ] Plan B offline: demo solo UI (pipeline, agenda, bodega, detalle) sin MCP
 
+## Datos demo HUMI
+
+- Org: HUMI (owner)
+- Lote pipeline de prueba: `HUMI-PILOTO-001` (etapa fermentación) — creado vía MCP `crear_lote`
+- `get_resumen_bodega` y `list_lotes` deben coincidir (ambos sobre `public.lots`)
+
 ## Dry-run MCP (#82) — día antes
 
 Hacerlo en la **laptop de campo**, con la misma red/cuenta que usarás en la visita.
