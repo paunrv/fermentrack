@@ -40,6 +40,7 @@ export type WinemakerOwnerHomeData = {
   pendingTasks: OwnerTaskRow[]
   team: OwnerTeamMember[]
   completingTaskId: string | null
+  taskActionError: string | null
   completeTask: (taskId: string) => Promise<void>
   reload: () => Promise<void>
   planWarnings: PlanHomeWarnings | null
@@ -68,6 +69,7 @@ export function useWinemakerOwnerHomeData(): WinemakerOwnerHomeData {
   const [existenciaLotIds, setExistenciaLotIds] = useState<Set<string>>(new Set())
   const [planWarnings, setPlanWarnings] = useState<PlanHomeWarnings | null>(null)
   const [completingTaskId, setCompletingTaskId] = useState<string | null>(null)
+  const [taskActionError, setTaskActionError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -140,17 +142,19 @@ export function useWinemakerOwnerHomeData(): WinemakerOwnerHomeData {
   const completeTask = useCallback(
     async (taskId: string) => {
       setCompletingTaskId(taskId)
+      setTaskActionError(null)
       try {
         await completeTaskRow(supabase, taskId)
         setTasksToday(prev => prev.filter(t => t.id !== taskId))
         setPendingTasks(prev => prev.filter(t => t.id !== taskId))
       } catch (err) {
         console.error('[useWinemakerOwnerHomeData] complete task', err)
+        setTaskActionError(tHome('completeTaskError'))
       } finally {
         setCompletingTaskId(null)
       }
     },
-    [supabase]
+    [supabase, tHome]
   )
 
   const displayName = useMemo(
@@ -177,6 +181,7 @@ export function useWinemakerOwnerHomeData(): WinemakerOwnerHomeData {
     pendingTasks,
     team,
     completingTaskId,
+    taskActionError,
     completeTask,
     reload: load,
     planWarnings,

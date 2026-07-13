@@ -804,7 +804,7 @@
         },
         "foto": {
           "title": "Foto",
-          "subtitle": "PROOF analiza y captura"
+          "subtitle": "Pizarrón, lab o bodega"
         },
         "nota": {
           "title": "Nota",
@@ -812,7 +812,7 @@
         },
         "lab": {
           "title": "Lab",
-          "subtitle": "Carga resultados"
+          "subtitle": "Resultados a la memoria del día"
         }
       }
     },
@@ -1103,6 +1103,48 @@
       "limit_reached_usuarios": "Tu plan permite {limit} miembro en el equipo. Mejora a Pro para invitar más personas.",
       "limit_reached_memoria": "La memoria de tu plan está llena ({limit} meses). Mejora el plan para seguir registrando eventos.",
       "upgradeHint": "Mejora a Pro o Enterprise para límites más altos."
+    },
+    "costos": {
+      "title": "Costos",
+      "subtitle": "Costos de producción por lote",
+      "addCost": "Agregar costo",
+      "fields": {
+        "batch": "Lote",
+        "selectBatch": "Seleccionar lote",
+        "category": "Categoría",
+        "date": "Fecha",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Ej: Malta Pilsner 25kg",
+        "amount": "Monto",
+        "currency": "Moneda"
+      },
+      "categories": {
+        "materia_prima": "Materia prima",
+        "mano_obra": "Mano de obra",
+        "equipo": "Equipo",
+        "energia": "Energía",
+        "limpieza": "Limpieza",
+        "analisis": "Análisis",
+        "otro": "Otro"
+      },
+      "submit": "Agregar costo",
+      "saving": "Guardando...",
+      "kpi": {
+        "total": "Total acumulado",
+        "bottledUnits": "Unidades embotelladas",
+        "costPerBottle": "Costo por botella"
+      },
+      "tableTitle": "Costos del lote",
+      "columns": {
+        "date": "Fecha",
+        "category": "Categoría",
+        "description": "Descripción",
+        "amount": "Monto"
+      },
+      "loading": "Cargando...",
+      "selectBatchHint": "Selecciona un lote",
+      "empty": "Sin costos registrados",
+      "dash": "—"
     }
   },
   "distributor": {
@@ -2099,9 +2141,10 @@
     },
     "lotes": {
       "title": "Lotes de vino",
-      "subtitle": "Fermentación, envejecimiento y embotellado — cada lote con su historial.",
+      "subtitle": "Los mismos lotes activos del pipeline — toca uno para ver detalle.",
       "loading": "Cargando lotes…",
-      "empty": "Aún no hay lotes. Pregúntale a PROOF en Inicio o registra el primero cuando subas la cosecha.",
+      "loadError": "No se pudieron cargar los lotes.",
+      "empty": "Aún no hay lotes activos. Crea el primero desde Conectar (MCP) o al registrar la cosecha.",
       "noVarietal": "Sin varietal",
       "statusCount": "{status}: {count}",
       "litersUnit": "{amount} L"
@@ -2110,7 +2153,8 @@
       "title": "Proveedores",
       "subtitle": "Catálogo que PROOF construye al subir tickets: uva, corchos, botellas, etiquetas y más.",
       "loading": "Cargando proveedores…",
-      "empty": "Aún no hay proveedores. Sube un ticket desde PROOF y guardamos el proveedor con el tipo de insumo detectado.",
+      "loadError": "No se pudieron cargar los proveedores.",
+      "empty": "Aún no hay proveedores. Importa un ticket con tu agente MCP (Conectar) y guardamos el proveedor con el tipo de insumo.",
       "suppliesLabel": "Insumos: {list}",
       "noClassifiedLines": "Sin líneas clasificadas aún"
     },
@@ -2118,7 +2162,12 @@
       "title": "Documentos",
       "subtitle": "Tickets, facturas, XML y análisis de laboratorio — evidencia inmutable de tu operación.",
       "loading": "Cargando documentos…",
-      "empty": "Sin documentos aún. Sube un ticket desde PROOF — clasificamos proveedor e insumos (uva, corchos, botellas…)."
+      "loadError": "No se pudieron cargar los documentos.",
+      "empty": "Sin documentos aún. Captura evidencia en Agenda, o importa tickets con tu agente MCP desde Conectar.",
+      "openAria": "Abrir {title}",
+      "opening": "Abriendo…",
+      "noFile": "Este documento no tiene archivo adjunto.",
+      "openError": "No se pudo abrir el archivo."
     },
     "gastos": {
       "title": "Gastos",
@@ -2126,24 +2175,49 @@
       "totalRegistered": "Total registrado: <strong>{amount}</strong>",
       "wineryOverhead": "Bodega (overhead): {amount}",
       "loading": "Cargando gastos…",
-      "empty": "Sin gastos registrados. Dile a PROOF cuánto pagaste en un ticket o servicio de bodega.",
+      "loadError": "No se pudieron cargar los gastos.",
+      "empty": "Sin gastos registrados. Importa un ticket con tu agente MCP (Conectar) para registrar costos de bodega.",
       "costLine": "{category} · {allocation}"
     },
     "agenda": {
-      "title": "Agenda",
-      "subtitle": "Calendario, foto del pizarrón y resultados de laboratorio — todo categorizado desde el primer día.",
+      "title": "Memoria de la bodega",
+      "subtitle": "El calendario guarda lo que define el pizarrón — evidencia del día, ordenada.",
       "backToProof": "← PROOF",
+      "prevMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente",
+      "loading": "Cargando memoria…",
+      "loadError": "No se pudo cargar el calendario.",
+      "legend": {
+        "whiteboard": "Pizarrón",
+        "lab": "Lab",
+        "bodega": "Bodega",
+        "other": "Otro"
+      },
+      "overflow": "+{count}",
+      "day": {
+        "empty": "Sin evidencia este día. Captura lo del pizarrón para no perder el hilo.",
+        "capture": "Capturar",
+        "eventsAria": "Evidencia del {date}",
+        "openAria": "Abrir {title}",
+        "opening": "Abriendo…",
+        "noFile": "Este registro no tiene archivo adjunto.",
+        "openError": "No se pudo abrir el archivo."
+      },
       "capture": {
-        "whiteboardTitle": "Foto del pizarrón",
-        "whiteboardHint": "Cuando actualices el pizarrón en bodega, elige la etapa y sube una foto. PROOF la guarda como evidencia del día.",
-        "categoryLabel": "Categoría",
+        "sheetAria": "Capturar evidencia",
+        "closeAria": "Cerrar",
+        "title": "¿Qué subimos?",
+        "whiteboard": "Foto del pizarrón",
+        "whiteboardHint": "Elige la etapa y toma o sube la foto.",
+        "categoryLabel": "Etapa",
         "whiteboardCta": "Tomar o subir foto",
-        "resultsTitle": "Resultados de análisis y bodega",
-        "resultsHint": "Sube PDFs o fotos de laboratorio y controles en bodega. Quedan ligados a tu calendario y documentos.",
-        "labCta": "Subir análisis de laboratorio",
-        "bodegaCta": "Subir resultado en bodega",
+        "lab": "Análisis de laboratorio",
+        "labHint": "PDF o foto de resultados.",
+        "bodega": "Resultado en bodega",
+        "bodegaHint": "Control o nota de bodega.",
+        "back": "← Volver",
         "uploading": "Subiendo…",
-        "success": "Archivo guardado en PROOF.",
+        "success": "Guardado en la memoria del día.",
         "error": "No se pudo subir el archivo."
       }
     },
@@ -2202,6 +2276,7 @@
       "memberFallback": "Miembro",
       "completeTask": "Completar",
       "completeTaskAria": "Completar {title}",
+      "completeTaskError": "No se pudo completar la tarea. Intenta de nuevo.",
       "assignedTo": "Asignado a {name}",
       "sections": {
         "attention": "Atención ahora",
@@ -2963,7 +3038,7 @@
       "error": "Falló la prueba: {detail}",
       "noProfile": "No hay un perfil activo para conectar."
     },
-    "oauthHint": "Metadatos OAuth:",
+    "oauthHint": "Auth: pega un JWT fresco de sesión en los headers del cliente MCP. Metadatos:",
     "oauthLink": "recurso protegido",
     "setupTitle": "Configura tu asistente",
     "advancedTitle": "Opciones avanzadas",
@@ -2972,7 +3047,7 @@
       "cursorHint": "Añade PROOF como servidor MCP en Cursor.",
       "cursorStep1": "Abre Cursor Settings → MCP.",
       "cursorStep2": "Añade un servidor con la URL de conexión de arriba.",
-      "cursorStep3": "Autentica con tu sesión PROOF (o pega el token desde Opciones avanzadas).",
+      "cursorStep3": "Pega un token de sesión fresco en el header Authorization (Opciones avanzadas). Caduca ~1h — renuévalo si dejan de aparecer las tools.",
       "claude": "Claude",
       "claudeConfigPath": "Archivo (Mac): {path}",
       "claudeStep1": "En PROOF pulsa «Descargar token» (archivo proof-mcp-token.txt).",

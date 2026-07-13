@@ -103,6 +103,28 @@ export async function fetchDocuments(
   return (data ?? []) as unknown as WmDocumentRow[]
 }
 
+/** Month (or range) query for agenda calendar — uses `wm_documents_org_date_idx`. */
+export async function fetchDocumentsInRange(
+  sb: SupabaseClient,
+  organizationId: string,
+  fromDate: string,
+  toDate: string
+): Promise<WmDocumentRow[]> {
+  const { data, error } = await sb
+    .from('wm_documents')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .gte('document_date', fromDate)
+    .lte('document_date', toDate)
+    .order('document_date', { ascending: true })
+
+  if (error) {
+    if (isWinemakerSchemaMissingError(error)) return []
+    throw error
+  }
+  return (data ?? []) as unknown as WmDocumentRow[]
+}
+
 export async function fetchSuppliers(
   sb: SupabaseClient,
   organizationId: string,

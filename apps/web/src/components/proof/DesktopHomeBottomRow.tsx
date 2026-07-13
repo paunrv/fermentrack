@@ -217,6 +217,7 @@ export function DesktopHomeBottomRow({
   pendingTasks,
   tasksToday,
   completingTaskId,
+  taskActionError,
   onCompleteTask,
   copy,
   mcpConfigured,
@@ -226,6 +227,7 @@ export function DesktopHomeBottomRow({
   pendingTasks: OwnerTaskRow[]
   tasksToday: OwnerTaskRow[]
   completingTaskId: string | null
+  taskActionError?: string | null
   onCompleteTask: (taskId: string) => void
   copy: WinemakerOwnerCopy
   mcpConfigured: boolean
@@ -233,31 +235,38 @@ export function DesktopHomeBottomRow({
   agentLoading: boolean
 }) {
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-        gap: 16,
-        alignItems: 'stretch',
-      }}
-    >
-      <PendingTasksPanel
-        tasks={pendingTasks}
-        completingTaskId={completingTaskId}
-        onComplete={onCompleteTask}
-        copy={copy}
-      />
-      <CalendarPanel
-        tasks={tasksToday}
-        completingTaskId={completingTaskId}
-        onComplete={onCompleteTask}
-        copy={copy}
-      />
-      <AgentExternalPanel
-        mcpConfigured={mcpConfigured}
-        agentStatus={agentStatus}
-        agentLoading={agentLoading}
-      />
+    <div style={{ display: 'grid', gap: 12 }}>
+      {taskActionError ? (
+        <p role="alert" style={{ margin: 0, fontSize: 13, color: 'var(--crit)' }}>
+          {taskActionError}
+        </p>
+      ) : null}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+          gap: 16,
+          alignItems: 'stretch',
+        }}
+      >
+        <PendingTasksPanel
+          tasks={pendingTasks}
+          completingTaskId={completingTaskId}
+          onComplete={onCompleteTask}
+          copy={copy}
+        />
+        <CalendarPanel
+          tasks={tasksToday}
+          completingTaskId={completingTaskId}
+          onComplete={onCompleteTask}
+          copy={copy}
+        />
+        <AgentExternalPanel
+          mcpConfigured={mcpConfigured}
+          agentStatus={agentStatus}
+          agentLoading={agentLoading}
+        />
+      </div>
     </div>
   )
 }

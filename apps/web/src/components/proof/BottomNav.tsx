@@ -17,7 +17,7 @@ export const BOTTOM_NAV_ITEMS: Record<
   lotes: { emoji: '🍷', labelKey: 'lotes', href: '/dashboard/winemaker/lotes' },
   agenda: { emoji: '📅', labelKey: 'agenda', href: '/dashboard/winemaker/agenda' },
   chat: { emoji: '💬', labelKey: 'chat', href: '/dashboard/winemaker/chat' },
-  conectar: { emoji: '🔗', labelKey: 'conectar', href: '/dashboard' },
+  conectar: { emoji: '🔗', labelKey: 'conectar', href: '/dashboard/conectar' },
   tareas: { emoji: '✅', labelKey: 'tareas', href: '/bodega' },
   mas: { emoji: '⋯', labelKey: 'mas', href: '/dashboard/settings' },
 }

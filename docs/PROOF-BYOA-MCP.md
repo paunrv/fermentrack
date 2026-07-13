@@ -20,7 +20,9 @@ External agents (Claude Desktop, Cursor, etc.) connect to PROOF via the [Model C
 3. MCP client sends `Authorization: Bearer <access_token>` on each request.
 4. Server validates JWT via `supabase.auth.getUser(token)` and runs tools with a Supabase client that forwards the same token (RLS applies).
 
-**OAuth 2.1 metadata:** MCP clients discover the authorization server at `{NEXT_PUBLIC_SUPABASE_URL}/auth/v1` via the protected-resource metadata endpoint. Full OAuth authorization-code flow for headless clients is **Phase 1+**; Phase 0 uses bearer tokens from an existing browser session.
+**Auth mode (current):** Bearer JWT from an existing PROOF browser session. `GET /.well-known/oauth-protected-resource` advertises `bearer_methods_supported: ["header"]` and **omits** `authorization_servers` unless `PROOF_MCP_OAUTH_ENABLED=true`.
+
+Do not enable that flag until Supabase **Authentication → OAuth Server** is on (with consent UI). Advertising a disabled issuer makes Cursor / `mcp-remote` attempt dynamic client registration and fail with `Incompatible auth server: does not support dynamic client registration`.
 
 ### Cursor / Claude Desktop config
 
@@ -110,16 +112,17 @@ Write tools require explicit confirmation scopes in Phase 2+.
 
 ## Validation checklist (Phase 0)
 
-- [x] `GET /.well-known/oauth-protected-resource` → JSON metadata (`authorization_servers` → Supabase Auth)
+- [x] `GET /.well-known/oauth-protected-resource` → JSON metadata (bearer-only by default; `authorization_servers` only when `PROOF_MCP_OAUTH_ENABLED=true`)
 - [x] MCP `tools/list` without token → `401` + `WWW-Authenticate` bearer challenge
+- [x] Invalid/expired JWT → `401` with `Invalid token` (not “No authorization provided”)
 - [x] `listSkusTool` unit test with authenticated MCP context → SKU JSON payload
 - [ ] MCP `list_skus` with valid Supabase JWT in Cursor → manual (see config below)
 
-Validated locally on 2026-07-02:
+Validated locally:
 
 ```bash
 curl -s http://localhost:3000/.well-known/oauth-protected-resource
-# {"resource":"http://localhost:3000","authorization_servers":["https://<project>.supabase.co/auth/v1"]}
+# {"resource":"http://localhost:3000","bearer_methods_supported":["header"]}
 
 curl -i -X POST http://localhost:3000/api/mcp \
   -H 'Content-Type: application/json' \
@@ -393,7 +396,7 @@ Per-user sliding window on `/api/mcp` (`lib/mcp/rate-limit.ts`):
 |-------|------------|
 | Tool permissions | RLS on all data paths; winemaker writes require org role owner/admin/member (viewer blocked) |
 | Cross-org access | `resolveMcpScope` rejects `organization_id` not in user memberships |
-| OAuth / JWT lifecycle | Short-lived Supabase access tokens; clients must refresh after logout; metadata at `/.well-known/oauth-protected-resource` |
+| OAuth / JWT lifecycle | Short-lived Supabase access tokens (~1h); refresh via Connection Hub copy/download; do not advertise `authorization_servers` until Supabase OAuth Server + consent UI are live |
 | Service role | Audit inserts only — never exposed to browser |
 | Hosted LLM | Removed — no `ANTHROPIC_API_KEY` in app or turbo build env |
 

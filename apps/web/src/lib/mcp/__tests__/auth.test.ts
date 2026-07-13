@@ -14,4 +14,10 @@ describe('verifyMcpBearerToken', () => {
     )
     expect(result).toBeUndefined()
   })
+
+  it('throws on present but invalid bearer token', async () => {
+    await expect(
+      verifyMcpBearerToken(new Request('http://localhost/api/mcp'), 'not-a-jwt')
+    ).rejects.toThrow(/Invalid or expired bearer token/)
+  })
 })

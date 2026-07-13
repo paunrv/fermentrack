@@ -61,7 +61,13 @@ export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
   if (user && (pathname === '/sign-in' || pathname === '/sign-up')) {
-    return supabaseResponse
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    url.search = ''
+    const redirect = NextResponse.redirect(url)
+    mergeCookies(supabaseResponse, redirect)
+    ensureLocaleCookie(request, redirect)
+    return redirect
   }
 
   if (!user && !isPublicPath(pathname)) {

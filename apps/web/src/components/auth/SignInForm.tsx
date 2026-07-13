@@ -78,13 +78,10 @@ function SignInFormInner() {
     try {
       const supabase = createClient()
       const authOrigin = getBrowserSiteUrl()
-      if (typeof window !== 'undefined' && nextParam) {
-        setAuthNextCookie(next)
-      }
-      const redirectTo = buildAuthCallbackUrl({
-        intent: 'dashboard',
-        origin: authOrigin,
-      })
+      // Keep redirectTo path-only so it matches Supabase Auth allow-list
+      // (query params like ?intent= break mobile/LAN OAuth and loop on Google).
+      setAuthNextCookie(next)
+      const redirectTo = buildAuthCallbackUrl({ origin: authOrigin })
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo },
@@ -153,7 +150,8 @@ function SignInFormInner() {
 
     const supabase = createClient()
     const signupNext = safeNextPath(nextParam, '/dashboard')
-    const redirectTo = buildAuthCallbackUrl({ intent: 'dashboard', origin: getBrowserSiteUrl() })
+    setAuthNextCookie(signupNext)
+    const redirectTo = buildAuthCallbackUrl({ origin: getBrowserSiteUrl() })
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,

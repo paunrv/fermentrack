@@ -26,7 +26,9 @@ export function WinemakerDashboardTour() {
   const { loading: homeLoading } = useWinemakerOwnerHomeData()
   const steps = t.raw('steps') as TourStep[]
 
-  const forceOpen = searchParams.get('tour') === '1'
+  const tourParam = searchParams.get('tour')
+  const forceOpen = tourParam === '1'
+  const forceSkip = tourParam === '0' || tourParam === 'skip'
   const [open, setOpen] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
 
@@ -37,6 +39,11 @@ export function WinemakerDashboardTour() {
 
   useEffect(() => {
     if (!isLoaded || homeLoading || !userId) return
+    if (forceSkip) {
+      writeWinemakerDashboardTourCompleted(userId)
+      setOpen(false)
+      return
+    }
     if (forceOpen) {
       setStepIndex(0)
       setOpen(true)
@@ -46,7 +53,7 @@ export function WinemakerDashboardTour() {
       setStepIndex(0)
       setOpen(true)
     }
-  }, [isLoaded, homeLoading, userId, forceOpen])
+  }, [isLoaded, homeLoading, userId, forceOpen, forceSkip])
 
   const stepLabel = useMemo(
     () => t('stepOf', { current: stepIndex + 1, total: totalSteps }),

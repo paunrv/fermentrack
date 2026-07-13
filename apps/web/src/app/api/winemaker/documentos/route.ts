@@ -62,11 +62,16 @@ export async function POST(req: NextRequest) {
   const contentType = resolveTicketContentType(file.name, file.type)
   const captureKindRaw = form.get('captureKind')
   const etapaRaw = form.get('etapa')
+  const documentDateRaw = form.get('documentDate')
   const captureKind =
     captureKindRaw === 'whiteboard' || captureKindRaw === 'lab' || captureKindRaw === 'bodega'
       ? (captureKindRaw as WinemakerCaptureKind)
       : null
   const etapa = typeof etapaRaw === 'string' && isWinemakerEtapaKey(etapaRaw) ? etapaRaw : null
+  const documentDate =
+    typeof documentDateRaw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(documentDateRaw.trim())
+      ? documentDateRaw.trim()
+      : null
   const documentType = inferWmDocumentType(contentType, file.name)
 
   try {
@@ -99,6 +104,7 @@ export async function POST(req: NextRequest) {
         storagePath,
         filename: file.name,
         contentType,
+        documentDate,
       })
 
       return Response.json({

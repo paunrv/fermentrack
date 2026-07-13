@@ -27,11 +27,13 @@ export default function WinemakerProveedoresPage() {
   const [suppliers, setSuppliers] = useState<WmSupplierRow[]>([])
   const [insumosBySupplier, setInsumosBySupplier] = useState<Record<string, WmSupplyKind[]>>({})
   const [dataLoading, setDataLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!ok || !organizationId) return
     let cancelled = false
     setDataLoading(true)
+    setLoadError(null)
     Promise.all([
       fetchSuppliers(supabase, organizationId),
       fetchDocuments(supabase, organizationId, { limit: 200, withLines: true }),
@@ -54,13 +56,19 @@ export default function WinemakerProveedoresPage() {
         }
         setInsumosBySupplier(out)
       })
+      .catch(() => {
+        if (cancelled) return
+        setSuppliers([])
+        setInsumosBySupplier({})
+        setLoadError(t('loadError'))
+      })
       .finally(() => {
         if (!cancelled) setDataLoading(false)
       })
     return () => {
       cancelled = true
     }
-  }, [ok, organizationId, supabase])
+  }, [ok, organizationId, supabase, t])
 
   const sorted = useMemo(
     () => [...suppliers].sort((a, b) => compareStrings(a.name, b.name, locale)),
@@ -76,6 +84,12 @@ export default function WinemakerProveedoresPage() {
   let body: ReactNode
   if (dataLoading) {
     body = <p style={{ color: 'var(--fg-2)', fontSize: 14, margin: 0 }}>{t('loading')}</p>
+  } else if (loadError) {
+    body = (
+      <p role="alert" style={{ color: 'var(--crit)', fontSize: 14, margin: 0 }}>
+        {loadError}
+      </p>
+    )
   } else if (sorted.length === 0) {
     body = (
       <div

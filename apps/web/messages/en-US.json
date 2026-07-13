@@ -804,7 +804,7 @@
         },
         "foto": {
           "title": "Photo",
-          "subtitle": "PROOF analyzes and captures"
+          "subtitle": "Whiteboard, lab, or cellar"
         },
         "nota": {
           "title": "Note",
@@ -812,7 +812,7 @@
         },
         "lab": {
           "title": "Lab",
-          "subtitle": "Upload results"
+          "subtitle": "Results into the day’s memory"
         }
       }
     },
@@ -1103,6 +1103,48 @@
       "limit_reached_usuarios": "Your plan allows {limit} team member. Upgrade to Pro to invite more people.",
       "limit_reached_memoria": "Your plan's memory is full ({limit} months). Upgrade to keep recording new events.",
       "upgradeHint": "Upgrade to Pro or Enterprise for higher limits."
+    },
+    "costos": {
+      "title": "Costs",
+      "subtitle": "Production costs by batch",
+      "addCost": "Add cost",
+      "fields": {
+        "batch": "Batch",
+        "selectBatch": "Select batch",
+        "category": "Category",
+        "date": "Date",
+        "description": "Description",
+        "descriptionPlaceholder": "E.g. Pilsner malt 25kg",
+        "amount": "Amount",
+        "currency": "Currency"
+      },
+      "categories": {
+        "materia_prima": "Raw materials",
+        "mano_obra": "Labor",
+        "equipo": "Equipment",
+        "energia": "Energy",
+        "limpieza": "Cleaning",
+        "analisis": "Analysis",
+        "otro": "Other"
+      },
+      "submit": "Add cost",
+      "saving": "Saving...",
+      "kpi": {
+        "total": "Total accrued",
+        "bottledUnits": "Bottled units",
+        "costPerBottle": "Cost per bottle"
+      },
+      "tableTitle": "Batch costs",
+      "columns": {
+        "date": "Date",
+        "category": "Category",
+        "description": "Description",
+        "amount": "Amount"
+      },
+      "loading": "Loading...",
+      "selectBatchHint": "Select a batch",
+      "empty": "No costs recorded",
+      "dash": "—"
     }
   },
   "distributor": {
@@ -2099,9 +2141,10 @@
     },
     "lotes": {
       "title": "Wine lots",
-      "subtitle": "Fermentation, aging, and bottling — each lot with its full history.",
+      "subtitle": "The same active lots as the pipeline — tap one for detail.",
       "loading": "Loading lots…",
-      "empty": "No lots yet. Ask PROOF on Home or register your first when you upload the harvest.",
+      "loadError": "Could not load lots.",
+      "empty": "No active lots yet. Create the first via Connect (MCP) or when you register the harvest.",
       "noVarietal": "No varietal",
       "statusCount": "{status}: {count}",
       "litersUnit": "{amount} L"
@@ -2110,7 +2153,8 @@
       "title": "Suppliers",
       "subtitle": "Catalog PROOF builds when you upload receipts: grapes, corks, bottles, labels, and more.",
       "loading": "Loading suppliers…",
-      "empty": "No suppliers yet. Upload a receipt from PROOF and we save the vendor with the detected supply type.",
+      "loadError": "Could not load suppliers.",
+      "empty": "No suppliers yet. Import a receipt with your MCP agent (Connect) and we save the vendor with the supply type.",
       "suppliesLabel": "Supplies: {list}",
       "noClassifiedLines": "No classified line items yet"
     },
@@ -2118,7 +2162,12 @@
       "title": "Documents",
       "subtitle": "Receipts, invoices, XML, and lab analyses — immutable evidence of your operation.",
       "loading": "Loading documents…",
-      "empty": "No documents yet. Upload a receipt from PROOF — we classify vendor and supplies (grapes, corks, bottles…)."
+      "loadError": "Could not load documents.",
+      "empty": "No documents yet. Capture evidence in Agenda, or import receipts with your MCP agent from Connect.",
+      "openAria": "Open {title}",
+      "opening": "Opening…",
+      "noFile": "This document has no attached file.",
+      "openError": "Could not open the file."
     },
     "gastos": {
       "title": "Expenses",
@@ -2126,24 +2175,49 @@
       "totalRegistered": "Total recorded: <strong>{amount}</strong>",
       "wineryOverhead": "Winery overhead: {amount}",
       "loading": "Loading expenses…",
-      "empty": "No expenses recorded. Tell PROOF what you paid on a receipt or winery service.",
+      "loadError": "Could not load expenses.",
+      "empty": "No expenses recorded. Import a receipt with your MCP agent (Connect) to log winery costs.",
       "costLine": "{category} · {allocation}"
     },
     "agenda": {
-      "title": "Schedule",
-      "subtitle": "Calendar, whiteboard photos, and lab results — categorized from day one.",
+      "title": "Cellar memory",
+      "subtitle": "The calendar holds what the whiteboard defines — day evidence, in order.",
       "backToProof": "← PROOF",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "loading": "Loading memory…",
+      "loadError": "Could not load the calendar.",
+      "legend": {
+        "whiteboard": "Whiteboard",
+        "lab": "Lab",
+        "bodega": "Cellar",
+        "other": "Other"
+      },
+      "overflow": "+{count}",
+      "day": {
+        "empty": "No evidence this day. Capture the whiteboard so nothing is lost.",
+        "capture": "Capture",
+        "eventsAria": "Evidence for {date}",
+        "openAria": "Open {title}",
+        "opening": "Opening…",
+        "noFile": "This entry has no attached file.",
+        "openError": "Could not open the file."
+      },
       "capture": {
-        "whiteboardTitle": "Whiteboard photo",
-        "whiteboardHint": "When you update the cellar whiteboard, pick the stage and upload a photo. PROOF saves it as evidence for the day.",
-        "categoryLabel": "Category",
+        "sheetAria": "Capture evidence",
+        "closeAria": "Close",
+        "title": "What are we uploading?",
+        "whiteboard": "Whiteboard photo",
+        "whiteboardHint": "Pick the stage, then take or upload a photo.",
+        "categoryLabel": "Stage",
         "whiteboardCta": "Take or upload photo",
-        "resultsTitle": "Lab and cellar results",
-        "resultsHint": "Upload lab PDFs or photos and cellar control sheets. They link to your calendar and documents.",
-        "labCta": "Upload lab analysis",
-        "bodegaCta": "Upload cellar result",
+        "lab": "Lab analysis",
+        "labHint": "PDF or photo of results.",
+        "bodega": "Cellar result",
+        "bodegaHint": "Cellar control or note.",
+        "back": "← Back",
         "uploading": "Uploading…",
-        "success": "File saved in PROOF.",
+        "success": "Saved to this day’s memory.",
         "error": "Could not upload the file."
       }
     },
@@ -2202,6 +2276,7 @@
       "memberFallback": "Member",
       "completeTask": "Complete",
       "completeTaskAria": "Complete {title}",
+      "completeTaskError": "Could not complete the task. Try again.",
       "assignedTo": "Assigned to {name}",
       "sections": {
         "attention": "Needs attention",
@@ -2963,7 +3038,7 @@
       "error": "Test failed: {detail}",
       "noProfile": "No active profile to connect."
     },
-    "oauthHint": "OAuth metadata:",
+    "oauthHint": "Auth: paste a fresh session JWT in your MCP client headers. Metadata:",
     "oauthLink": "protected resource",
     "setupTitle": "Set up your assistant",
     "advancedTitle": "Advanced options",
@@ -2972,7 +3047,7 @@
       "cursorHint": "Add PROOF as an MCP server in Cursor.",
       "cursorStep1": "Open Cursor Settings → MCP.",
       "cursorStep2": "Add a server with the connection URL above.",
-      "cursorStep3": "Authenticate with your PROOF session (or paste the token from Advanced options).",
+      "cursorStep3": "Paste a fresh session token in the Authorization header (Advanced options). Tokens expire ~1h — refresh when tools stop working.",
       "claude": "Claude",
       "claudeConfigPath": "File (Mac): {path}",
       "claudeStep1": "In PROOF click «Download token» (proof-mcp-token.txt file).",

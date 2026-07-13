@@ -42,7 +42,11 @@ export async function verifyMcpBearerToken(
 ): Promise<ProofMcpAuthInfo | undefined> {
   if (!bearerToken?.trim()) return undefined
   const userId = await getUserIdFromAccessToken(bearerToken)
-  if (!userId) return undefined
+  if (!userId) {
+    // Distinguish missing header from present-but-invalid JWT so MCP clients
+    // do not treat expired tokens as "no authorization" and fall into OAuth/DCR.
+    throw new Error('Invalid or expired bearer token')
+  }
   return {
     token: bearerToken,
     clientId: userId,
@@ -52,4 +56,13 @@ export async function verifyMcpBearerToken(
 
 export function supabaseOAuthIssuer(): string {
   return `${requireSupabaseUrl().replace(/\/$/, '')}/auth/v1`
+}
+
+/**
+ * Supabase Auth OAuth 2.1 server (dashboard → Authentication → OAuth Server).
+ * Until enabled, do not advertise authorization_servers — MCP clients will try
+ * dynamic client registration and fail with "Incompatible auth server".
+ */
+export function isProofMcpOAuthServerEnabled(): boolean {
+  return process.env.PROOF_MCP_OAUTH_ENABLED === 'true'
 }

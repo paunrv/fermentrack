@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 export type CaptureOptionId = 'voz' | 'foto' | 'nota' | 'lab'
 
-const CAPTURE_IDS: CaptureOptionId[] = ['voz', 'foto', 'nota', 'lab']
+const ALL_CAPTURE_IDS: CaptureOptionId[] = ['voz', 'foto', 'nota', 'lab']
 
 const CAPTURE_EMOJI: Record<CaptureOptionId, string> = {
   voz: '🎙️',
@@ -19,13 +19,17 @@ export function CapturePanel({
   onClose,
   onSelect,
   customizeHref = '/dashboard/settings',
+  /** Subset of options to show. Defaults to all four. */
+  options = ALL_CAPTURE_IDS,
 }: {
   open: boolean
   onClose: () => void
   onSelect?: (id: CaptureOptionId) => void
   customizeHref?: string
+  options?: CaptureOptionId[]
 }) {
   const t = useTranslations('dashboard.capturePanel')
+  const ids = options.length > 0 ? options : ALL_CAPTURE_IDS
 
   return (
     <div className="proof-capture-panel-root proof-mobile-only" data-open={open ? 'true' : 'false'} aria-hidden={!open}>
@@ -39,7 +43,7 @@ export function CapturePanel({
 
       <div role="dialog" aria-label={t('dialogAria')} aria-modal="true" className="proof-capture-sheet">
         <div className="proof-capture-grid">
-          {CAPTURE_IDS.map(id => (
+          {ids.map(id => (
             <button
               key={id}
               type="button"

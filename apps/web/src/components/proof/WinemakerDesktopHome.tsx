@@ -73,6 +73,7 @@ export function WinemakerDesktopHome() {
     pendingTasks,
     tasksToday,
     completingTaskId,
+    taskActionError,
     completeTask,
     planWarnings,
   } = useWinemakerOwnerHomeData()
@@ -214,6 +215,7 @@ export function WinemakerDesktopHome() {
                 pendingTasks={pendingTasks}
                 tasksToday={tasksToday}
                 completingTaskId={completingTaskId}
+                taskActionError={taskActionError}
                 onCompleteTask={completeTask}
                 copy={copy}
                 mcpConfigured={mcpConfigured}

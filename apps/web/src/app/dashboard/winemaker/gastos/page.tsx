@@ -26,14 +26,22 @@ export default function WinemakerGastosPage() {
   const { loading: scopeLoading, ok, organizationId } = useWinemakerRouteGuard()
   const [costs, setCosts] = useState<WmProductionCostRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!ok || !organizationId) return
     let cancelled = false
     setDataLoading(true)
+    setLoadError(null)
     fetchProductionCosts(supabase, organizationId, { limit: 200 })
       .then(rows => {
         if (!cancelled) setCosts(rows)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCosts([])
+          setLoadError(t('loadError'))
+        }
       })
       .finally(() => {
         if (!cancelled) setDataLoading(false)
@@ -41,7 +49,7 @@ export default function WinemakerGastosPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, organizationId, supabase])
+  }, [ok, organizationId, supabase, t])
 
   const total = costs.reduce((s, c) => s + Number(c.amount), 0)
   const overhead = costs.filter(c => c.lot_id == null).reduce((s, c) => s + Number(c.amount), 0)
@@ -77,6 +85,12 @@ export default function WinemakerGastosPage() {
   let listBody: ReactNode
   if (dataLoading) {
     listBody = <p style={{ color: 'var(--fg-2)', fontSize: 14, margin: 0 }}>{t('loading')}</p>
+  } else if (loadError) {
+    listBody = (
+      <p role="alert" style={{ color: 'var(--crit)', fontSize: 14, margin: 0 }}>
+        {loadError}
+      </p>
+    )
   } else if (costs.length === 0) {
     listBody = (
       <div

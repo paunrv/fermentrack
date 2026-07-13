@@ -117,6 +117,7 @@ export function WinemakerMobileHome() {
     pendingTasks,
     team,
     completingTaskId,
+    taskActionError,
     completeTask,
     planWarnings,
   } = useWinemakerOwnerHomeData()
@@ -163,6 +164,12 @@ export function WinemakerMobileHome() {
         </header>
 
         <PlanLimitHomeAlerts warnings={planWarnings} />
+
+        {taskActionError ? (
+          <p role="alert" style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--crit)' }}>
+            {taskActionError}
+          </p>
+        ) : null}
 
         <Link
           href="/dashboard/conectar"

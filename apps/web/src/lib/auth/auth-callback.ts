@@ -4,7 +4,12 @@ import { readAuthNextCookie } from '@/lib/auth/post-auth-next'
 
 export type AuthCallbackIntent = 'onboarding' | 'dashboard'
 
-/** Canonical OAuth return URL — uses browser/request origin in dev when available. */
+/**
+ * Canonical OAuth return URL — uses browser/request origin in dev when available.
+ * Prefer a path-only URL for Google/email OAuth so it matches the Supabase allow-list.
+ * Use `flow: 'team'` only for invite links (must also be listed in Redirect URLs).
+ * Post-auth destination belongs in the `proof_auth_next` cookie, not query params.
+ */
 export function buildAuthCallbackUrl(opts?: {
   intent?: AuthCallbackIntent
   flow?: 'team'

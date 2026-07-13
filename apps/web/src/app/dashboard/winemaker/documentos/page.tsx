@@ -13,6 +13,7 @@ import { VuOpsPage } from '@/components/proof/VuOpsPage'
 import { dashboardPageShell } from '@/lib/ui/page-shell'
 import type { WmSupplyKind } from '@/lib/proof/wm-supply-taxonomy'
 import type { WmDocumentRow, WmDocumentType } from '@/lib/proof/winemaker-types'
+import { openWinemakerDocumentEvidence } from '@/lib/proof/open-winemaker-document'
 import { fetchDocuments } from '@/lib/supabase/winemaker'
 
 export default function WinemakerDocumentosPage() {
@@ -27,6 +28,9 @@ export default function WinemakerDocumentosPage() {
   const { loading: scopeLoading, ok, organizationId } = useWinemakerRouteGuard()
   const [docs, setDocs] = useState<WmDocumentRow[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [openingId, setOpeningId] = useState<string | null>(null)
+  const [openErrorById, setOpenErrorById] = useState<Record<string, string>>({})
 
   function supplyLineLabel(kind: WmSupplyKind, varietal?: string): string {
     const base = tSupply(kind)
@@ -40,9 +44,16 @@ export default function WinemakerDocumentosPage() {
     if (!ok || !organizationId) return
     let cancelled = false
     setDataLoading(true)
+    setLoadError(null)
     fetchDocuments(supabase, organizationId, { limit: 100, withLines: true })
       .then(rows => {
         if (!cancelled) setDocs(rows)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDocs([])
+          setLoadError(t('loadError'))
+        }
       })
       .finally(() => {
         if (!cancelled) setDataLoading(false)
@@ -50,7 +61,24 @@ export default function WinemakerDocumentosPage() {
     return () => {
       cancelled = true
     }
-  }, [ok, organizationId, supabase])
+  }, [ok, organizationId, supabase, t])
+
+  async function handleOpen(doc: WmDocumentRow) {
+    if (openingId) return
+    setOpeningId(doc.id)
+    setOpenErrorById(prev => {
+      const next = { ...prev }
+      delete next[doc.id]
+      return next
+    })
+    const result = await openWinemakerDocumentEvidence(supabase, doc.storage_path)
+    setOpeningId(null)
+    if (result === 'missing') {
+      setOpenErrorById(prev => ({ ...prev, [doc.id]: t('noFile') }))
+    } else if (result === 'error') {
+      setOpenErrorById(prev => ({ ...prev, [doc.id]: t('openError') }))
+    }
+  }
 
   if (scopeLoading || !ok) {
     return (
@@ -61,6 +89,12 @@ export default function WinemakerDocumentosPage() {
   let body: ReactNode
   if (dataLoading) {
     body = <p style={{ color: 'var(--fg-2)', fontSize: 14, margin: 0 }}>{t('loading')}</p>
+  } else if (loadError) {
+    body = (
+      <p role="alert" style={{ color: 'var(--crit)', fontSize: 14, margin: 0 }}>
+        {loadError}
+      </p>
+    )
   } else if (docs.length === 0) {
     body = (
       <div
@@ -79,42 +113,62 @@ export default function WinemakerDocumentosPage() {
   } else {
     body = (
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 10 }}>
-        {docs.map(d => (
-          <li
-            key={d.id}
-            style={{
-              padding: '14px 16px',
-              borderRadius: 10,
-              background: 'var(--bg-1)',
-              border: '0.5px solid var(--border)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <strong>
-                  {d.vendor || d.original_filename || tDocType(d.document_type as WmDocumentType)}
-                </strong>
-                <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
-                  {tDocType(d.document_type as WmDocumentType)}
-                  {typeof d.parsed_json === 'object' &&
-                  d.parsed_json &&
-                  'total' in d.parsed_json &&
-                  d.parsed_json.total != null
-                    ? ` · ${formatCurrencyMxn(Number(d.parsed_json.total), locale)}`
-                    : ''}
+        {docs.map(d => {
+          const title =
+            d.vendor || d.original_filename || tDocType(d.document_type as WmDocumentType)
+          const opening = openingId === d.id
+          return (
+            <li key={d.id}>
+              <button
+                type="button"
+                onClick={() => void handleOpen(d)}
+                disabled={opening}
+                aria-label={t('openAria', { title })}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  padding: '14px 16px',
+                  borderRadius: 10,
+                  background: 'var(--bg-1)',
+                  border: '0.5px solid var(--border)',
+                  textAlign: 'left',
+                  cursor: opening ? 'wait' : 'pointer',
+                  color: 'inherit',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <div>
+                    <strong style={{ color: 'var(--fg-0)' }}>
+                      {opening ? t('opening') : title}
+                    </strong>
+                    <div style={{ fontSize: 13, color: 'var(--fg-2)', marginTop: 4 }}>
+                      {tDocType(d.document_type as WmDocumentType)}
+                      {typeof d.parsed_json === 'object' &&
+                      d.parsed_json &&
+                      'total' in d.parsed_json &&
+                      d.parsed_json.total != null
+                        ? ` · ${formatCurrencyMxn(Number(d.parsed_json.total), locale)}`
+                        : ''}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--fg-2)' }}>{d.document_date}</div>
                 </div>
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--fg-2)' }}>{d.document_date}</div>
-            </div>
-            {(d.wm_document_lines?.length ?? 0) > 0 ? (
-              <div style={{ fontSize: 12, color: 'var(--fg-2)', marginTop: 8 }}>
-                {d
-                  .wm_document_lines!.map(l => supplyLineLabel(l.supply_kind, l.varietal))
-                  .join(' · ')}
-              </div>
-            ) : null}
-          </li>
-        ))}
+                {(d.wm_document_lines?.length ?? 0) > 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--fg-2)', marginTop: 8 }}>
+                    {d
+                      .wm_document_lines!.map(l => supplyLineLabel(l.supply_kind, l.varietal))
+                      .join(' · ')}
+                  </div>
+                ) : null}
+                {openErrorById[d.id] ? (
+                  <p role="alert" style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--crit)' }}>
+                    {openErrorById[d.id]}
+                  </p>
+                ) : null}
+              </button>
+            </li>
+          )
+        })}
       </ul>
     )
   }
