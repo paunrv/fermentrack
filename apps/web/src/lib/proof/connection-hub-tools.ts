@@ -120,7 +120,12 @@ export function examplePromptsForProfile(profileType: ProfileType): string[] {
         'prompts.distributor.credit',
       ]
     case 'winemaker':
-      return ['prompts.winemaker.summary', 'prompts.winemaker.ticket', 'prompts.winemaker.labels']
+      return [
+        'prompts.winemaker.lots',
+        'prompts.winemaker.summary',
+        'prompts.winemaker.ticket',
+        'prompts.winemaker.labels',
+      ]
     case 'distiller':
       return ['prompts.distiller.runs', 'prompts.distiller.trips']
   }

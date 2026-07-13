@@ -2502,6 +2502,8 @@
         "skippedPdfAgent": "I just uploaded PDF {filename}, help me register it",
         "noApiKey": "Saved {filename}. To read tickets automatically, connect your external agent on the dashboard (MCP) or complete supplier and line items manually.",
         "noApiKeyAgent": "could not read {filename} automatically, how do I register it?",
+        "visionDisabled": "Saved {filename}. For this pilot, import tickets with your MCP agent (Connect → import_winemaker_ticket), not in-app OCR.",
+        "visionDisabledAgent": "saved {filename}; help me import it with the MCP agent",
         "visionFailed": "Saved {filename}, but automatic reading failed. Tell me vendor, supplies (grapes, cork, bottles…), and amount to complete it.",
         "visionFailedAgent": "reading {filename} failed, help me register vendor and supplies",
         "skippedNotImage": "Saved {filename}. We only read receipt images for now — use a photo or screenshot.",
@@ -3042,6 +3044,14 @@
     "oauthLink": "protected resource",
     "setupTitle": "Set up your assistant",
     "advancedTitle": "Advanced options",
+    "pilotDryRun": {
+      "title": "Field dry-run (day before)",
+      "hint": "Verify JWT and connection before the visit. Expires ~1h — renew if tools disappear.",
+      "step1": "Tap “Test connection” — it should say OK.",
+      "step2": "Copy Cursor config (or download the token for Claude).",
+      "step3": "In the agent: “List my active lots” and “Summarize my winery status”.",
+      "step4": "Optional: import a sample ticket with import_winemaker_ticket."
+    },
     "clients": {
       "cursor": "Cursor",
       "cursorHint": "Add PROOF as an MCP server in Cursor.",
@@ -3113,6 +3123,7 @@
         "credit": "Give me overdue accounts receivable summary."
       },
       "winemaker": {
+        "lots": "List my active lots.",
         "summary": "Summarize my winery status this month.",
         "ticket": "Import this CFDI ticket and classify line items.",
         "labels": "Which labels do I have available in the cellar?"

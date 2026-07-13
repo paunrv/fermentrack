@@ -21,12 +21,14 @@ export function CapturePanel({
   customizeHref = '/dashboard/settings',
   /** Subset of options to show. Defaults to all four. */
   options = ALL_CAPTURE_IDS,
+  showCustomize = true,
 }: {
   open: boolean
   onClose: () => void
   onSelect?: (id: CaptureOptionId) => void
   customizeHref?: string
   options?: CaptureOptionId[]
+  showCustomize?: boolean
 }) {
   const t = useTranslations('dashboard.capturePanel')
   const ids = options.length > 0 ? options : ALL_CAPTURE_IDS
@@ -64,25 +66,27 @@ export function CapturePanel({
           ))}
         </div>
 
-        <Link
-          href={customizeHref}
-          onClick={onClose}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            marginTop: 14,
-            padding: '10px 12px',
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'var(--fg-2)',
-            textDecoration: 'none',
-            borderRadius: 'var(--radius-md)',
-          }}
-        >
-          ⚙️ {t('customize')}
-        </Link>
+        {showCustomize ? (
+          <Link
+            href={customizeHref}
+            onClick={onClose}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              marginTop: 14,
+              padding: '10px 12px',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'var(--fg-2)',
+              textDecoration: 'none',
+              borderRadius: 'var(--radius-md)',
+            }}
+          >
+            ⚙️ {t('customize')}
+          </Link>
+        ) : null}
       </div>
     </div>
   )

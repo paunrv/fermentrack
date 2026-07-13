@@ -105,6 +105,90 @@ export function ProofConnectionHub({
         {t('scopeNote')}
       </p>
 
+      {profileType === 'winemaker' && isSignedIn ? (
+        <ContentCard>
+          <h2
+            style={{
+              margin: '0 0 6px',
+              fontSize: 15,
+              fontWeight: 600,
+              color: 'var(--fg-0)',
+            }}
+          >
+            {t('pilotDryRun.title')}
+          </h2>
+          <p style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5, color: 'var(--fg-3)' }}>
+            {t('pilotDryRun.hint')}
+          </p>
+          {tokenExpiresAt ? (
+            <p
+              style={{
+                margin: '0 0 12px',
+                fontSize: 12,
+                color: tokenExpired ? 'var(--crit)' : 'var(--fg-3)',
+              }}
+            >
+              {tokenExpired
+                ? t('tokenExpired')
+                : t('tokenExpiry', { when: formatTokenExpiry(tokenExpiresAt, locale) })}
+            </p>
+          ) : null}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+            <SecondaryButton
+              label={testLoading ? t('testing') : t('testConnection')}
+              copiedLabel={t('copied')}
+              onClick={testConnection}
+              copied={false}
+              disabled={testLoading}
+            />
+            <SecondaryButton
+              label={t('copyCursorConfig')}
+              copiedLabel={t('copied')}
+              onClick={copyCursorConfig}
+              copied={configCopied}
+            />
+            <SecondaryButton
+              label={tokenDownloaded ? t('tokenDownloaded') : t('downloadToken')}
+              copiedLabel={t('tokenDownloaded')}
+              onClick={downloadAccessToken}
+              copied={tokenDownloaded}
+            />
+          </div>
+          {testResult ? (
+            <p
+              role="status"
+              style={{
+                margin: '0 0 12px',
+                fontSize: 13,
+                color: testResult.ok ? 'var(--ok)' : 'var(--crit)',
+                lineHeight: 1.45,
+              }}
+            >
+              {testResult.ok
+                ? t('test.ok', { profile: testResult.profile_type ?? '—' })
+                : t('test.error', { detail: testResult.error ?? 'unknown' })}
+            </p>
+          ) : null}
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: 18,
+              fontSize: 13,
+              lineHeight: 1.55,
+              color: 'var(--fg-2)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+            }}
+          >
+            <li>{t('pilotDryRun.step1')}</li>
+            <li>{t('pilotDryRun.step2')}</li>
+            <li>{t('pilotDryRun.step3')}</li>
+            <li>{t('pilotDryRun.step4')}</li>
+          </ol>
+        </ContentCard>
+      ) : null}
+
       <ContentCard>
         <CopyField
           label={t('mcpUrl')}

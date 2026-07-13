@@ -2502,6 +2502,8 @@
         "skippedPdfAgent": "acabo de subir el PDF {filename}, ayúdame a registrarlo",
         "noApiKey": "Guardé {filename}. Para leer tickets automáticamente conecta tu agente externo en el dashboard (MCP) o completa proveedor e insumos manualmente.",
         "noApiKeyAgent": "no pude leer {filename} automáticamente, ¿cómo lo registro?",
+        "visionDisabled": "Guardé {filename}. En este piloto los tickets se importan con tu agente MCP (Conectar → import_winemaker_ticket), no con OCR in-app.",
+        "visionDisabledAgent": "guardé {filename}; ayúdame a importarlo con el agente MCP",
         "visionFailed": "Guardé {filename}, pero la lectura automática falló. Dime proveedor, insumos (uva, corcho, botella…) y monto para completarlo.",
         "visionFailedAgent": "la lectura de {filename} falló, ayúdame a registrar proveedor e insumos",
         "skippedNotImage": "Guardé {filename}. Solo leemos imágenes de tickets por ahora — usa foto o captura de pantalla.",
@@ -3042,6 +3044,14 @@
     "oauthLink": "recurso protegido",
     "setupTitle": "Configura tu asistente",
     "advancedTitle": "Opciones avanzadas",
+    "pilotDryRun": {
+      "title": "Dry-run piloto (día antes)",
+      "hint": "Verifica JWT y conexión antes de la visita. Caduca ~1h — renueva si fallan las tools.",
+      "step1": "Pulsa «Probar conexión» — debe decir OK.",
+      "step2": "Copia config Cursor (o descarga token para Claude).",
+      "step3": "En el agente: «Lista mis lotes activos» y «Resume el estado de mi bodega».",
+      "step4": "Opcional: importa un ticket de prueba con import_winemaker_ticket."
+    },
     "clients": {
       "cursor": "Cursor",
       "cursorHint": "Añade PROOF como servidor MCP en Cursor.",
@@ -3113,6 +3123,7 @@
         "credit": "Dame el resumen de cuentas por cobrar vencidas."
       },
       "winemaker": {
+        "lots": "Lista mis lotes activos.",
         "summary": "Resume el estado de mi bodega este mes.",
         "ticket": "Importa este ticket CFDI y clasifica las líneas.",
         "labels": "¿Qué etiquetas tengo disponibles en bodega?"

@@ -14,6 +14,8 @@ export type WinemakerTicketCopy = {
     skippedPdfAgent: (p: { filename: string }) => string
     noApiKey: (p: { filename: string }) => string
     noApiKeyAgent: (p: { filename: string }) => string
+    visionDisabled: (p: { filename: string }) => string
+    visionDisabledAgent: (p: { filename: string }) => string
     visionFailed: (p: { filename: string }) => string
     visionFailedAgent: (p: { filename: string }) => string
     skippedNotImage: (p: { filename: string }) => string
@@ -58,6 +60,8 @@ export function createWinemakerTicketCopy(t: TicketTranslate): WinemakerTicketCo
       skippedPdfAgent: p => t('upload.skippedPdfAgent', p),
       noApiKey: p => t('upload.noApiKey', p),
       noApiKeyAgent: p => t('upload.noApiKeyAgent', p),
+      visionDisabled: p => t('upload.visionDisabled', p),
+      visionDisabledAgent: p => t('upload.visionDisabledAgent', p),
       visionFailed: p => t('upload.visionFailed', p),
       visionFailedAgent: p => t('upload.visionFailedAgent', p),
       skippedNotImage: p => t('upload.skippedNotImage', p),
@@ -114,7 +118,14 @@ export function buildTicketUploadMessage(
     }
   }
 
-  if (visionStatus === 'no_api_key' || visionStatus === 'vision_disabled') {
+  if (visionStatus === 'vision_disabled') {
+    return {
+      mensaje: u.visionDisabled({ filename }),
+      agentQuery: u.visionDisabledAgent({ filename }),
+    }
+  }
+
+  if (visionStatus === 'no_api_key') {
     return {
       mensaje: u.noApiKey({ filename }),
       agentQuery: u.noApiKeyAgent({ filename }),

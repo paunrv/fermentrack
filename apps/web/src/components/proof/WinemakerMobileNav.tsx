@@ -63,6 +63,7 @@ export function WinemakerMobileNav() {
           onClose={() => setCaptureOpen(false)}
           onSelect={handleCaptureSelect}
           options={WINEMAKER_CAPTURE_OPTIONS}
+          showCustomize={false}
         />
         <AgendaCaptureSheet
           open={agendaCaptureOpen && canWrite}
