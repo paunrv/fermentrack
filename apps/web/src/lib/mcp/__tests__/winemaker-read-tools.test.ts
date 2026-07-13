@@ -92,10 +92,21 @@ describe('winemaker MCP read tools (pipeline)', () => {
       salud: string
       lotes_requieren_atencion: number
       conteo_por_etapa: { fermentacion: number; cosecha: number }
+      resumen: { lotesActivos: number; lotesTotal: number; porEstado: { status: string; count: number }[] }
+      summary: { lotesActivos: number; lotesTotal: number }
     }
     expect(parsed.salud).toBe('requiere_atencion')
     expect(parsed.lotes_requieren_atencion).toBe(1)
     expect(parsed.conteo_por_etapa.fermentacion).toBe(1)
     expect(parsed.conteo_por_etapa.cosecha).toBe(1)
+    // Align with pipeline (`lots`), not legacy wm_wine_lots
+    expect(parsed.resumen.lotesActivos).toBe(2)
+    expect(parsed.summary.lotesActivos).toBe(2)
+    expect(parsed.resumen.porEstado).toEqual(
+      expect.arrayContaining([
+        { status: 'cosecha', count: 1 },
+        { status: 'fermentacion', count: 1 },
+      ])
+    )
   })
 })

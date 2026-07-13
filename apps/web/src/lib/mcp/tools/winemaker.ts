@@ -83,10 +83,26 @@ export async function getResumenBodegaTool(input?: McpScopeInput) {
       summary
     )
 
+    // Pipeline (`public.lots`) is the source of truth for UI + list_lotes.
+    // Override legacy wm_wine_lots counts so agents don't contradict the home board.
+    const lotesActivos = pipelineCtx.pipeline.lotes_activos
+    const porEtapa = Object.entries(pipelineCtx.pipeline.conteo_por_etapa)
+      .filter(([, count]) => count > 0)
+      .map(([status, count]) => ({ status, count }))
+
     return {
       organization_id: orgId,
-      resumen: agentCtx.resumen,
-      summary,
+      resumen: {
+        ...agentCtx.resumen,
+        lotesTotal: lotesActivos,
+        lotesActivos,
+        porEstado: porEtapa,
+      },
+      summary: {
+        ...summary,
+        lotesTotal: lotesActivos,
+        lotesActivos,
+      },
       pipeline: pipelineCtx.pipeline,
       conteo_por_etapa: pipelineCtx.pipeline.conteo_por_etapa,
       salud: pipelineCtx.pipeline.salud,
