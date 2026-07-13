@@ -32,10 +32,6 @@ export type DisplayCardsBuildResult = {
 function winemakerDocumentCardActions(docLabel: string): CardItem['actions'] {
   return [
     {
-      label: 'Asignar a lote',
-      prompt: `asigna la factura ${docLabel} a un lote de vino`,
-    },
-    {
       label: 'Gasto de bodega',
       prompt: `registra la factura ${docLabel} como gasto de bodega sin lote`,
     },
@@ -51,10 +47,6 @@ function winemakerCostCardActions(description: string): CardItem['actions'] {
     {
       label: 'Ver gastos',
       prompt: `muéstrame el detalle del gasto ${description}`,
-    },
-    {
-      label: 'Asignar a lote',
-      prompt: `asigna el gasto ${description} a un lote`,
     },
   ]
 }

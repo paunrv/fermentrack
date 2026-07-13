@@ -46,10 +46,7 @@ export function createWinemakerTicketCopy(t: TicketTranslate): WinemakerTicketCo
         label: t('allocationReplies.winery.label'),
         message: t('allocationReplies.winery.message'),
       },
-      {
-        label: t('allocationReplies.lot.label'),
-        message: t('allocationReplies.lot.message'),
-      },
+      // Lot assignment is stubbed for the field pilot — omit the CTA.
     ],
     detectPhrases: {
       lot: t('allocationDetect.lotPhrase'),

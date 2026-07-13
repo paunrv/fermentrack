@@ -15,7 +15,10 @@ describe('inferTicketAllocationReplies', () => {
       'Leí ticket.png: GLOBAL FUENTES — Botella. Total: $9,905. Datos guardados en tu bodega. ¿Asignamos a un lote o queda en bodega?',
       esCopy
     )
+    // Pilot: only winery CTA is offered (lot assign stubbed).
     expect(replies).toEqual(WINEMAKER_TICKET_ALLOCATION_REPLIES)
+    expect(replies).toHaveLength(1)
+    expect(replies![0]!.message).toMatch(/bodega/i)
   })
 
   it('returns undefined for unrelated agent text', () => {

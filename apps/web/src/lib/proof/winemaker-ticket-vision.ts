@@ -237,7 +237,6 @@ export {
 /** @deprecated Use createWinemakerTicketCopy — kept for legacy tests */
 export const WINEMAKER_TICKET_ALLOCATION_REPLIES: ProofSuggestedReply[] = [
   { label: 'Queda en bodega', message: 'queda en bodega' },
-  { label: 'Asignar a lote', message: 'asignar a un lote' },
 ]
 
 function legacyVisionToResult(parsed: Record<string, unknown>): WmTicketVisionResult | null {

@@ -2509,7 +2509,7 @@
         "unclassified": "Saved {filename}, but I could not extract vendor or supplies. Tell me who sold, what you bought (grapes, cork, bottles…), and the amount.",
         "unclassifiedAgent": "help me complete receipt {filename} with vendor and supplies",
         "success": "Read {filename}: {vendor}{summary}.{total} Data saved to your winery. {question}",
-        "successQuestion": "Assign to a lot or keep as winery overhead?",
+        "successQuestion": "Should we record it as winery overhead?",
         "successAgent": "I just uploaded the invoice from {vendor} ({summary}), how should I register it?",
         "unnamedVendor": "unnamed vendor"
       }

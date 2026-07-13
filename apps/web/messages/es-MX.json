@@ -2509,7 +2509,7 @@
         "unclassified": "Guardé {filename}, pero no extraje proveedor ni insumos. Dime quién vendió, qué compraste (uva, corcho, botella…) y el monto.",
         "unclassifiedAgent": "ayúdame a completar el ticket {filename} con proveedor e insumos",
         "success": "Leí {filename}: {vendor}{summary}.{total} Datos guardados en tu bodega. {question}",
-        "successQuestion": "¿Asignamos a un lote o queda en bodega?",
+        "successQuestion": "¿Lo registramos como gasto de bodega?",
         "successAgent": "acabo de subir la factura de {vendor} ({summary}), ¿cómo lo registro?",
         "unnamedVendor": "proveedor sin nombre"
       }
