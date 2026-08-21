@@ -45,6 +45,9 @@ for m in "${migrations[@]}"; do
 done
 
 echo "▸ running assertions"
-"${PSQL[@]}" --file "$ROOT/tests/rls/10_two_organizations.sql" >/dev/null
+for f in "$ROOT"/tests/rls/[1-8]*.sql; do
+  echo "    $(basename "$f")"
+  "${PSQL[@]}" --file "$f" >/dev/null
+done
 
 "${PSQL[@]}" --file "$ROOT/tests/rls/99_report.sql"

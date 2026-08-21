@@ -14,16 +14,36 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Step 1 of Cycle 1 is complete: tenancy.** Organizations, memberships, RLS, and the
-test that proves isolation holds. No features yet, by design — multi-tenancy is the
-one thing that cannot be retrofitted, so it exists before anything is built on it.
+**Steps 1 and 2 of Cycle 1 are complete: tenancy, then the ledger.**
+Organizations and memberships with RLS proven by test; then the event ledger that
+records what physically happened, with derived state and nothing stored twice.
+
+No UI yet, by design. The ledger is proven by scripted scenarios before anything is
+built on top of it.
 
 ```
 supabase/migrations/   the schema, applied only from here — never by hand
-supabase/seed/         organizations, idempotent
-tests/rls/             the two-organization isolation suite
+supabase/seed/         organizations and units, idempotent
+tests/rls/             isolation suite + ledger scenarios A–I + invariant attacks
 docs/adr/              decisions and why they were made
 ```
+
+## The four layers
+
+They are kept apart on purpose, and none of them may collapse into another.
+
+| Layer | Question | Where it lives |
+|---|---|---|
+| Protocol | what we planned to do | `protocols`, `protocol_steps`, `protocol_runs`, `protocol_run_steps` |
+| Event | what actually happened | `events` |
+| Ledger | what physically changed | `ledger_lines` |
+| Derived state | what is true right now | views only — never a column |
+| AI | what it means, what is next | later cycles |
+
+A lot has no volume column, no location column and no stage column. All three
+change constantly and all three are derived from the ledger; storing any of them
+would create the second source of truth this design exists to prevent. A
+structural test asserts those columns never appear.
 
 ## Running the tests
 
@@ -43,10 +63,16 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-50 assertions, covering cross-organization reads, write refusal, privilege
-escalation attempts, revoked members, suspended organizations, anonymous callers,
-and the structural invariants (every table has RLS, no table lacks a policy, `anon`
-holds nothing, `authenticated` holds no writes).
+107 assertions in two suites.
+
+**Isolation (50)** — cross-organization reads, write refusal, privilege escalation
+attempts, revoked members, suspended organizations, anonymous callers, and the
+structural invariants.
+
+**Ledger (57)** — one wine lot followed from fruit to bottles: harvest, pressing,
+fermentation, racking with loss, split, blend, bottling, breakage and a physical
+count. Then eight attacks that try to make the ledger lie, and each must be
+refused.
 
 `tests/rls/00_supabase_shim.sql` recreates the `auth` schema and roles that a hosted
 Supabase project provides. It is **test scaffolding and is never applied to a real
@@ -78,17 +104,29 @@ them, and the test proves it.
   an organization or a membership.
 - **`real` and `synthetic` data are marked**, because development data and Aldo's
   real operation will share this database for months.
+- **Movement nets to zero; everything else names its reason.**
+  ([ADR 0004](docs/adr/0004-movement-nets-to-zero.md))
+- **Recorded history is immutable.** Corrections are recorded, never applied in place.
+- **Every view is `security_invoker`** — a view without it runs as its owner and
+  silently bypasses RLS. A structural test enforces this.
 
-## Coming in Cycle 1
+## Writing history
 
-Step 2 is the ledger — events and lines carrying quantity, unit, **basis**
-(measured / estimated / stated / derived) and a **typed delta reason**. Then the six
-harvest events, the lot timeline, capture sheets, and the tank board.
+`app.record_event()` is the only supported way. It checks membership itself, builds
+the event, its lines and its lineage atomically, and the deferred constraint
+triggers validate the whole set at commit. Recorded history is then immutable —
+a mistake is fixed by recording a correction, which leaves both the error and the
+fix visible.
 
-The decisions those steps must preserve: the unit Aldo actually says is the unit
-stored, conversions are derived; blend and split exist in the model from the start;
-a vessel holds one lot at a time but a lot may occupy many vessels; occupancy is
-derived from the ledger and never stored separately; stage labels stay soft
-([ADR 0003](docs/adr/0003-no-lot-state-machine-in-cycle-1.md)); Ready to Bottle is a
-live assessment, never a boolean; and the model must accept natural-language capture
-later without being rebuilt.
+## Coming next in Cycle 1
+
+Steps 3–7: the six harvest capture operations, the lot timeline, capture sheets,
+the tank board, and a dry run before the winery.
+
+Decisions the remaining steps must preserve: the unit Aldo actually says is the
+unit stored, conversions are derived; blend and split are already in the model;
+occupancy is derived and never stored ([ADR 0005](docs/adr/0005-vessel-lot-cardinality.md));
+stage labels stay soft ([ADR 0003](docs/adr/0003-no-lot-state-machine-in-cycle-1.md));
+Ready to Bottle is a live assessment, never a boolean; and the model must accept
+natural-language capture later without being rebuilt — which is why the words
+Aldo uses are stored verbatim ([ADR 0006](docs/adr/0006-generic-event-kinds.md)).

@@ -8,7 +8,7 @@ reset role;
 \pset title 'PROOF · two-organization isolation'
 
 select
-  lpad(seq::text, 2, '0')     as "#",
+  lpad(seq::text, 3, '0')     as "#",
   case when ok then 'PASS' else 'FAIL' end as "result",
   name                        as "assertion",
   want                        as "expected",
