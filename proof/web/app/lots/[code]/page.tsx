@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { currentSession } from '@/lib/session'
-import { getLot, type StoryEntry } from '@/lib/lots'
+import { getLot, listVessels, type StoryEntry } from '@/lib/lots'
+import { CaptureBar } from '../../capture'
 import { formatQuantity, formatWhen, readings } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +11,10 @@ export default async function LotTimeline({ params }: { params: Promise<{ code: 
   const session = await currentSession()
   if (!session) return <main className="wrap"><p className="empty">No winery is open.</p></main>
 
-  const result = await getLot(session, decodeURIComponent(code))
+  const [result, vessels] = await Promise.all([
+    getLot(session, decodeURIComponent(code)),
+    listVessels(session),
+  ])
   if (!result) notFound()
 
   const { card, story } = result
@@ -75,6 +79,25 @@ export default async function LotTimeline({ params }: { params: Promise<{ code: 
             )}
           </div>
         )}
+        {/*
+          What is offered depends on what the lot is actually doing. An empty
+          lot cannot be moved or pressed, so it is not asked about — the list of
+          things you can record is itself derived from the ledger.
+        */}
+        <CaptureBar
+          lot={{
+            code: card.code,
+            unit: card.unit,
+            quantity: card.quantity,
+            vessel_code: card.vessel_code,
+          }}
+          vessels={vessels}
+          offer={
+            Number(card.quantity ?? 0) > 0
+              ? ['move', 'note', 'stage', 'process', 'correct']
+              : ['note', 'stage']
+          }
+        />
       </header>
 
       <section className="timeline">

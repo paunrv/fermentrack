@@ -14,10 +14,11 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Steps 1–4 of Cycle 1 are complete: tenancy, the ledger, the capture layer, and
-the first screen.** Organizations and memberships with RLS proven by test; the event
+**Steps 1–5 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
+first screen, and the capture sheets.** Organizations and memberships with RLS proven by test; the event
 ledger that records what physically happened; six operations named for what a person
-does; and the lot timeline that reads it all back.
+does; the lot timeline that reads it all back; and the sheets a person actually
+types into, with the pace they demand measured rather than assumed.
 
 Each layer is proven by scripted scenarios before the next is built on it.
 
@@ -65,7 +66,7 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-178 assertions in four suites.
+178 SQL assertions in four suites, plus a browser-driven pace run.
 
 **Isolation (50)** — cross-organization reads, write refusal, privilege escalation
 attempts, revoked members, suspended organizations, anonymous callers, and the
@@ -147,6 +148,21 @@ constraint triggers validate the whole set at commit. Recorded history is then
 immutable: a mistake is fixed by recording a correction, which leaves both the
 error and the fix visible.
 
+## Measuring the pace
+
+Step 5's gate is whether capture can keep up with somebody talking, so it is
+measured rather than asserted:
+
+```sh
+cd web && npm run start &      # the app must be running
+./scripts/pace.sh
+```
+
+It drives a real browser through a transcript of things a winemaker says and
+counts every interaction. Currently **31 interactions for six operations**. Over
+budget fails. It is a ratchet, not a proof — only Aldo can say whether it is fast
+enough ([ADR 0009](docs/adr/0009-capture-pace-is-measured.md)).
+
 ## Running the screen
 
 ```sh
@@ -164,7 +180,7 @@ calling itself production, so a misconfigured deploy fails closed.
 
 ## Coming next in Cycle 1
 
-Steps 5–7: capture sheets, the tank board, and a dry run before the winery.
+Steps 6–7: the tank board, and a dry run before the winery.
 
 Decisions the remaining steps must preserve: the unit Aldo actually says is the
 unit stored, conversions are derived; blend and split are already in the model;

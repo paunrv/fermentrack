@@ -156,3 +156,14 @@ function groupByEvent(rows: StoryRow[]): StoryEntry[] {
     }
   })
 }
+
+export async function listVessels(session: Session): Promise<string[]> {
+  return asUser(session.userId, async (tx) => {
+    const rows = await tx<{ code: string }[]>`
+      select code from public.vessels
+      where organization_id = ${session.organizationId} and is_active
+      order by code
+    `
+    return rows.map((r) => r.code)
+  })
+}

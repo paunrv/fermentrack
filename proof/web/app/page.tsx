@@ -1,5 +1,6 @@
 import { currentSession } from '@/lib/session'
-import { listLots } from '@/lib/lots'
+import { listLots, listVessels } from '@/lib/lots'
+import { CaptureBar } from './capture'
 import { formatQuantity, formatWhen } from '@/lib/format'
 
 export const dynamic = 'force-dynamic'
@@ -15,13 +16,14 @@ export default async function LotsPage() {
     )
   }
 
-  const lots = await listLots(session)
+  const [lots, vessels] = await Promise.all([listLots(session), listVessels(session)])
 
   return (
     <main className="wrap">
       <div className="lot-head">
         <span className="eyebrow">{session.organizationName}</span>
         <h1>What is in the cellar</h1>
+        <CaptureBar vessels={vessels} offer={['receive']} />
       </div>
 
       {lots.length === 0 ? (
