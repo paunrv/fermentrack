@@ -491,3 +491,134 @@ h1 {
 }
 .primary:hover { filter: brightness(1.08); }
 .err { color: var(--deep); font-size: 0.88rem; }
+
+/* ---------- tank board ---------- */
+.board-caveat {
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: 2px;
+  padding: 8px 12px;
+  display: inline-block;
+}
+.board { padding: 4px 0 72px; }
+.board-group {
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 30px 0 12px;
+}
+.board-group:first-child { margin-top: 12px; }
+
+.vessel {
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+  padding: 14px 18px;
+  margin-bottom: 10px;
+}
+.vessel.is-empty { background: transparent; }
+.vessel.is-over { border-color: var(--deep); }
+.vessel.is-unknown_size { border-style: dashed; background: transparent; }
+
+.vessel-head { display: flex; align-items: baseline; gap: 10px; }
+.vessel-head .spacer { flex: 1; }
+.vessel-code {
+  font-family: var(--f-mono);
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.vessel-type {
+  font-family: var(--f-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.vessel-room {
+  font-family: var(--f-mono);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ok);
+}
+.vessel-room.muted { color: var(--muted); font-size: 0.8rem; }
+.vessel-room.over { color: var(--deep); }
+
+.gauge {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  margin: 10px 0 2px;
+  overflow: hidden;
+}
+.gauge-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+.gauge-fill.over { background: var(--deep); }
+
+.vessel-empty { margin: 8px 0 0; font-size: 0.88rem; color: var(--muted); }
+
+.vessel-contents { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.vessel-contents li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.vessel-lot {
+  font-family: var(--f-mono);
+  font-size: 0.88rem;
+  color: var(--accent);
+  border-bottom: 1px solid transparent;
+}
+.vessel-lot:hover { border-bottom-color: var(--accent); }
+.vessel-qty {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.vessel-stage { font-size: 0.86rem; color: var(--muted); }
+
+.size-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.size-form label {
+  font-family: var(--f-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.size-form input, .size-form select {
+  font-family: var(--f-body);
+  font-size: 0.92rem;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.size-form input { width: 110px; }
+.size-form button {
+  font-family: var(--f-body);
+  font-size: 0.88rem;
+  padding: 6px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+.size-form button:hover { background: var(--accent); color: var(--bg); }
+.now .sub {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}

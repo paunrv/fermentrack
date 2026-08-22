@@ -74,6 +74,12 @@ begin
     p_organization_id => v_org, p_occurred_at => now() - interval '5 days',
     p_lot_code => 'MST-26-H', p_observed_quantity => 1685, p_unit => 'L',
     p_note => 'Dipped the tank properly; the racking figure was optimistic');
+
+  -- Two of the three vessels have had their size told to PROOF; the reception
+  -- bin has not. That is the real state of a winery onboarded through capture
+  -- alone, and the board has to be honest about it rather than guessing.
+  perform public.set_vessel_size(v_org, 'TK-7', 2000, 'L');
+  perform public.set_vessel_size(v_org, 'TK-3', 5000, 'L');
 end
 $demo$;
 

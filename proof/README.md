@@ -14,11 +14,12 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Steps 1–5 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
-first screen, and the capture sheets.** Organizations and memberships with RLS proven by test; the event
+**Steps 1–6 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
+lot timeline, the capture sheets, and the tank board.** Organizations and memberships with RLS proven by test; the event
 ledger that records what physically happened; six operations named for what a person
 does; the lot timeline that reads it all back; and the sheets a person actually
-types into, with the pace they demand measured rather than assumed.
+types into, with the pace they demand measured rather than assumed; and the board
+that answers where the next load can go.
 
 Each layer is proven by scripted scenarios before the next is built on it.
 
@@ -66,7 +67,7 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-178 SQL assertions in four suites, plus a browser-driven pace run.
+197 SQL assertions in five suites, plus a browser-driven pace run.
 
 **Isolation (50)** — cross-organization reads, write refusal, privilege escalation
 attempts, revoked members, suspended organizations, anonymous callers, and the
@@ -84,6 +85,11 @@ actually has. Plus the refusals that protect the operator from recording nonsens
 **Timeline (22)** — that the story reads in human language, follows the wine back
 through its ancestry, carries a running balance, and is a projection rather than a
 stored table.
+
+**Tank board (19)** — that occupancy agrees with the lot, that litres and kilograms
+are never added together, that an over-full tank is flagged rather than shown as a
+negative, and that a vessel nobody has measured is reported as unknown rather than
+counted as empty.
 
 `tests/rls/00_supabase_shim.sql` recreates the `auth` schema and roles that a hosted
 Supabase project provides. It is **test scaffolding and is never applied to a real
@@ -120,9 +126,12 @@ them, and the test proves it.
 - **Recorded history is immutable.** Corrections are recorded, never applied in place.
 - **Every view is `security_invoker`** — a view without it runs as its owner and
   silently bypasses RLS. A structural test enforces this.
-- **The screen stores nothing.** The timeline is a projection; no table may grow a
-  `current_volume`, `current_stage` or `current_location`
+- **The screen stores nothing.** The timeline and the tank board are projections; no
+  table may grow a `current_volume`, `current_stage` or `current_location`
   ([ADR 0008](docs/adr/0008-timeline-is-a-projection.md)).
+- **What PROOF does not know, it says.** A vessel with no recorded size is reported
+  as unknown and left out of the totals, never counted as zero
+  ([ADR 0010](docs/adr/0010-unknown-capacity-is-reported.md)).
 
 ## Recording what happened
 
@@ -180,7 +189,8 @@ calling itself production, so a misconfigured deploy fails closed.
 
 ## Coming next in Cycle 1
 
-Steps 6–7: the tank board, and a dry run before the winery.
+Step 7: a dry run — reading a harvest narrative aloud at conversational speed while
+somebody captures it — and then the winery.
 
 Decisions the remaining steps must preserve: the unit Aldo actually says is the
 unit stored, conversions are derived; blend and split are already in the model;

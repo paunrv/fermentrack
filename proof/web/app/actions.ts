@@ -225,3 +225,25 @@ export async function recordCorrection(
     'Recorded.',
   )
 }
+
+/**
+ * The one thing the board can change: how big a vessel is. It asks because it
+ * cannot answer "how much room have you got" without knowing, not because
+ * PROOF wants to manage equipment.
+ */
+export async function setVesselSize(
+  _prev: CaptureResult | null,
+  form: FormData,
+): Promise<CaptureResult> {
+  const organization_id = await org()
+  return capture(
+    (call) =>
+      call('public.set_vessel_size', {
+        p_organization_id: organization_id,
+        p_vessel_code: orNull(form.get('vessel_code')),
+        p_capacity: num(form.get('capacity')),
+        p_capacity_unit: orNull(form.get('capacity_unit')),
+      }),
+    'Noted.',
+  )
+}

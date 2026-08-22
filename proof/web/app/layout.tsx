@@ -26,6 +26,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <div className="topbar">
           <div className="wrap">
             <a href="/" className="brand">PROOF</a>
+            <a href="/" className="back">cellar</a>
+            <a href="/tanks" className="back">tanks</a>
             <span className="spacer" />
             <span className="org">{session?.organizationName ?? 'no winery'}</span>
           </div>
