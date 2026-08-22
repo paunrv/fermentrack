@@ -14,17 +14,18 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Steps 1–3 of Cycle 1 are complete: tenancy, the ledger, and the capture layer.**
-Organizations and memberships with RLS proven by test; the event ledger that records
-what physically happened; and six operations named for what a person does.
+**Steps 1–4 of Cycle 1 are complete: tenancy, the ledger, the capture layer, and
+the first screen.** Organizations and memberships with RLS proven by test; the event
+ledger that records what physically happened; six operations named for what a person
+does; and the lot timeline that reads it all back.
 
-No UI yet, by design. Each layer is proven by scripted scenarios before the next is
-built on it.
+Each layer is proven by scripted scenarios before the next is built on it.
 
 ```
 supabase/migrations/   the schema, applied only from here — never by hand
 supabase/seed/         organizations and units, idempotent
 tests/rls/             isolation + ledger scenarios A–I + a full harvest, captured
+web/                   the Next.js app — currently the lot timeline
 docs/capture-operations.md   the six operations, in the operator's words
 docs/adr/              decisions and why they were made
 ```
@@ -64,7 +65,7 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-156 assertions in three suites.
+178 assertions in four suites.
 
 **Isolation (50)** — cross-organization reads, write refusal, privilege escalation
 attempts, revoked members, suspended organizations, anonymous callers, and the
@@ -78,6 +79,10 @@ refused.
 **Capture (49)** — a whole harvest recorded the way it will be at the winery: as an
 ordinary signed-in session calling the six operations with the numbers a person
 actually has. Plus the refusals that protect the operator from recording nonsense.
+
+**Timeline (22)** — that the story reads in human language, follows the wine back
+through its ancestry, carries a running balance, and is a projection rather than a
+stored table.
 
 `tests/rls/00_supabase_shim.sql` recreates the `auth` schema and roles that a hosted
 Supabase project provides. It is **test scaffolding and is never applied to a real
@@ -114,6 +119,9 @@ them, and the test proves it.
 - **Recorded history is immutable.** Corrections are recorded, never applied in place.
 - **Every view is `security_invoker`** — a view without it runs as its owner and
   silently bypasses RLS. A structural test enforces this.
+- **The screen stores nothing.** The timeline is a projection; no table may grow a
+  `current_volume`, `current_stage` or `current_location`
+  ([ADR 0008](docs/adr/0008-timeline-is-a-projection.md)).
 
 ## Recording what happened
 
@@ -139,10 +147,24 @@ constraint triggers validate the whole set at commit. Recorded history is then
 immutable: a mistake is fixed by recording a correction, which leaves both the
 error and the fix visible.
 
+## Running the screen
+
+```sh
+./scripts/dev-db.sh          # builds proof_dev and records a demo harvest
+cd web && npm install && npm run dev
+```
+
+Every query runs as `authenticated` with the signed-in user's claims set on the
+transaction — the same posture PostgREST gives a Supabase client — so the database,
+not the app, decides what a person may see.
+
+Cycle 1 has no sign-in screen yet, so the session comes from `PROOF_DEV_USER`. That
+shortcut asks the database what environment it is and refuses to work anywhere
+calling itself production, so a misconfigured deploy fails closed.
+
 ## Coming next in Cycle 1
 
-Steps 4–7: the lot timeline, capture sheets, the tank board, and a dry run before
-the winery.
+Steps 5–7: capture sheets, the tank board, and a dry run before the winery.
 
 Decisions the remaining steps must preserve: the unit Aldo actually says is the
 unit stored, conversions are derived; blend and split are already in the model;
