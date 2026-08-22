@@ -5,7 +5,7 @@
 reset role;
 
 \pset border 2
-\pset title 'PROOF · two-organization isolation'
+\pset title 'PROOF · Cycle 1 suite'
 
 select
   lpad(seq::text, 3, '0')     as "#",

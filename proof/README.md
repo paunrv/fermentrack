@@ -14,17 +14,18 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Steps 1 and 2 of Cycle 1 are complete: tenancy, then the ledger.**
-Organizations and memberships with RLS proven by test; then the event ledger that
-records what physically happened, with derived state and nothing stored twice.
+**Steps 1–3 of Cycle 1 are complete: tenancy, the ledger, and the capture layer.**
+Organizations and memberships with RLS proven by test; the event ledger that records
+what physically happened; and six operations named for what a person does.
 
-No UI yet, by design. The ledger is proven by scripted scenarios before anything is
-built on top of it.
+No UI yet, by design. Each layer is proven by scripted scenarios before the next is
+built on it.
 
 ```
 supabase/migrations/   the schema, applied only from here — never by hand
 supabase/seed/         organizations and units, idempotent
-tests/rls/             isolation suite + ledger scenarios A–I + invariant attacks
+tests/rls/             isolation + ledger scenarios A–I + a full harvest, captured
+docs/capture-operations.md   the six operations, in the operator's words
 docs/adr/              decisions and why they were made
 ```
 
@@ -63,7 +64,7 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-107 assertions in two suites.
+156 assertions in three suites.
 
 **Isolation (50)** — cross-organization reads, write refusal, privilege escalation
 attempts, revoked members, suspended organizations, anonymous callers, and the
@@ -73,6 +74,10 @@ structural invariants.
 fermentation, racking with loss, split, blend, bottling, breakage and a physical
 count. Then eight attacks that try to make the ledger lie, and each must be
 refused.
+
+**Capture (49)** — a whole harvest recorded the way it will be at the winery: as an
+ordinary signed-in session calling the six operations with the numbers a person
+actually has. Plus the refusals that protect the operator from recording nonsense.
 
 `tests/rls/00_supabase_shim.sql` recreates the `auth` schema and roles that a hosted
 Supabase project provides. It is **test scaffolding and is never applied to a real
@@ -110,18 +115,34 @@ them, and the test proves it.
 - **Every view is `security_invoker`** — a view without it runs as its owner and
   silently bypasses RLS. A structural test enforces this.
 
-## Writing history
+## Recording what happened
 
-`app.record_event()` is the only supported way. It checks membership itself, builds
-the event, its lines and its lineage atomically, and the deferred constraint
-triggers validate the whole set at commit. Recorded history is then immutable —
-a mistake is fixed by recording a correction, which leaves both the error and the
-fix visible.
+Six operations, named for what a person does. See
+[the capture operations](docs/capture-operations.md) for the full mapping.
+
+```sql
+select public.capture_reception(org, '2026-08-18', 'CS-26-H', 2.4, 't',
+                                p_vessel_code => 'BIN-A', p_source => 'La Cañada');
+
+select public.capture_transfer(org, now(), 'MST-26-H', 1730, 'L',
+         jsonb_build_array(jsonb_build_object('vessel_code','TK-B','quantity',1700)));
+```
+
+That second call is the whole idea: the operator gives two real numbers, and PROOF
+works out that thirty litres are unaccounted for, insists they carry a reason, and
+writes the movement legs so they cancel. Nobody types a delta
+([ADR 0007](docs/adr/0007-capture-speaks-operational-language.md)).
+
+Underneath, `app.record_event()` remains the only way to write history — it checks
+membership, builds the event, lines and lineage atomically, and the deferred
+constraint triggers validate the whole set at commit. Recorded history is then
+immutable: a mistake is fixed by recording a correction, which leaves both the
+error and the fix visible.
 
 ## Coming next in Cycle 1
 
-Steps 3–7: the six harvest capture operations, the lot timeline, capture sheets,
-the tank board, and a dry run before the winery.
+Steps 4–7: the lot timeline, capture sheets, the tank board, and a dry run before
+the winery.
 
 Decisions the remaining steps must preserve: the unit Aldo actually says is the
 unit stored, conversions are derived; blend and split are already in the model;
