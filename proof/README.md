@@ -14,8 +14,9 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Steps 1–6 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
-lot timeline, the capture sheets, and the tank board.** Organizations and memberships with RLS proven by test; the event
+**Steps 1–7 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
+lot timeline, the capture sheets, the tank board, and a dry run against all of
+it.** Organizations and memberships with RLS proven by test; the event
 ledger that records what physically happened; six operations named for what a person
 does; the lot timeline that reads it all back; and the sheets a person actually
 types into, with the pace they demand measured rather than assumed; and the board
@@ -23,12 +24,19 @@ that answers where the next load can go.
 
 Each layer is proven by scripted scenarios before the next is built on it.
 
+Step 7 then read a harvest morning through the finished build and wrote down where
+it came apart. Pace held; fidelity did not. Twelve findings, each paired with a
+verified claim about what the ledger ends up not knowing:
+**[dry run 01](docs/dry-run-01.md)**. Nothing from it is fixed yet — that is
+Step 8.
+
 ```
 supabase/migrations/   the schema, applied only from here — never by hand
 supabase/seed/         organizations and units, idempotent
 tests/rls/             isolation + ledger scenarios A–I + a full harvest, captured
-web/                   the Next.js app — currently the lot timeline
+web/                   the Next.js app — the cellar, the lot timeline, the tank board
 docs/capture-operations.md   the six operations, in the operator's words
+docs/dry-run-01.md     what a harvest morning does to the build, and what it loses
 docs/adr/              decisions and why they were made
 ```
 
@@ -187,10 +195,35 @@ Cycle 1 has no sign-in screen yet, so the session comes from `PROOF_DEV_USER`. T
 shortcut asks the database what environment it is and refuses to work anywhere
 calling itself production, so a misconfigured deploy fails closed.
 
+## The dry run
+
+Step 7's question was whether the event model matches how a winemaker actually
+describes the work. It is answered the same way the pace was: by running it.
+
+```sh
+cd web && npm run start &      # the app must be running
+./scripts/dryrun.sh
+```
+
+Twelve things a winemaker says in one morning, driven through the build exactly as
+it stands. A script cannot hesitate, so friction is only recorded where it is
+structurally observable — no action exists, no path to it, two actions plausibly
+fit, or something said is dropped. Each utterance carries the verdict predicted
+before the run so the write-up cannot inherit an assumption, and each deviation is
+paired with a SQL assertion about what the ledger therefore does not know.
+
+The result: capture keeps pace, and then writes down something else. Three of
+twelve things said survived intact, and the ledger ended the morning believing
+seven things that are false — the sharpest being 525 L of wine recorded as
+evaporated because the transfer sheet takes one destination and the operator said
+two. Read [dry run 01](docs/dry-run-01.md).
+
 ## Coming next in Cycle 1
 
-Step 7: a dry run — reading a harvest narrative aloud at conversational speed while
-somebody captures it — and then the winery.
+Step 8: closing the gaps the dry run found, worst first. The model held — every
+gap but two is the operations layer failing to reach something the ledger already
+supports, including three `event_kind` values (`blend`, `consume`, `loss`) that
+nothing in the product can write.
 
 Decisions the remaining steps must preserve: the unit Aldo actually says is the
 unit stored, conversions are derived; blend and split are already in the model;
