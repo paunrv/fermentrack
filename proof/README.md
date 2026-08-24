@@ -41,6 +41,7 @@ web/                   the Next.js app — the cellar, the lot timeline, the tan
 docs/capture-operations.md   the six operations, in the operator's words
 docs/dry-run-01.md     what a harvest morning does to the build, and what it loses
 docs/f1-multi-destination.md  the first of those findings, fixed and proved
+docs/domain-audit-01.md      the domain mapped against the build, and what we still do not know
 docs/adr/              decisions and why they were made
 ```
 
