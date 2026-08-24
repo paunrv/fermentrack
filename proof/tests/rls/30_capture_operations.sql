@@ -160,6 +160,7 @@ select public.capture_transfer(
   p_quantity_out     => 1730,
   p_unit             => 'L',
   p_destinations     => jsonb_build_array(jsonb_build_object('vessel_code', 'TK-B', 'quantity', 1700)),
+  p_shortfall_reason => 'expected_loss',
   p_shortfall_note   => 'Lees',
   p_note             => 'Racked off the gross lees'
 );

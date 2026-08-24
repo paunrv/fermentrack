@@ -67,6 +67,7 @@ begin
     p_lot_code => 'MST-26-H', p_from_vessel_code => 'TK-3',
     p_quantity_out => 1730, p_unit => 'L',
     p_destinations => jsonb_build_array(jsonb_build_object('vessel_code','TK-7','quantity',1700)),
+    p_shortfall_reason => 'expected_loss',
     p_shortfall_note => 'Gross lees',
     p_note => 'Racked off the lees into Tank 7');
 

@@ -278,17 +278,22 @@ await said(
 
 await said(
   '“Racked it into Tank 7 and Tank 8, about half each.”',
-  'BLOCKED',
-  'worse than the second destination: the wine that went to Tank 8 is written down as lost',
+  'CLEAN',
+  null,
   async () => {
+    // Step 8 · F1. This was the worst moment of the first dry run: the sheet
+    // took one destination, so the second tank's wine was recorded as an
+    // expected loss. Both halves of the sentence now fit.
     await open('move')
-    const boxes = await page.$$eval('input[name="to_vessel_code"]', (n) => n.length)
     await type('[data-f="quantity_out"]', '1050')
     await type('[data-f="quantity_in"]', '525')
-    await type('input[name="to_vessel_code"]', 'TK-7')
+    await type('[data-f="to_vessel"]', 'TK-7')
+    await tap('[data-add-dest]')
+    await type('[data-f="quantity_in_1"]', '525')
+    await type('[data-f="to_vessel_1"]', 'TK-8')
     await tap('button.primary')
     await settle('Moved')
-    return `capture_transfer accepts several destinations; the sheet shows ${boxes}`
+    return 'both tanks recorded, and no loss line invented for either'
   },
 )
 
@@ -397,26 +402,30 @@ await check(
   1,
 )
 
+// Fixed in Step 8 · F1, and asserted here so the original narrative keeps
+// proving it rather than a separate test doing so out of context.
 await check(
-  'only one destination was recorded for a racking into two tanks',
+  'both tanks of a racking into two tanks are recorded',
   `select count(distinct l.vessel_id)::text as n from public.ledger_lines l
      join public.events e on e.id = l.event_id
      join public.lots lo on lo.id = l.lot_id
     where lo.code = 'CO-26-D' and e.kind = 'transfer' and l.quantity > 0`,
-  1,
+  2,
 )
 
 await check(
-  'and the wine that went to the second tank is recorded as lost',
-  `select round(-sum(l.quantity), 0)::text as n from public.ledger_lines l
+  'and no wine is written down as lost, because none was',
+  `select count(*)::text as n from public.ledger_lines l
      join public.events e on e.id = l.event_id
      join public.lots lo on lo.id = l.lot_id
-    where lo.code = 'CO-26-D' and e.kind = 'transfer' and l.reason = 'expected_loss'`,
-  525,
+    where lo.code = 'CO-26-D' and e.kind = 'transfer' and l.reason <> 'movement'`,
+  0,
 )
 
+// Still true, and deliberately so: F11 was not in F1's scope. PROOF knew Tank
+// 7 had 315 L free and accepted 525 without a word.
 await check(
-  'that overflow makes a tank over-full, and the board nets it against the rest',
+  'a tank still goes over capacity without being asked about it',
   `select count(*)::text as n from public.vessel_board
     where organization_id = '${ORG}' and status = 'over'`,
   1,

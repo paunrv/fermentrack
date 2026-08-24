@@ -37,7 +37,14 @@ export default async function LotTimeline({ params }: { params: Promise<{ code: 
           </div>
           <div>
             <dt>where</dt>
-            <dd className="word">{card.vessel_code ?? '—'}</dd>
+            {/*
+              A lot can sit in more than one tank, so this says all of them.
+              Naming only the biggest would make the header disagree with the
+              board, which is the failure this step exists to remove.
+            */}
+            <dd className="word">
+              {card.vessel_codes.length > 0 ? card.vessel_codes.join(' · ') : '—'}
+            </dd>
           </div>
           <div>
             <dt>doing</dt>
@@ -119,6 +126,8 @@ function Entry({ entry, subjectCode }: { entry: StoryEntry; subjectCode: string 
 
   const from = primary.from_vessel
   const to = primary.to_vessel
+  const arrivals = primary.to_vessels ?? []
+  const split = arrivals.length > 1
   const showVessels = from || to
   const movedBetween = from && to && from !== to
 
@@ -192,9 +201,32 @@ function Entry({ entry, subjectCode }: { entry: StoryEntry; subjectCode: string 
             </div>
           )}
 
+          {/*
+            Where it went — all of it. A racking into two tanks used to read
+            "TK-4 → TK-7" because the destination was picked by size, so the
+            second tank was in the ledger and nowhere a person could see it.
+          */}
           {showVessels && (
             <div className="vessels">
-              {movedBetween ? (
+              {split ? (
+                <>
+                  {from && (
+                    <>
+                      {from}
+                      <span className="arrow">→</span>
+                    </>
+                  )}
+                  {arrivals.map((a, i) => (
+                    <span className="arrival" key={a.code}>
+                      {i > 0 && <span className="sep">·</span>}
+                      {a.code}
+                      <span className="arrival-qty">
+                        {formatQuantity(a.quantity, a.unit)}
+                      </span>
+                    </span>
+                  ))}
+                </>
+              ) : movedBetween ? (
                 <>
                   {from}
                   <span className="arrow">→</span>

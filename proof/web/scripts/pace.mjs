@@ -138,9 +138,14 @@ await utterance('“Brix is 23.4 this morning, twenty-six degrees.”', 5, async
 await utterance('“We racked it to Tank 11 — 1,700 out, 1,660 in.”', 6, async () => {
   await tap('[data-sheet="move"]')
   await type('[data-f="quantity_in"]', '1660')
-  await type('input[name="to_vessel_code"]', 'TK-11')
+  await type('[data-f="to_vessel"]', 'TK-11')
   // The shortfall must appear on its own, before anything is submitted.
   await page.waitForSelector('[data-shortfall="40"]', { timeout: 5000 })
+  // And it must be answered. Step 8 took the tick off "lees, normal": PROOF
+  // does not decide that forty missing litres were lees rather than a tank
+  // nobody mentioned. That deliberate extra tap is what F1 cost the common
+  // case, and it is measured here rather than argued about.
+  await tap('[data-reason="expected_loss"]')
   await tap('button.primary')
   await recorded('expected loss')
 })

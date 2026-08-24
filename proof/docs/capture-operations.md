@@ -55,6 +55,8 @@ must can always name the fruit it came from.
 ## 3 · Transfer
 
 > *"We racked it into Tank B. Seventeen-thirty came out, seventeen hundred went in."*
+>
+> *"Racked it into Tank 7 and Tank 8, about half each."*
 
 | | |
 |---|---|
@@ -68,10 +70,31 @@ PROOF works out that thirty litres are unaccounted for, insists they carry a
 reason, and writes the movement legs so they cancel. Asking anyone to reason
 about netting would be a design failure.
 
-More arriving than left is refused, because it is almost always a typo.
+**Wine can go to more than one tank.** The sheet shows one destination row and
+adds another on request, so the common racking is unchanged and the second half
+of "Tank 7 and Tank 8" has somewhere to go. Split evenly, nothing is
+unaccounted for and no reason is asked for, because nothing is missing.
+
+**A gap with no explanation is refused, not named for you.** Before Step 8 the
+shortfall reason defaulted to `expected_loss`, which is how a racking into two
+tanks came to record half the wine as evaporated. There is no default now:
+
+```
+525 L unaccounted for — say which tank the rest went into,
+or what happened to it
+```
+
+Two answers close it — name another destination, or say what happened to the
+wine — and the operator picks. PROOF does not
+([ADR 0011](adr/0011-missing-information-is-not-a-loss.md)).
+
+More arriving than left is refused, because it is almost always a typo. A
+destination row with a tank and no amount is refused for the same reason; a row
+left completely blank is simply not a destination.
 
 Naming a different lot at a destination makes it a split, and the lineage is
-recorded without anyone requesting it.
+recorded without anyone requesting it — for every destination, so both halves of
+a divided wine can answer "where did this come from".
 
 ---
 

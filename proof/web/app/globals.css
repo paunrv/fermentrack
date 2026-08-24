@@ -278,6 +278,8 @@ h1 {
   margin-top: 6px;
 }
 .vessels .arrow { color: var(--line); padding: 0 4px; }
+.vessels .sep { color: var(--line); padding: 0 6px; }
+.vessels .arrival-qty { color: var(--ink-2); padding-left: 5px; }
 
 .deltas { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
 .delta {
@@ -477,6 +479,58 @@ h1 {
 .shortfall.bad { background: var(--deep-soft); color: var(--deep); }
 .shortfall.ok { background: var(--ok-soft); color: var(--ok); }
 .shortfall .radio { color: inherit; }
+.shortfall strong,
+.shortfall-ask { flex-basis: 100%; margin: 0; }
+.shortfall-ask { font-weight: 400; opacity: 0.85; }
+
+/* ---------- where the wine went ---------- */
+/*
+  Destinations are a list, because wine is not always racked into one tank.
+  The list starts with a single row that looks exactly like the field it
+  replaced — the second row is a tap away and costs nothing until asked for.
+*/
+.dests { grid-column: 1 / -1; gap: 8px; }
+.dest {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr) minmax(0, 6fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+@media (max-width: 560px) {
+  .dest { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+.dest .drop {
+  font-family: var(--f-body);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+.dest .drop:hover { border-color: var(--deep); color: var(--deep); }
+.add-dest {
+  align-self: flex-start;
+  font-family: var(--f-body);
+  font-size: 0.82rem;
+  padding: 5px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.add-dest:hover { border-color: var(--accent); color: var(--accent); }
+/* Inside the shortfall block this is the likeliest answer, so it reads as a
+   real choice rather than an afterthought. */
+.shortfall .add-dest {
+  border-style: solid;
+  border-color: currentColor;
+  color: inherit;
+  background: var(--bg);
+}
 
 .sheet-foot { margin-top: 18px; display: flex; align-items: center; gap: 14px; }
 .primary {

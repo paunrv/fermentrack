@@ -18,6 +18,7 @@ export type LotCard = {
   received_at: string | null
   received_quantity: string | null
   received_unit: string | null
+  vessel_codes: string[]
   came_from: { lot_code: string; lot_name: string | null }[]
   became: { lot_code: string; lot_name: string | null }[]
   event_count: number
@@ -66,6 +67,7 @@ export type StoryRow = {
   related_lots: RelatedLot[]
   from_vessel: string | null
   to_vessel: string | null
+  to_vessels: { code: string; quantity: string; unit: string }[]
   confidence: string | null
   event_confidence: string | null
   note: string | null
@@ -93,7 +95,10 @@ export async function listLots(session: Session): Promise<LotCard[]> {
       where organization_id = ${session.organizationId}
       order by coalesce(last_activity, opened_at) desc
     `
-    return rows as unknown as LotCard[]
+    return (rows as unknown as LotCard[]).map((r) => ({
+      ...r,
+      vessel_codes: r.vessel_code ? [r.vessel_code] : [],
+    }))
   })
 }
 
@@ -109,12 +114,24 @@ export async function getLot(
     const card = cards[0] as unknown as LotCard | undefined
     if (!card) return null
 
+    // `lot_card.vessel_code` is the largest single position, which is the right
+    // answer for one tank and a half-truth for two. A racking into Tank 7 and
+    // Tank 8 has to read as both.
+    const positions = (await tx<{ code: string }[]>`
+      select v.code
+      from public.lot_vessel_positions p
+      join public.vessels v on v.id = p.vessel_id
+      where p.lot_id = ${card.lot_id} and p.quantity <> 0
+      order by p.quantity desc, v.code
+    `) as unknown as { code: string }[]
+    card.vessel_codes = positions.map((p) => p.code)
+
     const rows = (await tx<StoryRow[]>`
       select seq, event_id, source_lot_code, source_lot_name, is_inherited, kind,
              headline, occurred_at, net_change, balance_after, unit,
              moved_in, moved_out, changes, materials, related_lots,
-             from_vessel, to_vessel, confidence, event_confidence, note, metadata,
-             actor_name, actor_email
+             from_vessel, to_vessel, to_vessels, confidence, event_confidence,
+             note, metadata, actor_name, actor_email
       from public.lot_story
       where subject_lot_id = ${card.lot_id}
       order by seq

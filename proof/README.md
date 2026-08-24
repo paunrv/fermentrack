@@ -14,9 +14,9 @@ material only — its domain knowledge is valuable, its architecture is not.
 
 ## Where this is
 
-**Steps 1–7 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
-lot timeline, the capture sheets, the tank board, and a dry run against all of
-it.** Organizations and memberships with RLS proven by test; the event
+**Steps 1–8 of Cycle 1 are complete: tenancy, the ledger, the capture layer, the
+lot timeline, the capture sheets, the tank board, a dry run against all of it,
+and the first fidelity fix it demanded.** Organizations and memberships with RLS proven by test; the event
 ledger that records what physically happened; six operations named for what a person
 does; the lot timeline that reads it all back; and the sheets a person actually
 types into, with the pace they demand measured rather than assumed; and the board
@@ -27,8 +27,11 @@ Each layer is proven by scripted scenarios before the next is built on it.
 Step 7 then read a harvest morning through the finished build and wrote down where
 it came apart. Pace held; fidelity did not. Twelve findings, each paired with a
 verified claim about what the ledger ends up not knowing:
-**[dry run 01](docs/dry-run-01.md)**. Nothing from it is fixed yet — that is
-Step 8.
+**[dry run 01](docs/dry-run-01.md)**.
+
+Step 8 then fixed the worst of them — the one where PROOF wrote down 525 L of
+wine as evaporated because the transfer sheet took one destination and the
+operator named two: **[F1](docs/f1-multi-destination.md)**.
 
 ```
 supabase/migrations/   the schema, applied only from here — never by hand
@@ -37,6 +40,7 @@ tests/rls/             isolation + ledger scenarios A–I + a full harvest, capt
 web/                   the Next.js app — the cellar, the lot timeline, the tank board
 docs/capture-operations.md   the six operations, in the operator's words
 docs/dry-run-01.md     what a harvest morning does to the build, and what it loses
+docs/f1-multi-destination.md  the first of those findings, fixed and proved
 docs/adr/              decisions and why they were made
 ```
 
@@ -75,7 +79,7 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-197 SQL assertions in five suites, plus a browser-driven pace run.
+224 SQL assertions in six suites, plus two browser-driven runs.
 
 **Isolation (50)** — cross-organization reads, write refusal, privilege escalation
 attempts, revoked members, suspended organizations, anonymous callers, and the
@@ -98,6 +102,11 @@ stored table.
 are never added together, that an over-full tank is flagged rather than shown as a
 negative, and that a vessel nobody has measured is reported as unknown rather than
 counted as empty.
+
+**Destinations (27)** — that "Tank 7 and Tank 8, about half each" records two
+tanks and no loss; exact, partial and three-way transfers; lineage in both
+directions; and that an unexplained gap is refused rather than named for the
+operator.
 
 `tests/rls/00_supabase_shim.sql` recreates the `auth` schema and roles that a hosted
 Supabase project provides. It is **test scaffolding and is never applied to a real
@@ -131,6 +140,9 @@ them, and the test proves it.
   real operation will share this database for months.
 - **Movement nets to zero; everything else names its reason.**
   ([ADR 0004](docs/adr/0004-movement-nets-to-zero.md))
+- **Missing information is never turned into a physical loss.** An unknown
+  destination is not a loss, an unknown quantity is not zero, and a correction is
+  not a spill ([ADR 0011](docs/adr/0011-missing-information-is-not-a-loss.md)).
 - **Recorded history is immutable.** Corrections are recorded, never applied in place.
 - **Every view is `security_invoker`** — a view without it runs as its owner and
   silently bypasses RLS. A structural test enforces this.
@@ -151,13 +163,19 @@ select public.capture_reception(org, '2026-08-18', 'CS-26-H', 2.4, 't',
                                 p_vessel_code => 'BIN-A', p_source => 'La Cañada');
 
 select public.capture_transfer(org, now(), 'MST-26-H', 1730, 'L',
-         jsonb_build_array(jsonb_build_object('vessel_code','TK-B','quantity',1700)));
+         jsonb_build_array(jsonb_build_object('vessel_code','TK-B','quantity',1700)),
+         p_shortfall_reason => 'expected_loss');
 ```
 
 That second call is the whole idea: the operator gives two real numbers, and PROOF
 works out that thirty litres are unaccounted for, insists they carry a reason, and
 writes the movement legs so they cancel. Nobody types a delta
 ([ADR 0007](docs/adr/0007-capture-speaks-operational-language.md)).
+
+The reason is spelled out because there is no default for it. Wine can go to
+several tanks at once, so a gap between what left and what arrived might be lees
+— or might be a tank nobody has mentioned yet. PROOF asks rather than deciding
+([ADR 0011](docs/adr/0011-missing-information-is-not-a-loss.md)).
 
 Underneath, `app.record_event()` remains the only way to write history — it checks
 membership, builds the event, lines and lineage atomically, and the deferred
@@ -176,7 +194,7 @@ cd web && npm run start &      # the app must be running
 ```
 
 It drives a real browser through a transcript of things a winemaker says and
-counts every interaction. Currently **31 interactions for six operations**. Over
+counts every interaction. Currently **32 interactions for six operations**. Over
 budget fails. It is a ratchet, not a proof — only Aldo can say whether it is fast
 enough ([ADR 0009](docs/adr/0009-capture-pace-is-measured.md)).
 
@@ -218,12 +236,31 @@ seven things that are false — the sharpest being 525 L of wine recorded as
 evaporated because the transfer sheet takes one destination and the operator said
 two. Read [dry run 01](docs/dry-run-01.md).
 
+## Proving a fix
+
+Step 8 answers a finding the same way the pace and the dry run are answered — by
+running it, end to end, through the browser:
+
+```sh
+cd web && npm run start &
+./scripts/fidelity.sh
+```
+
+The dry run's worst sentence, said again, and then put to every surface that has
+to agree about it: what was captured, what the ledger holds, what the lot story
+reads, and what the tank board shows. Sixteen checks, including one that strips
+the HTML `required` attribute off the live page and presses submit anyway — the
+refusal has to come back from the database, or the rule is only a form.
+
 ## Coming next in Cycle 1
 
-Step 8: closing the gaps the dry run found, worst first. The model held — every
-gap but two is the operations layer failing to reach something the ledger already
-supports, including three `event_kind` values (`blend`, `consume`, `loss`) that
-nothing in the product can write.
+The rest of the dry run's findings, worst first: F2 (a co-ferment loses one
+parent's lineage and leaves its fruit on the books), then F3 and F5 — a loss
+operation and an addition operation, over the `loss` and `consume` event kinds
+the ledger already has and nothing in the product can write.
+
+F4 and F10 are model questions, not capture ones, and go to Aldo before either
+is designed.
 
 Decisions the remaining steps must preserve: the unit Aldo actually says is the
 unit stored, conversions are derived; blend and split are already in the model;

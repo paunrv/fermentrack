@@ -129,14 +129,23 @@ export async function recordTransfer(
   form: FormData,
 ): Promise<CaptureResult> {
   const organization_id = await org()
-  const destinations = [
-    {
-      vessel_code: orNull(form.get('to_vessel_code')),
-      quantity: num(form.get('quantity_in')),
-      lot_code: orNull(form.get('new_lot_code')),
-      lot_name: orNull(form.get('new_lot_name')),
-    },
-  ]
+
+  // Wine goes where the operator says it goes, and that can be more than one
+  // tank. The rows share their field names, so the browser sends them in the
+  // order they appear and they line up by index without anybody numbering
+  // anything. Rows left blank are not destinations and are dropped here; the
+  // function refuses a half-filled one.
+  const vessels = form.getAll('to_vessel_code')
+  const amounts = form.getAll('quantity_in')
+  const codes = form.getAll('new_lot_code')
+
+  const destinations = amounts
+    .map((amount, i) => ({
+      vessel_code: orNull(vessels[i] ?? null),
+      quantity: num(amount),
+      lot_code: orNull(codes[i] ?? null),
+    }))
+    .filter((d) => d.vessel_code !== null || d.quantity !== null)
 
   return capture(
     (call) =>
@@ -149,7 +158,9 @@ export async function recordTransfer(
         p_destinations: json(destinations),
         p_from_vessel_code: orNull(form.get('from_vessel_code')),
         p_basis: form.get('basis') === 'estimated' ? 'estimated' : 'measured',
-        p_shortfall_reason: orNull(form.get('shortfall_reason')) ?? 'expected_loss',
+        // Never defaulted. If wine is missing and nobody said why, the
+        // function refuses — PROOF does not decide that unexplained means lost.
+        p_shortfall_reason: orNull(form.get('shortfall_reason')),
         p_shortfall_note: orNull(form.get('shortfall_note')),
         p_note: orNull(form.get('note')),
       }),

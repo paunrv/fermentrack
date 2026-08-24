@@ -9,6 +9,12 @@ cd web && npm run start &
 ./scripts/dryrun.sh
 ```
 
+> **Since:** F1 was fixed in Step 8 — see
+> [F1 · a transfer can go to more than one tank](f1-multi-destination.md). The
+> harness was re-run against the fixed build and that utterance now reads CLEAN;
+> everything else below stands. This document is the record of the run as it
+> happened, and is left as it was written.
+
 The run rebuilds the database from the committed migrations first, so the
 measurement starts from a known cellar every time.
 
@@ -235,7 +241,7 @@ document first, and the build is unchanged.
 
 | # | Finding | Where it lives |
 |---|---|---|
-| **F1** | A racking to two tanks records the second tank's wine as an expected loss. Silent, plausible-looking, and wrong. | capture sheet |
+| **F1** | ~~A racking to two tanks records the second tank's wine as an expected loss. Silent, plausible-looking, and wrong.~~ **Fixed in Step 8.** | capture sheet |
 | **F2** | A co-ferment loses one parent's lineage *and* leaves its fruit on the books, so the cellar shows stock that is not there and a bin that is not free. | capture operation |
 | **F3** | Throwing something away has no vocabulary. It files as a measurement correction. | capture surface |
 | **F4** | Pressing demands a volume that does not exist yet for wine on skins, forcing an invented number that then propagates as a careful estimate. | model |

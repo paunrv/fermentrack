@@ -236,18 +236,45 @@ function ProcessingSheet({ lot, vessels }: { lot: Lot; vessels: string[] }) {
   )
 }
 
+/** Keeps 1050 − 3 × 350 from previewing as 0.00000000001. */
+const round6 = (n: number) => Math.round(n * 1e6) / 1e6
+
+/**
+ * Moving wine.
+ *
+ * Most rackings go to one tank, and that case must stay as short as it was:
+ * how much came out, how much went in, which tank. Some go to two or three,
+ * and until Step 8 the sheet had no way to say so — which meant the wine in
+ * the second tank was recorded as an expected loss, because the shortfall rule
+ * had nothing else to call it.
+ *
+ * So destinations are a list that starts with one row. The second row costs a
+ * tap and only appears if somebody asks for it.
+ */
 function TransferSheet({ lot, vessels }: { lot: Lot; vessels: string[] }) {
   const [state, action] = useActionState(recordTransfer, null)
   const [out, setOut] = useState<string>(lot.quantity ? String(Math.round(Number(lot.quantity))) : '')
-  const [arrived, setArrived] = useState<string>('')
+  const [dests, setDests] = useState<string[]>([''])
 
-  const shortfall =
-    out !== '' && arrived !== '' ? Number(out) - Number(arrived) : null
+  const unit = lot.unit ?? 'L'
+  const many = dests.length > 1
+  const anyArrived = dests.some((d) => d.trim() !== '')
+  const arrived = dests.reduce((n, d) => n + (d.trim() === '' ? 0 : Number(d)), 0)
+
+  // A preview, not the answer. The server recomputes this from what actually
+  // arrives, and refuses a gap nobody has explained — but seeing the number
+  // appear while you type is what stops the gap being a surprise.
+  const shortfall = out !== '' && anyArrived ? round6(Number(out) - arrived) : null
+
+  const setDest = (i: number, value: string) =>
+    setDests((rows) => rows.map((r, n) => (n === i ? value : r)))
+  const addDest = () => setDests((rows) => [...rows, ''])
+  const dropDest = (i: number) => setDests((rows) => rows.filter((_, n) => n !== i))
 
   return (
     <form action={action} className="sheet">
       <input type="hidden" name="lot_code" value={lot.code} />
-      <input type="hidden" name="unit" value={lot.unit ?? 'L'} />
+      <input type="hidden" name="unit" value={unit} />
       <div className="sheet-grid">
         <When />
         <Field label="how much came out">
@@ -266,45 +293,88 @@ function TransferSheet({ lot, vessels }: { lot: Lot; vessels: string[] }) {
           defaultValue={lot.vessel_code ?? ''}
           label="out of"
         />
-        <Field label="how much went in">
-          <input
-            name="quantity_in"
-            inputMode="decimal"
-            required
-            autoFocus
-            value={arrived}
-            data-f="quantity_in"
-            onChange={(e) => setArrived(e.target.value)}
-          />
-        </Field>
-        <VesselInput name="to_vessel_code" vessels={vessels} label="into" />
-        <Field label="becomes a new wine" hint="optional — leave blank to keep this one">
-          <input name="new_lot_code" data-f="new_lot_code" />
-        </Field>
+
+        <div className="field dests">
+          <label>where it went</label>
+          {dests.map((value, i) => (
+            <div className="dest" key={i} data-dest={i}>
+              <input
+                name="quantity_in"
+                inputMode="decimal"
+                required
+                autoFocus={i === 0}
+                value={value}
+                placeholder="how much"
+                data-f={i === 0 ? 'quantity_in' : `quantity_in_${i}`}
+                aria-label={`how much went into tank ${i + 1}`}
+                onChange={(e) => setDest(i, e.target.value)}
+              />
+              <input
+                name="to_vessel_code"
+                list="dest-vessel-list"
+                autoComplete="off"
+                placeholder="which tank"
+                aria-label={`which tank, ${i + 1}`}
+                data-f={i === 0 ? 'to_vessel' : `to_vessel_${i}`}
+              />
+              <input
+                name="new_lot_code"
+                data-f={i === 0 ? 'new_lot_code' : `new_lot_code_${i}`}
+                placeholder="new name"
+                aria-label={`becomes a new wine, ${i + 1}`}
+              />
+              {many && (
+                <button
+                  type="button"
+                  className="drop"
+                  data-drop={i}
+                  aria-label={`remove tank ${i + 1}`}
+                  onClick={() => dropDest(i)}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          ))}
+          <datalist id="dest-vessel-list">
+            {vessels.map((v) => (
+              <option value={v} key={v} />
+            ))}
+          </datalist>
+          <button type="button" className="add-dest" data-add-dest onClick={addDest}>
+            + another tank
+          </button>
+        </div>
       </div>
 
       {/*
-        The moment the whole capture layer exists for. Two real numbers go in,
-        and the gap between them is named before anybody presses anything. The
-        figure here is only a preview — the server recomputes it — but seeing it
-        appear is what stops a shortfall becoming a silent rounding.
+        The gap between what left and what arrived.
+
+        It used to arrive here with "lees, normal" already ticked, which is how
+        a racking into two tanks came to record half the wine as evaporated.
+        Nothing is pre-selected now, and the first thing offered is the reading
+        that is usually true: it went somewhere else.
       */}
       {shortfall !== null && shortfall > 0 && (
         <div className="shortfall" data-shortfall={shortfall}>
           <strong>
-            {shortfall} {lot.unit} unaccounted for.
+            {shortfall} {unit} still unaccounted for.
           </strong>
+          <p className="shortfall-ask">Did it go into another tank, or is it gone?</p>
+          <button type="button" className="add-dest" data-add-dest-shortfall onClick={addDest}>
+            + it went into another tank
+          </button>
           <div className="chips">
             <label className="radio">
-              <input type="radio" name="shortfall_reason" value="expected_loss" defaultChecked />
+              <input type="radio" name="shortfall_reason" value="expected_loss" data-reason="expected_loss" required />
               lees, normal
             </label>
             <label className="radio">
-              <input type="radio" name="shortfall_reason" value="incident_loss" />
+              <input type="radio" name="shortfall_reason" value="incident_loss" data-reason="incident_loss" required />
               spilled
             </label>
             <label className="radio">
-              <input type="radio" name="shortfall_reason" value="waste" />
+              <input type="radio" name="shortfall_reason" value="waste" data-reason="waste" required />
               thrown away
             </label>
           </div>
@@ -320,6 +390,7 @@ function TransferSheet({ lot, vessels }: { lot: Lot; vessels: string[] }) {
     </form>
   )
 }
+
 
 function StageSheet({ lot }: { lot: Lot }) {
   const [state, action] = useActionState(recordStage, null)
