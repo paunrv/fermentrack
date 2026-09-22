@@ -332,3 +332,124 @@ racking each take their cut, and each is an act.
 Said flatly, as the foundational measurement of the whole operation — which sits
 oddly beside the notebook's *"1,400 kg aprox"* and is worth asking about directly.
 
+
+---
+
+## Q9 · How you know an earlier measurement was wrong — **and a second correction to me**
+
+> "Si ya ves que hay una inconsistencia, pues te aseguras ahora sí de que sí sea
+> la cantidad, y si es algo, pues **lo reemplazas y lo utilizas**."
+
+The notebook reading concluded that he never replaces a number — that he appends
+and writes down why. That was too broad, and it came from reading a notebook
+rather than asking him.
+
+The distinction he actually draws is between two different things:
+
+| | what he does |
+|---|---|
+| **a reading** with a known instrument bias | keeps both, side by side — *"Densidad: 1.005 … Densidad real: 1.006"* |
+| **a quantity** that turns out inconsistent | goes and verifies properly, then **replaces it and uses the new one** |
+
+The correction he makes to a density is an *interpretation* of a reading that was
+taken correctly, so both numbers stay. A volume that does not add up is simply
+wrong, so he re-measures and moves on.
+
+**PROOF's design still fits, but not for the reason I claimed.** Recording a
+correction rather than editing in place gives him exactly what he asked for — the
+new number is the one everything uses — and keeps the old one visible as a
+by-product of how it works. He did not ask for immutability. He asked for the
+right number to be in front of him. Those happen to be compatible, and the write-up
+should not pretend he argued for the former.
+
+Twice now the recordings have corrected an inference drawn from the notebook.
+Worth stating plainly: **a notebook tells you what somebody wrote down, not what
+they know or what they believe.** The dry run had the same blind spot from the
+other side — it measured what the product does, not what the operator knows.
+
+---
+
+## Q10 · What should PROOF know — answered concretely
+
+### The morning
+
+Asked what he wants in front of him when he walks in during vendimia, he did not
+hesitate or generalise:
+
+> "**Temperatura de la bodega, temperatura de los tanques, de todos los tanques.**
+> Y pues la medición de azúcar — **cómo va la fermentación**."
+
+And then, unprompted, he described the screen:
+
+> "Estaría bueno saber así como **si en la tablita**, si yo llego y sabes que: ah,
+> pues es que este vino **lleva 7 días de fermentación** y tiene tal temperatura y
+> tiene tanto azúcar. Como saber **cuántos días lleva desde que entró al tanque
+> para fermentar**. Saber cuántos días van."
+
+So the answer to the golden question is a table, one row per fermenting wine:
+
+| | |
+|---|---|
+| **days** | since it went into the tank to ferment |
+| **temperature** | latest, per tank |
+| **sugar** | latest, and therefore how the fermentation is going |
+
+Plus one figure for the cellar as a whole: its temperature.
+
+**Almost all of it already exists in the database and is displayed nowhere.**
+`lot_card` carries `stage` and `stage_since`, so *"lleva 7 días de fermentación"*
+is `now() − stage_since` and nothing more. The observation sheet already takes
+`reading_temp_c` and `reading_brix`, so the latest temperature and sugar per lot
+are a projection away. Density is storable today and simply absent from the sheet.
+
+The cellar's own temperature is the one thing with no home at all — it belongs to
+the building, not to a wine or a vessel, and there is nothing in the model that
+belongs to the building.
+
+This is the highest value-to-effort item anyone has named in eight steps. It is a
+view and a screen over data already being captured.
+
+### And the thing he has to work out by hand
+
+The second half of the question — what he has to dig for today — produced an
+answer nobody on the list anticipated. It is not about winemaking at all.
+
+> "Tienes que **pedir la botella**… y tienes que ir viendo las etiquetas con un
+> chingo de tiempo. […] Básicamente tienes que **hacer los pedidos antes de
+> terminar el año**."
+>
+> "**Ahorita ya sé cuántos litros** de blanco va a salir, ya sé cuántos litros de
+> este va a salir. Entonces **ya ahorita ya tendría que tener mi conteo aproximado
+> del pedido de botella**."
+>
+> "Porque se tarda… son los proveedores *[garbled]* … y tienes que estar
+> chingando."
+
+So the running volume is not only for bottling day. It is the input to
+**purchasing**, months ahead, against suppliers with long and unreliable lead
+times. He converts expected litres into a bottle order by hand, from his notes.
+
+He then said what he would want from PROOF, in the plainest terms it has been put
+all interview:
+
+> "Si quieres que te mande **un estimado de pedido de botellas** para embotellar."
+
+Bottles, corks and labels all have to be ready on the day. And the interviewer
+raised one more item before the recording cut:
+
+> "¿Y el **marbete**?"
+
+**Unanswered.** The marbete is the fiscal strip required on alcoholic beverages in
+Mexico, so it is a compliance artifact with its own procurement and its own
+paperwork. It needs its own question.
+
+### What this does to the roadmap
+
+Two things Cycle 1 never contemplated, both arriving from the same answer:
+
+1. **A fermentation board** — days, temperature, sugar, per active ferment. Nearly
+   free, and it is what he asked for first.
+2. **A forward projection** — expected litres per label, converted into a
+   consumables order. That is derived state pointed at the future rather than the
+   present, and it is the first thing in this project that is about the business
+   rather than the cellar.
