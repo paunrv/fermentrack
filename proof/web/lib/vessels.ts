@@ -6,8 +6,15 @@ export type VesselContent = {
   lot_name: string | null
   quantity: string
   unit: string
+  /** The same amount in the unit he last used for this wine. */
+  quantity_said: string | null
+  unit_said: string | null
   stage: string | null
   confidence: string | null
+  last_operation: string | null
+  last_note: string | null
+  last_at: string | null
+  next_action: string | null
 }
 
 export type BoardVessel = {
@@ -54,11 +61,16 @@ export async function getBoard(session: Session): Promise<Board> {
   const bySpace = (a: BoardVessel, b: BoardVessel) =>
     Number(b.available ?? 0) - Number(a.available ?? 0)
 
-  const ready = rows.filter((v) => v.status === 'empty').sort(bySpace)
-  const inUse = rows.filter((v) => v.status === 'in_use' || v.status === 'over').sort(bySpace)
-  const unknown = rows.filter((v) => v.status === 'unknown_size').sort((a, b) =>
-    a.code.localeCompare(b.code),
-  )
+  // What is in a vessel decides where it appears, not whether we know its size.
+  // Sorting by size first buried a fermenting tank under "size not known",
+  // which is not how anybody describes their own cellar.
+  const holding = (v: BoardVessel) => v.contents.length > 0
+
+  const inUse = rows.filter(holding).sort((a, b) => a.code.localeCompare(b.code))
+  const ready = rows.filter((v) => !holding(v) && v.status !== 'unknown_size').sort(bySpace)
+  const unknown = rows
+    .filter((v) => !holding(v) && v.status === 'unknown_size')
+    .sort((a, b) => a.code.localeCompare(b.code))
 
   const room = new Map<string, Room>()
   for (const v of rows) {

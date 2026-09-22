@@ -281,6 +281,35 @@ h1 {
 .vessels .sep { color: var(--line); padding: 0 6px; }
 .vessels .arrival-qty { color: var(--ink-2); padding-left: 5px; }
 
+/* ---------- what a tank is doing ---------- */
+/*
+  One wine reads as three lines: what and how much, what happened to it last,
+  and what is next. The first is the fact, the second is the memory, the third
+  is the only piece of intent PROOF holds.
+*/
+.vessel-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.vessel-status {
+  display: flex; flex-wrap: wrap; gap: 4px 14px;
+  margin-top: 3px; font-size: 0.82rem; color: var(--muted);
+}
+.vessel-status .next { color: var(--accent); }
+.next-form { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+.next-form input {
+  flex: 1 1 auto; min-width: 0;
+  font-family: var(--f-body); font-size: 0.85rem;
+  padding: 5px 8px; border: 1px solid var(--line); border-radius: 2px;
+  background: var(--bg); color: var(--ink);
+}
+.next-form input::placeholder { color: var(--muted); opacity: 0.7; }
+.next-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.next-form button {
+  font-family: var(--f-body); font-size: 0.8rem; padding: 5px 10px;
+  border: 1px solid var(--line); border-radius: 2px;
+  background: var(--bg); color: var(--muted); cursor: pointer;
+}
+.next-form button:hover { border-color: var(--accent); color: var(--accent); }
+.vessel-contents li + li { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+
 .deltas { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
 .delta {
   font-family: var(--f-mono);

@@ -12,3 +12,6 @@ dist
 !.env.example
 !**/.env.example
 .DS_Store
+
+# The field database — one laptop, real data, never committed
+proof/.data/

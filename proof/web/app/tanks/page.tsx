@@ -1,7 +1,8 @@
 import { currentSession } from '@/lib/session'
-import { getBoard, type BoardVessel } from '@/lib/vessels'
-import { formatQuantity } from '@/lib/format'
+import { getBoard, type BoardVessel, type VesselContent } from '@/lib/vessels'
+import { formatQuantity, formatWhen } from '@/lib/format'
 import { SizeForm } from './size-form'
+import { NextForm } from './next-form'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,7 @@ export default async function TankBoard() {
         <span className="eyebrow">
           <a href="/" className="back">← cellar</a>
         </span>
-        <h1>Where can it go</h1>
+        <h1>The cellar today</h1>
 
         {room.length === 0 ? (
           <p className="lot-sub">
@@ -67,15 +68,6 @@ export default async function TankBoard() {
       </header>
 
       <section className="board">
-        {ready.length > 0 && (
-          <>
-            <h2 className="board-group">Empty and ready</h2>
-            {ready.map((v) => (
-              <Vessel key={v.vessel_id} v={v} />
-            ))}
-          </>
-        )}
-
         {inUse.length > 0 && (
           <>
             <h2 className="board-group">Holding wine</h2>
@@ -85,9 +77,18 @@ export default async function TankBoard() {
           </>
         )}
 
+        {ready.length > 0 && (
+          <>
+            <h2 className="board-group">Empty</h2>
+            {ready.map((v) => (
+              <Vessel key={v.vessel_id} v={v} />
+            ))}
+          </>
+        )}
+
         {unknown.length > 0 && (
           <>
-            <h2 className="board-group">Size not known</h2>
+            <h2 className="board-group">Empty · size not known</h2>
             {unknown.map((v) => (
               <Vessel key={v.vessel_id} v={v} />
             ))}
@@ -99,6 +100,57 @@ export default async function TankBoard() {
         )}
       </section>
     </main>
+  )
+}
+
+/**
+ * One wine in one vessel, said the way he would say it.
+ *
+ * The quantity is shown in the unit he last used for this wine — he says "dos
+ * punto cuatro toneladas", so the board does not answer him in kilograms — and
+ * how well PROOF knows that number is always on screen, not only when it is a
+ * guess. Then the two things a person standing in front of a tank actually
+ * wants: what happened to it last, and what is supposed to happen next.
+ */
+function Contents({ c }: { c: VesselContent }) {
+  const said = c.unit_said && c.quantity_said !== null && c.unit_said !== c.unit
+  const when = c.last_at ? formatWhen(c.last_at) : null
+
+  return (
+    <li>
+      <div className="vessel-line">
+        <a href={`/lots/${encodeURIComponent(c.lot_code)}`} className="vessel-lot">
+          {c.lot_code}
+        </a>
+        <span className="vessel-qty">
+          {said
+            ? formatQuantity(c.quantity_said, c.unit_said as string)
+            : formatQuantity(c.quantity, c.unit)}
+        </span>
+        {/*
+          Always shown, never only when it is bad news. "Measured" is a fact
+          worth seeing next to a number, and a board that only labels the
+          guesses makes silence look like certainty.
+        */}
+        <span className={`chip chip-${c.confidence ?? 'derived'}`}>{c.confidence ?? 'unknown'}</span>
+        {c.stage && <span className="vessel-stage">{c.stage}</span>}
+      </div>
+
+      {(c.last_operation || c.next_action) && (
+        <div className="vessel-status">
+          {c.last_operation && (
+            <span className="last">
+              {c.last_operation.toLowerCase()}
+              {when ? ` · ${when.relative}` : ''}
+              {c.last_note ? ` · “${c.last_note}”` : ''}
+            </span>
+          )}
+          {c.next_action && <span className="next">next · {c.next_action}</span>}
+        </div>
+      )}
+
+      <NextForm lotCode={c.lot_code} current={c.next_action} />
+    </li>
   )
 }
 
@@ -136,14 +188,7 @@ function Vessel({ v }: { v: BoardVessel }) {
       ) : (
         <ul className="vessel-contents">
           {v.contents.map((c) => (
-            <li key={c.lot_code}>
-              <a href={`/lots/${encodeURIComponent(c.lot_code)}`} className="vessel-lot">
-                {c.lot_code}
-              </a>
-              <span className="vessel-qty">{formatQuantity(c.quantity, c.unit)}</span>
-              {c.stage && <span className="vessel-stage">{c.stage}</span>}
-              {c.confidence === 'estimated' && <span className="chip chip-estimated">estimated</span>}
-            </li>
+            <Contents key={c.lot_code} c={c} />
           ))}
         </ul>
       )}

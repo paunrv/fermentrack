@@ -79,7 +79,7 @@ initdb -D /tmp/proofdb -U postgres --auth=trust
 pg_ctl -D /tmp/proofdb -o '-p 5433 -k /tmp' start
 ```
 
-224 SQL assertions in six suites, plus two browser-driven runs.
+232 SQL assertions in six suites, plus three browser-driven runs.
 
 **Isolation (50)** — cross-organization reads, write refusal, privilege escalation
 attempts, revoked members, suspended organizations, anonymous callers, and the
@@ -198,7 +198,42 @@ counts every interaction. Currently **32 interactions for six operations**. Over
 budget fails. It is a ratchet, not a proof — only Aldo can say whether it is fast
 enough ([ADR 0009](docs/adr/0009-capture-pace-is-measured.md)).
 
-## Running the screen
+## Taking it to the winery
+
+One command leaves PROOF open in a browser, holding Viñas del Tigre's real
+data, on a laptop with no internet:
+
+```sh
+PROOF_OPERATOR=you@example.com ./scripts/field.sh     # → http://localhost:3100
+./scripts/backup.sh                                   # everything, in one file
+```
+
+The difference from `dev-db.sh` matters: **`field.sh` never drops anything.**
+`dev-db.sh` rebuilds from empty on every run because that is what a test needs.
+The field database is the only copy of what Aldo said, so it is created once and
+then only ever migrated forward. It lives in `proof/.data/` and is never
+committed.
+
+A laptop has no Supabase, so the same shim the tests use stands in for the auth
+schema, and the one operator is created by the script rather than by signing in.
+That is the only thing in the setup that would not exist against a real project.
+
+### Rehearsing first
+
+```sh
+./scripts/rehearsal.sh
+```
+
+Aldo's own Colombard Pet Nat notebook, read into PROOF through the real browser
+against a throwaway database, ending with the board printed as he would see it.
+Currently **10 of 10 notebook entries recorded in 52 interactions**, and six
+things in his own vintage that the model cannot hold yet — listed by the run, so
+the next thing to build comes from his vintage rather than from a roadmap.
+
+The gate is not the count. It is whether he reads the board and says *"sí, así
+está mi bodega."* A script cannot say that, so the run stops at printing it.
+
+## Running the screen for development
 
 ```sh
 ./scripts/dev-db.sh          # builds proof_dev and records a demo harvest

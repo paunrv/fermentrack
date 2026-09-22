@@ -238,6 +238,32 @@ export async function recordCorrection(
 }
 
 /**
+ * What happens next to this wine.
+ *
+ * The smallest piece of intent PROOF holds, and deliberately the only one: a
+ * sentence somebody said, recorded as an ordinary event so it has a time and a
+ * history. Saying something new supersedes it; clearing the box clears it.
+ * What Aldo calls a "lote" — a label with a recipe and a bottle target — is a
+ * different thing and is not this.
+ */
+export async function recordNextAction(
+  _prev: CaptureResult | null,
+  form: FormData,
+): Promise<CaptureResult> {
+  const organization_id = await org()
+  return capture(
+    (call) =>
+      call('public.capture_next_action', {
+        p_organization_id: organization_id,
+        p_occurred_at: new Date().toISOString(),
+        p_lot_code: orNull(form.get('lot_code')),
+        p_note: orNull(form.get('note')),
+      }),
+    'Noted.',
+  )
+}
+
+/**
  * The one thing the board can change: how big a vessel is. It asks because it
  * cannot answer "how much room have you got" without knowing, not because
  * PROOF wants to manage equipment.

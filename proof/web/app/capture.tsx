@@ -345,6 +345,15 @@ function TransferSheet({ lot, vessels }: { lot: Lot; vessels: string[] }) {
             + another tank
           </button>
         </div>
+
+        {/*
+          A racking is where he says the most and the sheet used to record the
+          least: "trasiego, se quitaron veinte litros de lías, huele súper
+          rico". The numbers were captured and the sentence was not.
+        */}
+        <Field label="anything else" hint="optional">
+          <input name="note" data-f="note" />
+        </Field>
       </div>
 
       {/*

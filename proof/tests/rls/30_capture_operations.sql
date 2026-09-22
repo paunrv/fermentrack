@@ -453,8 +453,11 @@ select 'structural · anon cannot call any capture operation', '0', count(*)::te
 from information_schema.role_routine_grants
 where grantee = 'anon' and routine_schema = 'public' and routine_name like 'capture_%';
 
+-- Seven now: the six that move material, plus capture_next_action, which moves
+-- nothing and records what somebody said comes next. Growing this number is
+-- meant to be a deliberate act, which is why it is asserted rather than counted.
 insert into t.results (name, want, got)
-select 'structural · all six operations are callable by a session', '6', count(*)::text
+select 'structural · every capture operation is callable by a session', '7', count(*)::text
 from information_schema.role_routine_grants
 where grantee = 'authenticated' and routine_schema = 'public'
   and routine_name like 'capture_%' and privilege_type = 'EXECUTE';

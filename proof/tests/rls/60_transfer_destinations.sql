@@ -390,3 +390,69 @@ select 'agreement · no litre of it is anywhere PROOF cannot name', '0', count(*
 from public.ledger_lines l
 where l.organization_id = 'aaaaaaaa-aaaa-aaaa-aaaa-0000000f1f1f'
   and l.reason = 'movement' and l.quantity > 0 and l.vessel_id is null;
+
+
+-- =============================================================================
+-- THE BOARD ALDO READS
+--
+-- What is in it, in the unit he used, what happened to it last, and what he
+-- said comes next. All derived; none of it stored twice.
+-- =============================================================================
+select public.capture_reception(
+  'aaaaaaaa-aaaa-aaaa-aaaa-0000000f1f1f', '2026-03-20 08:00+00',
+  'F1-TON', 2.4, 't', p_vessel_code => 'BIN-T');
+
+insert into t.results (name, want, got)
+select 'board · answers in the unit he used, not the one PROOF nets in', '2.400|t',
+       (c ->> 'quantity_said') || '|' || (c ->> 'unit_said')
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+insert into t.results (name, want, got)
+select 'board · and still knows the netting unit underneath', '2400.000000|kg',
+       (c ->> 'quantity') || '|' || (c ->> 'unit')
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+insert into t.results (name, want, got)
+select 'board · says what happened to it last', 'Received',
+       c ->> 'last_operation'
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+insert into t.results (name, want, got)
+select 'board · and nothing is next until somebody says so', 'null',
+       coalesce(c ->> 'next_action', 'null')
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+select public.capture_next_action(
+  'aaaaaaaa-aaaa-aaaa-aaaa-0000000f1f1f', '2026-03-21 07:00+00',
+  'F1-TON', 'Moler mañana temprano');
+
+insert into t.results (name, want, got)
+select 'board · what he said comes next', 'Moler mañana temprano',
+       c ->> 'next_action'
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+-- Saying what is next is not something that happened to the wine.
+insert into t.results (name, want, got)
+select 'board · and saying it did not become the last thing that happened', 'Received',
+       c ->> 'last_operation'
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+select public.capture_next_action(
+  'aaaaaaaa-aaaa-aaaa-aaaa-0000000f1f1f', '2026-03-22 07:00+00', 'F1-TON', '');
+
+insert into t.results (name, want, got)
+select 'board · clearing it clears it, without deleting anything', 'null',
+       coalesce(c ->> 'next_action', 'null')
+from public.vessel_board b, jsonb_array_elements(b.contents) c
+where b.code = 'BIN-T';
+
+insert into t.results (name, want, got)
+select 'board · and both things he said are still on the record', '2', count(*)::text
+from public.events
+where organization_id = 'aaaaaaaa-aaaa-aaaa-aaaa-0000000f1f1f' and type_key = 'next_action';
