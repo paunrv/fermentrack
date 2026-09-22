@@ -66,7 +66,7 @@ have a name? It is the kind of thing that quietly disappears from a vintage.
 
 ---
 
-## Your six questions, and what the notebook already answers
+## Your questions, and what the notebook already answers
 
 Worth knowing before the interview, so the time goes on what is still unknown.
 
@@ -150,6 +150,98 @@ CO₂ disuelto del mosto."* The equipment chosen altered the measurement taken.
 That is not a stage and not a reading — it is work performed, with an instrument,
 having an effect on the numbers. Your WORK PERFORMED class is real.
 
+### 7 · What constitutes a reception
+
+**Look at what he actually wrote down.** The 10 August entry records, in order:
+the date, the Brix, then — at length — the *condition* of the fruit.
+
+> "muy buena, semilla café negra, casi toda sana. Algunas picadas por pájaros, y
+> algunas quemadas con el sol. Casi nada de cenicilla. **MUCHA HOJA! Exagerado**"
+
+Only then the quantity, and it is an approximation. No supplier, no transport, no
+scale ticket — because it is his own fruit. **He records the condition of the pick
+in far more detail than its quantity**, because the condition is what he has to
+act on. "Mucha hoja" is a decision about how to press, not a note.
+
+And the second half of your question is answered outright: **yes, a load ends up
+split.** 1,400 kg picked, 35 cajas crushed. Whatever else happened to that fruit
+happened outside this wine's page.
+
+Then there is the 25 August pick — 117 kg, pressed, chilled — whose entire purpose
+was to feed a wine that already existed. **A reception can exist to serve a lot,
+not to start one.**
+
+### 8 · Operations that start in several containers
+
+Covered by the headline above, with one detail worth having in your pocket: on
+27 August the operation draws from the 500 L fermenting tank **and the kitchen
+fridge**.
+
+A vessel, in this winery, can be a kitchen fridge. Anything that assumes vessels
+are tanks somebody registered will meet that on day one — which is also why
+inline vessel creation was the right call in Step 3.
+
+### 9 · How you know an earlier measurement was wrong
+
+**Answered, and it is the strongest validation the model has had.** Three places
+in this one wine:
+
+> *27/8* — "Se agregaron 30 litros de jugo **para lograr 1.008** · **Resultado:
+> 1.006** debido a que mosto bajó mucho después del cálculo"
+
+Target, actual, and the reason for the gap. All three kept.
+
+> *28/8, 19:00* — "Densidad: **1.005** · Ojo! Densímetro calibrado a 15.57 grados
+> · **Densidad real: 1.006** más el CO₂ disuelto en mostos"
+
+The instrument reading, the correction, and the reason, side by side.
+
+> "Se usó la bombita diafragma de agua. Saca mucha espuma con mostos fermentando
+> y **es probable** que saque CO₂ disuelto del mosto"
+
+The suspected cause, recorded as a hypothesis and hedged.
+
+So the second half of your question already has an answer. **He never replaces.
+He appends, and he writes down why.** His notebook is append-only — which is
+PROOF's immutability rule, arrived at independently by a winemaker with a pen.
+
+And the first half — 55 L, loss or bad measurement? The notebook shows he does
+not reason from the numbers at all. He reasons from **cause**: the calibration
+temperature of the hydrometer, a known physical effect, the pump that was used,
+or the process itself (*"el trasiego le gustó mucho y se secó"*). The arithmetic
+never decides. The explanation does.
+
+That has a direct product consequence. PROOF's correction sheet asks for the
+observed quantity and files it as `resolution` or `count_variance` — a category.
+Aldo's notebook says the field carrying the meaning is the **reason**, and it is
+free text about physics, not a category.
+
+**Still to ask:** when you keep both numbers, which one do you act on afterwards?
+Does the corrected density replace the reading in your head, or do you carry both?
+
+### 10 · What should PROOF know
+
+The first half needs him. **The second half is partly answered by the fact that
+this document exists.** It *is* the libreta. It is where the density trend lives,
+where the temperature log lives, and where the only record of the 25 August
+second pick lives.
+
+And the reconciliation above is a list of what it cannot give back:
+
+- how much wine he made — the second bottle format is *"? cajas"*
+- where the other ~800 kg of the pick went
+- what the 15 g of SO₂ was calculated against
+- what is in the fridge
+
+**Suggestion:** after he names his five things, ask the counter-question —
+*"¿cuáles de esas cinco podrías contestar ahora mismo con la libreta?"* The gap
+between those two lists is the product.
+
+Worth being ready for this too: two or three of the five are probably things the
+current build already answers — where the next load can go, what is in a tank,
+what happened to a wine. If so, ask him to rank them. Knowing which of the three
+he reaches for first is worth more than a longer list.
+
 ---
 
 ## Eight questions the notebook raises that are not on the list
@@ -206,8 +298,8 @@ Not everything is a gap. The notebook confirms several decisions:
 
 ## What I would change about the interview
 
-Questions 1 and 5 are the two where the notebook has already given us half the
-answer, so they can go deeper rather than starting from scratch:
+Questions 1, 5 and 9 are the ones where the notebook has already given us half
+the answer, so they can go deeper rather than starting from scratch:
 
 - **On question 1**, ask about the *press fractions* specifically. That is the
   case the notebook exposes and the one the abstract question would miss.
@@ -215,6 +307,14 @@ answer, so they can go deeper rather than starting from scratch:
   15 gr"* and ask what the 15 g was calculated against. His answer defines how
   every dose in the system is stored.
 
+- **On question 9**, skip the hypothetical. He has already done it twice in this
+  wine. Read him his own line — *"densímetro calibrado a 15.57 grados, densidad
+  real 1.006"* — and ask what he does with the two numbers afterwards.
+
 Question 2 can be sharpened too. He does not lack a volume for a few days — he
 goes two weeks without one and does not miss it. Worth asking whether a running
 volume is something he wants at all, or only at racking and bottling.
+
+And question 10 is the one to leave time for. It is the only one that is about
+the product rather than the winemaking, and the counter-question — what of that
+can you answer today — is where the answer actually is.
