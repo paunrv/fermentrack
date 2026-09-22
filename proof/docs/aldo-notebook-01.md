@@ -92,12 +92,21 @@ the notebook, and there is none again after the 22 August *trasiego*. The next
 volume-bearing entry is 27 August — fifteen days later — and even then it is only
 a delta (−20 lías, +30 jugo), never a total.
 
-So the honest reading is stronger than F4 assumed: it is not that a volume is
-temporarily unknowable, it is that **for most of this wine's life nobody measured
-it and nobody needed to.** He tracked density instead.
+> **Corrected by Aldo.** This section originally concluded that "for most of this
+> wine's life nobody measured it and nobody needed to". He says the opposite —
+> *"siempre sabes el volumen, por lo menos aproximado, siempre"* — and computes it
+> from the tank's capacity and fill height whenever he wants it. The notebook's
+> silence is not ignorance; it is that the number is always recoverable. See
+> [the interview](aldo-interview-01.md#q2--wine-in-a-tank-without-knowing-how-much--i-had-this-wrong).
 
-**Still to ask:** does he ever want PROOF to tell him the running volume, or is
-"what is in the tank" only interesting at racking and bottling?
+So the notebook does not record the volume because **he can always recompute it**,
+not because it is unknown. What PROOF lacks is not a way to hold an absent number
+— it is a way to accept the method he actually uses: tank capacity, fill height,
+and the formula. The tank board already knows vessel capacity and has never been
+asked to work backwards from it.
+
+He tracked density instead, because density is the number that had to be taken at
+the time and could not be recovered later.
 
 ### 3 · What a loss really means
 

@@ -6,6 +6,12 @@ filled in for him. Where an answer stops, it stops.
 
 Companion to [the notebook reading](aldo-notebook-01.md).
 
+> **On the transcription.** These are machine transcripts of spoken Mexican
+> Spanish full of winery vocabulary, and some words come through mangled. Where I
+> have reconstructed a word it is marked *[?]* so Aldo can correct it: *mazotitos*
+> → metabisulfito, *bread* → brett, *dupo* → orujo, *guías/líos* → lías, *trazo de
+> fermentación* → trasiego. Nothing else is filled in for him.
+
 ---
 
 ## Q1 · Joining wine from several vessels
@@ -85,4 +91,244 @@ crush, and the 30 L of Colombard juice added to fermenting Colombard. Neither is
 blend by his definition — same wine, no purpose beyond finishing the job. They may
 simply be *the same wine arriving in instalments*, which is a third shape again.
 
-*(The recording cuts off at "Esas…".)*
+### Blend, continued — two reasons, and two moments
+
+> "Haces tu blend con las proporciones que tú quieres, **ya sea por necesidad**,
+> porque esa es la cantidad que tienes y la vas a mezclar, no importa. […] O tienes
+> un chingo de vinos y vas a hacer un súper blend **solamente con lo que más te
+> gusta**."
+
+Two different operations wearing one word:
+
+| | why | when |
+|---|---|---|
+| **by necessity** | that is how much you have, and how many tanks | often at the very start |
+| **by selection** | you picked the best of what you had | after fermentation |
+
+> "A veces **por espacio** mezclas… vas mezclando desde el inicio, ya sabes que lo
+> vas a mezclar de una vez, **porque no tengo más tanques**."
+>
+> "¿En qué proceso los mezclas? — **Después de la fermentación.** […] Siempre los
+> blends casi siempre son ya terminando la fermentación. **A menos que tengas poco
+> espacio.**"
+
+So the default is a blend after fermentation, and the exception — co-fermenting
+from day one — happens **because the cellar ran out of tanks.** Which means the
+co-ferment in the Step 7 dry run was not an exotic case at all. It is what a small
+winery does by default.
+
+And separation is a budget question, not a winemaking one:
+
+> "Si tienes dinero para un chingo de tanques, puedes tener todos por separado
+> desde el inicio."
+
+One more thing, easy to miss and worth keeping:
+
+> "Puedes tener **dos tanques con las mismas mezclas de uvas** y que lleven **un
+> diferente proceso**."
+
+Two lots, identical in composition, different in treatment, and they must stay
+apart. Identity is not content. PROOF already gets this right — a lot is
+identified by the code a person gave it, never by what is in it.
+
+---
+
+## "Lote" does not mean what PROOF means by lot
+
+This was not one of the ten questions and it may be the most important thing in
+the recording. Asked whether a harvest arrives as a complete lot, Aldo corrected
+the premise:
+
+> "No, como que **el lote ya te refieres como a una etiqueta**. Ya es la etiqueta,
+> ya es un vino que ya trae su receta."
+
+And:
+
+> "Ya cuando compras uva **ya estás pensando en cuántas botellas quieres
+> producir**. […] Casi todos ya tienen **etiquetas definidas desde el inicio**."
+
+| | |
+|---|---|
+| **PROOF's `lot`** | a quantity of material with an identity, which exists because something physically arrived |
+| **Aldo's *lote*** | a **label** — an intended wine, with a recipe and a target bottle count, decided **before the grapes are bought** |
+
+These are two different things and PROOF has only one of them. His *lote* is much
+closer to the protocol layer — something planned — than to anything in the ledger.
+
+Two immediate consequences:
+
+1. **A vocabulary collision.** If a screen says "lot" and he reads "etiqueta", every
+   conversation about the product will quietly mean two things. Worth settling
+   before the visit.
+2. **The intended wine exists before any fruit does.** Harvest is measured against
+   a plan that already has a name and a bottle count. Nothing in Cycle 1 can hold
+   that.
+
+---
+
+## Q2 · Wine in a tank without knowing how much — **I had this wrong**
+
+The notebook reading concluded that for most of this wine's life nobody measured
+the volume and nobody needed to. Aldo says the opposite, twice and emphatically:
+
+> "**Siempre sabes el volumen, por lo menos aproximado, siempre.** Bueno, y si no,
+> pues estás cabrón."
+>
+> "**De entrada, siempre sabes el volumen, porque todo lo tienes que calcular con
+> el volumen.**"
+
+So the notebook's silence is not ignorance. It is that **he can recompute the
+volume whenever he wants**, from the tank:
+
+> "Casi siempre con estos tanques. Sabes que tanques de 5 mil litros. Si está
+> lleno, pues tiene 5 mil. Y si no está lleno, puedes medir más o menos y sacar el
+> volumen. Por lo menos yo lo saco así **con la fórmula de volumen**."
+
+That changes F4 substantially, and in PROOF's favour:
+
+- **The problem is not that volume is unknowable.** It is that PROOF has no way to
+  accept the method he actually uses — capacity and fill height, run through a
+  formula. The tank board already knows vessel capacity; it has never been asked
+  to work backwards from it.
+- It also explains why the pressing sheet demanding a volume was less brutal than
+  the dry run made it look. He would have had a number. It would have been
+  approximate, and PROOF's `basis` already exists to say so.
+- **Still open:** whether a volume calculated from a tank should read as
+  *estimated*, or as its own kind of knowing.
+
+Worth recording that this correction came from him and not from the code. The dry
+run measured what the product does; it could not tell us what the operator knows.
+
+---
+
+## Q3 · What a loss really means — the cascade
+
+He answered by walking a white wine from the press to the bottle, and the shape is
+a **predictable, decreasing series**:
+
+| step | volume | removed |
+|---|---|---|
+| out of the press | 1,000 L | |
+| first trasiego / desfangado | 950 L | **50 L** — *"sabes que ahí lo vas a quitar a huevo"* |
+| trasiego during fermentation | 930 L | **20 L** |
+| trasiego after fermentation | 915 L | **15 L** |
+
+> "**Cada vez le quitas menos.** Y vas sumando eso que vas quitando para tenerlo.
+> **Yo junto todo.**"
+
+Two things there. The losses are *expected* and diminishing — he knows the 50 L is
+coming before it happens. And he **accumulates them**: the lees are collected, not
+discarded, which makes them a running total in their own right.
+
+### And then the thing this whole product is for
+
+> "Tengo como una bitácora de cada vino. Desde el día de cosecha, todo: pesa, todo,
+> todo. […] Se sacaron tantos litros de lías. Se anotaron. […] Entonces, **cuando
+> voy a embotellar, leo mis notas y digo: ah, pues más o menos son como 900 litros.
+> Ya con todos los trasiegos, necesito tantas botellas.**"
+
+He reads his notebook back, subtracts every racking by hand, and arrives at a
+bottle count. That is a running balance computed with a pen, at the one moment it
+has to be right.
+
+**PROOF already computes exactly this, continuously, for free.** It is the lot
+timeline's balance line. He arrived at the requirement himself, unprompted, while
+answering a question about losses — which is a better validation than anything the
+dry run produced.
+
+---
+
+## Q4 · Lees, pomace and solids — they are inventory
+
+> "Yo todo eso, o **lo destilo** — casi siempre también lo destilo. Entonces yo,
+> lías, todos los sedimentos, todo eso, **nada se tira**."
+>
+> "Se lo puedes **vender** a alguien, o destilar, o lo que sea."
+
+And his winery's loop, named as a sequence of places:
+
+> "La composta, en caso del orujo *[?]* — **vinícola, destilería, composta,
+> viña**. Así es nuestro proceso. Pero la mayoría de la gente prensa y va tirando
+> el orujo al camino."
+
+So byproducts have **value, a destination, and a next facility**. They are not a
+disposal problem; they are stock that moves. That is a materials-and-movement
+question, which the ledger can already express and the product cannot reach.
+
+One nuance that complicates the model more than the value does:
+
+> "Hay estilos de vinos como vino blanco **con lías** — estás revolviendo con las
+> lías, y te funcionan para darle cierta característica al vino. Y ya después de
+> ahí se tiene que quitar."
+
+Sometimes the lees are deliberately kept in contact with the wine and stirred.
+So lees are not always something removed — sometimes they are **part of the wine
+for a while, on purpose**, and removed later. Any model that treats them purely as
+an output of racking will get that wrong.
+
+---
+
+## Q5 · What you add to the wine
+
+First, the answer to the SO₂ puzzle in the notebook:
+
+> "**De entrada, siempre sabes el volumen, porque todo lo tienes que calcular con
+> el volumen.** Y más para los convencionales, que agregan muchas cosas: siempre
+> tienen que saber el volumen."
+
+**A dose requires a volume.** The rate is the input; the volume is the
+denominator; the quantity is derived. Which means the 15 g of SO₂ at harvest was
+calculated against a volume he had in mind and did not write down.
+
+The list, as he gave it, roughly in process order:
+
+| when | what |
+|---|---|
+| at the start | **ácido tartárico** for acidity; **azúcar** if it is short (*"no es muy normal acá"*); **agua + ácido tartárico** if it is too sweet |
+| before fermentation, whites | **enzimas** — proteolytic, for cleaning — and **clarificantes**, *"hay un chingo"* |
+| fermentation | **levaduras**, if you work the traditional way, and often **nutrientes de levadura** |
+| fermentation, natural | nothing. *"Fermentas con lo que ya viene. Solamente haces un fermento antes para inocular, pero no compras nada."* |
+| malolactic | **bacteria láctica** / enzymes to start the second fermentation |
+| anywhere | **metabisulfito** *[?]* |
+| structure | **gomas** for body; **taninos**, liquid and powder |
+| corrections | products for **brett** *[?]* and for reduction — *"para cargar cobre"* |
+| finishing | **colorantes**; **extractos de barrica** |
+
+Two things to take from the shape of that list rather than its contents:
+
+- **It is open-ended and he knows it** — *"muchas más cosas que se le puede
+  poner"*. Any fixed enumeration of additives will be wrong within a vintage.
+- **The natural-wine row is the interesting one.** *Nothing added* is itself a
+  claim worth being able to make and prove, and it is the claim Viñas del Tigre
+  would actually want to defend.
+
+---
+
+## Not on the list: a loss with no event
+
+> "Cuando metes a barrica el vino, **hay merma**, porque se va evaporando. Mientras
+> más tiempo de barrica pase, **puedes perder hasta un 5 o 6% al año**, dependiendo
+> de la temperatura y la humedad que tengas en tu bodega. **La madera transpira.**"
+>
+> "Fuera de eso, no pierdes, a menos de que hagas trasiego."
+
+Every quantity change in PROOF is attached to an event — something that happened,
+at a time, that somebody did. **Barrel evaporation is none of those.** It accrues
+continuously, it depends on the cellar's temperature and humidity rather than on
+any action, and nobody performs it.
+
+That is a new class, and the ledger as built has no shape for it. It is also
+bounded and known — five or six percent a year — so it is forecastable rather than
+mysterious.
+
+His second sentence is the useful one for the model: **apart from evaporation, wine
+is only lost when somebody does something to it.** Clarification, filtration and
+racking each take their cut, and each is an act.
+
+## Not on the list: weighing the fruit
+
+> "Siempre tienes que **pesar la uva**. Esa es la principal."
+
+Said flatly, as the foundational measurement of the whole operation — which sits
+oddly beside the notebook's *"1,400 kg aprox"* and is worth asking about directly.
+
