@@ -439,9 +439,44 @@ raised one more item before the recording cut:
 
 > "¿Y el **marbete**?"
 
-**Unanswered.** The marbete is the fiscal strip required on alcoholic beverages in
-Mexico, so it is a compliance artifact with its own procurement and its own
-paperwork. It needs its own question.
+**Answered on the second pass:** *"Marbete también. Eso es lo que hacemos."*
+
+So the bottling-day readiness list is **bottles, corks, labels and marbete** — and
+the marbete is the fiscal strip required on alcoholic beverages in Mexico, which
+means one item on that list is a compliance artifact with its own procurement and
+its own paperwork. It still needs its own question, but it is now confirmed as
+part of the same forecast rather than a separate concern.
+
+### One chain, not three features
+
+A second pass at the same recording makes the causal order explicit, and it is
+worth seeing as one line rather than a list:
+
+> "Ya más o menos sabes **qué día tienes que estar embotellando, qué mes** tienes
+> que estar embotellando el vino. Entonces tienes que **pedir la botella**…"
+
+```
+days in fermentation  →  expected bottling month  →  supplier lead time
+                                                  →  order bottles, corks,
+                                                     labels and marbete now
+```
+
+The number he asked for first — *"cuántos días lleva desde que entró al tanque"* —
+is the head of that chain. It is not only a status line on a morning screen; it is
+what tells him when to place an order that takes months to arrive.
+
+### The morning check includes the equipment
+
+The clearer transcription of the same passage adds something the first pass lost:
+
+> "Temperatura de la bodega, temperatura de los tanques… **el chiller está
+> jalando** *[?]*. Ahora sí, vamos a medir azúcar."
+
+So the walk-in is three things, in order: the cellar and tank temperatures, **that
+the chiller is actually running**, and then the sugar. Equipment status is part of
+the morning, and it is a fact about a machine — not about a wine, not about a
+vessel holding wine. The same gap as the cellar's own temperature, and F7 from the
+dry run, arriving from a third direction.
 
 ### What this does to the roadmap
 
@@ -450,6 +485,10 @@ Two things Cycle 1 never contemplated, both arriving from the same answer:
 1. **A fermentation board** — days, temperature, sugar, per active ferment. Nearly
    free, and it is what he asked for first.
 2. **A forward projection** — expected litres per label, converted into a
-   consumables order. That is derived state pointed at the future rather than the
-   present, and it is the first thing in this project that is about the business
-   rather than the cellar.
+   consumables order: bottles, corks, labels and marbete. That is derived state
+   pointed at the future rather than the present, and it is the first thing in
+   this project that is about the business rather than the cellar.
+
+> **A note on the source.** The last recording ends with a personal exchange
+> between Aldo and the interviewer that has nothing to do with the winery. It is
+> not summarised, quoted or analysed anywhere in these notes.
