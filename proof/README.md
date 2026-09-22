@@ -204,9 +204,25 @@ One command leaves PROOF open in a browser, holding Viñas del Tigre's real
 data, on a laptop with no internet:
 
 ```sh
-PROOF_OPERATOR=you@example.com ./scripts/field.sh     # → http://localhost:3100
-./scripts/backup.sh                                   # everything, in one file
+PROOF_OPERATOR=you@example.com ./scripts/field.sh tigre    # Aldo
+PROOF_OPERATOR=you@example.com ./scripts/field.sh pijoan   # Silvana
+./scripts/backup.sh                                        # everything, in one file
 ```
+
+**One winery per session, by construction.** The two field sites are separate
+tenants whose data must never be read together, so each gets its own sign-in
+derived from yours — `you@example.com` becomes
+`you+vinas-del-tigre@example.com` — and the script refuses to start if that user
+can see more than one. It also takes a backup before touching anything, because
+the database holds every visit before this one.
+
+See [the field experiment](field/README.md) for how the sessions are run.
+
+Migrations are applied once and remembered, in a schema of the runner's own.
+Not an optimisation: `create or replace view` refuses to drop a column, so
+replaying an early migration over a later one fails outright, and every session
+after the first would have died on startup. A hosted Supabase project tracks
+applied migrations for the same reason.
 
 The difference from `dev-db.sh` matters: **`field.sh` never drops anything.**
 `dev-db.sh` rebuilds from empty on every run because that is what a test needs.

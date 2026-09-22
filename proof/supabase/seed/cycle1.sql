@@ -28,6 +28,14 @@ insert into public.organizations (slug, name, status, data_origin) values
   ('vinas-del-tigre', 'Viñas del Tigre', 'active', 'real')
 on conflict (slug) do nothing;
 
+-- The second field site. Silvana's winery is a separate tenant in every sense:
+-- its own vocabulary, its own vessels, its own history. Nothing about the
+-- experiment works if the two are ever read together, and the whole point of
+-- testing a second producer is that she may not work the way Aldo does.
+insert into public.organizations (slug, name, status, data_origin) values
+  ('vinas-pijoan', 'Viñas Pijoan', 'active', 'real')
+on conflict (slug) do nothing;
+
 insert into public.organizations (slug, name, status, data_origin) values
   ('proof-sandbox', 'PROOF Sandbox', 'active', 'synthetic')
 on conflict (slug) do nothing;
