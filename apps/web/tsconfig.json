@@ -9,7 +9,7 @@
         "../../types/proof.ts"
       ]
     },
-    "rootDir": ".",
+    "rootDir": "../..",
     "allowJs": true,
     "noEmit": true,
     "isolatedModules": true
