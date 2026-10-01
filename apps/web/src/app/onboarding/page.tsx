@@ -301,7 +301,7 @@ function OnboardingContent() {
     await upsertProfile(supabase, {
       user_id: user.id,
       profile_type_v2: profileType,
-      profile_type: profileType,
+      profile_type: profileType === 'bodega' ? null : profileType,
       username: username.trim() || getUserFirstName(user) || 'Productor',
       onboarding_complete: true,
       email,
