@@ -108,12 +108,32 @@ type InviteMembershipSelect =
   | typeof INVITE_MEMBERSHIP_SELECT_NO_FEATURES
   | typeof INVITE_MEMBERSHIP_SELECT_LEGACY
 
+type MembershipRow = {
+  role: OrgMemberRole
+  status: OrgMemberStatus
+  organization_id: string
+  organizations:
+    | Record<string, unknown>
+    | Array<Record<string, unknown>>
+    | null
+  platform_profile?: TeamPlatformProfile | null
+}
+
 async function fetchActiveMembershipRows(
   sb: SupabaseClient,
   userId: string,
   select: MembershipSelect
 ) {
-  return sb.from('organization_members').select(select).eq('user_id', userId).eq('status', 'active')
+  const result = await sb
+    .from('organization_members')
+    .select(select)
+    .eq('user_id', userId)
+    .eq('status', 'active')
+
+  return {
+    data: result.data as MembershipRow[] | null,
+    error: result.error,
+  }
 }
 
 async function fetchMembershipRows(
@@ -122,7 +142,16 @@ async function fetchMembershipRows(
   select: InviteMembershipSelect,
   status: OrgMemberStatus
 ) {
-  return sb.from('organization_members').select(select).eq('user_id', userId).eq('status', status)
+  const result = await sb
+    .from('organization_members')
+    .select(select)
+    .eq('user_id', userId)
+    .eq('status', status)
+
+  return {
+    data: result.data as MembershipRow[] | null,
+    error: result.error,
+  }
 }
 
 export type PendingWinemakerInvite = {
