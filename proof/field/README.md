@@ -15,6 +15,28 @@ Dates are deliberately not fixed. The spacing is the experiment: we are testing
 whether PROOF remembers what happened **between** visits, not whether somebody
 can type during one.
 
+## Before the first session — on the laptop that is going
+
+Do this at a desk, with internet. Not in the cellar.
+
+```sh
+git clone <this repo> && cd fermentrack/proof
+git checkout claude/proof-greenfield-audit-70yijj
+
+brew install node postgresql@16          # macOS
+export PATH="/opt/homebrew/opt/postgresql@16/bin:$PATH"
+
+cd web && npm install && cd ..           # needs internet
+./scripts/preflight.sh                   # says what is still missing
+./scripts/rehearsal.sh                   # the whole thing, end to end, throwaway data
+```
+
+`preflight.sh` checks Node, Postgres, dependencies, the port, who you will be
+signed in as, and what is already recorded. Everything it finds takes five
+minutes to fix at a desk and ruins a visit if it is discovered in a cellar.
+
+The session itself needs no internet.
+
 ## Running a session
 
 ```sh

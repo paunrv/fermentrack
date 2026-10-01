@@ -17,15 +17,20 @@
  */
 
 import { chromium } from 'playwright'
+import { existsSync } from 'node:fs'
 
 const BASE = process.env.PROOF_URL ?? 'http://localhost:3101'
-const CHROME = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
+// This container ships a Chromium at a fixed path; a laptop has whichever one
+// Playwright installed. Prefer the pinned one when it is there, otherwise let
+// Playwright choose — so the same script runs in both places.
+const PINNED = '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
+const CHROME = process.env.PROOF_CHROME ?? (existsSync(PINNED) ? PINNED : undefined)
 
 let taps = 0
 const said = []
 const walls = []
 
-const browser = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox'] })
+const browser = await chromium.launch({ ...(CHROME ? { executablePath: CHROME } : {}), args: ['--no-sandbox'] })
 const page = await (await browser.newContext({ viewport: { width: 1200, height: 1000 } })).newPage()
 
 const tap = async (s) => { taps++; await page.click(s, { timeout: 5000 }) }

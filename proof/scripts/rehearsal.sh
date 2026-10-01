@@ -16,7 +16,20 @@ WHO="rehearsal@vinasdeltigre.example"
 export PATH="/usr/lib/postgresql/16/bin:/opt/homebrew/opt/postgresql@16/bin:$PATH"
 export PGHOST=127.0.0.1 PGPORT="${PGPORT:-5433}" PGUSER=postgres
 
-pg_isready -q || { echo "  Postgres is not running — start it with ./scripts/field.sh" >&2; exit 1; }
+# Start the cluster if it is not already up. field.sh does this too, but it
+# blocks on the app afterwards, so telling somebody to run that first just to
+# rehearse is a papercut with a laptop and a deadline attached.
+if ! pg_isready -q 2>/dev/null; then
+  PGDATA="${PROOF_DATA:-$ROOT/.data/pg}"
+  [ -f "$PGDATA/PG_VERSION" ] || { echo "  no database yet — run ./scripts/field.sh tigre once first" >&2; exit 1; }
+  if [ "$(id -u)" = "0" ]; then
+    su postgres -c "PATH=$(dirname "$(command -v pg_ctl)"):\$PATH pg_ctl -D '$PGDATA' -o '-p $PGPORT' -l '$PGDATA/server.log' start" >/dev/null
+  else
+    pg_ctl -D "$PGDATA" -o "-p $PGPORT" -l "$PGDATA/server.log" start >/dev/null
+  fi
+  for _ in $(seq 1 20); do pg_isready -q 2>/dev/null && break; sleep 0.5; done
+fi
+pg_isready -q || { echo "  Postgres would not start — see .data/pg/server.log" >&2; exit 1; }
 
 PSQL=(psql --no-psqlrc --quiet --set ON_ERROR_STOP=1 --dbname "$DB")
 
