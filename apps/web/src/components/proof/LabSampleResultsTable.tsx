@@ -59,6 +59,7 @@ function ResultRow({ result }: { result: LabResult }) {
 }
 
 export function LabSampleResultsTable({ results }: { results: LabResult[] }) {
+  const t = useTranslations('winemaker.lab.lotSection')
   const isMobile = useIsMobile()
 
   if (results.length === 0) {

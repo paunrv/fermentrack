@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useMemo, useState } from 'react'
 import { useProfile } from '@/context/ProfileContext'
 import { useSupabase } from '@/hooks/useSupabase'
+import { ContentCard, PageFrame } from '@fermentrack/ui'
 import {
   fetchBatches,
   fetchBottling,
