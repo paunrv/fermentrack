@@ -103,6 +103,11 @@ type MembershipSelect =
   | typeof INVITE_MEMBERSHIP_SELECT_NO_FEATURES
   | typeof INVITE_MEMBERSHIP_SELECT_LEGACY
 
+type InviteMembershipSelect =
+  | typeof INVITE_MEMBERSHIP_SELECT
+  | typeof INVITE_MEMBERSHIP_SELECT_NO_FEATURES
+  | typeof INVITE_MEMBERSHIP_SELECT_LEGACY
+
 async function fetchActiveMembershipRows(
   sb: SupabaseClient,
   userId: string,
@@ -114,7 +119,7 @@ async function fetchActiveMembershipRows(
 async function fetchMembershipRows(
   sb: SupabaseClient,
   userId: string,
-  select: MembershipSelect,
+  select: InviteMembershipSelect,
   status: OrgMemberStatus
 ) {
   return sb.from('organization_members').select(select).eq('user_id', userId).eq('status', status)
